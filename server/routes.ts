@@ -8760,7 +8760,13 @@ FLOXN 드림`;
 
       // ========== 첨부파일 준비 (단일 PDF) ==========
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || 'UNKNOWN';
-      const mainFileName = `현장출동보고서_${accidentNo}.pdf`;
+      const detailAddress = caseData.victimAddressDetail || caseData.victimAddress || 
+                            caseData.insuredAddressDetail || caseData.insuredAddress || '';
+      // 파일명에 사용할 수 없는 특수문자 제거
+      const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, '_');
+      const mainFileName = safeDetailAddress 
+        ? `현장출동보고서 _${accidentNo} (${safeDetailAddress}).pdf`
+        : `현장출동보고서 _${accidentNo}.pdf`;
       
       const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
         {
@@ -8902,9 +8908,14 @@ Front·Line·Ops·Xpert·Net
         try {
           console.log(`[send-field-report-email-v2] Sending email to ${recipientEmail} with ${finalAttachments.length} attachments`);
           
+          // 이메일 제목도 파일명과 동일한 형식으로
+          const emailSubject = safeDetailAddress 
+            ? `현장출동보고서 _${accidentNo} (${safeDetailAddress})`
+            : `현장출동보고서 _${accidentNo}`;
+          
           const result = await sendEmailWithAttachment({
             to: recipientEmail,
-            subject: `[FLOXN] 현장출동보고서 - ${accidentNo}`,
+            subject: emailSubject,
             text: emailText,
             html: emailHtml,
             attachments: finalAttachments,
@@ -10086,9 +10097,13 @@ https://peulrogseun-aqaqaq4561.replit.app
       console.log(`[pdf-download] PDF generated: ${Math.round(pdfBuffer.length / 1024)}KB (${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
       
       const caseData = await storage.getCaseById(payload.caseId);
-      const filename = caseData?.caseNumber 
-        ? `현장출동보고서_${caseData.caseNumber}.pdf`
-        : `현장출동보고서_${payload.caseId}.pdf`;
+      const accidentNo = caseData?.insuranceAccidentNo || caseData?.caseNumber || payload.caseId;
+      const detailAddress = caseData?.victimAddressDetail || caseData?.victimAddress || 
+                            caseData?.insuredAddressDetail || caseData?.insuredAddress || '';
+      const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, '_');
+      const filename = safeDetailAddress 
+        ? `현장출동보고서 _${accidentNo} (${safeDetailAddress}).pdf`
+        : `현장출동보고서 _${accidentNo}.pdf`;
       
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
