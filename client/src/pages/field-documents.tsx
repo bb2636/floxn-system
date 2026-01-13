@@ -429,20 +429,21 @@ export default function FieldDocuments() {
     },
   });
 
-  // 청구자료 제출 mutation
+  // 청구자료 제출 mutation (동일 사고번호 직접복구 케이스 일괄 상태 변경 + SMS 발송)
   const claimSubmitMutation = useMutation({
-    mutationFn: async () => {
-      // 케이스 상태를 "청구자료제출"로 변경
-      await apiRequest("PATCH", `/api/cases/${selectedCaseId}`, {
-        status: "(직접복구인 경우) 청구자료제출"
+    mutationFn: async (): Promise<{ success: boolean; message: string; updatedCount: number }> => {
+      // 동일 사고번호의 모든 직접복구 케이스 상태 변경 + 플록슨 담당자 SMS 발송
+      const response = await apiRequest("POST", "/api/submit-claim-documents", {
+        caseId: selectedCaseId
       });
+      return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/cases/${selectedCaseId}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       toast({
         title: "청구자료가 제출되었습니다",
-        description: "제출이 완료되었습니다.",
+        description: data.message || "제출이 완료되었습니다.",
         className: "bg-[#008FED] text-white border-0",
       });
       setShowClaimSubmitDialog(false);
