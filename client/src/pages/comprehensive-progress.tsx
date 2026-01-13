@@ -1861,6 +1861,33 @@ export default function ComprehensiveProgress() {
 
                         {/* 심사 정보 섹션 */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "0px" }}>
+                          {/* 의뢰사 */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
+                            <div style={{
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
+                            }}>
+                              의뢰사
+                            </div>
+                            <div style={{
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}>
+                              {selectedCase.insuranceCompany || "-"}
+                            </div>
+                          </div>
+
                           {/* 심사사 */}
                           <div style={{
                             display: "flex",
