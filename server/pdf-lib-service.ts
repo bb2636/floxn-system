@@ -1406,15 +1406,16 @@ async function renderEvidencePages(
       // 특수기호 뒤 공백 제거 함수
       const removeSpaces = (text: string) => 
         text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
-      const pdfAccidentNo = removeSpaces(
-        caseData.insuranceAccidentNo || caseData.caseNumber || ""
-      );
+      const rawPdfAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "";
+      const pdfAccidentNo = removeSpaces(rawPdfAccidentNo);
+      console.log(`[pdf-lib] PDF 헤더 사고번호 정규화: "${rawPdfAccidentNo}" -> "${pdfAccidentNo}"`);
       const pdfCategoryDisplay = removeSpaces(
         pdfItem.doc.category
           ? `${pdfItem.tab}-${pdfItem.doc.category}`
           : pdfItem.tab
       );
       const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${removeSpaces(pdfFullAddress)}    ${pdfCategoryDisplay}`;
+      console.log(`[pdf-lib] PDF 헤더 최종: "${normalizedHeaderText}"`);
 
       const pdfFontSize =
         normalizedHeaderText.length > 60 ? 8 : normalizedHeaderText.length > 45 ? 9 : 10;
@@ -1525,9 +1526,9 @@ async function renderEvidencePages(
     // 특수기호 뒤 공백 제거 함수
     const removeSpaceAfterSymbols = (text: string) => 
       text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
-    const accidentNo = removeSpaceAfterSymbols(
-      caseData.insuranceAccidentNo || caseData.caseNumber || ""
-    );
+    const rawAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "";
+    const accidentNo = removeSpaceAfterSymbols(rawAccidentNo);
+    console.log(`[pdf-lib] 이미지 헤더 사고번호 정규화: "${rawAccidentNo}" -> "${accidentNo}"`);
     const leftText = `사고번호 ${accidentNo}`;
     const centerText = removeSpaceAfterSymbols(fullAddress);
     const rightText = removeSpaceAfterSymbols(
@@ -1806,11 +1807,11 @@ async function renderRecoveryAreaPage(
   // 표 전체 너비 계산: 55 + 70 + 70 + 130 + 130 + 60 = 515
   const tableWidth = 515;
   const rightPadding = 4;
-  const unitTextWidth = fonts.regular.widthOfTextAtSize("단위: ㎡", 9);
+  const unitTextWidth = fonts.regular.widthOfTextAtSize("단위:㎡", 9);
   drawText(page, {
     x: MARGIN + tableWidth - unitTextWidth - rightPadding,
     y,
-    text: "단위: ㎡",
+    text: "단위:㎡",
     font: fonts.regular,
     size: 9,
   });
@@ -2593,7 +2594,7 @@ async function renderEstimatePage(
   drawText(page, {
     x: A4_WIDTH - MARGIN - 270,
     y: y + 5,
-    text: "단위: 원",
+    text: "단위:원",
     font: fonts.regular,
     size: 7,
     maxWidth: 266,
