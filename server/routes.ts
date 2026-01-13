@@ -9504,15 +9504,17 @@ https://peulrogseun-aqaqaq4561.replit.app
 복구금액 : ${recoveryAmount?.toLocaleString() || "-"}원
 수수료 : 최종금액의 ${feeRate || "-"}%
 지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
-      } else if (stage === "반려") {
-        subject = "반려 알림";
+      } else if (stage === "반려" || stage === "승인반려") {
+        // 심사반려 또는 승인반려 모두 동일한 형식으로 처리
+        const rejectionType = stage === "승인반려" ? "승인반려" : "심사반려";
+        subject = `${rejectionType} 알림`;
         const addressMain = caseData.victimAddress || caseData.insuredAddress;
         const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail;
         // 반려 직전 상태 표시 (예: "검토중에서 반려", "현장정보제출에서 반려")
         const rejectionStatus = previousStatus ? `${previousStatus}에서 반려` : "반려";
-        messageText = `<반려 알림>
+        messageText = `<${rejectionType} 알림>
 
-반려 : ${caseData.caseNumber || "-"}
+접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}

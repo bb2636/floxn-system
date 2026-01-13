@@ -439,7 +439,7 @@ export default function FieldReport() {
   
   // SMS 알림 다이얼로그 상태
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
-  const [smsStage, setSmsStage] = useState<"현장정보입력" | "반려" | "현장정보제출">("현장정보입력");
+  const [smsStage, setSmsStage] = useState<"현장정보입력" | "반려" | "현장정보제출" | "승인반려">("현장정보입력");
 
   // 필수 서류 검증 함수 (현장출동보고서 제출 전)
   const validateRequiredDocuments = (): { valid: boolean; missingDocs: string[] } => {
@@ -728,6 +728,13 @@ export default function FieldReport() {
       queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       setShowApprovalDialog(false);
+      
+      // 비승인(승인반려) 시 SMS 알림 다이얼로그 표시
+      if (approvalDecision === "비승인") {
+        setSmsStage("승인반려");
+        setSmsDialogOpen(true);
+      }
+      
       setApprovalDecision("승인");
       setApprovalComment("");
     },

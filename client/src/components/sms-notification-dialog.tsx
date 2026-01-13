@@ -21,6 +21,7 @@ type NotificationStage =
   | "접수완료"
   | "현장정보입력"
   | "반려"
+  | "승인반려"
   | "현장정보제출"
   | "복구요청"
   | "직접복구"
@@ -44,6 +45,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   "접수완료": { partner: true, manager: true, assessorInvestigator: true },
   "현장정보입력": { partner: false, manager: true, assessorInvestigator: false },
   "반려": { partner: true, manager: false, assessorInvestigator: false },
+  "승인반려": { partner: true, manager: false, assessorInvestigator: false },
   "현장정보제출": { partner: false, manager: false, assessorInvestigator: true },
   "복구요청": { partner: true, manager: false, assessorInvestigator: false },
   "직접복구": { partner: true, manager: true, assessorInvestigator: false },
