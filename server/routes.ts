@@ -5997,9 +5997,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 관련 케이스들의 상태를 "청구"로 변경하고 인보이스 데이터 저장
       const caseIdsToUpdate = relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
       
+      // 청구일을 오늘 날짜로 설정 (KST)
+      const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+      const claimDateStr = kstNow.toISOString().split('T')[0];
+      
       for (const id of caseIdsToUpdate) {
         await storage.updateCase(id, { 
           status: "청구",
+          claimDate: claimDateStr,  // 청구일 설정
           invoiceDamagePreventionAmount: parsedDamagePreventionAmount.toString(),
           invoicePropertyRepairAmount: parsedPropertyRepairAmount.toString(),
           invoiceRemarks: remarks || null,
@@ -6052,10 +6057,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 관련 케이스들의 상태를 "청구"로 변경하고 금액 저장
       const caseIdsToUpdate = relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
       
+      // 청구일을 오늘 날짜로 설정 (KST)
+      const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+      const claimDateStr = kstNow.toISOString().split('T')[0];
+      
       for (const id of caseIdsToUpdate) {
         // 상태 변경 및 인보이스 데이터 저장
         await storage.updateCase(id, { 
           status: "청구",
+          claimDate: claimDateStr,  // 청구일 설정
           fieldDispatchInvoiceAmount: parsedFieldDispatchAmount.toString(),
           fieldDispatchInvoiceRemarks: remarks || null,
         });
