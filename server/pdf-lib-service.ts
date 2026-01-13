@@ -300,7 +300,8 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
 
       const font = cell.isHeader ? fonts.bold : fonts.regular;
       const padding = 4;
-      const maxTextWidth = cell.width - padding * 2;
+      const rightPadding = cell.align === "right" ? 8 : padding; // 오른쪽 정렬 시 여백 더 확보
+      const maxTextWidth = cell.width - padding - rightPadding;
 
       // 텍스트가 셀 너비를 초과할 경우 폰트 크기 자동 축소
       let actualFontSize = fontSize;
@@ -316,7 +317,7 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
       if (cell.align === "center") {
         textX = cellX + (cell.width - textWidth) / 2;
       } else if (cell.align === "right") {
-        textX = cellX + cell.width - textWidth - padding;
+        textX = cellX + cell.width - textWidth - rightPadding;
       }
 
       try {
@@ -1213,7 +1214,7 @@ async function renderDrawingPage(
         const scaleY = maxHeight / imgDims.height;
         // 영역에 맞게 최대한 확대하되, 5배까지 확대 (원본이 너무 작을 경우 대비)
         const baseScale = Math.min(scaleX, scaleY);
-        const scale = Math.min(baseScale, 5.0); // 최대 5배까지 확대
+        const scale = Math.min(baseScale, 5.0); //  ��대 5배까지 확대
 
         // 도면 크기를 영역의 95% 이상 채우도록 보장
         let drawWidth = imgDims.width * scale;
@@ -1380,7 +1381,7 @@ async function renderEvidencePages(
       const pdfCategoryDisplay = pdfItem.doc.category
         ? `${pdfItem.tab}-${pdfItem.doc.category}`
         : pdfItem.tab;
-      const pdfHeaderText = `사고번호 ${pdfAccidentNo}  |  ${pdfFullAddress}  |  ${pdfCategoryDisplay}`;
+      const pdfHeaderText = `사고번호 ${pdfAccidentNo} ${pdfFullAddress} ${pdfCategoryDisplay}`;
       const pdfFontSize =
         pdfHeaderText.length > 60 ? 8 : pdfHeaderText.length > 45 ? 9 : 10;
 
@@ -2508,7 +2509,7 @@ async function renderEstimatePage(
       { text: "천원단위 절사", width: 150, isHeader: true, align: "center" },
       {
         text: roundingDiff > 0 ? formatNumber(-roundingDiff) : "-",
-        width: 20000,
+        width: 120,
         align: "right",
       },
     ],
