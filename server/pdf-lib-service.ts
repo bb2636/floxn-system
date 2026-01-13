@@ -1748,8 +1748,11 @@ async function renderRecoveryAreaPage(
 
   y -= 20;
 
+  // 표 전체 너비 계산: 55 + 70 + 70 + 130 + 130 + 60 = 515
+  const tableWidth = 515;
+  const unitTextWidth = fonts.regular.widthOfTextAtSize("단위: ㎡", 9);
   drawText(page, {
-    x: A4_WIDTH - MARGIN - 60,
+    x: MARGIN + tableWidth - unitTextWidth,
     y,
     text: "단위: ㎡",
     font: fonts.regular,
@@ -1758,48 +1761,152 @@ async function renderRecoveryAreaPage(
 
   y -= 15;
 
-  // Two-row header for area table
-  const headerRow1: TableCell[] = [
-    { text: "구분", width: 55, isHeader: true, align: "center" },
-    { text: "공사내용", width: 70, isHeader: true, align: "center" },
-    { text: "공사분류", width: 70, isHeader: true, align: "center" },
-    { text: "피해면적", width: 130, isHeader: true, align: "center" },
-    { text: "복구면적", width: 130, isHeader: true, align: "center" },
-    { text: "비고", width: 60, isHeader: true, align: "center" },
+  // 헤더 높이 설정 (2행 병합용)
+  const headerRowHeight = 20;
+  const totalHeaderHeight = headerRowHeight * 2;
+
+  // 병합 셀 너비 정의
+  const colWidths = {
+    gubun: 55,
+    content: 70,
+    category: 70,
+    damage: 130,
+    recovery: 130,
+    note: 60,
+  };
+
+  // 구분, 공사내용, 공사분류 병합 셀 그리기 (2행 병합)
+  const mergedCells = [
+    { text: "구분", width: colWidths.gubun, x: MARGIN },
+    { text: "공사내용", width: colWidths.content, x: MARGIN + colWidths.gubun },
+    { text: "공사분류", width: colWidths.category, x: MARGIN + colWidths.gubun + colWidths.content },
   ];
 
-  const headerRow2: TableCell[] = [
-    { text: "", width: 55, isHeader: true, align: "center" },
-    { text: "", width: 70, isHeader: true, align: "center" },
-    { text: "", width: 70, isHeader: true, align: "center" },
-    { text: "면적", width: 43, isHeader: true, align: "center" },
-    { text: "가로", width: 43, isHeader: true, align: "center" },
-    { text: "세로", width: 44, isHeader: true, align: "center" },
-    { text: "면적", width: 43, isHeader: true, align: "center" },
-    { text: "가로", width: 43, isHeader: true, align: "center" },
-    { text: "세로", width: 44, isHeader: true, align: "center" },
-    { text: "", width: 60, isHeader: true, align: "center" },
+  for (const cell of mergedCells) {
+    // 배경색
+    page.drawRectangle({
+      x: cell.x,
+      y: y - totalHeaderHeight,
+      width: cell.width,
+      height: totalHeaderHeight,
+      color: rgb(0.94, 0.94, 0.94),
+    });
+    // 테두리
+    page.drawRectangle({
+      x: cell.x,
+      y: y - totalHeaderHeight,
+      width: cell.width,
+      height: totalHeaderHeight,
+      borderColor: rgb(0.3, 0.3, 0.3),
+      borderWidth: 0.5,
+    });
+    // 텍스트 (세로 중앙 정렬)
+    const textWidth = fonts.bold.widthOfTextAtSize(cell.text, 8);
+    drawText(page, {
+      x: cell.x + (cell.width - textWidth) / 2,
+      y: y - totalHeaderHeight / 2 - 3,
+      text: cell.text,
+      font: fonts.bold,
+      size: 8,
+    });
+  }
+
+  // 비고 병합 셀 그리기 (2행 병합)
+  const noteX = MARGIN + colWidths.gubun + colWidths.content + colWidths.category + colWidths.damage + colWidths.recovery;
+  page.drawRectangle({
+    x: noteX,
+    y: y - totalHeaderHeight,
+    width: colWidths.note,
+    height: totalHeaderHeight,
+    color: rgb(0.94, 0.94, 0.94),
+  });
+  page.drawRectangle({
+    x: noteX,
+    y: y - totalHeaderHeight,
+    width: colWidths.note,
+    height: totalHeaderHeight,
+    borderColor: rgb(0.3, 0.3, 0.3),
+    borderWidth: 0.5,
+  });
+  const noteTextWidth = fonts.bold.widthOfTextAtSize("비고", 8);
+  drawText(page, {
+    x: noteX + (colWidths.note - noteTextWidth) / 2,
+    y: y - totalHeaderHeight / 2 - 3,
+    text: "비고",
+    font: fonts.bold,
+    size: 8,
+  });
+
+  // 피해면적/복구면적 상단 헤더 (1행)
+  const damageX = MARGIN + colWidths.gubun + colWidths.content + colWidths.category;
+  const areaHeaders = [
+    { text: "피해면적", width: colWidths.damage, x: damageX },
+    { text: "복구면적", width: colWidths.recovery, x: damageX + colWidths.damage },
   ];
 
-  // Draw first header row
-  y = drawTable(page, {
-    x: MARGIN,
-    y,
-    rows: [headerRow1],
-    fonts,
-    fontSize: 8,
-    rowHeight: 20,
-  });
+  for (const cell of areaHeaders) {
+    page.drawRectangle({
+      x: cell.x,
+      y: y - headerRowHeight,
+      width: cell.width,
+      height: headerRowHeight,
+      color: rgb(0.94, 0.94, 0.94),
+    });
+    page.drawRectangle({
+      x: cell.x,
+      y: y - headerRowHeight,
+      width: cell.width,
+      height: headerRowHeight,
+      borderColor: rgb(0.3, 0.3, 0.3),
+      borderWidth: 0.5,
+    });
+    const textWidth = fonts.bold.widthOfTextAtSize(cell.text, 8);
+    drawText(page, {
+      x: cell.x + (cell.width - textWidth) / 2,
+      y: y - headerRowHeight / 2 - 3,
+      text: cell.text,
+      font: fonts.bold,
+      size: 8,
+    });
+  }
 
-  // Draw second header row
-  y = drawTable(page, {
-    x: MARGIN,
-    y,
-    rows: [headerRow2],
-    fonts,
-    fontSize: 8,
-    rowHeight: 20,
-  });
+  // 피해면적/복구면적 하단 서브헤더 (2행)
+  const subHeaders = [
+    { text: "면적", width: 43, x: damageX },
+    { text: "가로", width: 43, x: damageX + 43 },
+    { text: "세로", width: 44, x: damageX + 86 },
+    { text: "면적", width: 43, x: damageX + colWidths.damage },
+    { text: "가로", width: 43, x: damageX + colWidths.damage + 43 },
+    { text: "세로", width: 44, x: damageX + colWidths.damage + 86 },
+  ];
+
+  for (const cell of subHeaders) {
+    page.drawRectangle({
+      x: cell.x,
+      y: y - totalHeaderHeight,
+      width: cell.width,
+      height: headerRowHeight,
+      color: rgb(0.94, 0.94, 0.94),
+    });
+    page.drawRectangle({
+      x: cell.x,
+      y: y - totalHeaderHeight,
+      width: cell.width,
+      height: headerRowHeight,
+      borderColor: rgb(0.3, 0.3, 0.3),
+      borderWidth: 0.5,
+    });
+    const textWidth = fonts.bold.widthOfTextAtSize(cell.text, 8);
+    drawText(page, {
+      x: cell.x + (cell.width - textWidth) / 2,
+      y: y - totalHeaderHeight + headerRowHeight / 2 - 3,
+      text: cell.text,
+      font: fonts.bold,
+      size: 8,
+    });
+  }
+
+  y -= totalHeaderHeight;
 
   // Group rows by category (location)
   const groupedRows: Record<string, any[]> = {};
