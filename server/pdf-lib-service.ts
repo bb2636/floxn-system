@@ -1398,13 +1398,13 @@ async function renderEvidencePages(
         ? `${pdfAddress} ${pdfAddressDetail}`
         : pdfAddress;
 
-      // 헤더 형식: "사고번호 {보험사고번호}    {주소}    {카테고리}-{세부카테고리}" (넓은 여백)
+      // 헤더 형식: "사고번호{보험사고번호}{주소}{카테고리}-{세부카테고리}" (여백 없음)
       const pdfAccidentNo =
         caseData.insuranceAccidentNo || caseData.caseNumber || "";
       const pdfCategoryDisplay = pdfItem.doc.category
         ? `${pdfItem.tab}-${pdfItem.doc.category}`
         : pdfItem.tab;
-      const pdfHeaderText = `사고번호: ${pdfAccidentNo}      ${pdfFullAddress}      ${pdfCategoryDisplay}`;
+      const pdfHeaderText = `사고번호:${pdfAccidentNo} ${pdfFullAddress} ${pdfCategoryDisplay}`;
       const pdfFontSize =
         pdfHeaderText.length > 60 ? 8 : pdfHeaderText.length > 45 ? 9 : 10;
 
