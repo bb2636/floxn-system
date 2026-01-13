@@ -207,6 +207,8 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/logout", {}),
     onSuccess: () => {
+      // 모든 캐시 초기화 - 세션 정보 완전히 제거
+      qc.clear();
       onOpenChange(false);
       setLocation("/");
     },
