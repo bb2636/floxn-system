@@ -1032,32 +1032,22 @@ async function renderDrawingPage(
       // PNG 이미지 (html2canvas는 PNG로 출력)
       const embeddedImage = await pdfDoc.embedPng(imageData);
       
-      // PDF 영역을 완전히 채우도록 강제 스케일 (사용자 요청: 3배 확대 효과)
-      // 세로 방향 기준으로 영역 전체를 채움 (가로로 넘쳐도 잘리게)
-      const maxWidth = drawingAreaWidth;
-      const maxHeight = drawingAreaHeight;
+      // 도면 영역 안에 맞도록 스케일링 (프레임을 벗어나지 않도록)
+      const maxWidth = drawingAreaWidth - 10;  // 여백 5px씩
+      const maxHeight = drawingAreaHeight - 10;
       
       const imgDims = embeddedImage.scale(1);
-      const imgAspect = imgDims.width / imgDims.height;
-      const areaAspect = maxWidth / maxHeight;
       
-      let drawWidth: number;
-      let drawHeight: number;
+      // 가로/세로 비율을 유지하면서 영역 안에 맞춤
+      const scaleX = maxWidth / imgDims.width;
+      const scaleY = maxHeight / imgDims.height;
+      const scale = Math.min(scaleX, scaleY);  // 영역을 벗어나지 않도록 작은 값 사용
       
-      // 세로를 영역 전체에 맞추고 가로는 비율대로 (가로가 넘쳐도 됨)
-      // 또는 가로를 영역에 맞추되, 더 큰 스케일 적용
-      if (imgAspect > areaAspect) {
-        // 이미지가 더 넓음 - 세로를 영역에 맞추고 가로는 넘침
-        drawHeight = maxHeight;
-        drawWidth = drawHeight * imgAspect;
-      } else {
-        // 이미지가 더 높음 - 가로를 영역에 맞추고 세로는 넘침
-        drawWidth = maxWidth;
-        drawHeight = drawWidth / imgAspect;
-      }
+      let drawWidth = imgDims.width * scale;
+      let drawHeight = imgDims.height * scale;
       
-      console.log(`[pdf-lib] PDF 영역: ${maxWidth}x${maxHeight}, 이미지 aspect: ${imgAspect.toFixed(2)}`);
-      console.log(`[pdf-lib] 도면 표시 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)}`);
+      console.log(`[pdf-lib] PDF 영역: ${maxWidth}x${maxHeight}, 원본 이미지: ${imgDims.width}x${imgDims.height}`);
+      console.log(`[pdf-lib] 도면 표시 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)}, scale: ${scale.toFixed(3)}`);
       
       // 중앙 정렬 (넘치는 부분은 잘림)
       const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
