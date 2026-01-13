@@ -1181,7 +1181,7 @@ export default function ComprehensiveProgress() {
               진행상태
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              진행상황
+              주소
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               특이사항
@@ -1433,18 +1433,24 @@ export default function ComprehensiveProgress() {
                       fontFamily: "Pretendard", 
                       fontSize: "13px", 
                       color: "rgba(12, 12, 12, 0.8)",
-                      cursor: user?.role === "관리자" ? "pointer" : "default",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (user?.role === "관리자") {
-                        setSelectedCaseId(caseItem.id);
-                        setShowProgressDialog(true);
-                      }
-                    }}
-                    data-testid={`button-progress-${caseItem.id}`}
+                    title={
+                      caseItem.damagePreventionCost === "true"
+                        ? [caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(" ")
+                        : caseItem.victimIncidentAssistance === "true"
+                          ? [caseItem.victimAddress, caseItem.victimAddressDetail].filter(Boolean).join(" ")
+                          : "-"
+                    }
+                    data-testid={`text-address-${caseItem.id}`}
                   >
-                    {caseItem.latestProgress?.content || "-"}
+                    {caseItem.damagePreventionCost === "true"
+                      ? [caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(" ") || "-"
+                      : caseItem.victimIncidentAssistance === "true"
+                        ? [caseItem.victimAddress, caseItem.victimAddressDetail].filter(Boolean).join(" ") || "-"
+                        : "-"}
                   </div>
                   <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "4px" }}>
                     {/* 협력사 특이사항 빨간색 점 (관리자가 확인하지 않은 경우만 표시) */}
