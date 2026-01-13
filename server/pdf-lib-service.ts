@@ -1515,14 +1515,14 @@ async function renderEvidencePages(
       caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
     const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
 
-    // 헤더 형식: "사고번호 {보험사고번호}    {주소}    {카테고리}-{세부카테고리}"
+    // 헤더 형식: 좌측 "사고번호 {번호}" / 중앙 "{주소}" / 우측 "{카테고리}-{세부카테고리}"
     const accidentNo =
       caseData.insuranceAccidentNo || caseData.caseNumber || "";
-    const categoryText = firstImage.doc.category 
+    const leftText = `사고번호 ${accidentNo}`;
+    const centerText = fullAddress;
+    const rightText = firstImage.doc.category 
       ? `${firstImage.tab}-${firstImage.doc.category}` 
       : firstImage.tab;
-    const leftHeaderText = `사고번호 ${accidentNo}    ${fullAddress}    ${categoryText}`;
-    const rightHeaderText = "";
 
     page.drawRectangle({
       x: MARGIN,
@@ -1532,35 +1532,42 @@ async function renderEvidencePages(
       color: rgb(0.2, 0.2, 0.2),
     });
 
-    // 헤더 텍스트 길이에 따라 폰트 크기 조정
-    const fontSize =
-      leftHeaderText.length > 50 ? 8 : leftHeaderText.length > 35 ? 9 : 10;
+    // 폰트 크기 결정 (전체 텍스트 길이 기준)
+    const totalTextLength = leftText.length + centerText.length + rightText.length;
+    const fontSize = totalTextLength > 70 ? 8 : totalTextLength > 50 ? 9 : 10;
 
-    // 좌측 텍스트 (30px 좌측 여백)
+    // 좌측 텍스트 (사고번호)
     drawText(page, {
-      x: MARGIN + 30,
+      x: MARGIN + 15,
       y: A4_HEIGHT - MARGIN - 22,
-      text: leftHeaderText,
+      text: leftText,
       font: fonts.bold,
       size: fontSize,
       color: { r: 1, g: 1, b: 1 },
     });
 
-    // 우측 텍스트 (30px 우측 여백, 우측 정렬)
-    if (rightHeaderText) {
-      const rightTextWidth = fonts.bold.widthOfTextAtSize(
-        rightHeaderText,
-        fontSize,
-      );
-      drawText(page, {
-        x: A4_WIDTH - MARGIN - 30 - rightTextWidth,
-        y: A4_HEIGHT - MARGIN - 22,
-        text: rightHeaderText,
-        font: fonts.bold,
-        size: fontSize,
-        color: { r: 1, g: 1, b: 1 },
-      });
-    }
+    // 중앙 텍스트 (주소) - 가운데 정렬
+    const centerTextWidth = fonts.bold.widthOfTextAtSize(centerText, fontSize);
+    const centerX = MARGIN + (CONTENT_WIDTH - centerTextWidth) / 2;
+    drawText(page, {
+      x: centerX,
+      y: A4_HEIGHT - MARGIN - 22,
+      text: centerText,
+      font: fonts.bold,
+      size: fontSize,
+      color: { r: 1, g: 1, b: 1 },
+    });
+
+    // 우측 텍스트 (카테고리) - 우측 정렬
+    const rightTextWidth = fonts.bold.widthOfTextAtSize(rightText, fontSize);
+    drawText(page, {
+      x: A4_WIDTH - MARGIN - 15 - rightTextWidth,
+      y: A4_HEIGHT - MARGIN - 22,
+      text: rightText,
+      font: fonts.bold,
+      size: fontSize,
+      color: { r: 1, g: 1, b: 1 },
+    });
     const footerHeight = 20;
     // 카테고리 헤더 제거 - 페이지 상단 헤더만 유지
     // 레이아웃 조정: 카테고리 헤더 높이(headerHeight) 제거
