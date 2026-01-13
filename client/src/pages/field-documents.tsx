@@ -944,14 +944,14 @@ export default function FieldDocuments() {
       }
     }
     
-    toast({
+    const { dismiss } = toast({
       title: "증빙자료가 저장되었습니다",
       description: "",
       className: "bg-[#008FED] text-white border-0",
       action: (
         <button
           onClick={() => {
-            // 확인하기 클릭 시 동작 (필요시 추가)
+            dismiss();
           }}
           className="px-4 py-2 rounded"
           style={{
