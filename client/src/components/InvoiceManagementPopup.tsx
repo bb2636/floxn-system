@@ -1332,7 +1332,6 @@ export function InvoiceManagementPopup({
                       color: "rgba(12, 12, 12, 0.6)",
                     }}
                   >
-                    공사유무
                   </span>
                   <span
                     style={{

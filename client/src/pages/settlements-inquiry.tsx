@@ -1124,7 +1124,7 @@ export default function SettlementsInquiry() {
                     minWidth: "50px",
                   }}
                 >
-                  공사유무
+                  공사<br />유무
                 </th>
                 {/* FIX: 상위 헤더 - colSpan으로 하위 컬럼들을 그룹화 */}
                 {/* 손해방지비용 - colSpan=4 (견적금액, 승인금액, 차액, 수정률) */}
