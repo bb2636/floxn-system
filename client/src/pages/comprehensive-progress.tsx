@@ -1130,8 +1130,8 @@ export default function ComprehensiveProgress() {
               style={{
                 display: "grid",
                 gridTemplateColumns: user?.role === "협력사" 
-                  ? "40px 110px 130px 110px 90px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
-                  : "40px 110px 130px 110px 90px 100px 100px 100px 80px 120px 120px 60px 100px",
+                  ? "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 180px 50px 90px 90px"
+                  : "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 180px 50px 90px",
                 padding: "14px 20px",
                 background: "rgba(12, 12, 12, 0.04)",
                 borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
@@ -1293,8 +1293,8 @@ export default function ComprehensiveProgress() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: user?.role === "협력사"
-                      ? "40px 110px 130px 110px 90px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
-                      : "40px 110px 130px 110px 90px 100px 100px 100px 80px 120px 120px 60px 100px",
+                      ? "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 180px 50px 90px 90px"
+                      : "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 180px 50px 90px",
                     padding: "14px 20px",
                     borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                     gap: "8px",
@@ -1437,9 +1437,12 @@ export default function ComprehensiveProgress() {
                       fontFamily: "Pretendard", 
                       fontSize: "13px", 
                       color: "rgba(12, 12, 12, 0.8)",
+                      lineHeight: "1.4",
+                      wordBreak: "keep-all",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
                       overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
                     }}
                     title={
                       caseItem.damagePreventionCost === "true"
