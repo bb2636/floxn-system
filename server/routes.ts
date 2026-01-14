@@ -9177,22 +9177,41 @@ Front·Line·Ops·Xpert·Net
         return res.status(400).json({ error: "유효하지 않은 전화번호 형식입니다" });
       }
 
-      // SMS 메시지 내용 생성
-      const messageText = `<접수완료 알림>
-
-      접수번호 : ${caseNumber || "-"}
-      보험사 : ${insuranceCompany || "-"}
-      담당자 : ${managerName || "-"}
-      증권번호 : ${insurancePolicyNo || "-"}
-      사고번호 : ${insuranceAccidentNo || "-"}
-      피보험자 : ${insuredName || "-"}  연락처 ${insuredContact || "-"}
-      피해자 : ${victimName || "-"}  연락처 ${victimContact || "-"}
-      ${investigatorTeamName || investigatorContact
-          ? `\n심사자 : ${investigatorTeamName || "-"}  연락처 ${investigatorContact || "-"}`
-          : ""
+      // SMS 메시지 내용 생성 (값이 없는 항목은 표시하지 않음)
+      const messageLines: string[] = ["<접수완료 알림>", ""];
+      
+      if (caseNumber) messageLines.push(`접수번호 : ${caseNumber}`);
+      if (insuranceCompany) messageLines.push(`보험사 : ${insuranceCompany}`);
+      if (managerName) messageLines.push(`담당자 : ${managerName}`);
+      if (insurancePolicyNo) messageLines.push(`증권번호 : ${insurancePolicyNo}`);
+      if (insuranceAccidentNo) messageLines.push(`사고번호 : ${insuranceAccidentNo}`);
+      
+      // 피보험자: 이름 또는 연락처가 있을 때만 표시
+      if (insuredName || insuredContact) {
+        const insuredParts = [];
+        if (insuredName) insuredParts.push(insuredName);
+        if (insuredContact) insuredParts.push(`연락처 ${insuredContact}`);
+        messageLines.push(`피보험자 : ${insuredParts.join("  ")}`);
       }
-      사고장소 : ${[accidentLocation, accidentLocationDetail].filter(Boolean).join(" ") || "-"}
-      의뢰범위 : ${requestScope || "-"}`;
+      
+      // 피해자: 이름 또는 연락처가 있을 때만 표시
+      if (victimName || victimContact) {
+        const victimParts = [];
+        if (victimName) victimParts.push(victimName);
+        if (victimContact) victimParts.push(`연락처 ${victimContact}`);
+        messageLines.push(`피해자 : ${victimParts.join("  ")}`);
+      }
+      
+      // 심사자: 이름과 연락처 모두 있을 때만 표시
+      if (investigatorTeamName && investigatorContact) {
+        messageLines.push(`심사자 : ${investigatorTeamName}  연락처 ${investigatorContact}`);
+      }
+      
+      const fullAddress = [accidentLocation, accidentLocationDetail].filter(Boolean).join(" ");
+      if (fullAddress) messageLines.push(`사고장소 : ${fullAddress}`);
+      if (requestScope) messageLines.push(`의뢰범위 : ${requestScope}`);
+      
+      const messageText = messageLines.join("\n");
       console.log(`[send-sms] Sending LMS to: ${normalizedTo} (user: ${req.session.userId})`);
 
       // Solapi LMS 발송 (순수 HTTPS + HMAC-SHA256 인증)
@@ -9567,18 +9586,43 @@ https://peulrogseun-aqaqaq4561.replit.app
 
       if (stage === "접수완료") {
         subject = "접수완료 알림";
-        messageText = `<접수완료 알림>
-
-접수번호 : ${caseData.caseNumber || "-"}
-보험사 : ${caseData.insuranceCompany || "-"}
-담당자 : ${managerData?.name || "-"}
-증권번호 : ${caseData.insurancePolicyNo || "-"}
-사고번호 : ${caseData.insuranceAccidentNo || "-"}
-피보험자 : ${caseData.insuredName || "-"}  연락처 ${caseData.insuredContact || "-"}
-피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}
-조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}
-사고장소 : ${[caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
-의뢰범위 : ${[caseData.damagePreventionCost === "true" ? "손방" : null, caseData.victimIncidentAssistance === "true" ? "대물" : null].filter(Boolean).join(", ") || "기타"}`;
+        // 값이 없는 항목은 표시하지 않음
+        const msgLines: string[] = ["<접수완료 알림>", ""];
+        
+        if (caseData.caseNumber) msgLines.push(`접수번호 : ${caseData.caseNumber}`);
+        if (caseData.insuranceCompany) msgLines.push(`보험사 : ${caseData.insuranceCompany}`);
+        if (managerData?.name) msgLines.push(`담당자 : ${managerData.name}`);
+        if (caseData.insurancePolicyNo) msgLines.push(`증권번호 : ${caseData.insurancePolicyNo}`);
+        if (caseData.insuranceAccidentNo) msgLines.push(`사고번호 : ${caseData.insuranceAccidentNo}`);
+        
+        // 피보험자: 이름 또는 연락처가 있을 때만 표시
+        if (caseData.insuredName || caseData.insuredContact) {
+          const insuredParts = [];
+          if (caseData.insuredName) insuredParts.push(caseData.insuredName);
+          if (caseData.insuredContact) insuredParts.push(`연락처 ${caseData.insuredContact}`);
+          msgLines.push(`피보험자 : ${insuredParts.join("  ")}`);
+        }
+        
+        // 피해자: 이름 또는 연락처가 있을 때만 표시
+        if (caseData.victimName || caseData.victimContact) {
+          const victimParts = [];
+          if (caseData.victimName) victimParts.push(caseData.victimName);
+          if (caseData.victimContact) victimParts.push(`연락처 ${caseData.victimContact}`);
+          msgLines.push(`피해자 : ${victimParts.join("  ")}`);
+        }
+        
+        // 심사자: 이름과 연락처 모두 있을 때만 표시
+        if (caseData.investigatorTeamName && caseData.investigatorContact) {
+          msgLines.push(`심사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`);
+        }
+        
+        const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+        if (fullAddress) msgLines.push(`사고장소 : ${fullAddress}`);
+        
+        const requestScope = [caseData.damagePreventionCost === "true" ? "손방" : null, caseData.victimIncidentAssistance === "true" ? "대물" : null].filter(Boolean).join(", ");
+        if (requestScope) msgLines.push(`의뢰범위 : ${requestScope}`);
+        
+        messageText = msgLines.join("\n");
       } else if (stage === "접수취소") {
         subject = "접수취소 알림";
         messageText = `<접수취소 알림>

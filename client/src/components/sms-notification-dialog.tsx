@@ -190,12 +190,9 @@ export function SmsNotificationDialog({
         lines.push(`피해자 : ${victimParts.join("  ")}`);
       }
       
-      // 심사자 라인: 이름 또는 연락처가 있을 때만 표시
-      if (caseData.investigatorTeamName || caseData.investigatorContact) {
-        const investigatorParts = [];
-        if (caseData.investigatorTeamName) investigatorParts.push(caseData.investigatorTeamName);
-        if (caseData.investigatorContact) investigatorParts.push(`연락처 ${caseData.investigatorContact}`);
-        lines.push(`심사자 : ${investigatorParts.join("  ")}`);
+      // 심사자 라인: 이름과 연락처 모두 있을 때만 표시
+      if (caseData.investigatorTeamName && caseData.investigatorContact) {
+        lines.push(`심사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`);
       }
       
       if (caseData.insuredAddress) lines.push(`사고장소 : ${caseData.insuredAddress}`);
