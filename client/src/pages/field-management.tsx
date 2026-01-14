@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
-import { ChevronDown, ChevronRight, ChevronUp, Calendar as CalendarIcon, Clock, X, Plus, Check, Pencil } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, X, Plus, Check, Pencil, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -24,74 +23,20 @@ const normalizeBoolean = (value: any): boolean => {
   return false;
 };
 
-// SectionCard: intake.tsx 스타일의 Collapsible 카드 (컴포넌트 외부 정의로 리렌더링 시 재생성 방지)
-const SectionCard = ({
-  title,
-  isOpen,
-  onToggle,
-  children,
-  disabled = false,
-}: {
-  title: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-  disabled?: boolean;
-}) => (
-  <div
-    style={{
-      background: 'transparent',
-      borderRadius: '12px',
-      marginBottom: '20px',
-    }}
-  >
-    <Collapsible open={isOpen} onOpenChange={onToggle}>
-      {/* 헤더 */}
-      <div
-        style={{
-          padding: '24px',
-          height: '82px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <h3
-          style={{
-            fontFamily: "Pretendard",
-            fontSize: "20px",
-            fontWeight: 600,
-            letterSpacing: "-0.02em",
-            color: "#0C0C0C",
-          }}
-        >
-          {title}
-        </h3>
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="flex items-center gap-1 px-3 py-2 rounded hover-elevate active-elevate-2"
-            disabled={disabled}
-            data-testid={`button-toggle-${title}`}
-          >
-            {isOpen ? (
-              <ChevronUp className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
-            ) : (
-              <ChevronDown className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
-            )}
-          </button>
-        </CollapsibleTrigger>
-      </div>
-
-      {/* 콘텐츠 */}
-      <CollapsibleContent>
-        <div style={{ padding: '0 24px 24px 24px' }}>
-          {children}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
-  </div>
-);
+// New flat section styling constants
+const sectionHeaderStyle = "border-t-4 border-black pt-4 mt-6";
+const labelStyle = {
+  fontFamily: "Pretendard",
+  fontSize: "12px",
+  fontWeight: 500,
+  color: "#686A6E",
+};
+const valueStyle = {
+  fontFamily: "Pretendard",
+  fontSize: "13px",
+  fontWeight: 600,
+  color: "#0C0C0C",
+};
 
 export default function FieldManagement() {
   const { toast } = useToast();
@@ -101,13 +46,6 @@ export default function FieldManagement() {
     return (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : "";
   });
   
-  // Collapsible states - intake.tsx 스타일
-  const [scheduleOpen, setScheduleOpen] = useState(true);
-  const [basicInfoOpen, setBasicInfoOpen] = useState(true);
-  const [damageInfoOpen, setDamageInfoOpen] = useState(true);
-  const [insuranceInfoOpen, setInsuranceInfoOpen] = useState(true);
-  const [insuredInfoOpen, setInsuredInfoOpen] = useState(true);
-  const [recoveryMethodOpen, setRecoveryMethodOpen] = useState(true);
   
 
   const [accidentDate, setAccidentDate] = useState<Date | undefined>(undefined);
@@ -711,105 +649,141 @@ export default function FieldManagement() {
 
   }, [selectedCase]); // selectedCase ID만 감지 - ref로 입력 보호
 
-  // intake.tsx 스타일 입력 필드 클래스
-  const intakeFieldClass = "h-[68px] px-5 py-2.5 bg-[#FDFDFD] border-2 border-[rgba(12,12,12,0.08)] rounded-lg";
-  const intakeFieldStyle = {
+  // Input field styling
+  const inputFieldClass = "h-[44px] px-4 bg-[#FDFDFD] border border-[rgba(12,12,12,0.08)] rounded-md";
+  const inputFieldStyle = {
     fontFamily: "Pretendard",
     fontWeight: 600,
-    fontSize: "16px",
-    letterSpacing: "-0.02em",
+    fontSize: "13px",
     color: "#0C0C0C",
   };
   
-  // intake.tsx 스타일 버튼 클래스 (68px 높이 통일)
-  const intakeButtonClass = "h-[68px] px-4 rounded transition-colors";
-  const intakeButtonStyle = {
+  const readOnlyInputStyle = {
+    ...inputFieldStyle,
+    background: "rgba(12, 12, 12, 0.04)",
+    color: "rgba(12, 12, 12, 0.6)",
+  };
+  
+  // Button styling for date/time pickers
+  const dateButtonClass = "h-[44px] px-4 rounded-md transition-colors";
+  const dateButtonStyle = {
     fontFamily: "Pretendard",
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: 500,
+  };
+
+  // Reset handler - resets all editable fields to initial state from case data
+  const handleReset = () => {
+    if (!selectedCaseData) return;
+    
+    // Reset visit date/time
+    if (selectedCaseData.visitDate) {
+      try {
+        setVisitDate(new Date(selectedCaseData.visitDate));
+      } catch (e) {
+        setVisitDate(undefined);
+      }
+    } else {
+      setVisitDate(undefined);
+    }
+    setVisitTime(selectedCaseData.visitTime || "");
+    
+    // Reset accident info
+    setAccidentCategory(selectedCaseData.accidentCategory || "");
+    setAccidentCause(selectedCaseData.accidentCause || "");
+    
+    // Reset victim info
+    setVictimName(selectedCaseData.victimName || "");
+    setVictimContact(selectedCaseData.victimContact || "");
+    setVictimAddress(selectedCaseData.victimAddress || "");
+    setVictimAddressDetail(selectedCaseData.victimAddressDetail || "");
+    
+    // Reset VOC
+    setVoc((selectedCaseData as any).vocContent || "");
+    
+    // Reset processing types
+    if (selectedCaseData.processingTypes) {
+      try {
+        const parsed = JSON.parse(selectedCaseData.processingTypes);
+        setProcessingTypes(new Set(Array.isArray(parsed) ? parsed : []));
+      } catch (e) {
+        setProcessingTypes(new Set());
+      }
+    } else {
+      setProcessingTypes(new Set());
+    }
+    setProcessingTypeOther(selectedCaseData.processingTypeOther || "");
+    
+    // Reset recovery method
+    setRecoveryMethodType(selectedCaseData.recoveryMethodType || "부분수리");
+    
+    // Reset new victim form
+    setNewVictimName("");
+    setNewVictimContact("");
+    setNewVictimAddress("");
+    setNewVictimAddressDetail("");
+    setSameAsInsured(false);
+    
+    toast({
+      title: "초기화 완료",
+      description: "입력 내용이 초기화되었습니다.",
+    });
   };
 
   return (
     <>
-      <div className="relative p-8">
-        {/* 현장입력 섹션 */}
-        <SectionCard
-          title="현장입력"
-          isOpen={scheduleOpen}
-          onToggle={() => setScheduleOpen(!scheduleOpen)}
-        >
-          <div>
-              {/* 선택된 접수건 정보 표시 */}
-              {casesLoading ? (
-                <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
-                  접수건을 불러오는 중...
+      <div className="relative p-6 pb-24">
+        {/* Selected Case Info Card */}
+        {casesLoading ? (
+          <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
+            접수건을 불러오는 중...
+          </div>
+        ) : !selectedCaseData ? (
+          <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
+            {isPartner ? "배당된 접수건이 없습니다." : "선택된 접수건이 없습니다."}
+          </div>
+        ) : (
+          <>
+            {/* Selected Case Info Card */}
+            <div
+              style={{
+                padding: "16px 20px",
+                background: "rgba(12, 12, 12, 0.03)",
+                borderRadius: "8px",
+                marginBottom: "24px",
+              }}
+              data-testid="selected-case-info"
+            >
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span 
+                    className="rounded-full"
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      background: "#008FED",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ ...valueStyle, fontSize: "16px" }}>
+                    {selectedCaseData.insuranceCompany || "보험사 미지정"} {formatCaseNumber(selectedCaseData.caseNumber) || ""}
+                  </span>
                 </div>
-              ) : !selectedCaseData ? (
-                <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
-                  {isPartner ? "배당된 접수건이 없습니다." : "선택된 접수건이 없습니다."}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    width: "788px",
-                    padding: "20px 24px",
-                    background: "rgba(12, 12, 12, 0.03)",
-                    borderRadius: "12px",
-                  }}
-                  data-testid="selected-case-info"
+                <div 
+                  className="flex items-center gap-4 ml-4"
+                  style={{ ...labelStyle, fontSize: "13px" }}
                 >
-                  <div className="flex flex-col gap-2">
-                    {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
-                    <div className="flex items-center gap-2">
-                      <span 
-                        className="rounded-full"
-                        style={{
-                          width: "8px",
-                          height: "8px",
-                          background: "#008FED",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "18px",
-                          fontWeight: 600,
-                          letterSpacing: "-0.02em",
-                          color: "#0C0C0C",
-                        }}
-                      >
-                        {selectedCaseData.insuranceCompany || "보험사 미지정"} {formatCaseNumber(selectedCaseData.caseNumber) || ""}
-                      </span>
-                    </div>
-                    {/* 두 번째 줄: 접수번호, 피보험자, 담당자 */}
-                    <div 
-                      className="flex items-center gap-4"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.6)",
-                      }}
-                    >
-                      <span>접수번호 {formatCaseNumber(selectedCaseData.caseNumber) || "-"}</span>
-                      <span>피보험자 {selectedCaseData.policyHolderName || "-"}</span>
-                      <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
-                    </div>
-                  </div>
+                  <span>접수번호 {formatCaseNumber(selectedCaseData.caseNumber) || "-"}</span>
+                  <span>피보험자 {selectedCaseData.policyHolderName || "-"}</span>
+                  <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
                 </div>
-              )}
+              </div>
             </div>
-          </SectionCard>
 
           {/* 기본정보 섹션 */}
-          <SectionCard
-            title="기본정보"
-            isOpen={basicInfoOpen}
-            onToggle={() => setBasicInfoOpen(!basicInfoOpen)}
-            disabled={!selectedCaseData}
-          >
-            <div className="space-y-5">
+          <div className={sectionHeaderStyle}>
+            <h3 style={{ ...valueStyle, fontSize: "16px", marginBottom: "16px" }}>기본정보</h3>
+            <div className="space-y-4">
               {/* 접수사, 담당자명, 담당자 연락처 - 3열 */}
               <div className="grid grid-cols-3 gap-5">
                 <div>
@@ -826,9 +800,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.assignedPartner || ""}
                     readOnly
                     placeholder="담당사명"
-                    className={intakeFieldClass}
+                    className={inputFieldClass}
                     style={{
-                      ...intakeFieldStyle,
+                      ...inputFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
                       color: "rgba(12, 12, 12, 0.4)",
                     }}
@@ -851,9 +825,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.assignedPartnerManager || ""}
                     readOnly
                     placeholder="담당자명"
-                    className={intakeFieldClass}
+                    className={inputFieldClass}
                     style={{
-                      ...intakeFieldStyle,
+                      ...inputFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
                       color: "rgba(12, 12, 12, 0.4)",
                     }}
@@ -876,9 +850,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.assignedPartnerContact || ""}
                     readOnly
                     placeholder="담당자 연락처"
-                    className={intakeFieldClass}
+                    className={inputFieldClass}
                     style={{
-                      ...intakeFieldStyle,
+                      ...inputFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
                       color: "rgba(12, 12, 12, 0.4)",
                     }}
@@ -952,9 +926,9 @@ export default function FieldManagement() {
                     value={formatCaseNumber(selectedCaseData?.caseNumber) || ""}
                     readOnly
                     placeholder="접수번호"
-                    className={intakeFieldClass}
+                    className={inputFieldClass}
                     style={{
-                      ...intakeFieldStyle,
+                      ...inputFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
                       color: "rgba(12, 12, 12, 0.4)",
                     }}
@@ -977,9 +951,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.insuranceCompany || ""}
                     readOnly
                     placeholder="보험사 선택"
-                    className={intakeFieldClass}
+                    className={inputFieldClass}
                     style={{
-                      ...intakeFieldStyle,
+                      ...inputFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
                       color: "rgba(12, 12, 12, 0.4)",
                     }}
@@ -1046,9 +1020,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.policyHolderName || ""}
                     readOnly
                     placeholder="보험계약자 성명"
-                    className={intakeFieldClass}
+                    className={inputFieldClass}
                     style={{
-                      ...intakeFieldStyle,
+                      ...inputFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
                       color: "rgba(12, 12, 12, 0.4)",
                     }}
@@ -1071,9 +1045,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.insuredName || ""}
                     readOnly
                     placeholder="피보험자 성명"
-                    className={intakeFieldClass}
+                    className={inputFieldClass}
                     style={{
-                      ...intakeFieldStyle,
+                      ...inputFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
                       color: "rgba(12, 12, 12, 0.4)",
                     }}
@@ -1096,9 +1070,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.insuredContact || ""}
                     readOnly
                     placeholder="피보험자 연락처"
-                    className={intakeFieldClass}
+                    className={inputFieldClass}
                     style={{
-                      ...intakeFieldStyle,
+                      ...inputFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
                       color: "rgba(12, 12, 12, 0.4)",
                     }}
@@ -1127,9 +1101,9 @@ export default function FieldManagement() {
                   ].filter(Boolean).join(" ") || ""}
                   readOnly
                   placeholder="도로명 주소, 동/호수 포함"
-                  className={intakeFieldClass}
+                  className={inputFieldClass}
                   style={{
-                    ...intakeFieldStyle,
+                    ...inputFieldStyle,
                     background: "rgba(12, 12, 12, 0.04)",
                     color: "rgba(12, 12, 12, 0.4)",
                   }}
@@ -1157,9 +1131,9 @@ export default function FieldManagement() {
                         ref={accidentDateTriggerRef}
                         type="button"
                         variant="outline"
-                        className={intakeButtonClass}
+                        className={dateButtonClass}
                         style={{
-                          ...intakeButtonStyle,
+                          ...dateButtonStyle,
                           justifyContent: "flex-start",
                           background: "#FDFDFD",
                           border: isReadOnly ? "none" : "2px solid rgba(12,12,12,0.08)",
@@ -1196,9 +1170,9 @@ export default function FieldManagement() {
                     type="time"
                     value={accidentTime}
                     onChange={(e) => { handleUserInput(); setAccidentTime(e.target.value); }}
-                    className={intakeFieldClass}
+                    className={inputFieldClass}
                     style={{
-                      ...intakeFieldStyle,
+                      ...inputFieldStyle,
                       flex: 1,
                       border: isReadOnly ? "none" : undefined,
                     }}
@@ -1208,29 +1182,12 @@ export default function FieldManagement() {
                 </div>
               </div>
             </div>
-          </SectionCard>
+          </div>
 
           {/* 현장조사 정보 섹션 */}
-          <SectionCard
-            title="현장조사 정보"
-            isOpen={true}
-            onToggle={() => {}}
-            disabled={!selectedCaseData}
-          >
-            <div className="space-y-6">
-              {/* 현장정보 서브섹션 */}
-              <div>
-                <h3
-                  className="mb-4"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                  }}
-                >
-                  현장정보
-                </h3>
+          <div className={sectionHeaderStyle}>
+            <h3 style={{ ...valueStyle, fontSize: "16px", marginBottom: "16px" }}>현장조사 정보</h3>
+            <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   {/* 방문 일시 */}
                   <div>
@@ -1253,9 +1210,9 @@ export default function FieldManagement() {
                             ref={visitDateTriggerRef}
                             type="button"
                             variant="outline"
-                            className={intakeButtonClass}
+                            className={dateButtonClass}
                             style={{
-                              ...intakeButtonStyle,
+                              ...dateButtonStyle,
                               justifyContent: "flex-start",
                               background: "#FDFDFD",
                               border: "2px solid rgba(12,12,12,0.08)",
@@ -1302,9 +1259,9 @@ export default function FieldManagement() {
                         onFocus={(e) => {
                           e.stopPropagation();
                         }}
-                        className={intakeFieldClass}
+                        className={inputFieldClass}
                         style={{
-                          ...intakeFieldStyle,
+                          ...inputFieldStyle,
                           flex: 1,
                         }}
                         disabled={isReadOnly}
@@ -1331,9 +1288,9 @@ export default function FieldManagement() {
                       id="dispatch-manager"
                       value={selectedCaseData?.assignedPartnerManager || ""}
                       readOnly
-                      className={intakeFieldClass}
+                      className={inputFieldClass}
                       style={{
-                        ...intakeFieldStyle,
+                        ...inputFieldStyle,
                         background: "rgba(12, 12, 12, 0.04)",
                         color: "rgba(12, 12, 12, 0.6)",
                       }}
@@ -1342,7 +1299,6 @@ export default function FieldManagement() {
                     />
                   </div>
                 </div>
-              </div>
 
               {/* 사고 원인(누수소견서) 서브섹션 */}
               <div>
@@ -1624,16 +1580,16 @@ export default function FieldManagement() {
                           value={newVictimName}
                           onChange={(e) => { handleUserInput(); setNewVictimName(e.target.value); }}
                           placeholder="성함을 입력해주세요"
-                          className={intakeFieldClass}
-                          style={intakeFieldStyle}
+                          className={inputFieldClass}
+                          style={inputFieldStyle}
                           data-testid="input-new-victim-name"
                         />
                         <Input
                           value={newVictimContact}
                           onChange={(e) => { handleUserInput(); setNewVictimContact(e.target.value); }}
                           placeholder="연락처를 입력해주세요"
-                          className={intakeFieldClass}
-                          style={intakeFieldStyle}
+                          className={inputFieldClass}
+                          style={inputFieldStyle}
                           data-testid="input-new-victim-contact"
                         />
                         <div className="flex items-center gap-2">
@@ -1641,9 +1597,9 @@ export default function FieldManagement() {
                             value={newVictimAddress}
                             onChange={(e) => { handleUserInput(); setNewVictimAddress(e.target.value); }}
                             placeholder="주소"
-                            className={intakeFieldClass}
+                            className={inputFieldClass}
                             style={{
-                              ...intakeFieldStyle,
+                              ...inputFieldStyle,
                               flex: 1,
                             }}
                             disabled={sameAsInsured}
@@ -1653,9 +1609,9 @@ export default function FieldManagement() {
                             value={newVictimAddressDetail}
                             onChange={(e) => { handleUserInput(); setNewVictimAddressDetail(e.target.value); }}
                             placeholder="상세주소"
-                            className={intakeFieldClass}
+                            className={inputFieldClass}
                             style={{
-                              ...intakeFieldStyle,
+                              ...inputFieldStyle,
                               flex: 1,
                             }}
                             data-testid="input-new-victim-address-detail"
@@ -1953,16 +1909,12 @@ export default function FieldManagement() {
                 </div>
               </div>
             </div>
-          </SectionCard>
+          </div>
 
           {/* 피해 복구 방식 및 처리 유형 섹션 */}
-          <SectionCard
-            title="피해 복구 방식 및 처리 유형"
-            isOpen={true}
-            onToggle={() => {}}
-            disabled={!selectedCaseData}
-          >
-            <div className="space-y-6">
+          <div className={sectionHeaderStyle}>
+            <h3 style={{ ...valueStyle, fontSize: "16px", marginBottom: "16px" }}>피해 복구 방식 및 처리 유형</h3>
+            <div className="space-y-4">
               {/* 처리 유형(복수선택) */}
               <div>
                 <Label 
@@ -2087,26 +2039,56 @@ export default function FieldManagement() {
                 </div>
               </div>
             </div>
-          </SectionCard>
+          </div>
 
-        {/* 하단 액션 버튼 영역 */}
-        {selectedCaseData && (
+        {/* 하단 고정 액션 바 */}
+        {selectedCaseData && canEdit && (
           <div
             style={{
-              maxWidth: "1400px",
-              margin: "40px auto 60px",
-              padding: "0 40px",
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: "#FFFFFF",
+              borderTop: "1px solid rgba(12, 12, 12, 0.1)",
+              padding: "16px 40px",
+              zIndex: 100,
             }}
           >
-            {/* 역할별 버튼 - 협력사 또는 관리자일 때 저장 버튼 표시 */}
-            <div className="flex gap-3">
-              {canEdit && (
-                <>
-                  {/* 임시저장 버튼 */}
-                  <Button
+            <div
+              style={{
+                maxWidth: "1400px",
+                margin: "0 auto",
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              {/* 초기화 버튼 */}
+              <Button
+                type="button"
+                onClick={handleReset}
+                disabled={isReadOnly}
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  height: "48px",
+                  padding: "12px 32px",
+                  background: "#FFFFFF",
+                  color: isReadOnly ? "rgba(12, 12, 12, 0.3)" : "rgba(12, 12, 12, 0.7)",
+                  border: "1px solid rgba(12, 12, 12, 0.2)",
+                  borderRadius: "8px",
+                  cursor: isReadOnly ? "not-allowed" : "pointer",
+                }}
+                data-testid="button-reset"
+              >
+                초기화
+              </Button>
+              
+              {/* 저장 버튼 */}
+              <Button
                     type="button"
                     onClick={async () => {
                       // 제출 조건 상태 콘솔 로그
@@ -2206,24 +2188,26 @@ export default function FieldManagement() {
                       fontFamily: "Pretendard",
                       fontSize: "16px",
                       fontWeight: 600,
-                      height: "52px",
+                      height: "48px",
                       padding: "12px 32px",
-                      background: isReadOnly ? "rgba(12, 12, 12, 0.1)" : "#FFFFFF",
-                      color: isReadOnly ? "rgba(12, 12, 12, 0.3)" : "rgba(12, 12, 12, 0.7)",
-                      border: "1px solid rgba(12, 12, 12, 0.2)",
+                      background: isReadOnly ? "rgba(0, 143, 237, 0.3)" : "#008FED",
+                      color: "#FFFFFF",
+                      border: "none",
                       borderRadius: "8px",
                       cursor: isReadOnly ? "not-allowed" : "pointer",
                     }}
-                    data-testid="button-temp-save"
+                    data-testid="button-save"
                   >
-                    임시저장
+                    저장
                   </Button>
-                </>
-              )}
             </div>
           </div>
         )}
+        </>
+        )}
         </div>
+        {/* 하단 고정 액션 바를 위한 여백 */}
+        {selectedCaseData && canEdit && <div style={{ height: "80px" }} />}
         
         {/* 피해자 정보 수정 다이얼로그 */}
         <Dialog open={editVictimDialogOpen} onOpenChange={setEditVictimDialogOpen}>
