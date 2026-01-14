@@ -39,7 +39,6 @@ export default function Dashboard() {
     queryKey: ["/api/user"],
   });
 
-  // Fetch dashboard statistics
   const { data: stats, isLoading: statsLoading } = useQuery<{
     receivedCases: number;
     lastMonthReceivedCases: number;
@@ -55,28 +54,24 @@ export default function Dashboard() {
     partnerUnsettledAmount: number;
   }>({
     queryKey: ["/api/dashboard/stats"],
-    enabled: !!user, // Only fetch stats when user is loaded
+    enabled: !!user,
   });
 
-  // Fetch all cases for progress summary
   const { data: allCases, isLoading: casesLoading } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
     enabled: !!user,
   });
 
-  // Fetch user favorites
   const { data: userFavorites = [] } = useQuery<UserFavorite[]>({
     queryKey: ["/api/favorites"],
     enabled: !!user,
   });
 
-  // Fetch notices (only for 협력사)
   const { data: notices = [] } = useQuery<Notice[]>({
     queryKey: ["/api/notices"],
     enabled: !!user && user.role === "협력사",
   });
 
-  // Fetch all users for staff summary (관리자 only)
   const { data: allUsers = [] } = useQuery<Omit<User, "password">[]>({
     queryKey: ["/api/users"],
     enabled: !!user && user.role === "관리자",
@@ -117,11 +112,9 @@ export default function Dashboard() {
     },
   });
 
-  // Filter cases by period - exclude 작성중 globally
   const filteredCasesByPeriod = useMemo(() => {
     if (!allCases) return [];
     
-    // Globally exclude 작성중 status
     const activeCases = allCases.filter(c => c.status !== '작성중');
     
     if (periodType === 'all') return activeCases;
@@ -138,37 +131,30 @@ export default function Dashboard() {
     });
   }, [allCases, periodType, dateRange]);
 
-  // Filter cases by tab
   const filteredCasesByTab = useMemo(() => {
     if (!filteredCasesByPeriod) return [];
 
     switch (activeTab) {
       case 'reception':
-        // 접수된 케이스 (all active cases)
         return filteredCasesByPeriod;
       case 'pending':
-        // 미결 케이스 (접수 후 종결 전까지 모두 - 완료, 취소, 종결 제외)
         return filteredCasesByPeriod.filter(c => 
           c.status !== '완료' && c.status !== '취소' && c.status !== '종결' && c.status !== '접수취소'
         );
       case 'insurance':
-        // 보험사 미정산 케이스 (완료된 케이스)
         return filteredCasesByPeriod.filter(c => c.status === '완료');
       case 'partner':
-        // 협력사 미정산 케이스 (완료된 케이스)
         return filteredCasesByPeriod.filter(c => c.status === '완료');
       default:
         return filteredCasesByPeriod;
     }
   }, [filteredCasesByPeriod, activeTab]);
 
-  // Aggregate cases by assigned user or partner
   const staffSummary = useMemo(() => {
     if (!filteredCasesByTab || !user) return [];
 
     const userCaseCounts = new Map<string, { name: string; position: string; count: number; userId: string }>();
 
-    // 협력사인 경우: 협력사 담당자(assignedPartnerManager)로 그룹화
     if (user.role === '협력사') {
       filteredCasesByTab.forEach(c => {
         const managerName = c.assignedPartnerManager || '미배정';
@@ -186,9 +172,8 @@ export default function Dashboard() {
         }
       });
     } else {
-      // 관리자 등: 플록슨 담당자(managerName)로 그룹화
       filteredCasesByTab.forEach(c => {
-        const managerName = c.managerName || '미배정';
+        const managerName = (c as any).managerName || '미배정';
 
         const existing = userCaseCounts.get(managerName);
         if (existing) {
@@ -207,60 +192,93 @@ export default function Dashboard() {
     return Array.from(userCaseCounts.values()).sort((a, b) => b.count - a.count);
   }, [filteredCasesByTab, user, allUsers]);
 
-  // Filter cases assigned to current user for "내 작업" section
+  const insuranceCompanySummary = useMemo(() => {
+    if (!filteredCasesByPeriod) return [];
+
+    const companyCounts = new Map<string, {
+      name: string;
+      reception: number;
+      pending: number;
+      insuranceUnsettled: number;
+      partnerUnsettled: number;
+    }>();
+
+    filteredCasesByPeriod.forEach(c => {
+      const companyName = c.insuranceCompany || '미지정';
+      
+      const existing = companyCounts.get(companyName);
+      const isPending = c.status !== '완료' && c.status !== '취소' && c.status !== '종결' && c.status !== '접수취소';
+      const isCompleted = c.status === '완료';
+      
+      if (existing) {
+        existing.reception++;
+        if (isPending) existing.pending++;
+        if (isCompleted) {
+          existing.insuranceUnsettled++;
+          existing.partnerUnsettled++;
+        }
+      } else {
+        companyCounts.set(companyName, {
+          name: companyName,
+          reception: 1,
+          pending: isPending ? 1 : 0,
+          insuranceUnsettled: isCompleted ? 1 : 0,
+          partnerUnsettled: isCompleted ? 1 : 0,
+        });
+      }
+    });
+
+    return Array.from(companyCounts.values()).sort((a, b) => b.reception - a.reception);
+  }, [filteredCasesByPeriod]);
+
+  const insuranceTotals = useMemo(() => {
+    return insuranceCompanySummary.reduce((acc, company) => ({
+      reception: acc.reception + company.reception,
+      pending: acc.pending + company.pending,
+      insuranceUnsettled: acc.insuranceUnsettled + company.insuranceUnsettled,
+      partnerUnsettled: acc.partnerUnsettled + company.partnerUnsettled,
+    }), { reception: 0, pending: 0, insuranceUnsettled: 0, partnerUnsettled: 0 });
+  }, [insuranceCompanySummary]);
+
   const myTasks = useMemo(() => {
     if (!allCases || !user) return [];
     
-    // 협력사의 경우 assignedPartner(회사명) 또는 assignedTo(사용자ID)로 필터링
-    // 다른 역할의 경우 assignedTo로만 필터링
     const isPartner = user.role === "협력사";
     
     const filteredCases = allCases.filter(c => {
       if (isPartner) {
-        // 협력사: 회사명 매칭 또는 사용자 ID 매칭
         return c.assignedPartner === user.company || c.assignedTo === user.id;
       }
-      // 다른 역할: 사용자 ID로만 필터링
       return c.assignedTo === user.id;
     });
     
-    console.log('내 작업 필터링:', {
-      userId: user.id,
-      username: user.username,
-      userCompany: user.company,
-      isPartner,
-      totalCases: allCases.length,
-      myFilteredCases: filteredCases.length,
-    });
-    
-    // Get cases assigned to current user, sorted by updatedAt (most recent first)
     return filteredCases
       .sort((a, b) => {
         const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-        return dateB - dateA; // Most recent first
-      }); // Show all tasks (no limit)
+        return dateB - dateA;
+      });
   }, [allCases, user]);
 
-  // Get status color based on case status
   const getStatusColor = (status: string) => {
     switch (status) {
       case '작성중':
-        return '#0C95F6'; // Blue
+        return { text: '#0B6BFF', bg: '#E8F1FF' };
       case '제출':
-        return '#4CCBA0'; // Green
+        return { text: '#16A34A', bg: '#EAFBF0' };
+      case '반려':
+        return { text: '#EF4444', bg: '#FFECEC' };
       case '검토중':
-        return '#FFA500'; // Orange
+        return { text: '#FFA500', bg: '#FFF4E5' };
       case '1차승인':
-        return '#9C27B0'; // Purple
+        return { text: '#9C27B0', bg: '#F3E5F5' };
       case '완료':
-        return '#4CAF50'; // Green
+        return { text: '#16A34A', bg: '#EAFBF0' };
       default:
-        return '#808080'; // Gray
+        return { text: '#808080', bg: '#F5F5F5' };
     }
   };
 
-  // Calculate time ago from updatedAt
   const getTimeAgo = (updatedAt: string | null) => {
     if (!updatedAt) return '업데이트 시간 없음';
     
@@ -358,7 +376,6 @@ export default function Dashboard() {
         break;
     }
   };
-
 
   const getPeriodLabel = () => {
     switch (periodType) {
@@ -553,2239 +570,478 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="relative min-h-screen" style={{ background: '#E7EDFE' }}>
-      {/* Blur Background Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute"
-          style={{
-            width: '1095px',
-            height: '777px',
-            left: '97px',
-            bottom: '-200px',
-            background: 'rgba(254, 240, 230, 0.4)',
-            borderRadius: '9999px',
-            filter: 'blur(212px)',
-            transform: 'rotate(-35.25deg)',
-          }}
-        />
-        <div 
-          className="absolute"
-          style={{
-            width: '1335px',
-            height: '1323px',
-            left: '811px',
-            bottom: '0px',
-            background: 'rgba(234, 230, 254, 0.5)',
-            borderRadius: '9999px',
-            filter: 'blur(212px)',
-          }}
-        />
-        <div 
-          className="absolute"
-          style={{
-            width: '348px',
-            height: '1323px',
-            left: '0px',
-            bottom: '189px',
-            background: 'rgba(234, 230, 254, 0.5)',
-            borderRadius: '9999px',
-            filter: 'blur(212px)',
-          }}
-        />
-      </div>
+    <div className="min-h-screen bg-[#CAD6FF] text-slate-900">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[220px] bg-gradient-to-b from-[#DCE7FF] to-transparent" />
 
       <GlobalHeader />
 
-      {/* Main Content */}
-      <div className="relative flex flex-col lg:flex-row min-h-[calc(100vh-58px)] lg:min-h-[calc(100vh-89px)] overflow-y-auto">
-        {/* Main Section */}
-        <div className="flex-1 px-4 md:px-8 lg:px-12 xl:px-[92px] py-6">
-          
-          {/* Mobile Profile Card - Only visible on mobile */}
-          <div 
-            className="lg:hidden flex flex-col items-start mb-5"
-            style={{
-              width: '100%',
-              maxWidth: '335px',
-              margin: '0 auto 20px',
-              padding: '0px 0px 24px',
-              background: '#FDFDFD',
-              boxShadow: '12px 12px 24px rgba(0, 0, 0, 0.06)',
-              backdropFilter: 'blur(7px)',
-              borderRadius: '14px',
-            }}
-            data-testid="mobile-profile-card"
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center w-full" style={{ padding: '24px 20px' }}>
-              <span style={{
-                fontFamily: 'Pretendard',
-                fontSize: '14px',
-                fontWeight: 600,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.8)',
-              }}>
-                내 프로필
-              </span>
-              <span style={{
-                fontFamily: 'Pretendard',
-                fontSize: '14px',
-                fontWeight: 600,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                color: 'rgba(0, 143, 237, 0.8)',
-              }}>
-                관리자
-              </span>
-            </div>
-            
-            {/* Profile Info */}
-            <div className="flex flex-col justify-center items-center w-full" style={{ gap: '8px' }}>
-              <div className="flex items-center" style={{ gap: '10px' }}>
-                {/* Avatar */}
-                <div 
-                  className="flex items-center justify-center"
-                  style={{
-                    width: '58px',
-                    height: '58px',
-                    background: 'rgba(0, 143, 237, 0.1)',
-                    borderRadius: '50px',
-                  }}
+      <main className="relative z-10 mx-auto max-w-[1400px] px-4 md:px-8 pb-14 pt-8" ref={pdfContentRef}>
+        <div className="grid grid-cols-12 gap-6">
+          <section className="col-span-12 lg:col-span-9 space-y-6">
+            <div className="col-span-12">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-base font-bold">현황 요약</h2>
+                <button
+                  onClick={() => setIsPeriodSheetOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
+                  type="button"
+                  data-testid="button-period-selector-summary"
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '20px',
-                    fontWeight: 600,
-                    color: '#008FED',
-                  }}>
+                  <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
+                  {getPeriodLabel()}
+                  <ChevronDown className="h-4 w-4 text-slate-500" />
+                </button>
+              </div>
+
+              <div className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-[#DDE3F3]">
+                <div className="overflow-hidden rounded-xl ring-1 ring-[#E5E7EB]">
+                  <table className="w-full text-sm">
+                    <thead className="bg-[#F6F7FB] text-slate-600">
+                      <tr>
+                        <th className="w-[120px] px-4 py-3 text-left font-semibold">분류</th>
+                        <th className="px-4 py-3 text-center font-semibold">접수건</th>
+                        <th className="px-4 py-3 text-center font-semibold">미결건</th>
+                        <th className="px-4 py-3 text-center font-semibold">보험사 미정산</th>
+                        <th className="px-4 py-3 text-center font-semibold">협력사 미정산</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#EEF1F7] bg-white">
+                      {casesLoading ? (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                            로딩 중...
+                          </td>
+                        </tr>
+                      ) : insuranceCompanySummary.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                            해당 기간에 케이스가 없습니다.
+                          </td>
+                        </tr>
+                      ) : (
+                        <>
+                          {insuranceCompanySummary.map((company, index) => (
+                            <tr key={index} data-testid={`summary-row-${index}`}>
+                              <td className="px-4 py-4 text-left font-medium text-slate-700">
+                                {company.name}
+                              </td>
+                              <td className="px-4 py-4 text-center font-semibold">{company.reception}</td>
+                              <td className="px-4 py-4 text-center font-semibold">{company.pending}</td>
+                              <td className="px-4 py-4 text-center font-semibold">{company.insuranceUnsettled}</td>
+                              <td className="px-4 py-4 text-center font-semibold">
+                                {company.partnerUnsettled > 0 ? company.partnerUnsettled : <span className="text-slate-400">-</span>}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="bg-[#FBFCFF]">
+                            <td className="px-4 py-4 text-left font-bold text-slate-900">전체</td>
+                            <td className="px-4 py-4 text-center font-bold">{insuranceTotals.reception}</td>
+                            <td className="px-4 py-4 text-center font-bold">{insuranceTotals.pending}</td>
+                            <td className="px-4 py-4 text-center font-bold">{insuranceTotals.insuranceUnsettled}</td>
+                            <td className="px-4 py-4 text-center font-bold">{insuranceTotals.partnerUnsettled}</td>
+                          </tr>
+                        </>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-6">
+              <div className="col-span-12 lg:col-span-8">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-base font-bold">진행건 요약</h2>
+                  <button
+                    onClick={() => setIsPeriodSheetOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
+                    type="button"
+                    data-testid="button-period-selector-progress"
+                  >
+                    <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
+                    {getPeriodLabel()}
+                    <ChevronDown className="h-4 w-4 text-slate-500" />
+                  </button>
+                </div>
+
+                <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setActiveTab('reception')}
+                      className={activeTab === 'reception' 
+                        ? "rounded-lg bg-[#0B6BFF] px-5 py-2 text-sm font-bold text-white shadow-sm"
+                        : "rounded-lg bg-white px-5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-[#E5E7EB] hover:bg-slate-50"
+                      }
+                      type="button"
+                      data-testid="tab-reception"
+                    >
+                      접수
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('pending')}
+                      className={activeTab === 'pending'
+                        ? "rounded-lg bg-[#0B6BFF] px-5 py-2 text-sm font-bold text-white shadow-sm"
+                        : "rounded-lg bg-white px-5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-[#E5E7EB] hover:bg-slate-50"
+                      }
+                      type="button"
+                      data-testid="tab-pending"
+                    >
+                      미결
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('insurance')}
+                      className={activeTab === 'insurance'
+                        ? "rounded-lg bg-[#0B6BFF] px-5 py-2 text-sm font-bold text-white shadow-sm"
+                        : "rounded-lg bg-white px-5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-[#E5E7EB] hover:bg-slate-50"
+                      }
+                      type="button"
+                      data-testid="tab-insurance"
+                    >
+                      보험사 미정산
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('partner')}
+                      className={activeTab === 'partner'
+                        ? "rounded-lg bg-[#0B6BFF] px-5 py-2 text-sm font-bold text-white shadow-sm"
+                        : "rounded-lg bg-white px-5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-[#E5E7EB] hover:bg-slate-50"
+                      }
+                      type="button"
+                      data-testid="tab-partner"
+                    >
+                      협력사 미정산
+                    </button>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-12 items-center rounded-xl bg-[#F6F7FB] px-4 py-3 text-sm font-semibold text-slate-600">
+                    <div className="col-span-5">프로필</div>
+                    <div className="col-span-3 text-center">성함</div>
+                    <div className="col-span-2 text-center">직책</div>
+                    <div className="col-span-2 text-center">건수</div>
+                  </div>
+
+                  <div className="mt-2 divide-y divide-[#EEF1F7] rounded-xl bg-white ring-1 ring-[#E5E7EB]">
+                    {casesLoading ? (
+                      <div className="px-4 py-8 text-center text-slate-500">
+                        로딩 중...
+                      </div>
+                    ) : staffSummary.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-slate-500">
+                        해당 기간에 케이스가 없습니다.
+                      </div>
+                    ) : (
+                      staffSummary.slice(0, 5).map((staff, index) => (
+                        <div 
+                          key={index} 
+                          className="grid grid-cols-12 items-center px-4 py-4 text-sm"
+                          data-testid={`staff-row-${index}`}
+                        >
+                          <div className="col-span-5 flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-[#CFE2FF] flex items-center justify-center">
+                              <span className="text-sm font-semibold text-[#0B6BFF]">
+                                {staff.name.charAt(0)}
+                              </span>
+                            </div>
+                            <div className="font-semibold text-slate-900">{staff.name}</div>
+                          </div>
+                          <div className="col-span-3 text-center text-slate-700">{staff.name}</div>
+                          <div className="col-span-2 text-center text-slate-700">{staff.position}</div>
+                          <div className="col-span-2 text-center font-semibold">{staff.count}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-span-12 lg:col-span-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="text-base font-bold">내 작업</h2>
+                  <button
+                    onClick={() => setIsPeriodSheetOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
+                    type="button"
+                    data-testid="button-period-selector-tasks"
+                  >
+                    <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
+                    {getPeriodLabel()}
+                    <ChevronDown className="h-4 w-4 text-slate-500" />
+                  </button>
+                </div>
+
+                <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
+                  <div className="text-sm text-slate-700">
+                    총 <span className="font-bold">{myTasks.length}건</span>의 업데이트
+                  </div>
+
+                  <div className="mt-4 space-y-3 max-h-[400px] overflow-y-auto">
+                    {myTasks.length === 0 ? (
+                      <div className="text-center text-slate-500 py-8">
+                        맡은 작업이 없습니다
+                      </div>
+                    ) : (
+                      myTasks.slice(0, 10).map((task, index) => {
+                        const statusStyle = getStatusColor(task.status || '작성중');
+                        return (
+                          <div
+                            key={task.id}
+                            className="flex items-start justify-between gap-3 rounded-xl bg-white p-4 ring-1 ring-[#E5E7EB] cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() => {
+                              localStorage.setItem('selectedFieldSurveyCaseId', task.id);
+                              setLocation('/field-survey/management');
+                            }}
+                            data-testid={`task-item-${index}`}
+                          >
+                            <div className="min-w-0">
+                              <span
+                                className="inline-flex items-center rounded-full px-2 py-1 text-xs font-bold"
+                                style={{ 
+                                  backgroundColor: statusStyle.bg,
+                                  color: statusStyle.text
+                                }}
+                              >
+                                {task.status || '작성중'}
+                              </span>
+                              <div className="mt-2 font-bold text-slate-900">
+                                {formatCaseNumber(task.caseNumber)}
+                              </div>
+                              <div className="mt-1 text-sm text-slate-500">
+                                사고번호 : {task.insuranceAccidentNo || '미정'}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <span className="text-xs text-slate-400">
+                                {getTimeAgo(task.updatedAt)}
+                              </span>
+                              <ChevronRight className="h-4 w-4 text-slate-400" />
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside className="col-span-12 lg:col-span-3 space-y-6">
+            <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#D1DBF0]">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold">내 프로필</h3>
+                <button
+                  onClick={() => logoutMutation.mutate()}
+                  className="text-sm font-semibold text-[#0B6BFF]"
+                  data-testid="button-logout"
+                >
+                  로그아웃
+                </button>
+              </div>
+
+              <div className="mt-5 grid place-items-center">
+                <div className="h-20 w-20 rounded-full bg-[#C5D6F5] flex items-center justify-center">
+                  <span className="text-2xl font-semibold text-[#0B6BFF]">
                     {user.name?.charAt(0) || user.username?.charAt(0) || 'U'}
                   </span>
                 </div>
-                
-                {/* Name and Email */}
-                <div className="flex flex-col items-center" style={{ gap: '2px' }}>
-                  <div className="flex items-center" style={{ gap: '2px' }}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '15px',
-                      fontWeight: 600,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: '#0C0C0C',
-                    }}>
-                      {user.name || user.username}
-                    </span>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '13px',
-                      fontWeight: 400,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.01em',
-                      color: 'rgba(12, 12, 12, 0.9)',
-                    }}>
-                      {user.position || '사원'}
-                    </span>
+                <div className="mt-3 text-center">
+                  <div className="font-semibold">
+                    {user.name || user.username} <span className="font-normal">{user.position || '사원'}</span>
                   </div>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.01em',
-                    color: 'rgba(12, 12, 12, 0.7)',
-                  }}>
-                    {user.email || 'xblock@gmail.com'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop Header - Only visible on desktop */}
-          <div className="hidden lg:flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-            <h1 
-              style={{
-                fontFamily: 'Pretendard',
-                fontSize: '20px',
-                fontWeight: 600,
-                letterSpacing: '-0.02em',
-                color: '#0C0C0C',
-              }}
-            >
-              현황 요약
-            </h1>
-            <button 
-              onClick={() => setIsPeriodSheetOpen(true)}
-              className="flex items-center justify-between"
-              style={{
-                width: '128px',
-                height: '44px',
-                padding: '10px 8px',
-                gap: '8px',
-                background: '#FFFFFF',
-                border: '1px solid rgba(12, 12, 12, 0.3)',
-                borderRadius: '8px',
-              }}
-              data-testid="button-period-selector"
-            >
-              <div className="flex items-center gap-2">
-                <Calendar 
-                  style={{ 
-                    width: '22px', 
-                    height: '22px', 
-                    color: '#008FED' 
-                  }} 
-                />
-                <span 
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.9)',
-                  }}
-                >
-                  {getPeriodLabel()}
-                </span>
-              </div>
-              <ChevronDown 
-                style={{ 
-                  width: '24px', 
-                  height: '24px', 
-                  color: 'rgba(12, 12, 12, 0.6)' 
-                }} 
-              />
-            </button>
-          </div>
-
-          {/* Mobile Header - Only visible on mobile */}
-          <div className="lg:hidden flex flex-col items-start mb-3" style={{ maxWidth: '375px', margin: '0 auto' }}>
-            <div className="flex items-center w-full" style={{ padding: '16px 0px' }}>
-              <span style={{
-                fontFamily: 'Pretendard',
-                fontSize: '18px',
-                fontWeight: 600,
-                lineHeight: '128%',
-                letterSpacing: '-0.02em',
-                color: 'rgba(12, 12, 12, 0.9)',
-              }}>
-                현황 요약
-              </span>
-            </div>
-            <div className="flex items-center w-full" style={{ padding: '10px 0px' }}>
-              <button 
-                onClick={() => setIsPeriodSheetOpen(true)}
-                className="flex items-center" 
-                style={{ gap: '8px' }}
-                data-testid="button-mobile-period-selector"
-              >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.8)',
-                }}>
-                  {getPeriodLabel()}
-                </span>
-                <ChevronDown 
-                  style={{ 
-                    width: '18px', 
-                    height: '18px', 
-                    color: 'rgba(12, 12, 12, 0.6)' 
-                  }} 
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Stats Cards - Simplified version */}
-          <div className="lg:hidden flex flex-col items-center" style={{ gap: '12px', maxWidth: '335px', margin: '0 auto' }}>
-            {statsLoading ? (
-              <div className="text-center py-4">로딩 중...</div>
-            ) : stats ? (
-              <>
-                {/* 접수건 */}
-                <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.01em',
-                    color: 'rgba(12, 12, 12, 0.5)',
-                  }}>
-                    접수건
-                  </span>
-                  <div className="flex flex-col" style={{ gap: '4px', width: '100%' }}>
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '26px',
-                        fontWeight: 600,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>
-                        {stats.receivedCases}건
-                      </span>
-                    </div>
-                    {/* 전월 대비 변화 표시 */}
-                    <div className="flex items-center gap-1">
-                      {stats.receivedCasesChange > 0 ? (
-                        <>
-                          <TrendingUp style={{ width: '12px', height: '12px', color: '#007AFF' }} />
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '11px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              color: '#007AFF',
-                            }}
-                          >
-                            {stats.receivedCasesChange > 0 ? '+' : ''}{stats.receivedCasesChange.toFixed(1)}% ({stats.receivedCasesChangeCount > 0 ? '+' : ''}{stats.receivedCasesChangeCount}건)
-                          </span>
-                        </>
-                      ) : stats.receivedCasesChange < 0 ? (
-                        <>
-                          <TrendingDown style={{ width: '12px', height: '12px', color: '#FF3B30' }} />
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '11px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              color: '#FF3B30',
-                            }}
-                          >
-                            {stats.receivedCasesChange.toFixed(1)}% ({stats.receivedCasesChangeCount}건)
-                          </span>
-                        </>
-                      ) : (
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '11px',
-                            fontWeight: 500,
-                            lineHeight: '128%',
-                            color: 'rgba(12, 12, 12, 0.5)',
-                          }}
-                        >
-                          변화 없음
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 미결건 */}
-                <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.01em',
-                    color: 'rgba(12, 12, 12, 0.5)',
-                  }}>
-                    미결건
-                  </span>
-                  <div className="flex flex-col" style={{ gap: '4px', width: '100%' }}>
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '26px',
-                        fontWeight: 600,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>
-                        {stats.pendingCases}건
-                      </span>
-                    </div>
-                    {/* 전월 대비 변화 표시 */}
-                    <div className="flex items-center gap-1">
-                      {stats.pendingCasesChange > 0 ? (
-                        <>
-                          <TrendingUp style={{ width: '12px', height: '12px', color: '#007AFF' }} />
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '11px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              color: '#007AFF',
-                            }}
-                          >
-                            {stats.pendingCasesChange > 0 ? '+' : ''}{stats.pendingCasesChange.toFixed(1)}% ({stats.pendingCasesChangeCount > 0 ? '+' : ''}{stats.pendingCasesChangeCount}건)
-                          </span>
-                        </>
-                      ) : stats.pendingCasesChange < 0 ? (
-                        <>
-                          <TrendingDown style={{ width: '12px', height: '12px', color: '#FF3B30' }} />
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '11px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              color: '#FF3B30',
-                            }}
-                          >
-                            {stats.pendingCasesChange.toFixed(1)}% ({stats.pendingCasesChangeCount}건)
-                          </span>
-                        </>
-                      ) : (
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '11px',
-                            fontWeight: 500,
-                            lineHeight: '128%',
-                            color: 'rgba(12, 12, 12, 0.5)',
-                          }}
-                        >
-                          변화 없음
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 보험사 미정산 - 심사사/조사사/보험사/관리자만 표시 */}
-                {user.role !== "협력사" && (
-                  <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.01em',
-                      color: 'rgba(12, 12, 12, 0.5)',
-                    }}>
-                      {user.role === "관리자" ? "보험사 미정산" : "미정산"}
-                    </span>
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '26px',
-                        fontWeight: 600,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>
-                        {stats.insuranceUnsettledCases}건
-                      </span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.7)',
-                      }}>
-                        {stats.insuranceUnsettledAmount.toLocaleString('ko-KR')}원
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* 협력사 미정산 - 협력사/관리자만 표시 */}
-                {(user.role === "협력사" || user.role === "관리자") && (
-                  <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.01em',
-                      color: 'rgba(12, 12, 12, 0.5)',
-                    }}>
-                      {user.role === "협력사" ? "미정산" : "협력사 미정산"}
-                    </span>
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '26px',
-                        fontWeight: 600,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>
-                        {stats.partnerUnsettledCases}건
-                      </span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.7)',
-                      }}>
-                        {stats.partnerUnsettledAmount.toLocaleString('ko-KR')}원
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : null}
-          </div>
-
-          {/* Separator for mobile */}
-          <div className="lg:hidden w-full" style={{ height: '14px', background: 'rgba(12, 12, 12, 0.06)', margin: '20px 0' }} />
-
-          {/* Mobile: 담당자 요약 Section */}
-          <div className="lg:hidden flex flex-col items-center" style={{ gap: '16px', paddingBottom: '32px' }}>
-            {/* Header */}
-            <div className="flex flex-col items-start w-full" style={{ maxWidth: '375px', margin: '0 auto' }}>
-              <div className="flex items-center w-full" style={{ padding: '16px 0px' }}>
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.9)',
-                }}>
-                  담당자 요약
-                </span>
-              </div>
-              <div className="flex items-center w-full" style={{ padding: '10px 0px' }}>
-                <button className="flex items-center" style={{ gap: '8px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.8)',
-                  }}>
-                    이번 달
-                  </span>
-                  <ChevronDown 
-                    style={{ 
-                      width: '18px', 
-                      height: '18px', 
-                      color: 'rgba(12, 12, 12, 0.6)' 
-                    }} 
-                  />
-                </button>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex items-center w-full" style={{ maxWidth: '375px', margin: '0 auto', height: '40px', filter: 'drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.02))' }}>
-              <button 
-                onClick={() => setActiveTab('reception')}
-                className="flex items-center justify-center"
-                style={{
-                  width: '70px',
-                  height: '40px',
-                  padding: '10px',
-                  borderBottom: activeTab === 'reception' ? '2px solid #008FED' : 'none',
-                }}
-                data-testid="tab-staff-reception"
-              >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: activeTab === 'reception' ? 600 : 400,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  color: activeTab === 'reception' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
-                }}>
-                  접수
-                </span>
-              </button>
-              <button 
-                onClick={() => setActiveTab('pending')}
-                className="flex items-center justify-center"
-                style={{
-                  width: '69px',
-                  height: '40px',
-                  padding: '10px',
-                  borderBottom: activeTab === 'pending' ? '2px solid #008FED' : 'none',
-                }}
-                data-testid="tab-staff-pending"
-              >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: activeTab === 'pending' ? 600 : 400,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  color: activeTab === 'pending' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
-                }}>
-                  미결
-                </span>
-              </button>
-              <button 
-                onClick={() => setActiveTab('insurance')}
-                className="flex items-center justify-center"
-                style={{
-                  width: '118px',
-                  height: '40px',
-                  padding: '10px',
-                  flexGrow: 1,
-                  borderBottom: activeTab === 'insurance' ? '2px solid #008FED' : 'none',
-                }}
-                data-testid="tab-staff-insurance"
-              >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: activeTab === 'insurance' ? 600 : 400,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  color: activeTab === 'insurance' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
-                }}>
-                  보험사 미정산
-                </span>
-              </button>
-              <button 
-                onClick={() => setActiveTab('partner')}
-                className="flex items-center justify-center"
-                style={{
-                  width: '118px',
-                  height: '40px',
-                  padding: '10px',
-                  flexGrow: 1,
-                  borderBottom: activeTab === 'partner' ? '2px solid #008FED' : 'none',
-                }}
-                data-testid="tab-staff-partner"
-              >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: activeTab === 'partner' ? 600 : 400,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  color: activeTab === 'partner' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
-                }}>
-                  협력사 미정산
-                </span>
-              </button>
-            </div>
-
-            {/* Table */}
-            <div 
-              className="flex flex-col items-start"
-              style={{
-                width: '100%',
-                maxWidth: '351px',
-                margin: '0 auto',
-                padding: '8px 0px',
-                background: '#FDFDFD',
-                border: '1px solid #F9F9FB',
-                boxShadow: '0px 6px 22px rgba(0, 0, 0, 0.12)',
-                borderRadius: '12px',
-              }}
-            >
-              {casesLoading ? (
-                <div className="flex items-center justify-center w-full py-8">
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    color: 'rgba(12, 12, 12, 0.5)',
-                  }}>
-                    로딩 중...
-                  </span>
-                </div>
-              ) : staffSummary.length === 0 ? (
-                <div className="flex items-center justify-center w-full py-8">
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    color: 'rgba(12, 12, 12, 0.5)',
-                  }}>
-                    해당 기간에 케이스가 없습니다.
-                  </span>
-                </div>
-              ) : (
-                staffSummary.map((staff, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between w-full"
-                    style={{
-                      padding: '0px 12px',
-                      height: '52px',
-                    }}
-                    data-testid={`staff-row-${index}`}
-                  >
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <div 
-                        className="flex items-center justify-center"
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          background: 'rgba(0, 143, 237, 0.2)',
-                          borderRadius: '50px',
-                        }}
-                      >
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: '#008FED',
-                        }}>
-                          {staff.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="flex items-center" style={{ gap: '3px' }}>
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.01em',
-                          color: '#0C0C0C',
-                        }}>
-                          {staff.name}
-                        </span>
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '13px',
-                          fontWeight: 400,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.01em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}>
-                          {staff.position}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.01em',
-                        color: '#0C0C0C',
-                      }}>
-                        {staff.count}건
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Desktop Stats Cards - Original version */}
-          {statsLoading ? (
-            <div className="hidden lg:flex justify-center py-8">로딩 중...</div>
-          ) : stats ? (
-            <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-[18px]">
-              {/* 접수건 - 모든 역할에 표시 */}
-              <div
-                className="flex flex-col"
-                style={{
-                  padding: '20px',
-                  background: '#FFFFFF',
-                  boxShadow: '0px 0px 20px #DBE9F5',
-                  borderRadius: '12px',
-                  gap: '12px',
-                }}
-                data-testid="card-stat-received"
-              >
-                <span
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.01em',
-                    color: 'rgba(12, 12, 12, 0.9)',
-                  }}
-                >
-                  접수건
-                </span>
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col gap-[2px]">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2">
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '38px',
-                            fontWeight: 700,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
-                          data-testid="text-received-count"
-                        >
-                          {stats.receivedCases}
-                        </span>
-                        <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '18px',
-                              fontWeight: 400,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.6)',
-                            }}
-                          >
-                            건
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* 전월 대비 변화 표시 */}
-                    <div className="flex items-center gap-1" style={{ marginTop: '4px' }}>
-                      {stats.receivedCasesChange > 0 ? (
-                        <>
-                          <TrendingUp style={{ width: '14px', height: '14px', color: '#007AFF' }} />
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              color: '#007AFF',
-                            }}
-                            data-testid="text-received-change"
-                          >
-                            {stats.receivedCasesChange > 0 ? '+' : ''}{stats.receivedCasesChange.toFixed(1)}% ({stats.receivedCasesChangeCount > 0 ? '+' : ''}{stats.receivedCasesChangeCount}건)
-                          </span>
-                        </>
-                      ) : stats.receivedCasesChange < 0 ? (
-                        <>
-                          <TrendingDown style={{ width: '14px', height: '14px', color: '#FF3B30' }} />
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              color: '#FF3B30',
-                            }}
-                            data-testid="text-received-change"
-                          >
-                            {stats.receivedCasesChange.toFixed(1)}% ({stats.receivedCasesChangeCount}건)
-                          </span>
-                        </>
-                      ) : (
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '12px',
-                            fontWeight: 500,
-                            lineHeight: '128%',
-                            color: 'rgba(12, 12, 12, 0.5)',
-                          }}
-                          data-testid="text-received-change"
-                        >
-                          변화 없음
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div
-                    className="flex items-center justify-center"
-                    style={{
-                      width: '60px',
-                      height: '60px',
-                      background: 'rgba(0, 143, 237, 0.2)',
-                      borderRadius: '100px',
-                    }}
-                  >
-                    <CalendarPlus style={{ width: '26px', height: '26px', color: '#008FED' }} />
+                  <div className="text-sm text-slate-600">
+                    {user.email || `${user.username}@example.com`}
                   </div>
                 </div>
               </div>
-
-              {/* 미결건 - 모든 역할에 표시 */}
-              <div
-                className="flex flex-col"
-                style={{
-                  padding: '20px',
-                  background: '#FFFFFF',
-                  boxShadow: '0px 0px 20px #DBE9F5',
-                  borderRadius: '12px',
-                  gap: '12px',
-                }}
-                data-testid="card-stat-pending"
-              >
-                <span
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.01em',
-                    color: 'rgba(12, 12, 12, 0.9)',
-                  }}
-                >
-                  미결건
-                </span>
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col gap-[2px]">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2">
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '38px',
-                            fontWeight: 700,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
-                          data-testid="text-pending-count"
-                        >
-                          {stats.pendingCases}
-                        </span>
-                        <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '18px',
-                              fontWeight: 400,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.6)',
-                            }}
-                          >
-                            건
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* 전월 대비 변화 표시 */}
-                    <div className="flex items-center gap-1" style={{ marginTop: '4px' }}>
-                      {stats.pendingCasesChange > 0 ? (
-                        <>
-                          <TrendingUp style={{ width: '14px', height: '14px', color: '#007AFF' }} />
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              color: '#007AFF',
-                            }}
-                            data-testid="text-pending-change"
-                          >
-                            {stats.pendingCasesChange > 0 ? '+' : ''}{stats.pendingCasesChange.toFixed(1)}% ({stats.pendingCasesChangeCount > 0 ? '+' : ''}{stats.pendingCasesChangeCount}건)
-                          </span>
-                        </>
-                      ) : stats.pendingCasesChange < 0 ? (
-                        <>
-                          <TrendingDown style={{ width: '14px', height: '14px', color: '#FF3B30' }} />
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              color: '#FF3B30',
-                            }}
-                            data-testid="text-pending-change"
-                          >
-                            {stats.pendingCasesChange.toFixed(1)}% ({stats.pendingCasesChangeCount}건)
-                          </span>
-                        </>
-                      ) : (
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '12px',
-                            fontWeight: 500,
-                            lineHeight: '128%',
-                            color: 'rgba(12, 12, 12, 0.5)',
-                          }}
-                          data-testid="text-pending-change"
-                        >
-                          변화 없음
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div
-                    className="flex items-center justify-center"
-                    style={{
-                      width: '60px',
-                      height: '60px',
-                      background: 'rgba(0, 143, 237, 0.2)',
-                      borderRadius: '100px',
-                    }}
-                  >
-                    <AlertCircle style={{ width: '26px', height: '26px', color: '#008FED' }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* 보험사 미정산 - 심사사/조사사/보험사/관리자만 표시 */}
-              {user.role !== "협력사" && (
-                <div
-                  className="flex flex-col"
-                  style={{
-                    padding: '20px',
-                    background: '#FFFFFF',
-                    boxShadow: '0px 0px 20px #DBE9F5',
-                    borderRadius: '12px',
-                    gap: '12px',
-                  }}
-                  data-testid="card-stat-insurance-unsettled"
-                >
-                  <span
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.01em',
-                      color: 'rgba(12, 12, 12, 0.9)',
-                    }}
-                  >
-                    {user.role === "관리자" ? "보험사 미정산" : "미정산"}
-                  </span>
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-col justify-center gap-[2px]">
-                      <div className="flex items-center gap-2">
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '38px',
-                            fontWeight: 700,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
-                          data-testid="text-insurance-count"
-                        >
-                          {stats.insuranceUnsettledCases}
-                        </span>
-                        <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '18px',
-                              fontWeight: 400,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.6)',
-                            }}
-                          >
-                            건
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '18px',
-                            fontWeight: 600,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.6)',
-                          }}
-                          data-testid="text-insurance-amount"
-                        >
-                          {stats.insuranceUnsettledAmount.toLocaleString('ko-KR')}
-                        </span>
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 400,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.6)',
-                          }}
-                        >
-                          원
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className="flex items-center justify-center"
-                      style={{
-                        width: '60px',
-                        height: '60px',
-                        background: 'rgba(0, 143, 237, 0.2)',
-                        borderRadius: '100px',
-                      }}
-                    >
-                      <Building2 style={{ width: '26px', height: '26px', color: '#008FED' }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 협력사 미정산 - 협력사/관리자만 표시 */}
-              {(user.role === "협력사" || user.role === "관리자") && (
-                <div
-                  className="flex flex-col"
-                  style={{
-                    padding: '20px',
-                    background: '#FFFFFF',
-                    boxShadow: '0px 0px 20px #DBE9F5',
-                    borderRadius: '12px',
-                    gap: '12px',
-                  }}
-                  data-testid="card-stat-partner-unsettled"
-                >
-                  <span
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.01em',
-                      color: 'rgba(12, 12, 12, 0.9)',
-                    }}
-                  >
-                    {user.role === "협력사" ? "미정산" : "협력사 미정산"}
-                  </span>
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-col justify-center gap-[2px]">
-                      <div className="flex items-center gap-2">
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '38px',
-                            fontWeight: 700,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
-                          data-testid="text-partner-count"
-                        >
-                          {stats.partnerUnsettledCases}
-                        </span>
-                        <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '18px',
-                              fontWeight: 400,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.6)',
-                            }}
-                          >
-                            건
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '18px',
-                            fontWeight: 600,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.6)',
-                          }}
-                          data-testid="text-partner-amount"
-                        >
-                          {stats.partnerUnsettledAmount.toLocaleString('ko-KR')}
-                        </span>
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 400,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.6)',
-                          }}
-                        >
-                          원
-                        </span>
-                      </div>
-                    </div>
-                    <div
-                      className="flex items-center justify-center"
-                      style={{
-                        width: '60px',
-                        height: '60px',
-                        background: 'rgba(0, 143, 237, 0.2)',
-                        borderRadius: '100px',
-                      }}
-                    >
-                      <Handshake style={{ width: '26px', height: '26px', color: '#008FED' }} />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
-          ) : null}
 
-          {/* Progress Summary and Case List Section - Desktop only */}
-          <div className="hidden lg:flex flex-col lg:flex-row items-start gap-6 mt-6">
-            {/* Progress Summary */}
-            <div className="flex flex-col gap-6 w-full lg:flex-1">
-              {/* Section Header */}
-              <div 
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-                style={{ padding: '24px 0' }}
-              >
-                <h2
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '20px',
-                    fontWeight: 600,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.02em',
-                    color: '#0C0C0C',
-                  }}
-                >
-                  진행건 요약
-                </h2>
-                <button 
-                  onClick={() => setIsPeriodSheetOpen(true)}
-                  className="flex items-center justify-between"
-                  style={{
-                    width: '128px',
-                    height: '44px',
-                    padding: '10px 8px',
-                    gap: '8px',
-                    background: '#FFFFFF',
-                    border: '1px solid rgba(12, 12, 12, 0.3)',
-                    borderRadius: '8px',
-                  }}
-                  data-testid="button-progress-period-selector"
-                >
-                  <div className="flex items-center gap-2">
-                    <Calendar 
-                      style={{ 
-                        width: '22px', 
-                        height: '22px', 
-                        color: '#008FED' 
-                      }} 
-                    />
-                    <span 
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}
-                    >
-                      {periodType === 'all' ? '전체' :
-                       periodType === 'today' ? '오늘' :
-                       periodType === 'thisMonth' ? '이번 달' :
-                       periodType === 'lastMonth' ? '지난 달' :
-                       '사용자 지정'}
-                    </span>
-                  </div>
-                  <ChevronDown 
-                    style={{ 
-                      width: '24px', 
-                      height: '24px', 
-                      color: 'rgba(12, 12, 12, 0.6)' 
-                    }} 
-                  />
-                </button>
-              </div>
-
-            {/* Summary Card */}
-            <div
-              className="w-full"
-              style={{
-                background: '#FDFDFD',
-                boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
-              }}
-              data-testid="card-progress-summary"
-            >
-              {/* Tabs */}
-              <div
-                className="flex flex-col"
-                style={{
-                  padding: '16px 20px',
-                  gap: '10px',
-                }}
-              >
-                <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                  <div className="flex items-center gap-2 min-w-max">
+            {user.role === "협력사" ? (
+              <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold">
+                    공지사항 <span className="ml-1 text-xs font-bold text-[#EF4444]">필독</span>
+                  </h3>
                   <button
-                    onClick={() => setActiveTab('reception')}
-                    className="flex items-center justify-center"
-                    style={{
-                      padding: '12px 16px',
-                      background: activeTab === 'reception' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
-                      boxShadow: activeTab === 'reception' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
-                      backdropFilter: activeTab === 'reception' ? 'none' : 'blur(7px)',
-                      borderRadius: '6px',
-                    }}
-                    data-testid="tab-reception"
+                    className="rounded-lg bg-[#EAF2FF] px-3 py-2 text-sm font-semibold text-[#0B6BFF] hover:bg-[#DDEBFF]"
+                    type="button"
                   >
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: activeTab === 'reception' ? 600 : 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: activeTab === 'reception' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
-                      }}
-                    >
-                      접수
-                    </span>
+                    더보기
                   </button>
-                  <button
-                    onClick={() => setActiveTab('pending')}
-                    className="flex items-center justify-center"
-                    style={{
-                      padding: '12px 16px',
-                      background: activeTab === 'pending' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
-                      boxShadow: activeTab === 'pending' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
-                      backdropFilter: activeTab === 'pending' ? 'none' : 'blur(7px)',
-                      borderRadius: '6px',
-                    }}
-                    data-testid="tab-pending"
-                  >
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: activeTab === 'pending' ? 600 : 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: activeTab === 'pending' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
-                      }}
-                    >
-                      미결
-                    </span>
-                  </button>
-                  
-                  {/* 보험사 미정산 - 협력사 사용자는 볼 수 없음 */}
-                  {user.role !== '협력사' && (
-                    <button
-                      onClick={() => setActiveTab('insurance')}
-                      className="flex items-center justify-center"
-                      style={{
-                        padding: '12px 16px',
-                        background: activeTab === 'insurance' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
-                        boxShadow: activeTab === 'insurance' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
-                        backdropFilter: activeTab === 'insurance' ? 'none' : 'blur(7px)',
-                        borderRadius: '6px',
-                      }}
-                      data-testid="tab-insurance"
-                    >
-                      <span
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '16px',
-                          fontWeight: activeTab === 'insurance' ? 600 : 500,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: activeTab === 'insurance' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
-                        }}
-                      >
-                        보험사 미정산
-                      </span>
-                    </button>
-                  )}
-                  
-                  {/* 협력사 미정산 - 심사사/조사사/보험사는 볼 수 없음 */}
-                  {user.role !== '심사사' && user.role !== '조사사' && user.role !== '보험사' && (
-                    <button
-                      onClick={() => setActiveTab('partner')}
-                      className="flex items-center justify-center"
-                      style={{
-                        padding: '12px 16px',
-                        background: activeTab === 'partner' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
-                        boxShadow: activeTab === 'partner' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
-                        backdropFilter: activeTab === 'partner' ? 'none' : 'blur(7px)',
-                        borderRadius: '6px',
-                      }}
-                      data-testid="tab-partner"
-                    >
-                      <span
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '16px',
-                          fontWeight: activeTab === 'partner' ? 600 : 500,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: activeTab === 'partner' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
-                        }}
-                      >
-                        협력사 미정산
-                      </span>
-                    </button>
-                  )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Table */}
-              <div
-                className="flex flex-col"
-                style={{
-                  padding: '0 20px',
-                  gap: '17px',
-                  paddingBottom: '20px',
-                }}
-              >
-                {/* Table Header */}
-                <div
-                  className="flex items-center"
-                  style={{
-                    background: 'rgba(12, 12, 12, 0.04)',
-                    borderRadius: '8px',
-                    height: '39px',
-                  }}
-                  data-testid="table-header"
-                >
-                  <div
-                    className="flex items-center justify-center"
-                    style={{ width: '68px', padding: '0 8px' }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '15px',
-                        fontWeight: 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.6)',
-                      }}
-                    >
-                      프로필
-                    </span>
-                  </div>
-                  <div
-                    className="flex items-center"
-                    style={{ width: '165px', padding: '0 8px' }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '15px',
-                        fontWeight: 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.6)',
-                      }}
-                    >
-                      성함
-                    </span>
-                  </div>
-                  <div
-                    className="flex items-center"
-                    style={{ width: '164px', padding: '0 8px' }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '15px',
-                        fontWeight: 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.6)',
-                      }}
-                    >
-                      직책
-                    </span>
-                  </div>
-                  <div
-                    className="flex items-center flex-1"
-                    style={{ padding: '0 8px' }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '15px',
-                        fontWeight: 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.6)',
-                      }}
-                    >
-                      건 수
-                    </span>
-                  </div>
                 </div>
 
-                {/* Table Body */}
-                <div className="flex flex-col gap-4">
-                  {casesLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '15px',
-                        fontWeight: 400,
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>
-                        로딩 중...
-                      </span>
-                    </div>
-                  ) : staffSummary.length === 0 ? (
-                    <div className="flex items-center justify-center py-8">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '15px',
-                        fontWeight: 400,
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>
-                        해당 기간에 케이스가 없습니다.
-                      </span>
-                    </div>
+                <ul className="mt-4 space-y-3 text-sm text-slate-700">
+                  {notices.length === 0 ? (
+                    <>
+                      <li className="leading-6">사고·개인정보 외부 전송 금지 (메일/메신저 포함)</li>
+                      <li className="leading-6">승인 전 임의 공사 지시 금지</li>
+                      <li className="leading-6">정산 데이터 수기 가공 금지 (검증 절차 필수)</li>
+                    </>
                   ) : (
-                    staffSummary.slice(0, 7).map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center"
-                        style={{ height: '39px' }}
-                        data-testid={`table-row-${index}`}
-                      >
-                        <div
-                          className="flex items-center justify-center"
-                          style={{ width: '68px', padding: '0 8px' }}
-                        >
-                          <div
-                            style={{
-                              width: '39px',
-                              height: '39px',
-                              background: 'rgba(0, 143, 237, 0.2)',
-                              borderRadius: '50px',
-                            }}
-                          />
-                        </div>
-                        <div
-                          className="flex items-center"
-                          style={{ width: '165px', padding: '0 8px' }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '16px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.9)',
-                            }}
-                          >
-                            {item.name}
-                          </span>
-                        </div>
-                        <div
-                          className="flex items-center"
-                          style={{ width: '164px', padding: '0 8px' }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '16px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.9)',
-                            }}
-                          >
-                            {item.position}
-                          </span>
-                        </div>
-                        <div
-                          className="flex items-center flex-1"
-                          style={{ padding: '0 8px' }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '16px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.9)',
-                            }}
-                          >
-                            {item.count}
-                          </span>
-                        </div>
-                      </div>
+                    notices.slice(0, 3).map((notice) => (
+                      <li key={notice.id} className="leading-6">{notice.title}</li>
                     ))
                   )}
-                </div>
+                </ul>
               </div>
-            </div>
-            </div>
-
-            {/* Case List Card */}
-            <div className="flex flex-col gap-6 w-full lg:w-[418px]">
-              {/* Title */}
-              <div style={{ padding: '24px 0' }}>
-                <h2
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '20px',
-                    fontWeight: 600,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.02em',
-                    color: '#0C0C0C',
-                  }}
-                >
-                  내 작업
-                </h2>
-              </div>
-
-              {/* Case List */}
-              <div
-                className="flex flex-col w-full"
-                style={{
-                  height: '535px',
-                  background: '#FFFFFF',
-                  boxShadow: '0px 0px 20px #DBE9F5',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  gap: '24px',
-                  overflowY: 'auto',
-                }}
-                data-testid="card-case-list"
-              >
-                {myTasks.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '15px',
-                        fontWeight: 400,
-                        color: 'rgba(12, 12, 12, 0.4)',
-                      }}
-                    >
-                      맡은 작업이 없습니다
-                    </span>
-                  </div>
-                ) : (
-                  myTasks.map((caseItem, index) => (
-                    <div
-                      key={caseItem.id}
-                      className="flex flex-col gap-3 cursor-pointer hover-elevate"
-                      data-testid={`case-item-${index}`}
-                      onClick={() => {
-                        // Navigate to field survey page with this case
-                        localStorage.setItem('selectedFieldSurveyCaseId', caseItem.id);
-                        setLocation('/field-survey/management');
-                      }}
-                    >
-                      {/* Status and Time */}
-                      <div className="flex items-center justify-between">
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '8px 10px',
-                            background: '#FDFDFD',
-                            boxShadow: '0px 0px 20px #DBE9F5',
-                            borderRadius: '8px',
-                          }}
-                          data-testid={`status-badge-${index}`}
-                        >
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '15px',
-                              fontWeight: 600,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.02em',
-                              color: getStatusColor(caseItem.status || '작성중'),
-                            }}
-                          >
-                            {caseItem.status || '작성중'}
-                          </span>
-                        </div>
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '13px',
-                            fontWeight: 400,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: 'rgba(12, 12, 12, 0.4)',
-                          }}
-                        >
-                          {getTimeAgo(caseItem.updatedAt)}
-                        </span>
-                      </div>
-
-                      {/* Title and Arrow */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col gap-1.5" style={{ padding: '0 4px' }}>
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '16px',
-                              fontWeight: 600,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.02em',
-                              color: '#0C0C0C',
-                            }}
-                          >
-                            {formatCaseNumber(caseItem.caseNumber)} · {(() => {
-                              // -0은 피보험자 주소, -1/-2/-3 등은 피해자 주소 사용
-                              const suffix = caseItem.caseNumber?.split('-').pop();
-                              if (suffix && suffix !== '0') {
-                                // 피해세대복구 건: victimAddress 우선, 없으면 insuredAddress 사용
-                                return [caseItem.victimAddress || caseItem.insuredAddress, caseItem.victimAddressDetail || caseItem.insuredAddressDetail].filter(Boolean).join(' ') || '위치 미정';
-                              }
-                              return [caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(' ') || '위치 미정';
-                            })()}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <span
-                              style={{
-                                fontFamily: 'Pretendard',
-                                fontSize: '14px',
-                                fontWeight: 400,
-                                lineHeight: '128%',
-                                letterSpacing: '-0.01em',
-                                color: 'rgba(12, 12, 12, 0.6)',
-                              }}
-                            >
-                              사고번호
-                            </span>
-                            <span
-                              style={{
-                                fontFamily: 'Pretendard',
-                                fontSize: '14px',
-                                fontWeight: 500,
-                                lineHeight: '128%',
-                                letterSpacing: '-0.01em',
-                                color: 'rgba(12, 12, 12, 0.6)',
-                              }}
-                            >
-                              ·
-                            </span>
-                            <span
-                              style={{
-                                fontFamily: 'Pretendard',
-                                fontSize: '14px',
-                                fontWeight: 400,
-                                lineHeight: '128%',
-                                letterSpacing: '-0.01em',
-                                color: 'rgba(12, 12, 12, 0.6)',
-                              }}
-                            >
-                              {caseItem.insuranceAccidentNo || '미정'}
-                            </span>
-                          </div>
-                        </div>
-                        <ChevronRight
-                          style={{
-                            width: '18px',
-                            height: '18px',
-                            color: 'rgba(12, 12, 12, 0.4)',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Sidebar - Hidden on mobile */}
-        <div 
-          className="hidden lg:flex flex-col gap-3 py-6 px-4 md:px-8 lg:px-0 lg:pr-8 w-full lg:w-[415px]"
-        >
-          {/* My Profile Card */}
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid #FFFFFF',
-              boxShadow: '12px 12px 50px #DBE9F5',
-              backdropFilter: 'blur(7px)',
-            }}
-          >
-            <div className="flex items-center justify-between px-5 py-6">
-              <h3 
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.8)',
-                }}
-              >
-                내 프로필
-              </h3>
-              <button
-                onClick={() => logoutMutation.mutate()}
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  letterSpacing: '-0.01em',
-                  color: 'rgba(0, 143, 237, 0.8)',
-                }}
-                data-testid="button-logout"
-              >
-                로그아웃
-              </button>
-            </div>
-            
-            <div className="flex flex-col items-center pb-8">
-              <div 
-                className="w-[72px] h-[72px] rounded-full flex items-center justify-center mb-3"
-                style={{ background: 'rgba(0, 143, 237, 0.2)' }}
-              >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '24px',
-                  fontWeight: 600,
-                  color: '#008FED',
-                }}>
-                  {user.name?.charAt(0) || user.username?.charAt(0) || 'U'}
-                </span>
-              </div>
-              <div className="flex items-center gap-1 mb-1">
-                <span 
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: '#0C0C0C',
-                  }}
-                >
-                  {user.name || user.username}
-                </span>
-                <span 
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 400,
-                    letterSpacing: '-0.01em',
-                    color: 'rgba(12, 12, 12, 0.9)',
-                  }}
-                >
-                  {user.position || '사원'}
-                </span>
-              </div>
-              <span 
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '15px',
-                  fontWeight: 400,
-                  letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.7)',
-                }}
-              >
-                {user.email || `${user.username}@example.com`}
-              </span>
-            </div>
-          </div>
-
-          {/* Notices Card - Only visible for 협력사 */}
-          {user.role === "협력사" && (
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                border: '1px solid #FFFFFF',
-                boxShadow: '12px 12px 50px #DBE9F5',
-                backdropFilter: 'blur(7px)',
-              }}
-            >
-              <div className="flex items-center justify-between px-5 py-6">
-                <div className="flex items-center gap-2">
-                  <h3 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '18px',
-                      fontWeight: 600,
-                      letterSpacing: '-0.02em',
-                      color: '#0C0C0C',
-                    }}
-                  >
-                    공지사항
+            ) : (
+              <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold">
+                    공지사항 <span className="ml-1 text-xs font-bold text-[#EF4444]">필독</span>
                   </h3>
+                  <button
+                    className="rounded-lg bg-[#EAF2FF] px-3 py-2 text-sm font-semibold text-[#0B6BFF] hover:bg-[#DDEBFF]"
+                    type="button"
+                  >
+                    더보기
+                  </button>
                 </div>
+
+                <ul className="mt-4 space-y-3 text-sm text-slate-700">
+                  <li className="leading-6">사고·개인정보 외부 전송 금지 (메일/메신저 포함)</li>
+                  <li className="leading-6">승인 전 임의 공사 지시 금지</li>
+                  <li className="leading-6">정산 데이터 수기 가공 금지 (검증 절차 필수)</li>
+                </ul>
+              </div>
+            )}
+
+            <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold">1:1 문의</h3>
                 <button
-                  className="px-3 py-2 bg-white rounded-md"
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(0, 143, 237, 0.8)',
-                    boxShadow: '2px 4px 30px #BDD1F0',
-                  }}
+                  className="rounded-lg bg-[#EAF2FF] px-3 py-2 text-sm font-semibold text-[#0B6BFF] hover:bg-[#DDEBFF]"
+                  type="button"
                 >
-                  더보기
+                  새 문의
                 </button>
               </div>
-              
-              <div className="pb-4">
-                {notices.length === 0 ? (
-                  <div 
-                    className="px-5 py-3"
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.5)',
-                      textAlign: 'center',
-                    }}
-                  >
-                    등록된 공지사항이 없습니다.
+
+              <div className="mt-4 space-y-3 text-sm text-slate-700">
+                {inquiries.length === 0 ? (
+                  <div className="text-center text-slate-500 py-4">
+                    문의 내역이 없습니다
                   </div>
                 ) : (
-                  notices.slice(0, 3).map((notice) => (
-                    <div 
-                      key={notice.id}
-                      className="px-5 py-3"
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}
-                    >
-                      {notice.title}
+                  inquiries.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span>{item.title}</span>
+                      <span className="text-slate-500">{item.status}</span>
                     </div>
                   ))
                 )}
               </div>
             </div>
-          )}
 
-          {/* 1:1 Inquiry Card */}
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid #FFFFFF',
-              boxShadow: '12px 12px 50px #DBE9F5',
-              backdropFilter: 'blur(7px)',
-            }}
-          >
-            <div className="flex items-center justify-between px-5 py-6">
-              <h3 
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                }}
-              >
-                1:1 문의
-              </h3>
-              <button
-                className="px-3 py-2 bg-white rounded-md"
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(0, 143, 237, 0.8)',
-                  boxShadow: '2px 4px 30px #BDD1F0',
-                }}
-              >
-                새 문의
-              </button>
-            </div>
-            
-            <div className="pb-4">
-              {inquiries.map((item, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center justify-between px-5 py-3"
-                >
-                  <span 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.9)',
-                    }}
-                  >
-                    {item.title}
-                  </span>
-                  <span 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '15px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em',
-                      color: 'rgba(12, 12, 12, 0.6)',
-                    }}
-                  >
-                    {item.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Favorites Card */}
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid #FFFFFF',
-              boxShadow: '12px 12px 50px #DBE9F5',
-              backdropFilter: 'blur(7px)',
-            }}
-          >
-            <div className="px-5 py-6">
-              <h3 
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                }}
-              >
-                즐겨찾기
-              </h3>
-            </div>
-            
-            <div className="pb-4">
-              {userFavorites.length === 0 ? (
-                <div className="px-5 py-8 text-center">
-                  <span
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.4)',
-                    }}
-                  >
-                    즐겨찾기한 메뉴가 없습니다
-                  </span>
-                </div>
-              ) : (
-                userFavorites.map((item) => (
-                  <div 
-                    key={item.id}
-                    className="flex items-center justify-between px-5 py-3 cursor-pointer hover-elevate"
-                    onClick={() => handleFavoriteClick(item.menuName)}
-                  >
-                    <div className="flex items-center gap-3">
-                      {getMenuIcon(item.menuName)}
-                      <span 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '16px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}
-                      >
-                        {item.menuName}
-                      </span>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveFavorite(item.menuName);
-                      }}
-                      className="cursor-pointer transition-opacity hover:opacity-70"
-                      data-testid={`favorite-star-${item.menuName}`}
-                    >
-                      <Star className="w-[18px] h-[18px] fill-[#008FED] text-[#008FED]" />
-                    </button>
+            <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
+              <h3 className="font-bold mb-4">즐겨찾기</h3>
+              
+              <div className="space-y-2">
+                {userFavorites.length === 0 ? (
+                  <div className="text-center text-slate-500 py-4 text-sm">
+                    즐겨찾기가 없습니다
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Period Selection Sheet - Mobile Bottom Sheet */}
-      <Sheet open={isPeriodSheetOpen} onOpenChange={setIsPeriodSheetOpen}>
-        <SheetContent 
-          side="bottom" 
-          className="h-auto rounded-t-2xl"
-          style={{
-            background: '#FFFFFF',
-            padding: '0px',
-          }}
-        >
-          <div className="flex flex-col" style={{ padding: '24px 20px' }}>
-            <div className="flex items-center justify-between mb-6">
-              <span style={{
-                fontFamily: 'Pretendard',
-                fontSize: '16px',
-                fontWeight: 600,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.9)',
-              }}>
-                기간 선택
-              </span>
-              <button 
-                onClick={() => setIsPeriodSheetOpen(false)}
-                data-testid="button-close-period-sheet"
-              >
-                <X style={{ width: '20px', height: '20px', color: 'rgba(12, 12, 12, 0.6)' }} />
-              </button>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              {[
-                { label: '전체', value: 'all' as PeriodType },
-                { label: '오늘', value: 'today' as PeriodType },
-                { label: '이번 달', value: 'thisMonth' as PeriodType },
-                { label: '지난 달', value: 'lastMonth' as PeriodType },
-                { label: '날짜 선택', value: 'custom' as PeriodType },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handlePeriodSelect(option.value)}
-                  className="flex items-center justify-between w-full"
-                  style={{
-                    padding: '14px 16px',
-                    background: periodType === option.value ? 'rgba(0, 143, 237, 0.08)' : 'transparent',
-                    borderRadius: '8px',
-                  }}
-                  data-testid={`option-period-${option.value}`}
-                >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: periodType === option.value ? 600 : 400,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.01em',
-                    color: periodType === option.value ? '#008FED' : 'rgba(12, 12, 12, 0.9)',
-                  }}>
-                    {option.label}
-                  </span>
-                  {periodType === option.value && (
-                    <div style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '50%',
-                      background: '#008FED',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      <div style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        background: '#FFFFFF',
-                      }} />
+                ) : (
+                  userFavorites.map((favorite, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
+                      onClick={() => handleFavoriteClick(favorite.menuName)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {getMenuIcon(favorite.menuName)}
+                        <span className="text-sm">{favorite.menuName}</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveFavorite(favorite.menuName);
+                        }}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
-                  )}
-                </button>
-              ))}
+                  ))
+                )}
+              </div>
             </div>
+          </aside>
+        </div>
+      </main>
+
+      <Sheet open={isPeriodSheetOpen} onOpenChange={setIsPeriodSheetOpen}>
+        <SheetContent side="bottom" className="h-auto">
+          <SheetHeader>
+            <SheetTitle>기간 선택</SheetTitle>
+          </SheetHeader>
+          <div className="grid gap-2 py-4">
+            <Button 
+              variant={periodType === 'all' ? 'default' : 'outline'}
+              onClick={() => handlePeriodSelect('all')}
+              className="justify-start"
+            >
+              전체
+            </Button>
+            <Button 
+              variant={periodType === 'today' ? 'default' : 'outline'}
+              onClick={() => handlePeriodSelect('today')}
+              className="justify-start"
+            >
+              오늘
+            </Button>
+            <Button 
+              variant={periodType === 'thisMonth' ? 'default' : 'outline'}
+              onClick={() => handlePeriodSelect('thisMonth')}
+              className="justify-start"
+            >
+              이번 달
+            </Button>
+            <Button 
+              variant={periodType === 'lastMonth' ? 'default' : 'outline'}
+              onClick={() => handlePeriodSelect('lastMonth')}
+              className="justify-start"
+            >
+              지난 달
+            </Button>
+            <Button 
+              variant={periodType === 'custom' ? 'default' : 'outline'}
+              onClick={() => handlePeriodSelect('custom')}
+              className="justify-start"
+            >
+              날짜 선택
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
 
-      {/* Calendar Sheet - Date Range Picker */}
       <Sheet open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-        <SheetContent 
-          side="bottom" 
-          className="h-auto rounded-t-2xl"
-          style={{
-            background: '#FFFFFF',
-            padding: '0px',
-          }}
-        >
-          <div className="flex flex-col" style={{ padding: '24px 20px' }}>
-            <div className="flex items-center justify-between mb-6">
-              <span style={{
-                fontFamily: 'Pretendard',
-                fontSize: '16px',
-                fontWeight: 600,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.9)',
-              }}>
-                날짜 선택
-              </span>
-              <button 
+        <SheetContent side="bottom" className="h-auto">
+          <SheetHeader>
+            <SheetTitle>날짜 범위 선택</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <CalendarComponent
+              mode="range"
+              selected={dateRange}
+              onSelect={setDateRange}
+              locale={ko}
+              numberOfMonths={1}
+              className="rounded-md border"
+            />
+            <div className="flex gap-2 w-full">
+              <Button 
+                variant="outline" 
                 onClick={() => setIsCalendarOpen(false)}
-                data-testid="button-close-calendar-sheet"
+                className="flex-1"
               >
-                <X style={{ width: '20px', height: '20px', color: 'rgba(12, 12, 12, 0.6)' }} />
-              </button>
-            </div>
-            
-            <div className="flex flex-col items-center gap-4">
-              <CalendarComponent
-                mode="range"
-                selected={dateRange}
-                onSelect={setDateRange}
-                locale={ko}
-                className="rounded-md border"
-                data-testid="calendar-range-picker"
-              />
-              
-              {dateRange?.from && dateRange?.to && (
-                <div className="flex items-center gap-2 w-full" style={{
-                  padding: '12px 16px',
-                  background: 'rgba(0, 143, 237, 0.05)',
-                  borderRadius: '8px',
-                }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.01em',
-                    color: 'rgba(12, 12, 12, 0.7)',
-                  }}>
-                    {format(dateRange.from, 'yyyy-MM-dd')} ~ {format(dateRange.to, 'yyyy-MM-dd')}
-                  </span>
-                </div>
-              )}
-              
-              <div className="flex gap-3 w-full">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsCalendarOpen(false)}
-                  className="flex-1"
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 500,
-                  }}
-                  data-testid="button-calendar-cancel"
-                >
-                  취소
-                </Button>
-                <Button
-                  onClick={handleCalendarApply}
-                  disabled={!dateRange?.from || !dateRange?.to}
-                  className="flex-1"
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    background: '#008FED',
-                  }}
-                  data-testid="button-calendar-apply"
-                >
-                  적용
-                </Button>
-              </div>
+                취소
+              </Button>
+              <Button 
+                onClick={handleCalendarApply}
+                className="flex-1"
+                disabled={!dateRange?.from || !dateRange?.to}
+              >
+                적용
+              </Button>
             </div>
           </div>
         </SheetContent>
