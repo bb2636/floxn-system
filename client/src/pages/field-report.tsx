@@ -1249,12 +1249,10 @@ export default function FieldReport() {
               </Button>
             )}
 
-          {/* 승인 버튼: 현재 케이스 또는 손해방지(-0) 케이스가 현장정보제출 상태일 때 표시 */}
+          {/* 승인 버튼: 손해방지(-0) 케이스가 현장정보제출 상태일 때 모든 관련 케이스에서 표시 */}
           {!isUserLoading &&
             canApproveReport &&
-            (caseData.fieldSurveyStatus === "submitted" || 
-             (preventionCaseData?.preventionCase?.fieldSurveyStatus === "submitted" && 
-              preventionCaseData?.preventionCase?.status === "현장정보제출")) && (
+            preventionCaseData?.preventionCase?.status === "현장정보제출" && (
               <Button
                 data-testid="button-approve-report"
                 onClick={() => {
