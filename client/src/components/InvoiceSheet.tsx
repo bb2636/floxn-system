@@ -432,6 +432,14 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         setInvoiceRecipientEmail("");
         setSelectedEmails([]);
         setSelectedDocumentIds([]);
+        
+        // 이전에 인보이스 데이터가 저장된 경우 (PDF 다운로드/발송 기록이 있음) 저장 버튼 활성화
+        const hasExistingInvoiceData = !!(
+          caseData.invoiceDamagePreventionAmount || 
+          caseData.invoicePropertyRepairAmount || 
+          caseData.invoiceRemarks
+        );
+        setHasPdfAction(hasExistingInvoiceData);
       } else if (!open) {
         setInvoiceDamagePreventionAmount("");
         setInvoicePropertyRepairAmount("");
