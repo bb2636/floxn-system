@@ -186,22 +186,19 @@ export default function Dashboard() {
         }
       });
     } else {
-      // 관리자 등: 담당자(assignedTo)로 그룹화
+      // 관리자 등: 플록슨 담당자(managerName)로 그룹화
       filteredCasesByTab.forEach(c => {
-        const assignedToId = c.assignedTo || 'unassigned';
+        const managerName = c.managerName || '미배정';
 
-        const existing = userCaseCounts.get(assignedToId);
+        const existing = userCaseCounts.get(managerName);
         if (existing) {
           existing.count++;
         } else {
-          // Find user info from allUsers list
-          const assignedUser = allUsers.find(u => u.id === assignedToId);
-          
-          userCaseCounts.set(assignedToId, {
-            name: assignedUser ? assignedUser.name : '미배정',
-            position: assignedUser ? (assignedUser.role || '-') : '-',
+          userCaseCounts.set(managerName, {
+            name: managerName,
+            position: managerName === '미배정' ? '-' : '관리자',
             count: 1,
-            userId: assignedToId,
+            userId: managerName,
           });
         }
       });
