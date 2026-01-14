@@ -9504,7 +9504,15 @@ https://peulrogseun-aqaqaq4561.replit.app
       }
 
       if (phoneNumbers.length === 0) {
-        return res.status(400).json({ error: "발송할 연락처가 없습니다" });
+        // 연락처가 없는 경우 에러 대신 성공으로 처리 (SMS는 발송되지 않음)
+        console.log(`[send-stage-notification] No phone numbers available for stage: ${stage}, caseId: ${caseId}`);
+        return res.json({ 
+          success: true, 
+          message: "발송할 연락처가 없어 SMS가 발송되지 않았습니다.",
+          sentCount: 0,
+          failedCount: 0,
+          results: []
+        });
       }
 
       // 메시지 템플릿 생성
