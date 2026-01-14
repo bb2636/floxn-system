@@ -1672,7 +1672,7 @@ export default function Intake({
             </div>
 
             <div className="grid grid-cols-12 gap-x-4 gap-y-3">
-              <div className="col-span-12 md:col-span-6">
+              <div className="col-span-12 md:col-span-4">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>보험계약자</label>
                   <input
@@ -1682,14 +1682,14 @@ export default function Intake({
                       handleInputChange("policyHolderName", e.target.value)
                     }
                     disabled={readOnly}
-                    placeholder="보험계약자 성함"
+                    placeholder="보험자 성함"
                     type="text"
                     data-testid="input-policy-holder-name"
                   />
                 </div>
               </div>
 
-              <div className="col-span-12 md:col-span-6">
+              <div className="col-span-12 md:col-span-4">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>피보험자<RequiredMark /></label>
                   <input
@@ -1706,7 +1706,24 @@ export default function Intake({
                 </div>
               </div>
 
-              <div className="col-span-12 md:col-span-7">
+              <div className="col-span-12 md:col-span-4">
+                <div className={fieldRowClasses}>
+                  <label className={labelClasses}>피보험자 연락처<RequiredMark /></label>
+                  <input
+                    className={inputClasses}
+                    value={formData.insuredContact}
+                    onChange={(e) =>
+                      handleInputChange("insuredContact", e.target.value)
+                    }
+                    disabled={readOnly}
+                    placeholder="피보험자 연락처"
+                    type="text"
+                    data-testid="input-insured-contact"
+                  />
+                </div>
+              </div>
+
+              <div className="col-span-12 md:col-span-6">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>피보험자 주소<RequiredMark /></label>
                   <div className="flex gap-1 flex-1">
@@ -1730,20 +1747,30 @@ export default function Intake({
                 </div>
               </div>
 
-              <div className="col-span-12 md:col-span-5">
+              <div className="col-span-12 md:col-span-6">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>상세주소</label>
-                  <input
-                    className={inputClasses}
-                    value={formData.insuredAddressDetail}
-                    onChange={(e) =>
-                      handleInputChange("insuredAddressDetail", e.target.value)
-                    }
-                    disabled={readOnly}
-                    placeholder="상세주소"
-                    type="text"
-                    data-testid="input-insured-address-detail"
-                  />
+                  <div className="flex gap-1 flex-1">
+                    <input
+                      className={`${inputClasses} flex-1`}
+                      value={formData.insuredAddressDetail}
+                      onChange={(e) =>
+                        handleInputChange("insuredAddressDetail", e.target.value)
+                      }
+                      disabled={readOnly}
+                      placeholder="상세주소"
+                      type="text"
+                      data-testid="input-insured-address-detail"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddressSearch}
+                      disabled={readOnly}
+                      className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                    >
+                      <Search size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
