@@ -326,6 +326,20 @@ export default function FieldReport() {
     enabled: !!selectedCaseId,
   });
 
+  // 손해방지(-0) 케이스 상태 조회 (승인 버튼 표시용)
+  const { data: preventionCaseData } = useQuery<{
+    preventionCase: {
+      id: string;
+      caseNumber: string;
+      status: string;
+      fieldSurveyStatus: string;
+      reportApprovalDecision: string | null;
+    } | null;
+  }>({
+    queryKey: ["/api/cases", selectedCaseId, "prevention-case-status"],
+    enabled: !!selectedCaseId,
+  });
+
   // 관련 접수건 심사하기 팝오버 상태
   const [isRelatedCasesPopoverOpen, setIsRelatedCasesPopoverOpen] = useState(false);
 
@@ -1235,48 +1249,97 @@ export default function FieldReport() {
               </Button>
             )}
 
-          {/* 승인 버튼: 항상 표시, reportApprovalDecision에 따라 텍스트/스타일 변경 */}
+          {/* 승인 버튼: 현재 케이스 또는 손해방지(-0) 케이스가 현장정보제출 상태일 때 표시 */}
           {!isUserLoading &&
             canApproveReport &&
-            caseData.fieldSurveyStatus === "submitted" && (
+            (caseData.fieldSurveyStatus === "submitted" || 
+             (preventionCaseData?.preventionCase?.fieldSurveyStatus === "submitted" && 
+              preventionCaseData?.preventionCase?.status === "현장정보제출")) && (
               <Button
                 data-testid="button-approve-report"
                 onClick={() => {
-                  // 승인 가능 상태일 때만 다이얼로그 열기 (현장정보제출 상태 + 아직 보고서 승인 안됨)
-                  if (
-                    caseData.status === "현장정보제출" &&
-                    !caseData.reportApprovalDecision
-                  ) {
-                    setShowApprovalDialog(true);
+                  // 현재 케이스가 -0 케이스인지 확인
+                  const isPreventionCase = caseData?.caseNumber && /-0$/.test(caseData.caseNumber);
+                  
+                  if (isPreventionCase) {
+                    // 현재 케이스가 -0 케이스인 경우 직접 승인 다이얼로그 열기
+                    if (
+                      caseData.status === "현장정보제출" &&
+                      !caseData.reportApprovalDecision
+                    ) {
+                      setShowApprovalDialog(true);
+                    }
+                  } else {
+                    // 관련 케이스인 경우 -0 케이스로 이동
+                    if (preventionCaseData?.preventionCase) {
+                      localStorage.setItem("selectedFieldSurveyCaseId", preventionCaseData.preventionCase.id);
+                      window.location.reload();
+                    }
                   }
                 }}
-                disabled={
-                  approvalMutation.isPending ||
-                  caseData.status !== "현장정보제출" ||
-                  !!caseData.reportApprovalDecision
-                }
-                className={
-                  caseData.reportApprovalDecision === "승인"
-                    ? "bg-green-100 text-green-700 hover:bg-green-100 cursor-default"
-                    : caseData.reportApprovalDecision === "비승인"
-                      ? "bg-red-100 text-red-700 hover:bg-red-100 cursor-default"
-                      : caseData.status === "현장정보제출"
-                        ? "bg-green-500 hover:bg-green-600"
-                        : ""
-                }
+                disabled={(() => {
+                  // 현재 케이스가 -0 케이스인지 확인
+                  const isPreventionCase = caseData?.caseNumber && /-0$/.test(caseData.caseNumber);
+                  
+                  if (isPreventionCase) {
+                    // -0 케이스: 기존 로직
+                    return approvalMutation.isPending ||
+                      caseData.status !== "현장정보제출" ||
+                      !!caseData.reportApprovalDecision;
+                  } else {
+                    // 관련 케이스: 손해방지 케이스 상태로 판단
+                    const pc = preventionCaseData?.preventionCase;
+                    return !pc || 
+                      pc.status !== "현장정보제출" ||
+                      !!pc.reportApprovalDecision;
+                  }
+                })()}
+                className={(() => {
+                  // 현재 케이스가 -0 케이스인지 확인
+                  const isPreventionCase = caseData?.caseNumber && /-0$/.test(caseData.caseNumber);
+                  const approvalDecision = isPreventionCase 
+                    ? caseData.reportApprovalDecision 
+                    : preventionCaseData?.preventionCase?.reportApprovalDecision;
+                  const status = isPreventionCase 
+                    ? caseData.status 
+                    : preventionCaseData?.preventionCase?.status;
+                  
+                  if (approvalDecision === "승인") {
+                    return "bg-green-100 text-green-700 hover:bg-green-100 cursor-default";
+                  } else if (approvalDecision === "비승인") {
+                    return "bg-red-100 text-red-700 hover:bg-red-100 cursor-default";
+                  } else if (status === "현장정보제출") {
+                    return "bg-green-500 hover:bg-green-600";
+                  }
+                  return "";
+                })()}
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
                   fontWeight: "500",
                 }}
               >
-                {approvalMutation.isPending
-                  ? "승인 중..."
-                  : caseData.reportApprovalDecision === "승인"
-                    ? "승인완료"
-                    : caseData.reportApprovalDecision === "비승인"
-                      ? "승인반려"
-                      : "승인"}
+                {(() => {
+                  // 현재 케이스가 -0 케이스인지 확인
+                  const isPreventionCase = caseData?.caseNumber && /-0$/.test(caseData.caseNumber);
+                  
+                  if (approvalMutation.isPending) {
+                    return "승인 중...";
+                  }
+                  
+                  const approvalDecision = isPreventionCase 
+                    ? caseData.reportApprovalDecision 
+                    : preventionCaseData?.preventionCase?.reportApprovalDecision;
+                  
+                  if (approvalDecision === "승인") {
+                    return "승인완료";
+                  } else if (approvalDecision === "비승인") {
+                    return "승인반려";
+                  } else if (!isPreventionCase && preventionCaseData?.preventionCase) {
+                    return "승인 (손해방지)";
+                  }
+                  return "승인";
+                })()}
               </Button>
             )}
         </div>

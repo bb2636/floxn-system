@@ -3404,6 +3404,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get prevention case (-0 case) status for approval button visibility
+  app.get("/api/cases/:caseId/prevention-case-status", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const currentCase = await storage.getCaseById(caseId);
+      
+      if (!currentCase || !currentCase.caseNumber) {
+        return res.json({ preventionCase: null });
+      }
+
+      // Extract prefix from current case number (e.g., "123-1" -> "123")
+      const match = currentCase.caseNumber.match(/^(.+?)(?:-\d+)?$/);
+      if (!match) {
+        return res.json({ preventionCase: null });
+      }
+      
+      const prefix = match[1];
+      
+      // Get the prevention case (-0 case)
+      const preventionCase = await storage.getPreventionCaseByPrefix(prefix);
+      
+      if (!preventionCase) {
+        return res.json({ preventionCase: null });
+      }
+
+      res.json({ 
+        preventionCase: {
+          id: preventionCase.id,
+          caseNumber: preventionCase.caseNumber,
+          status: preventionCase.status,
+          fieldSurveyStatus: preventionCase.fieldSurveyStatus,
+          reportApprovalDecision: preventionCase.reportApprovalDecision,
+        }
+      });
+    } catch (error) {
+      console.error("Get prevention case status error:", error);
+      res.status(500).json({ error: "손해방지 케이스 상태를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Clone drawing from related case
   app.post("/api/cases/:caseId/clone-drawing", async (req, res) => {
     if (!req.session?.userId) {
