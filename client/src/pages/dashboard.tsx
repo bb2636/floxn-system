@@ -780,7 +780,7 @@ export default function Dashboard() {
                         맡은 작업이 없습니다
                       </div>
                     ) : (
-                      myTasks.map((task, index) => {
+                      myTasks.slice(0, 3).map((task, index) => {
                         const statusStyle = getStatusColor(task.status || '작성중');
                         return (
                           <div
