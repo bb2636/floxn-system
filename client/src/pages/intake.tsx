@@ -55,16 +55,16 @@ interface IntakeProps {
 }
 
 const inputClasses =
-  "h-10 w-full border-0 bg-transparent px-3 text-sm outline-none focus:ring-0";
+  "h-10 w-full rounded-md bg-slate-100 px-3 text-sm text-slate-600 outline-none border-0 focus:ring-2 focus:ring-sky-200";
 const disabledInputClasses =
-  "h-10 w-full border-0 bg-slate-50 px-3 text-sm text-slate-500 outline-none";
+  "h-10 w-full rounded-md bg-slate-100 px-3 text-sm text-slate-400 outline-none border-0";
 const selectTriggerClasses =
-  "h-10 w-full border-0 bg-transparent px-3 text-sm outline-none focus:ring-0 [&>span]:text-left";
+  "h-10 w-full rounded-md bg-slate-100 px-3 text-sm text-slate-600 outline-none border-0 focus:ring-2 focus:ring-sky-200 [&>span]:text-left";
 
-const labelClasses = "flex items-center justify-center px-3 py-2 bg-red-50 border-r border-red-200 text-xs font-medium text-slate-700 whitespace-nowrap min-w-[100px]";
+const labelClasses = "flex items-center px-2 text-sm font-medium text-slate-600 whitespace-nowrap min-w-[100px]";
 const labelCellClasses = labelClasses;
 const inputCellClasses = "flex-1";
-const fieldRowClasses = "flex border border-red-200 rounded-md overflow-hidden bg-white";
+const fieldRowClasses = "flex items-center gap-2";
 
 const RequiredMark = () => <span className="text-red-500 ml-0.5">*</span>;
 
