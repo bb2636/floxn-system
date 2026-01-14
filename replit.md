@@ -75,6 +75,15 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Database**: PostgreSQL (Neon-backed) with Drizzle ORM.
 
 ## Recent Changes (2026-01-14)
+- **Dashboard Complete Redesign**: Redesigned dashboard with new layout and styling
+  - New background: `bg-[#CAD6FF]` with gradient overlay from `#DCE7FF`
+  - 12-column grid layout: 9 columns for main content, 3 columns for right sidebar
+  - 현황 요약: Insurance company summary TABLE format (분류/접수건/미결건/보험사 미정산/협력사 미정산)
+  - 진행건 요약: Tabs (접수/미결/보험사 미정산/협력사 미정산) with staff list
+  - 내 작업: Card-style task display with status badges (all tasks shown, no limit)
+  - Right sidebar: 내 프로필, 공지사항, 1:1 문의, 즐겨찾기 sections
+  - Settlement metrics now use proper fields (insuranceSettlementStatus/partnerSettlementStatus)
+
 - **Intake Form Grid Layout Redesign**: Further refined the 접수단계 (intake) form with a clean grid-based layout
   - Changed from vertical header table style to modern 12-column responsive grid layout
   - Sections now use clean section headers with Tailwind slate/sky color scheme
