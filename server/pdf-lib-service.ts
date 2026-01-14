@@ -1046,8 +1046,15 @@ async function renderFieldReportPage(
 
   y -= 60;
 
+  const caseNumber = caseData.caseNumber || "";
+  const suffixMatch = caseNumber.match(/-(\d+)$/);
+  const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
   // Section 5: 피해 복구방식 및 처리 유형
-  y = drawSectionHeader("피해 복구방식 및 처리 유형", y);
+  if (suffix === 0) {
+    y = drawSectionHeader("복구방식 및 처리 유형", y);
+  } else {
+    y = drawSectionHeader("피해 복구방식 및 처리 유형", y);
+  }
 
   const victimFullAddress =
     [caseData.victimAddress, caseData.victimAddressDetail]
@@ -1073,21 +1080,11 @@ async function renderFieldReportPage(
     processingTypesStr = caseData.processingTypes?.toString() || "-";
   }
 
-  const recoveryInfoRows: TableCell[][] = [
-    // 1️⃣ 제목 (전체 병합)
-    [
-      {
-        text: "복구방식 및 처리 유형",
-        width: 515,
-        isHeader: true,
-        align: "center",
-      },
-    ],
-
+  const recoveryInfoRows_1: TableCell[][] = [
     // 2️⃣ 피해자명 / 피해자 연락처
     [
       { text: "피해자명", width: 90, isHeader: true, align: "center" },
-      { text: caseData.victimName || "-", width: 180, align: "left" },
+      { text: caseData.insuredName || "-", width: 180, align: "left" },
       { text: "피해자 연락처", width: 110, isHeader: true, align: "center" },
       { text: caseData.victimContact || "-", width: 135, align: "left" },
     ],
@@ -1097,7 +1094,7 @@ async function renderFieldReportPage(
       { text: "피해주소", width: 90, isHeader: true, align: "center" },
       {
         text:
-          [caseData.accidentLocation, caseData.accidentLocationDetail]
+          [caseData.victimAddress, caseData.victimAddressDetail]
             .filter(Boolean)
             .join(" ") || "-",
         width: 425,
@@ -1126,24 +1123,27 @@ async function renderFieldReportPage(
     ],
   ];
 
-  // const recoveryInfoRows: TableCell[][] = [
-  //   [
-  //     { text: "처리유형", width: 90, isHeader: true, align: "center" },
-  //     { text: processingTypesStr, width: 425, align: "left" },
-  //   ],
-  //   [
-  //     { text: "복구방식", width: 90, isHeader: true, align: "center" },
-  //     {
-  //       text:
-  //         caseData.recoveryMethodType ||
-  //         caseData.restorationMethod ||
-  //         caseData.recoveryMethod ||
-  //         "-",
-  //       width: 425,
-  //       align: "left",
-  //     },
-  //   ],
-  // ];
+  const recoveryInfoRows_0: TableCell[][] = [
+    [
+      { text: "처리유형", width: 90, isHeader: true, align: "center" },
+      { text: processingTypesStr, width: 425, align: "left" },
+    ],
+    [
+      { text: "복구방식", width: 90, isHeader: true, align: "center" },
+      {
+        text:
+          caseData.recoveryMethodType ||
+          caseData.restorationMethod ||
+          caseData.recoveryMethod ||
+          "-",
+        width: 425,
+        align: "left",
+      },
+    ],
+  ];
+
+  const recoveryInfoRows: TableCell[][] =
+    suffix === 0 ? recoveryInfoRows_0 : recoveryInfoRows_1;
 
   y = drawTable(page, {
     x: MARGIN,
@@ -1905,9 +1905,9 @@ async function renderRecoveryAreaPage(
   y -= 45;
 
   // 케이스 번호에서 suffix 추출 (-0: 손해비용방지, -1/-2/-3: 피해세대 복구)
-  const caseNumber = caseData.caseNumber || "";
-  const suffixMatch = caseNumber.match(/-(\d+)$/);
-  const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
+  // const caseNumber = caseData.caseNumber || "";
+  // const suffixMatch = caseNumber.match(/-(\d+)$/);
+  // const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
 
   // -0인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
   const fullAddress =
@@ -3349,7 +3349,7 @@ async function getImageBuffer(doc: {
       console.log(
         `[pdf-lib] Object Storage에서 이미지 로드: ${doc.storageKey}`,
       );
-      // PRIVATE_OBJECT_DIR을 앞에 붙여서 전체 경로 생성
+      // PRIVATE_OBJECT_DIR을 앞에 붙여서 전체 경 �� 생성
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
       if (!privateObjectDir) {
         console.error("[pdf-lib] PRIVATE_OBJECT_DIR이 설정되지 않음");
