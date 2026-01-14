@@ -1422,25 +1422,25 @@ export default function Intake({
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>의뢰사<RequiredMark /></label>
-                  <div className="flex gap-1 flex-1">
-                    <input
-                      className={`${inputClasses} flex-1`}
-                      value={formData.clientResidence}
-                      readOnly
-                      placeholder="의뢰사 선택"
-                      type="text"
-                      data-testid="input-client-residence"
-                    />
-                    <button
-                      onClick={() => !readOnly && setIsClientSearchOpen(true)}
-                      disabled={readOnly}
-                      className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                      type="button"
-                      data-testid="button-client-search"
+                  <Select
+                    value={formData.clientResidence}
+                    onValueChange={(value) => handleInputChange("clientResidence", value)}
+                    disabled={readOnly}
+                  >
+                    <SelectTrigger
+                      className={selectTriggerClasses}
+                      data-testid="select-client-residence"
                     >
-                      <Search size={16} />
-                    </button>
-                  </div>
+                      <SelectValue placeholder="의뢰사 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(new Set(allUsers?.filter(u => u.role === "의뢰사").map(u => u.company).filter(Boolean) || [])).map((company) => (
+                        <SelectItem key={company} value={company!}>
+                          {company}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -1503,25 +1503,25 @@ export default function Intake({
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>심사사<RequiredMark /></label>
-                  <div className="flex gap-1 flex-1">
-                    <input
-                      className={`${inputClasses} flex-1`}
-                      value={formData.assessorId}
-                      readOnly
-                      placeholder="심사사 선택"
-                      type="text"
-                      data-testid="input-assessor-id"
-                    />
-                    <button
-                      onClick={() => !readOnly && setIsAssessorSearchOpen(true)}
-                      disabled={readOnly}
-                      className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                      type="button"
-                      data-testid="button-assessor-search"
+                  <Select
+                    value={formData.assessorId}
+                    onValueChange={(value) => handleInputChange("assessorId", value)}
+                    disabled={readOnly}
+                  >
+                    <SelectTrigger
+                      className={selectTriggerClasses}
+                      data-testid="select-assessor-id"
                     >
-                      <Search size={16} />
-                    </button>
-                  </div>
+                      <SelectValue placeholder="심사사 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(new Set(assessors?.map(u => u.company).filter(Boolean) || [])).map((company) => (
+                        <SelectItem key={company} value={company!}>
+                          {company}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -1584,27 +1584,25 @@ export default function Intake({
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>손사명</label>
-                  <div className="flex gap-1 flex-1">
-                    <input
-                      className={`${inputClasses} flex-1`}
-                      value={formData.investigatorTeam}
-                      readOnly
-                      placeholder="손사명"
-                      type="text"
-                      data-testid="input-investigator-team"
-                    />
-                    <button
-                      onClick={() =>
-                        !readOnly && setIsInvestigatorSearchOpen(true)
-                      }
-                      disabled={readOnly}
-                      className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                      type="button"
-                      data-testid="button-investigator-search"
+                  <Select
+                    value={formData.investigatorTeam}
+                    onValueChange={(value) => handleInputChange("investigatorTeam", value)}
+                    disabled={readOnly}
+                  >
+                    <SelectTrigger
+                      className={selectTriggerClasses}
+                      data-testid="select-investigator-team"
                     >
-                      <Search size={16} />
-                    </button>
-                  </div>
+                      <SelectValue placeholder="손사명" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(new Set(investigators?.map(u => u.company).filter(Boolean) || [])).map((company) => (
+                        <SelectItem key={company} value={company!}>
+                          {company}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
