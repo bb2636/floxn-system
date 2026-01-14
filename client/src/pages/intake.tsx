@@ -114,6 +114,35 @@ export default function Intake({
   const addressContainerRef = useRef<HTMLDivElement>(null);
   const detailAddressContainerRef = useRef<HTMLDivElement>(null);
 
+  // ESC 키로 모달 및 드롭다운 닫기
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (addressDropdownOpen) {
+          setAddressDropdownOpen(null);
+        }
+        if (isPartnerSearchOpen) {
+          setIsPartnerSearchOpen(false);
+        }
+        if (isClientSearchOpen) {
+          setIsClientSearchOpen(false);
+        }
+        if (isAssessorSearchOpen) {
+          setIsAssessorSearchOpen(false);
+        }
+        if (isInvestigatorSearchOpen) {
+          setIsInvestigatorSearchOpen(false);
+        }
+        if (datePickerOpen) {
+          setDatePickerOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [addressDropdownOpen, isPartnerSearchOpen, isClientSearchOpen, isAssessorSearchOpen, isInvestigatorSearchOpen, datePickerOpen]);
+
   const { data: partnerStats } = useQuery<
     Array<{
       partnerName: string;
