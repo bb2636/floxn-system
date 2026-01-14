@@ -28,6 +28,7 @@ interface InvoiceSheetProps {
     invoiceDamagePreventionAmount?: string | null;
     invoicePropertyRepairAmount?: string | null;
     invoiceRemarks?: string | null;
+    invoicePdfGenerated?: string | null;
     recoveryType?: string | null;
     estimateAmount?: string | null;
     assessorId?: string | null;
@@ -433,8 +434,9 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         setSelectedEmails([]);
         setSelectedDocumentIds([]);
         
-        // 이전에 인보이스 데이터가 저장된 경우 (PDF 다운로드/발송 기록이 있음) 저장 버튼 활성화
+        // 이전에 PDF 다운로드/발송 기록이 있거나 인보이스 데이터가 저장된 경우 저장 버튼 활성화
         const hasExistingInvoiceData = !!(
+          caseData.invoicePdfGenerated ||
           caseData.invoiceDamagePreventionAmount || 
           caseData.invoicePropertyRepairAmount || 
           caseData.invoiceRemarks
@@ -528,6 +530,21 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         title: "PDF 다운로드 완료",
         description: "인보이스 PDF가 다운로드되었습니다.",
       });
+      
+      // DB에 PDF 생성 기록 저장
+      try {
+        await fetch('/api/invoice/mark-pdf-generated', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            caseId: caseData.id,
+            relatedCaseIds: relatedCases.map(c => c.id),
+          }),
+        });
+      } catch (e) {
+        console.error("PDF 생성 기록 저장 실패:", e);
+      }
+      
       setHasPdfAction(true); // PDF 다운로드 완료 시 저장 버튼 활성화
     } catch (error: any) {
       console.error("PDF 다운로드 오류:", error);
@@ -611,6 +628,21 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           title: "이메일 전송 완료",
           description: `${invoiceRecipientEmail}으로 INVOICE PDF가 첨부파일로 전송되었습니다.`,
         });
+        
+        // DB에 PDF 생성 기록 저장
+        try {
+          await fetch('/api/invoice/mark-pdf-generated', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              caseId: caseData.id,
+              relatedCaseIds: relatedCases.map(c => c.id),
+            }),
+          });
+        } catch (e) {
+          console.error("PDF 생성 기록 저장 실패:", e);
+        }
+        
         setHasPdfAction(true); // PDF 발송 완료 시 저장 버튼 활성화
         onOpenChange(false);
       } else {

@@ -6076,6 +6076,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PDF 생성 기록 저장 API (청구하기 탭에서 PDF 다운로드/발송 시 호출)
+  app.post("/api/invoice/mark-pdf-generated", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId, relatedCaseIds } = req.body;
+
+      if (!caseId) {
+        return res.status(400).json({ error: "케이스 ID가 필요합니다" });
+      }
+
+      // KST 타임스탬프 생성
+      const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+      const timestamp = kstNow.toISOString();
+
+      // 관련 케이스들에도 PDF 생성 기록 저장
+      const caseIdsToUpdate = relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
+      
+      for (const id of caseIdsToUpdate) {
+        await storage.updateCase(id, { 
+          invoicePdfGenerated: timestamp,
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "PDF 생성 기록이 저장되었습니다.",
+        timestamp,
+      });
+    } catch (error) {
+      console.error("Mark PDF generated error:", error);
+      res.status(500).json({ error: "PDF 생성 기록 저장 중 오류가 발생했습니다" });
+    }
+  });
+
   // 현장출동비용 청구 발송 API (선견적요청 케이스용)
   app.post("/api/field-dispatch-invoice/send", async (req, res) => {
     if (!req.session?.userId) {
