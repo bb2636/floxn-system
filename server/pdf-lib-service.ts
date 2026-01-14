@@ -2447,9 +2447,18 @@ async function renderEstimatePage(
   y -= 40;
 
   // ===== 상단 정보 테이블 =====
-  // 피해세대 주소 사용 (피보험자/원인세대 주소 제외)
-  const addressMain = caseData.victimAddress || "";
-  const addressDetail = caseData.victimAddressDetail || "";
+  // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
+  const caseNumber = caseData.caseNumber || "";
+  const suffixMatch = caseNumber.match(/-(\d+)$/);
+  const caseSuffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
+  
+  // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
+  const addressMain = caseSuffix === 0 
+    ? (caseData.insuredAddress || caseData.victimAddress || "")
+    : (caseData.victimAddress || caseData.insuredAddress || "");
+  const addressDetail = caseSuffix === 0
+    ? (caseData.insuredAddressDetail || caseData.victimAddressDetail || "")
+    : (caseData.victimAddressDetail || caseData.insuredAddressDetail || "");
   const fullAddress = [addressMain, addressDetail].filter(Boolean).join(" ");
 
   const partnerCompany =
