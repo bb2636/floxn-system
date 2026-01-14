@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
-import { Calendar as CalendarIcon, Clock, X, Plus, Check, Pencil, RotateCcw } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, X, Plus, Check, Pencil, RotateCcw, Minus, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,43 +16,23 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-// Helper function to normalize boolean values from string/boolean storage
 const normalizeBoolean = (value: any): boolean => {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") return value.toLowerCase() === "true";
   return false;
 };
 
-// New flat section styling constants
-const sectionHeaderStyle = "border-t-4 border-black pt-4 mt-6";
-const labelStyle = {
-  fontFamily: "Pretendard",
-  fontSize: "12px",
-  fontWeight: 500,
-  color: "#686A6E",
-};
-const valueStyle = {
-  fontFamily: "Pretendard",
-  fontSize: "13px",
-  fontWeight: 600,
-  color: "#0C0C0C",
-};
-
 export default function FieldManagement() {
   const { toast } = useToast();
   const [selectedCase, setSelectedCase] = useState<string>(() => {
-    // Load from localStorage on mount (문자열 "null" 방지)
     const rawCaseId = localStorage.getItem('selectedFieldSurveyCaseId');
     return (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : "";
   });
   
-  
-
   const [accidentDate, setAccidentDate] = useState<Date | undefined>(undefined);
   const [accidentTime, setAccidentTime] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   
-  // 현장조사 정보 관련 상태
   const [visitDate, setVisitDate] = useState<Date | undefined>(undefined);
   const [visitTime, setVisitTime] = useState("");
   const [visitDatePickerOpen, setVisitDatePickerOpen] = useState(false);
@@ -68,14 +48,12 @@ export default function FieldManagement() {
   const [additionalVictims, setAdditionalVictims] = useState<Array<{name: string, phone: string, address: string}>>([]);
   const [voc, setVoc] = useState("");
   
-  // 새 피해자 입력용 state
   const [newVictimName, setNewVictimName] = useState("");
   const [newVictimContact, setNewVictimContact] = useState("");
   const [newVictimAddress, setNewVictimAddress] = useState("");
   const [newVictimAddressDetail, setNewVictimAddressDetail] = useState("");
   const [sameAsInsured, setSameAsInsured] = useState(false);
   
-  // 피해자 정보 수정 다이얼로그 state
   const [editVictimDialogOpen, setEditVictimDialogOpen] = useState(false);
   const [editingVictimCase, setEditingVictimCase] = useState<Case | null>(null);
   const [editVictimName, setEditVictimName] = useState("");
@@ -83,44 +61,37 @@ export default function FieldManagement() {
   const [editVictimAddress, setEditVictimAddress] = useState("");
   const [editVictimAddressDetail, setEditVictimAddressDetail] = useState("");
   const [isEditingVictim, setIsEditingVictim] = useState(false);
-  // 다이얼로그 취소 시 복원할 원래 값 저장
   const [originalVictimName, setOriginalVictimName] = useState("");
   const [originalVictimContact, setOriginalVictimContact] = useState("");
   const [originalVictimAddress, setOriginalVictimAddress] = useState("");
   const [originalVictimAddressDetail, setOriginalVictimAddressDetail] = useState("");
   
-  // 피해 복구 방식 및 차액 유형 관련 상태
   const [processingTypes, setProcessingTypes] = useState<Set<string>>(new Set());
   const [processingTypeOther, setProcessingTypeOther] = useState("");
   const [recoveryMethodType, setRecoveryMethodType] = useState("부분수리");
+  
+  const [leakTypes, setLeakTypes] = useState<Set<string>>(new Set());
 
-  // 입력 중 상태 추적 (데이터 자동 리로드 방지)
-  // ref 사용: state 변경 시 re-render 방지 (포커스 유지)
   const isUserTypingRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Refs for preventing scroll on focus
   const caseSelectTriggerRef = useRef<HTMLButtonElement>(null);
   const accidentDateTriggerRef = useRef<HTMLButtonElement>(null);
   const visitDateTriggerRef = useRef<HTMLButtonElement>(null);
   
-  // Ref to track the last loaded case ID - prevents unnecessary reloads
   const lastLoadedCaseIdRef = useRef<string | null>(null);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
-  // 접수건 목록 가져오기
   const { data: allCases, isLoading: casesLoading } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
-    refetchOnWindowFocus: false, // 윈도우 포커스 시 refetch 방지
-    refetchOnMount: false, // 마운트 시 refetch 방지
-    staleTime: 5 * 60 * 1000, // 5분간 fresh 상태 유지
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // 백엔드 데이터에서 각 단계 완료 상태 확인
-  // 도면 데이터 조회
   const { data: drawingData, isLoading: isLoadingDrawing } = useQuery({
     queryKey: ["/api/drawings", "case", selectedCase],
     enabled: !!selectedCase,
@@ -129,7 +100,6 @@ export default function FieldManagement() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // 문서 데이터 조회
   const { data: documentsData, isLoading: isLoadingDocuments } = useQuery({
     queryKey: ["/api/documents/case", selectedCase],
     enabled: !!selectedCase,
@@ -138,7 +108,6 @@ export default function FieldManagement() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // 견적 데이터 조회
   const { data: estimateData, isLoading: isLoadingEstimate } = useQuery({
     queryKey: ["/api/estimates", selectedCase, "latest"],
     enabled: !!selectedCase,
@@ -147,40 +116,32 @@ export default function FieldManagement() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // 선택된 케이스 상세 데이터 직접 조회 (캐시된 목록 대신 최신 데이터 보장)
   const { data: selectedCaseDetail } = useQuery<Case>({
     queryKey: [`/api/cases/${selectedCase}`],
     enabled: !!selectedCase,
     refetchOnWindowFocus: false,
-    staleTime: 30 * 1000, // 30초간 fresh 상태 유지 (더 짧게 설정)
+    staleTime: 30 * 1000,
   });
 
   if (!user) {
     return null;
   }
 
-  // 협력사만 입력 가능, 단 검토중 상태에서는 협력사도 수정 불가
   const isPartner = user.role === "협력사";
   const isAdmin = user.role === "관리자";
 
-  // 협력사는 자신에게 배당된 케이스만, 관리자는 모든 케이스 표시
-  // useMemo로 감싸서 불필요한 재계산 방지
   const availableCases = useMemo(() => {
     return isPartner 
       ? allCases?.filter(c => c.assignedPartner === user.company) || []
       : allCases || [];
   }, [isPartner, allCases, user.company]);
 
-  // 선택한 케이스 데이터 가져오기 - 상세 조회 결과 우선 사용 (최신 데이터 보장)
   const selectedCaseData = useMemo(() => {
-    // 상세 조회 결과가 있으면 우선 사용 (최신 담당자 정보 포함)
     if (selectedCaseDetail) return selectedCaseDetail;
-    // 없으면 목록에서 찾기 (폴백)
     if (!selectedCase || !availableCases) return null;
     return availableCases.find(c => c.id === selectedCase) || null;
   }, [selectedCase, availableCases, selectedCaseDetail]);
 
-  // 같은 사고번호를 가진 케이스들 (추가 피해자 표시용)
   const relatedCases = useMemo(() => {
     if (!selectedCaseData?.insuranceAccidentNo || !availableCases) return [];
     return availableCases
@@ -188,7 +149,6 @@ export default function FieldManagement() {
       .sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
   }, [selectedCaseData, availableCases]);
 
-  // 케이스 데이터 로드 시 누락된 정보 콘솔 로그
   useEffect(() => {
     if (!selectedCaseData) return;
     
@@ -197,23 +157,19 @@ export default function FieldManagement() {
     
     const missingFields: string[] = [];
     
-    // 기본정보 체크
     if (!selectedCaseData.assignedPartner) missingFields.push("접수사 (협력사)");
     if (!selectedCaseData.assignedPartnerManager) missingFields.push("협력사 담당자명");
     if (!selectedCaseData.assignedPartnerContact) missingFields.push("협력사 담당자 연락처");
     if (!(selectedCaseData as any).managerName) missingFields.push("당사 담당자명");
     
-    // 접수정보 체크
     if (!selectedCaseData.insuranceCompany) missingFields.push("보험사");
     if (!selectedCaseData.insurancePolicyNo) missingFields.push("증권번호");
     if (!selectedCaseData.insuranceAccidentNo) missingFields.push("사고접수번호");
     
-    // 보험계약자/피보험자 정보 체크
     if (!selectedCaseData.policyHolderName) missingFields.push("보험계약자");
     if (!selectedCaseData.insuredName) missingFields.push("피보험자");
     if (!selectedCaseData.insuredContact) missingFields.push("피보험자 연락처");
     
-    // 피해자 정보 체크
     if (!selectedCaseData.victimName) missingFields.push("피해자 성명");
     if (!selectedCaseData.victimContact) missingFields.push("피해자 연락처");
     
@@ -226,53 +182,40 @@ export default function FieldManagement() {
     console.log("================================");
   }, [selectedCaseData?.id]);
 
-  // 현장출동보고서 제출 후 협력사는 수정 불가 (반려 시 수정 가능)
   const canEdit = isPartner || isAdmin;
   const isSubmitted = selectedCaseData?.fieldSurveyStatus === "submitted";
   const isRejected = selectedCaseData?.status === "반려";
-  // 협력사는 제출 후 수정 불가 (반려 시 수정 가능, 관리자는 항상 수정 가능)
   const isReadOnly = !canEdit || (isPartner && isSubmitted && !isRejected);
 
-  // 각 섹션 완료 상태 체크
-  // 현장입력 완료: 필수 필드 입력 완료 (로컬 state 또는 저장된 데이터 확인)
   const isFieldInputComplete = useMemo(() => {
-    // 로컬 state 우선, 없으면 저장된 케이스 데이터 확인
-    // 카테고리는 반드시 로컬에서 선택해야 함 (필수 필드)
     const hasVisitDate = visitDate || selectedCaseData?.visitDate;
     const hasVisitTime = visitTime || selectedCaseData?.visitTime;
-    const hasAccidentCategory = !!accidentCategory; // 로컬 상태만 확인 (필수)
+    const hasAccidentCategory = !!accidentCategory;
     const hasVictimName = victimName || selectedCaseData?.victimName;
     
     return !!(hasVisitDate && hasVisitTime && hasAccidentCategory && hasVictimName);
   }, [visitDate, visitTime, accidentCategory, victimName, selectedCaseData?.visitDate, selectedCaseData?.visitTime, selectedCaseData?.victimName]);
 
-  // 도면 완료: 도면이 저장되어 있으면 완료 (도면 객체에 id가 있으면 저장된 것으로 판단)
   const isDrawingComplete = useMemo(() => {
     return !isLoadingDrawing && !!drawingData && typeof drawingData === 'object' && 'id' in drawingData;
   }, [drawingData, isLoadingDrawing]);
 
-  // 문서 완료: 파일이 1개 이상 업로드되어 있으면 완료
   const isDocumentsComplete = useMemo(() => {
     return !isLoadingDocuments && Array.isArray(documentsData) && documentsData.length > 0;
   }, [documentsData, isLoadingDocuments]);
 
-  // 견적 완료: 견적이 저장되어 있으면 완료 (견적 객체에 id가 있으면 저장된 것으로 판단)
   const isEstimateComplete = useMemo(() => {
     return !isLoadingEstimate && !!estimateData && typeof estimateData === 'object' && 'id' in estimateData;
   }, [estimateData, isLoadingEstimate]);
 
-  // 현장입력 필수 필드만 채워지면 제출 가능 (도면, 증빙자료, 견적서는 선택)
   const canSubmit = isFieldInputComplete;
 
-  // 케이스 선택 관리: 첫 번째 케이스 자동 선택 & 현재 선택된 케이스가 목록에 없으면 초기화
-  // 케이스 ID 목록만 추적하여 불필요한 재실행 방지
   const availableCaseIds = useMemo(() => {
     return availableCases.map(c => c.id).join(',');
   }, [availableCases]);
 
   useEffect(() => {
     if (availableCases.length === 0) {
-      // 케이스가 없으면 선택 해제
       if (selectedCase) {
         setSelectedCase("");
         localStorage.removeItem('selectedFieldSurveyCaseId');
@@ -280,49 +223,40 @@ export default function FieldManagement() {
       return;
     }
 
-    // 현재 선택된 케이스가 목록에 없으면 (재배당되거나 삭제됨)
     const isCurrentCaseAvailable = selectedCase && availableCases.some(c => c.id === selectedCase);
     
     if (!isCurrentCaseAvailable) {
-      // 첫 번째 케이스로 자동 선택
       const newCaseId = availableCases[0].id;
       setSelectedCase(newCaseId);
       localStorage.setItem('selectedFieldSurveyCaseId', newCaseId);
     }
-  }, [availableCaseIds, selectedCase]); // availableCases 대신 availableCaseIds 사용
+  }, [availableCaseIds, selectedCase]);
 
-  // 케이스 선택 변경 시 localStorage에 저장
   const handleCaseChange = (caseId: string) => {
     setSelectedCase(caseId);
     localStorage.setItem('selectedFieldSurveyCaseId', caseId);
   };
 
-  // 관리자가 "현장정보 입력" 상태의 케이스를 열면 "검토중"으로 자동 변경
-  // selectedCase ID만 감시하여 불필요한 재실행 방지
   const [autoReviewUpdated, setAutoReviewUpdated] = useState<Set<string>>(new Set());
   
   useEffect(() => {
     const autoUpdateToReview = async () => {
       if (!selectedCaseData || !isAdmin || !selectedCase) return;
       
-      // 이미 업데이트한 케이스면 스킵
       if (autoReviewUpdated.has(selectedCase)) return;
       
-      // 상태가 "현장정보 입력"일 때만 "검토중"으로 변경
       if (selectedCaseData.status === "현장정보 입력") {
         try {
           await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, {
             status: "검토중",
           });
           
-          // 이 케이스를 업데이트 완료로 기록
           setAutoReviewUpdated(prev => {
             const updated = new Set(Array.from(prev));
             updated.add(selectedCase);
             return updated;
           });
           
-          // 케이스 목록 새로고침
           queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
         } catch (error) {
           console.error("상태 자동 변경 실패:", error);
@@ -331,25 +265,20 @@ export default function FieldManagement() {
     };
 
     autoUpdateToReview();
-  }, [selectedCase, isAdmin]); // selectedCase ID만 감시
+  }, [selectedCase, isAdmin]);
 
-  // 방문일시 선택 시 자동으로 '현장방문' 상태로 변경
   const [visitStatusUpdated, setVisitStatusUpdated] = useState<Set<string>>(new Set());
   
   useEffect(() => {
     const autoUpdateToVisit = async () => {
       if (!selectedCaseData || !selectedCase) return;
       
-      // 읽기 전용이면 상태 변경 안 함
       if (isReadOnly) return;
       
-      // 이미 업데이트한 케이스면 스킵
       if (visitStatusUpdated.has(selectedCase)) return;
       
-      // 방문일시가 모두 입력되었을 때만 상태 변경
       if (!visitDate || !visitTime) return;
       
-      // 상태가 "협력사 배정" 또는 아직 현장방문 전인 경우에만 변경
       const eligibleStatuses = ["협력사 배정", "접수완료", "배당완료"];
       if (!eligibleStatuses.includes(selectedCaseData.status || "")) return;
       
@@ -361,14 +290,12 @@ export default function FieldManagement() {
           visitTime: visitTime,
         });
         
-        // 이 케이스를 업데이트 완료로 기록
         setVisitStatusUpdated(prev => {
           const updated = new Set(Array.from(prev));
           updated.add(selectedCase);
           return updated;
         });
         
-        // 케이스 목록 새로고침
         queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
         
         toast({
@@ -383,12 +310,9 @@ export default function FieldManagement() {
     autoUpdateToVisit();
   }, [selectedCase, visitDate, visitTime, selectedCaseData?.status]);
 
-  // 입력 중 상태 추적 헬퍼 (ref 사용으로 re-render 없음)
-  // 데이터 자동 리로드 방지용 - 스크롤 복원은 제거됨
   const handleUserInput = () => {
     isUserTypingRef.current = true;
     
-    // 타이핑 멈춘 후 2초 뒤에 상태 해제
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -397,7 +321,6 @@ export default function FieldManagement() {
     }, 2000);
   };
 
-  // 피해자 정보 수정 다이얼로그 열기
   const handleOpenEditVictimDialog = async (caseItem: Case) => {
     setEditingVictimCase(caseItem);
     
@@ -409,7 +332,6 @@ export default function FieldManagement() {
       victimAddressDetail: caseItem.victimAddressDetail,
     });
     
-    // 현재 선택된 케이스인 경우 selectedCaseDetail에서 데이터 로드 (API 목록에는 victim 필드가 없음)
     if (caseItem.id === selectedCase && selectedCaseDetail) {
       console.log(`[피해자 수정] selectedCaseDetail 사용:`, {
         victimName: selectedCaseDetail.victimName,
@@ -429,7 +351,6 @@ export default function FieldManagement() {
       setEditVictimAddress(address);
       setEditVictimAddressDetail(addressDetail);
       
-      // 취소 시 복원할 원래 값 저장
       setOriginalVictimName(victimName);
       setOriginalVictimContact(victimContact);
       setOriginalVictimAddress(victimAddress);
@@ -437,7 +358,6 @@ export default function FieldManagement() {
       
       setEditVictimDialogOpen(true);
     } else {
-      // 다른 케이스인 경우 API에서 개별 조회
       try {
         const response = await fetch(`/api/cases/${caseItem.id}`);
         if (response.ok) {
@@ -452,15 +372,12 @@ export default function FieldManagement() {
           });
           setEditVictimName(caseData.victimName || "");
           setEditVictimContact(caseData.victimContact || "");
-          // 피해자 주소가 없으면 피보험자 주소를 기본값으로 사용
           setEditVictimAddress(caseData.victimAddress || caseData.insuredAddress || "");
           setEditVictimAddressDetail(caseData.victimAddressDetail || caseData.insuredAddressDetail || "");
         } else {
-          // 조회 실패 시 기존 데이터 사용
           console.log(`[피해자 수정] API 실패, caseItem 데이터 사용`);
           setEditVictimName(caseItem.victimName || "");
           setEditVictimContact(caseItem.victimContact || "");
-          // 피해자 주소가 없으면 피보험자 주소를 기본값으로 사용
           setEditVictimAddress(caseItem.victimAddress || caseItem.insuredAddress || "");
           setEditVictimAddressDetail(caseItem.victimAddressDetail || caseItem.insuredAddressDetail || "");
         }
@@ -468,7 +385,6 @@ export default function FieldManagement() {
         console.error("케이스 조회 실패:", error);
         setEditVictimName(caseItem.victimName || "");
         setEditVictimContact(caseItem.victimContact || "");
-        // 피해자 주소가 없으면 피보험자 주소를 기본값으로 사용
         setEditVictimAddress(caseItem.victimAddress || caseItem.insuredAddress || "");
         setEditVictimAddressDetail(caseItem.victimAddressDetail || caseItem.insuredAddressDetail || "");
       }
@@ -476,7 +392,6 @@ export default function FieldManagement() {
     }
   };
 
-  // 피해자 정보 저장
   const handleSaveEditVictim = async () => {
     if (!editingVictimCase) return;
     
@@ -489,7 +404,6 @@ export default function FieldManagement() {
         victimAddressDetail: editVictimAddressDetail,
       });
       
-      // 현재 선택된 케이스와 동일한 케이스를 수정한 경우, 로컬 상태도 업데이트
       if (editingVictimCase.id === selectedCase) {
         setVictimName(editVictimName);
         setVictimContact(editVictimContact);
@@ -497,7 +411,6 @@ export default function FieldManagement() {
         setVictimAddressDetail(editVictimAddressDetail);
       }
       
-      // 케이스 목록 새로고침
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       
       toast({
@@ -519,102 +432,67 @@ export default function FieldManagement() {
     }
   };
 
-  // 선택한 케이스의 데이터를 폼에 로드 - 실제로 케이스 ID가 바뀔 때만 실행
   useEffect(() => {
-    // 🛡️ 사용자가 입력 중이면 데이터 로드 안 함 (스크롤 점프 & 포커스 손실 방지)
     if (isUserTypingRef.current) {
-      console.log('⏸️ 사용자 입력 중 - form reset 스킵');
+      console.log(`[Load Skip] 사용자 입력 중 - 데이터 로드 스킵: ${selectedCase}`);
       return;
     }
 
-    // 선택된 케이스 ID가 없으면 초기화
-    if (!selectedCase) {
+    if (!selectedCaseData || !selectedCase) {
       lastLoadedCaseIdRef.current = null;
-      setAccidentDate(undefined);
-      setAccidentTime("");
-      setVisitDate(undefined);
-      setVisitTime("");
-      setDispatchLocation("");
-      setAccompaniedPerson("");
-      setAccidentCategory("");
-      setAccidentCause("");
-      setSpecialNotes("");
-      setVictimName("");
-      setVictimContact("");
-      setVictimAddress("");
-      setAdditionalVictims([]);
-      setVoc("");
-      setProcessingTypes(new Set());
-      setProcessingTypeOther("");
-      setRecoveryMethodType("부분수리");
       return;
     }
 
-    // 이미 로드한 케이스면 스킵 (입력 중인 데이터 보호)
     if (lastLoadedCaseIdRef.current === selectedCase) {
       return;
     }
 
-    // 데이터가 로드되지 않았으면 대기
-    if (!selectedCaseData) {
-      return;
-    }
-
-    // 새 케이스 로드
     lastLoadedCaseIdRef.current = selectedCase;
+    console.log(`[Load Data] 케이스 데이터 로드: ${selectedCase}, caseNumber: ${selectedCaseData.caseNumber}`);
 
-    // 사고 발생일시
-    if (selectedCaseData.accidentDate) {
-      try {
-        const [datePart, timePart] = selectedCaseData.accidentDate.split(' ');
-        if (datePart) {
-          setAccidentDate(new Date(datePart));
-        }
-        if (timePart) {
-          setAccidentTime(timePart);
-        }
-      } catch (e) {
-        console.error("Error parsing accident date:", e);
-      }
-    } else {
-      setAccidentDate(undefined);
-      setAccidentTime("");
-    }
-
-    // 현장조사 정보 (방문일시)
     if (selectedCaseData.visitDate) {
       try {
         setVisitDate(new Date(selectedCaseData.visitDate));
       } catch (e) {
-        console.error("Error parsing visit date:", e);
         setVisitDate(undefined);
       }
     } else {
       setVisitDate(undefined);
     }
-    
-    if (selectedCaseData.visitTime) {
-      setVisitTime(selectedCaseData.visitTime);
+    setVisitTime(selectedCaseData.visitTime || "");
+
+    if (selectedCaseData.accidentDate) {
+      try {
+        const accDateStr = selectedCaseData.accidentDate;
+        if (accDateStr.includes(' ')) {
+          const [datePart, timePart] = accDateStr.split(' ');
+          setAccidentDate(new Date(datePart));
+          setAccidentTime(timePart || "");
+        } else {
+          setAccidentDate(new Date(accDateStr));
+          setAccidentTime("");
+        }
+      } catch (e) {
+        setAccidentDate(undefined);
+        setAccidentTime("");
+      }
     } else {
-      setVisitTime("");
+      setAccidentDate(undefined);
+      setAccidentTime("");
     }
 
-    // 출동담당자 및 현장 정보
     setAccompaniedPerson(selectedCaseData.accompaniedPerson || "");
     setDispatchLocation(selectedCaseData.dispatchLocation || "");
 
-    // 사고 정보
     setAccidentCategory(selectedCaseData.accidentCategory || "");
     setAccidentCause(selectedCaseData.accidentCause || "");
     setSpecialNotes(selectedCaseData.specialNotes || "");
 
-    // 피해자 정보
     setVictimName(selectedCaseData.victimName || "");
     setVictimContact(selectedCaseData.victimContact || "");
     setVictimAddress(selectedCaseData.victimAddress || "");
     setVictimAddressDetail(selectedCaseData.victimAddressDetail || "");
     
-    // 추가 피해자 목록 (JSON 파싱)
     if (selectedCaseData.additionalVictims) {
       try {
         const parsed = JSON.parse(selectedCaseData.additionalVictims);
@@ -627,10 +505,8 @@ export default function FieldManagement() {
       setAdditionalVictims([]);
     }
 
-    // VOC 정보 (vocContent 필드 사용 - 협력사 특이사항과 분리)
     setVoc((selectedCaseData as any).vocContent || "");
 
-    // 처리유형 정보 (JSON 파싱)
     if (selectedCaseData.processingTypes) {
       try {
         const parsed = JSON.parse(selectedCaseData.processingTypes);
@@ -644,39 +520,19 @@ export default function FieldManagement() {
     }
     setProcessingTypeOther(selectedCaseData.processingTypeOther || "");
     
-    // 복구방식 로드
     setRecoveryMethodType(selectedCaseData.recoveryMethodType || "부분수리");
+    
+    if (selectedCaseData.accidentCategory) {
+      setLeakTypes(new Set([selectedCaseData.accidentCategory]));
+    } else {
+      setLeakTypes(new Set());
+    }
 
-  }, [selectedCase]); // selectedCase ID만 감지 - ref로 입력 보호
+  }, [selectedCase]);
 
-  // Input field styling
-  const inputFieldClass = "h-[44px] px-4 bg-[#FDFDFD] border border-[rgba(12,12,12,0.08)] rounded-md";
-  const inputFieldStyle = {
-    fontFamily: "Pretendard",
-    fontWeight: 600,
-    fontSize: "13px",
-    color: "#0C0C0C",
-  };
-  
-  const readOnlyInputStyle = {
-    ...inputFieldStyle,
-    background: "rgba(12, 12, 12, 0.04)",
-    color: "rgba(12, 12, 12, 0.6)",
-  };
-  
-  // Button styling for date/time pickers
-  const dateButtonClass = "h-[44px] px-4 rounded-md transition-colors";
-  const dateButtonStyle = {
-    fontFamily: "Pretendard",
-    fontSize: "13px",
-    fontWeight: 500,
-  };
-
-  // Reset handler - resets all editable fields to initial state from case data
   const handleReset = () => {
     if (!selectedCaseData) return;
     
-    // Reset visit date/time
     if (selectedCaseData.visitDate) {
       try {
         setVisitDate(new Date(selectedCaseData.visitDate));
@@ -688,20 +544,16 @@ export default function FieldManagement() {
     }
     setVisitTime(selectedCaseData.visitTime || "");
     
-    // Reset accident info
     setAccidentCategory(selectedCaseData.accidentCategory || "");
     setAccidentCause(selectedCaseData.accidentCause || "");
     
-    // Reset victim info
     setVictimName(selectedCaseData.victimName || "");
     setVictimContact(selectedCaseData.victimContact || "");
     setVictimAddress(selectedCaseData.victimAddress || "");
     setVictimAddressDetail(selectedCaseData.victimAddressDetail || "");
     
-    // Reset VOC
     setVoc((selectedCaseData as any).vocContent || "");
     
-    // Reset processing types
     if (selectedCaseData.processingTypes) {
       try {
         const parsed = JSON.parse(selectedCaseData.processingTypes);
@@ -714,15 +566,19 @@ export default function FieldManagement() {
     }
     setProcessingTypeOther(selectedCaseData.processingTypeOther || "");
     
-    // Reset recovery method
     setRecoveryMethodType(selectedCaseData.recoveryMethodType || "부분수리");
     
-    // Reset new victim form
     setNewVictimName("");
     setNewVictimContact("");
     setNewVictimAddress("");
     setNewVictimAddressDetail("");
     setSameAsInsured(false);
+    
+    if (selectedCaseData.accidentCategory) {
+      setLeakTypes(new Set([selectedCaseData.accidentCategory]));
+    } else {
+      setLeakTypes(new Set());
+    }
     
     toast({
       title: "초기화 완료",
@@ -730,1639 +586,853 @@ export default function FieldManagement() {
     });
   };
 
+  const handleSave = async () => {
+    console.log("=== 제출 조건 체크 (임시저장) ===");
+    console.log("현장입력 완료:", isFieldInputComplete);
+    console.log("제출 가능:", canSubmit);
+    console.log("================================");
+    
+    if (!selectedCaseData?.id) {
+      toast({
+        title: "저장 실패",
+        description: "선택된 접수건이 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const missingFields: string[] = [];
+    if (!visitDate) missingFields.push("방문일자");
+    if (!visitTime) missingFields.push("방문시간");
+    if (!accidentCategory && leakTypes.size === 0) missingFields.push("카테고리");
+    if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
+    if (!victimContact && !selectedCaseData?.victimContact) missingFields.push("피해자 연락처");
+    
+    if (missingFields.length > 0) {
+      console.warn("⚠️ 임시저장 - 누락된 필드 (저장은 진행됨):", missingFields.join(", "));
+    }
+
+    try {
+      let status = "현장방문";
+      
+      const hasVictimName = victimName || selectedCaseData?.victimName;
+      const categoryToSave = leakTypes.size > 0 ? Array.from(leakTypes)[0] : accidentCategory;
+      if (visitDate && visitTime && categoryToSave && hasVictimName) {
+        status = "현장정보 입력";
+      }
+
+      const payload = {
+        visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
+        visitTime,
+        dispatchLocation,
+        accompaniedPerson,
+        accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
+        accidentTime,
+        accidentCategory: categoryToSave || null,
+        accidentCause,
+        vocContent: voc,
+        victimName: victimName || selectedCaseData?.victimName || null,
+        victimContact: victimContact || selectedCaseData?.victimContact || null,
+        victimAddress: victimAddress || selectedCaseData?.victimAddress || null,
+        victimAddressDetail: victimAddressDetail || selectedCaseData?.victimAddressDetail || null,
+        additionalVictims: JSON.stringify(additionalVictims),
+        processingTypes: JSON.stringify(Array.from(processingTypes)),
+        processingTypeOther,
+        recoveryMethodType,
+        fieldSurveyStatus: "draft",
+        status,
+      };
+
+      const data = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
+
+      const syncedCases = (data as any)?.syncedCases || 0;
+      const syncMessage = syncedCases > 0 
+        ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
+        : "";
+
+      toast({
+        title: "임시저장 완료",
+        description: `현장조사 정보가 임시저장되었습니다. (상태: ${status})${syncMessage}`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
+    } catch (error: any) {
+      console.error("임시저장 에러:", error);
+      
+      let errorMessage = "현장조사 정보 임시저장 중 오류가 발생했습니다.";
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "임시저장 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddNewVictim = async () => {
+    if (newVictimName && newVictimContact && newVictimAddress && selectedCaseData) {
+      try {
+        const parentCaseNumber = selectedCaseData.caseNumber || "";
+        const casePrefix = parentCaseNumber.split('-')[0];
+        
+        const newCasePayload = {
+          parentCasePrefix: casePrefix,
+          receptionDate: selectedCaseData.receptionDate,
+          accidentDate: selectedCaseData.accidentDate,
+          insuranceCompany: selectedCaseData.insuranceCompany,
+          insurancePolicyNo: selectedCaseData.insurancePolicyNo,
+          insuranceAccidentNo: selectedCaseData.insuranceAccidentNo,
+          clientResidence: selectedCaseData.clientResidence,
+          clientDepartment: selectedCaseData.clientDepartment,
+          clientName: selectedCaseData.clientName,
+          clientContact: selectedCaseData.clientContact,
+          assessorId: selectedCaseData.assessorId,
+          assessorDepartment: selectedCaseData.assessorDepartment,
+          assessorTeam: selectedCaseData.assessorTeam,
+          assessorContact: selectedCaseData.assessorContact,
+          investigatorTeam: selectedCaseData.investigatorTeam,
+          investigatorDepartment: selectedCaseData.investigatorDepartment,
+          investigatorTeamName: selectedCaseData.investigatorTeamName,
+          investigatorContact: selectedCaseData.investigatorContact,
+          policyHolderName: selectedCaseData.policyHolderName,
+          policyHolderIdNumber: selectedCaseData.policyHolderIdNumber,
+          policyHolderAddress: selectedCaseData.policyHolderAddress,
+          insuredName: selectedCaseData.insuredName,
+          insuredIdNumber: selectedCaseData.insuredIdNumber,
+          insuredContact: selectedCaseData.insuredContact,
+          insuredAddress: selectedCaseData.insuredAddress,
+          insuredAddressDetail: selectedCaseData.insuredAddressDetail,
+          sameAsPolicyHolder: selectedCaseData.sameAsPolicyHolder,
+          victimName: newVictimName,
+          victimContact: newVictimContact,
+          victimAddress: newVictimAddress,
+          victimAddressDetail: newVictimAddressDetail,
+          damageItems: "[]",
+          processingTypes: JSON.stringify(["피해세대복구"]),
+          victimIncidentAssistance: "true",
+          damagePreventionCost: "false",
+          managerId: selectedCaseData.managerId,
+          assignedPartner: selectedCaseData.assignedPartner,
+          assignmentDate: selectedCaseData.assignmentDate,
+          recoveryType: selectedCaseData.recoveryType,
+          status: "접수완료",
+          progressStatus: null,
+          reviewDecision: null,
+          reviewComment: null,
+          reviewedAt: null,
+          reviewedBy: null,
+          visitDate: null,
+          visitTime: null,
+          fieldSurveyStatus: "draft",
+          accompaniedPerson: null,
+          travelDistance: null,
+          dispatchLocation: null,
+          accidentTime: null,
+          accidentCategory: null,
+          processingTypeOther: null,
+          recoveryMethodType: null,
+          clientPhone: null,
+          clientAddress: null,
+          accidentLocation: null,
+          accidentDescription: null,
+          accidentType: null,
+          accidentCause: null,
+          restorationMethod: null,
+          otherVendorEstimate: null,
+          additionalVictims: "[]",
+          assignedPartnerManager: null,
+          assignedPartnerContact: null,
+          urgency: null,
+          specialRequests: null,
+          specialNotes: null,
+          specialNotesConfirmedBy: null,
+          additionalNotes: null,
+          estimateAmount: null,
+          assignedTo: null,
+          inspectionDate: null,
+          siteVisitDate: null,
+          fieldSurveyDate: null,
+          siteInvestigationSubmitDate: null,
+          firstInspectionDate: null,
+          firstApprovalDate: null,
+          secondApprovalDate: null,
+          firstInvoiceDate: null,
+          approvalRequestDate: null,
+          approvalDate: null,
+          approvalCompletionDate: null,
+          constructionStartDate: null,
+          constructionCompletionDate: null,
+          constructionReportSubmitDate: null,
+          totalWorkDate: null,
+          contractorReportDate: null,
+          contractorRepairDate: null,
+          completionDate: null,
+          claimDate: null,
+        };
+        
+        console.log("🏠 New Victim Payload Debug:");
+        console.log("  - victimName:", newVictimName);
+        console.log("  - victimAddress:", newVictimAddress);
+        console.log("  - victimAddressDetail:", newVictimAddressDetail);
+        console.log("  - sameAsInsured:", sameAsInsured);
+        console.log("  - insuredAddress:", selectedCaseData.insuredAddress);
+        console.log("  - insuredAddressDetail:", selectedCaseData.insuredAddressDetail);
+        
+        await apiRequest("POST", "/api/cases", newCasePayload);
+        
+        toast({
+          title: "추가 피해자 등록 완료",
+          description: `${newVictimName} 님의 케이스가 생성되었습니다.`,
+        });
+        
+        setNewVictimName("");
+        setNewVictimContact("");
+        setNewVictimAddress("");
+        setNewVictimAddressDetail("");
+        setSameAsInsured(false);
+        
+        queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      } catch (error) {
+        toast({
+          title: "케이스 생성 실패",
+          description: error instanceof Error ? error.message : "케이스 생성 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const toggleLeakType = (type: string) => {
+    const newLeakTypes = new Set(leakTypes);
+    if (newLeakTypes.has(type)) {
+      newLeakTypes.delete(type);
+    } else {
+      newLeakTypes.add(type);
+    }
+    setLeakTypes(newLeakTypes);
+    if (newLeakTypes.size > 0) {
+      setAccidentCategory(Array.from(newLeakTypes)[0]);
+    } else {
+      setAccidentCategory("");
+    }
+  };
+
+  const toggleProcessingType = (type: string) => {
+    const newTypes = new Set(processingTypes);
+    if (newTypes.has(type)) {
+      newTypes.delete(type);
+    } else {
+      newTypes.add(type);
+    }
+    setProcessingTypes(newTypes);
+  };
+
   return (
     <>
-      <div className="relative p-6 pb-24">
-        {/* Selected Case Info Card */}
+      <div className="flex-1 py-6">
+        <div className="text-[18px] font-bold" data-testid="page-title">현장입력</div>
+
         {casesLoading ? (
-          <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
-            접수건을 불러오는 중...
-          </div>
+          <div className="text-center py-8 text-[#6B7280]">접수건을 불러오는 중...</div>
         ) : !selectedCaseData ? (
-          <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
+          <div className="text-center py-8 text-[#6B7280]">
             {isPartner ? "배당된 접수건이 없습니다." : "선택된 접수건이 없습니다."}
           </div>
         ) : (
           <>
-            {/* Selected Case Info Card */}
-            <div
-              style={{
-                padding: "16px 20px",
-                background: "rgba(12, 12, 12, 0.03)",
-                borderRadius: "8px",
-                marginBottom: "24px",
-              }}
-              data-testid="selected-case-info"
-            >
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span 
-                    className="rounded-full"
-                    style={{
-                      width: "8px",
-                      height: "8px",
-                      background: "#008FED",
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span style={{ ...valueStyle, fontSize: "16px" }}>
-                    {selectedCaseData.insuranceCompany || "보험사 미지정"} {formatCaseNumber(selectedCaseData.caseNumber) || ""}
-                  </span>
-                </div>
-                <div 
-                  className="flex items-center gap-4 ml-4"
-                  style={{ ...labelStyle, fontSize: "13px" }}
-                >
-                  <span>접수번호 {formatCaseNumber(selectedCaseData.caseNumber) || "-"}</span>
-                  <span>피보험자 {selectedCaseData.policyHolderName || "-"}</span>
-                  <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
-                </div>
+            <div className="mt-4 text-[12px] font-semibold text-[#6B7280]">작성중인 접수건</div>
+
+            <div className="mt-2 rounded-lg bg-[#F3F6FA] px-4 py-3" data-testid="selected-case-info">
+              <div className="flex items-center gap-2 text-[13px] font-semibold">
+                <span className="inline-flex h-2 w-2 rounded-full bg-[#008FED]"></span>
+                <span>{selectedCaseData.insuranceCompany || "보험사 미지정"}</span>
+                <span className="text-[#6B7280]">{selectedCaseData.insuranceAccidentNo || ""}(사고번호)</span>
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-[#6B7280]">
+                <span>접수번호 {formatCaseNumber(selectedCaseData.caseNumber) || "-"}</span>
+                <span>피보험자 {selectedCaseData.insuredName || "-"}</span>
+                <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
               </div>
             </div>
 
-          {/* 기본정보 섹션 */}
-          <div className={sectionHeaderStyle}>
-            <h3 style={{ ...valueStyle, fontSize: "16px", marginBottom: "16px" }}>기본정보</h3>
-            <div className="space-y-4">
-              {/* 접수사, 담당자명, 담당자 연락처 - 3열 */}
-              <div className="grid grid-cols-3 gap-5">
-                <div>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >협력사</Label>
-                  <Input
-                    value={selectedCaseData?.assignedPartner || ""}
-                    readOnly
-                    placeholder="담당사명"
-                    className={inputFieldClass}
-                    style={{
-                      ...inputFieldStyle,
-                      background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
-                    }}
-                    data-testid="input-intake-company"
-                  />
-                </div>
-                <div>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    담당자명
-                  </Label>
-                  <Input
-                    value={selectedCaseData?.assignedPartnerManager || ""}
-                    readOnly
-                    placeholder="담당자명"
-                    className={inputFieldClass}
-                    style={{
-                      ...inputFieldStyle,
-                      background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
-                    }}
-                    data-testid="input-manager-name"
-                  />
-                </div>
-                <div>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    담당자 연락처
-                  </Label>
-                  <Input
-                    value={selectedCaseData?.assignedPartnerContact || ""}
-                    readOnly
-                    placeholder="담당자 연락처"
-                    className={inputFieldClass}
-                    style={{
-                      ...inputFieldStyle,
-                      background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
-                    }}
-                    data-testid="input-manager-contact"
-                  />
-                </div>
-              </div>
+            <section className="mt-6">
+              <div className="text-[14px] font-bold">기본 정보</div>
+              <div className="mt-2 border-t border-[#000000]"></div>
 
-              {/* 특이사항 및 요청사항 */}
-              {selectedCaseData?.specialRequests && (
-                <div style={{ marginTop: "16px" }}>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    특이사항 및 요청사항
-                  </Label>
-                  <div
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRadius: "8px",
-                      padding: "12px 16px",
-                      minHeight: "60px",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}
-                    data-testid="text-special-requests"
-                  >
-                    {selectedCaseData.specialRequests}
+              <div className="mt-10 space-y-10">
+                <div className="flex items-center flex-wrap gap-y-4">
+                  <div className="text-[12px] text-[#6B7280] w-[100px]">협력사</div>
+                  <div className="text-[13px] font-semibold text-[#0C0C0C] min-w-[120px]" data-testid="text-partner">{selectedCaseData.assignedPartner || "-"}</div>
+
+                  <div className="text-[12px] text-[#6B7280] ml-12 w-[80px]">담당자명</div>
+                  <div className="text-[13px] font-semibold text-[#0C0C0C] min-w-[100px]" data-testid="text-manager-name">{selectedCaseData.assignedPartnerManager || "-"}</div>
+
+                  <div className="text-[12px] text-[#6B7280] ml-12 w-[100px]">담당자 연락처</div>
+                  <div className="text-[13px] font-semibold text-[#0C0C0C]" data-testid="text-manager-contact">{selectedCaseData.assignedPartnerContact || "-"}</div>
+                </div>
+
+                <div className="flex items-center flex-wrap gap-y-4">
+                  <div className="text-[12px] text-[#6B7280] w-[100px]">보험사 사고번호</div>
+                  <div className="text-[13px] font-semibold text-[#0C0C0C] min-w-[120px]" data-testid="text-accident-no">{selectedCaseData.insuranceAccidentNo || "-"}</div>
+
+                  <div className="text-[12px] text-[#6B7280] ml-12 w-[80px]">보험사</div>
+                  <div className="text-[13px] font-semibold text-[#0C0C0C]" data-testid="text-insurance-company">{selectedCaseData.insuranceCompany || "-"}</div>
+                </div>
+
+                <div className="flex items-center flex-wrap gap-y-4">
+                  <div className="text-[12px] text-[#6B7280] w-[100px]">보험계약자</div>
+                  <div className="text-[13px] font-semibold text-[#0C0C0C] min-w-[120px]" data-testid="text-policyholder">{selectedCaseData.policyHolderName || "-"}</div>
+
+                  <div className="text-[12px] text-[#6B7280] ml-12 w-[80px]">피보험자</div>
+                  <div className="text-[13px] font-semibold text-[#0C0C0C] min-w-[100px]" data-testid="text-insured-name">{selectedCaseData.insuredName || "-"}</div>
+
+                  <div className="text-[12px] text-[#6B7280] ml-12 w-[60px]">연락처</div>
+                  <div className="text-[13px] font-semibold text-[#0C0C0C]" data-testid="text-insured-contact">{selectedCaseData.insuredContact || "-"}</div>
+                </div>
+
+                <div className="flex items-center gap-x-8">
+                  <div className="text-[12px] text-[#6B7280]">사고 발생 일시</div>
+                  <div className="flex w-full max-w-[440px]">
+                    <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
+                      <PopoverTrigger asChild>
+                        <button
+                          ref={accidentDateTriggerRef}
+                          type="button"
+                          className="flex h-11 w-1/2 items-center justify-between rounded-l-md border border-[#E5E7EB] bg-white px-5"
+                          disabled={isReadOnly}
+                          data-testid="button-accident-date"
+                        >
+                          <span className={`text-[13px] ${accidentDate ? "text-[#0C0C0C]" : "text-[#9CA3AF]"}`}>
+                            {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : "날짜 선택"}
+                          </span>
+                          <CalendarIcon className="h-4 w-4 text-[#9CA3AF]" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent 
+                        className="w-auto p-0"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={accidentDate}
+                          onSelect={(date) => {
+                            setAccidentDate(date);
+                            setDatePickerOpen(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+
+                    <div className="flex h-11 w-1/2 items-center justify-between rounded-r-md border border-l-0 border-[#E5E7EB] bg-white px-5">
+                      <input
+                        type="time"
+                        value={accidentTime}
+                        onChange={(e) => { handleUserInput(); setAccidentTime(e.target.value); }}
+                        className="w-full text-[13px] bg-transparent outline-none"
+                        disabled={isReadOnly}
+                        data-testid="input-accident-time"
+                        placeholder="시간 선택"
+                      />
+                      <Clock className="h-4 w-4 text-[#9CA3AF]" />
+                    </div>
                   </div>
                 </div>
-              )}
-
-              {/* 접수정보 소제목 */}
-              <div
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                  marginTop: "24px",
-                  marginBottom: "16px",
-                }}
-              >
-                접수정보
               </div>
+            </section>
 
-              {/* 접수번호, 보험사 - 2열 */}
-              <div className="grid grid-cols-2 gap-5">
-                <div>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    접수번호
-                  </Label>
-                  <Input
-                    value={formatCaseNumber(selectedCaseData?.caseNumber) || ""}
-                    readOnly
-                    placeholder="접수번호"
-                    className={inputFieldClass}
-                    style={{
-                      ...inputFieldStyle,
-                      background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
-                    }}
-                    data-testid="input-case-number"
-                  />
-                </div>
-                <div>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    보험사
-                  </Label>
-                  <Input
-                    value={selectedCaseData?.insuranceCompany || ""}
-                    readOnly
-                    placeholder="보험사 선택"
-                    className={inputFieldClass}
-                    style={{
-                      ...inputFieldStyle,
-                      background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
-                    }}
-                    data-testid="input-insurance-company"
-                  />
-                </div>
-              </div>
+            <section className="mt-8">
+              <div className="text-[14px] font-bold">현장조사 정보</div>
+              <div className="mt-3 border-t border-[#000000]"></div>
 
-              {/* 보험계약자 및 피보험자 정보 소제목 + 체크박스 */}
-              <div 
-                className="flex items-center justify-between"
-                style={{
-                  marginTop: "24px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    color: "#0C0C0C",
-                  }}
-                >
-                  보험계약자 및 피보험자 정보
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="same-as-policyholder"
-                    checked={normalizeBoolean(selectedCaseData?.sameAsPolicyHolder)}
-                    disabled
-                    data-testid="checkbox-same-as-policyholder"
-                  />
-                  <label
-                    htmlFor="same-as-policyholder"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                      cursor: "not-allowed",
-                    }}
-                  >
-                    보험계약자 = 피보험자
-                  </label>
-                </div>
-              </div>
+              <div className="mt-4 space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-[120px] text-[12px] text-[#6B7280]">방문 일시</div>
 
-              {/* 보험계약자, 피보험자, 피보험자 연락처 - 3열 */}
-              <div className="grid grid-cols-3 gap-5">
-                <div>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    보험계약자
-                  </Label>
-                  <Input
-                    value={selectedCaseData?.policyHolderName || ""}
-                    readOnly
-                    placeholder="보험계약자 성명"
-                    className={inputFieldClass}
-                    style={{
-                      ...inputFieldStyle,
-                      background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
-                    }}
-                    data-testid="input-policyholder-name"
-                  />
-                </div>
-                <div>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    피보험자
-                  </Label>
-                  <Input
-                    value={selectedCaseData?.insuredName || ""}
-                    readOnly
-                    placeholder="피보험자 성명"
-                    className={inputFieldClass}
-                    style={{
-                      ...inputFieldStyle,
-                      background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
-                    }}
-                    data-testid="input-insured-name"
-                  />
-                </div>
-                <div>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    피보험자 연락처
-                  </Label>
-                  <Input
-                    value={selectedCaseData?.insuredContact || ""}
-                    readOnly
-                    placeholder="피보험자 연락처"
-                    className={inputFieldClass}
-                    style={{
-                      ...inputFieldStyle,
-                      background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
-                    }}
-                    data-testid="input-insured-contact"
-                  />
-                </div>
-              </div>
-
-              {/* 피보험자 주소 - 전체 너비 */}
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  피보험자 주소
-                </Label>
-                <Input
-                  value={[
-                    selectedCaseData?.insuredAddress,
-                    (selectedCaseData as any)?.insuredAddressDetail
-                  ].filter(Boolean).join(" ") || ""}
-                  readOnly
-                  placeholder="도로명 주소, 동/호수 포함"
-                  className={inputFieldClass}
-                  style={{
-                    ...inputFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-insured-address"
-                />
-              </div>
-
-              {/* 사고 발생 일시 */}
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  사고 발생일시
-                </Label>
-                <div className="flex gap-2">
-                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        ref={accidentDateTriggerRef}
-                        type="button"
-                        variant="outline"
-                        className={dateButtonClass}
-                        style={{
-                          ...dateButtonStyle,
-                          justifyContent: "flex-start",
-                          background: "#FDFDFD",
-                          border: isReadOnly ? "none" : "2px solid rgba(12,12,12,0.08)",
-                          flex: 1,
-                        }}
-                        disabled={isReadOnly}
-                        data-testid="button-accident-date"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    {/* FIX: focus() 호출 제거 - trigger 버튼 포커스 재지정 시 스크롤 위로 이동 문제 해결 */}
-                    <PopoverContent 
-                      className="w-auto p-0"
-                      onOpenAutoFocus={(e) => {
-                        e.preventDefault();
-                      }}
-                      onCloseAutoFocus={(e) => {
-                        e.preventDefault();
-                      }}
-                    >
-                      <Calendar
-                        mode="single"
-                        selected={accidentDate}
-                        onSelect={(date) => {
-                          setAccidentDate(date);
-                          setDatePickerOpen(false);
-                        }}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Input
-                    type="time"
-                    value={accidentTime}
-                    onChange={(e) => { handleUserInput(); setAccidentTime(e.target.value); }}
-                    className={inputFieldClass}
-                    style={{
-                      ...inputFieldStyle,
-                      flex: 1,
-                      border: isReadOnly ? "none" : undefined,
-                    }}
-                    disabled={isReadOnly}
-                    data-testid="input-accident-time"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 현장조사 정보 섹션 */}
-          <div className={sectionHeaderStyle}>
-            <h3 style={{ ...valueStyle, fontSize: "16px", marginBottom: "16px" }}>현장조사 정보</h3>
-            <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* 방문 일시 */}
-                  <div>
-                    <Label 
-                      htmlFor="visit-date"
-                      className="mb-3"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      방문 일시
-                    </Label>
-                    <div className="flex gap-2">
-                      <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            ref={visitDateTriggerRef}
-                            type="button"
-                            variant="outline"
-                            className={dateButtonClass}
-                            style={{
-                              ...dateButtonStyle,
-                              justifyContent: "flex-start",
-                              background: "#FDFDFD",
-                              border: "2px solid rgba(12,12,12,0.08)",
-                              flex: 1,
-                            }}
-                            disabled={isReadOnly}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                            }}
-                            data-testid="button-visit-date"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        {/* FIX: focus() 호출 제거 - 현장조사 정보에서 날짜 선택 시 스크롤 위치 유지 */}
-                        <PopoverContent 
-                          className="w-auto p-0"
-                          onOpenAutoFocus={(e) => {
-                            e.preventDefault();
-                          }}
-                          onCloseAutoFocus={(e) => {
-                            e.preventDefault();
-                          }}
+                  <div className="flex items-center gap-2">
+                    <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
+                      <PopoverTrigger asChild>
+                        <button
+                          ref={visitDateTriggerRef}
+                          type="button"
+                          className="flex h-9 w-[180px] items-center justify-between rounded-md border border-[#E5E7EB] bg-white px-3"
+                          disabled={isReadOnly}
+                          data-testid="button-visit-date"
                         >
-                          <Calendar
-                            mode="single"
-                            selected={visitDate}
-                            onSelect={(date) => {
-                              setVisitDate(date);
-                              setVisitDatePickerOpen(false);
-                            }}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <Input
+                          <span className={`text-[12px] ${visitDate ? "text-[#0C0C0C]" : "text-[#9CA3AF]"}`}>
+                            {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : "날짜 선택"}
+                          </span>
+                          <CalendarIcon className="h-4 w-4 text-[#9CA3AF]" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent 
+                        className="w-auto p-0"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={visitDate}
+                          onSelect={(date) => {
+                            setVisitDate(date);
+                            setVisitDatePickerOpen(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+
+                    <div className="flex h-9 w-[180px] items-center justify-between rounded-md border border-[#E5E7EB] bg-white px-3">
+                      <input
                         type="time"
                         value={visitTime}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleUserInput();
-                          setVisitTime(e.target.value);
-                        }}
-                        onFocus={(e) => {
-                          e.stopPropagation();
-                        }}
-                        className={inputFieldClass}
-                        style={{
-                          ...inputFieldStyle,
-                          flex: 1,
-                        }}
+                        onChange={(e) => { handleUserInput(); setVisitTime(e.target.value); }}
+                        className="w-full text-[12px] bg-transparent outline-none"
                         disabled={isReadOnly}
                         data-testid="input-visit-time"
                       />
+                      <Clock className="h-4 w-4 text-[#9CA3AF]" />
                     </div>
                   </div>
 
-                  {/* 출동 담당자 */}
-                  <div>
-                    <Label 
-                      htmlFor="dispatch-manager"
-                      className="mb-3"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      출동 담당자
-                    </Label>
-                    <Input
-                      id="dispatch-manager"
-                      value={selectedCaseData?.assignedPartnerManager || ""}
+                  <div className="ml-2 flex items-center gap-3">
+                    <div className="text-[12px] text-[#6B7280]">출동 담당자</div>
+                    <input
+                      className="h-9 w-[260px] rounded-md border border-[#E5E7EB] px-3 text-[13px] outline-none placeholder:text-[#9CA3AF]"
+                      placeholder="출동 담당자"
+                      value={selectedCaseData.assignedPartnerManager || ""}
                       readOnly
-                      className={inputFieldClass}
-                      style={{
-                        ...inputFieldStyle,
-                        background: "rgba(12, 12, 12, 0.04)",
-                        color: "rgba(12, 12, 12, 0.6)",
-                      }}
-                      placeholder="협력사 담당자명"
                       data-testid="input-dispatch-manager"
                     />
                   </div>
                 </div>
 
-              {/* 사고 원인(누수소견서) 서브섹션 */}
-              <div>
-                <h3
-                  className="mb-4"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "20px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  사고 원인(누수소견서)
-                </h3>
-                <div className="space-y-4">
-                  {/* 카테고리 */}
-                  <div>
-                    <Label 
-                      className="mb-2"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "#686A6E",
-                      }}
-                    >
-                      누수유형 <span style={{ color: "#FF4D4F" }}>*</span>
-                    </Label>
-                    <div className="flex gap-2">
-                      {["배관", "코킹", "방수", "기타"].map((category) => (
-                        <button
-                          key={category}
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleUserInput();
-                            setAccidentCategory(category);
-                          }}
-                          disabled={isReadOnly}
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "16px",
-                            fontWeight: 600,
-                            height: "52px",
-                            padding: "12px 16px",
-                            borderRadius: "6px",
-                            border: accidentCategory === category 
-                              ? "2px solid rgba(255, 255, 255, 0.04)" 
-                              : "1px solid rgba(12, 12, 12, 0.3)",
-                            background: accidentCategory === category 
-                              ? "rgba(0, 143, 237, 0.1)" 
-                              : "#FDFDFD",
-                            color: accidentCategory === category 
-                              ? "#008FED" 
-                              : "rgba(12, 12, 12, 0.9)",
-                            boxShadow: accidentCategory === category 
-                              ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
-                              : "none",
-                            backdropFilter: accidentCategory === category ? "blur(7px)" : "none",
-                            cursor: isReadOnly ? "not-allowed" : "pointer",
-                            opacity: isReadOnly ? 0.5 : 1,
-                          }}
-                          data-testid={`button-category-${category}`}
-                        >
-                          {category}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-[120px] text-[12px] text-[#6B7280]">누수유형</div>
 
-                  {/* 사고원인 */}
-                  <div>
-                    <Label 
-                      htmlFor="accident-cause-detail"
-                      className="mb-2"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "#686A6E",
-                      }}
-                    >
-                      사고원인
-                    </Label>
-                    <textarea
-                      id="accident-cause-detail"
-                      value={accidentCause}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleUserInput();
-                        setAccidentCause(e.target.value);
-                      }}
-                      onFocus={(e) => {
-                        e.stopPropagation();
-                      }}
-                      placeholder="누수원인, 누수지점 등 기타 특이사항을 자유롭게 입력해주세요"
-                      maxLength={800}
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        padding: "16px 20px",
-                        background: "#FDFDFD",
-                        border: "2px solid rgba(12,12,12,0.08)",
-                        borderRadius: "8px",
-                        resize: "none",
-                        minHeight: "120px",
-                        width: "100%",
-                      }}
-                      disabled={isReadOnly}
-                      data-testid="textarea-accident-cause"
-                    />
-                    <div 
-                      className="text-right mt-1"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "12px",
-                        color: "rgba(12, 12, 12, 0.5)",
-                      }}
-                    >
-                      {accidentCause.length}/800
+                  <div className="flex flex-wrap items-center gap-6 text-[13px] text-[#374151]">
+                    {["누수", "결로", "방수", "기타"].map((type) => (
+                      <label key={type} className="inline-flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={leakTypes.has(type)}
+                          onChange={() => toggleLeakType(type)}
+                          disabled={isReadOnly}
+                          className="h-4 w-4 accent-[#008FED]"
+                          data-testid={`checkbox-leak-type-${type}`}
+                        />
+                        <span className={leakTypes.has(type) ? "text-[#008FED]" : "text-[#0C0C0C]"}>
+                          {type}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="mt-2 w-[120px] text-[12px] text-[#6B7280]">사고원인</div>
+                  <textarea
+                    className="min-h-[70px] w-full rounded-md border border-[#E5E7EB] p-3 text-[13px] outline-none placeholder:text-[#9CA3AF]"
+                    placeholder="사고원인"
+                    value={accidentCause}
+                    onChange={(e) => { handleUserInput(); setAccidentCause(e.target.value); }}
+                    disabled={isReadOnly}
+                    data-testid="textarea-accident-cause"
+                  />
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-[120px] text-[12px] text-[#6B7280]">처리유형</div>
+
+                  <div className="flex flex-wrap items-center gap-6 text-[13px] text-[#374151]">
+                    {["수리", "비교견적", "기타"].map((type) => (
+                      <label key={type} className="inline-flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={processingTypes.has(type)}
+                          onChange={() => toggleProcessingType(type)}
+                          disabled={isReadOnly}
+                          className="h-4 w-4 accent-[#008FED]"
+                          data-testid={`checkbox-processing-type-${type}`}
+                        />
+                        <span className={processingTypes.has(type) ? "text-[#008FED]" : "text-[#0C0C0C]"}>
+                          {type}
+                        </span>
+                      </label>
+                    ))}
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12px] text-[#6B7280]">기타사항입력</span>
+                      <input
+                        className="h-9 w-[260px] rounded-md border border-[#E5E7EB] px-3 text-[13px] outline-none placeholder:text-[#9CA3AF]"
+                        placeholder="기타사항"
+                        value={processingTypeOther}
+                        onChange={(e) => { handleUserInput(); setProcessingTypeOther(e.target.value); }}
+                        disabled={isReadOnly}
+                        data-testid="input-processing-type-other"
+                      />
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* 동일사고번호 공사대상건 */}
-              <div>
-                <h3
-                  className="mb-4"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "20px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  동일사고번호 공사대상건 (총 {relatedCases.length}건)
-                </h3>
-                
-                <div className="space-y-3">
+                <div className="flex items-center gap-4">
+                  <div className="w-[120px] text-[12px] text-[#6B7280]">복구방식</div>
+
+                  <div className="flex items-center gap-6 text-[13px] text-[#374151]">
+                    {["부분수리", "전체수리"].map((method) => (
+                      <label key={method} className="inline-flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={recoveryMethodType === method}
+                          onChange={() => setRecoveryMethodType(method)}
+                          disabled={isReadOnly}
+                          className="h-4 w-4 accent-[#008FED]"
+                          data-testid={`checkbox-recovery-method-${method}`}
+                        />
+                        <span className={recoveryMethodType === method ? "text-[#008FED]" : "text-[#0C0C0C]"}>
+                          {method}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="mt-8">
+              <div className="text-[14px] font-bold text-[#111827]">동일사고번호 공사대상건</div>
+
+              <div className="mt-3 border-t border-b border-t-black border-b-[#E5E7EB] bg-white p-4">
+                <div className="mb-3 text-[13px] font-semibold text-[#111827]">
+                  총 {relatedCases.length}건
+                </div>
+
+                <div className="space-y-2">
                   {relatedCases.map((caseItem) => {
-                    // 손해방지인건(-0으로 끝나는 케이스) 여부 판별
                     const isLossPreventionCase = /-0$/.test(caseItem.caseNumber || '');
-                    // 손해방지인건은 피보험자명/연락처 사용, 그 외는 피해자 정보 사용
                     const displayName = isLossPreventionCase 
                       ? (caseItem.insuredName || "-")
                       : (caseItem.victimName || "-");
-                    const displayContact = isLossPreventionCase 
-                      ? (caseItem.insuredContact || "-")
-                      : (caseItem.victimContact || "-");
-                    
+
                     return (
-                    <div
-                      key={caseItem.id}
-                      style={{
-                        background: caseItem.id === selectedCase 
-                          ? "rgba(0, 143, 237, 0.08)" 
-                          : "rgba(12, 12, 12, 0.04)",
-                        borderRadius: "8px",
-                        padding: "16px 20px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        border: caseItem.id === selectedCase 
-                          ? "2px solid rgba(0, 143, 237, 0.3)" 
-                          : "none",
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          style={{
-                            width: "6px",
-                            height: "6px",
-                            borderRadius: "50%",
-                            background: caseItem.id === selectedCase ? "#008FED" : "#686A6E",
-                            flexShrink: 0,
-                          }}
-                        />
-                        <span
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            color: "#008FED",
-                            minWidth: "120px",
-                          }}
-                        >
-                          {formatCaseNumber(caseItem.caseNumber)}
-                        </span>
-                        <span
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "16px",
-                            fontWeight: 600,
-                            color: "rgba(12, 12, 12, 0.8)",
-                          }}
-                        >
-                          {displayName}
-                        </span>
-                        <span
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "16px",
-                            fontWeight: 500,
-                            color: "rgba(12, 12, 12, 0.6)",
-                          }}
-                        >
-                          {displayContact}
-                        </span>
-                        <span
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "16px",
-                            fontWeight: 500,
-                            color: "rgba(12, 12, 12, 0.6)",
-                          }}
-                        >
-                          {(() => {
-                            // 피해자 주소 우선 표시 (피해자 주소가 없을 경우에만 피보험자 주소 표시)
-                            const hasVictimAddress = !!caseItem.victimAddress;
-                            const address = caseItem.victimAddress || caseItem.insuredAddress || "";
-                            const detail = hasVictimAddress 
-                              ? (caseItem.victimAddressDetail || "")
-                              : (caseItem.insuredAddressDetail || "");
-                            if (address && detail) return `${address} ${detail}`;
-                            if (address) return address;
-                            return "-";
-                          })()}
-                        </span>
+                      <div key={caseItem.id} className="rounded-lg bg-[#F9FAFB] px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-[13px] font-semibold text-[#111827]">
+                              {caseItem.insuranceCompany || "-"}
+                              <span className="ml-1 text-[#6B7280]">{caseItem.insuranceAccidentNo || ""}(사고번호)</span>
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-[#6B7280]">
+                              <span>접수번호 {formatCaseNumber(caseItem.caseNumber) || "-"}</span>
+                              <span>피보험자 {caseItem.insuredName || "-"}</span>
+                              <span>담당자 {caseItem.assignedPartnerManager || "-"}</span>
+                            </div>
+                          </div>
+                          
+                          {!isReadOnly && !isLossPreventionCase && (caseItem.fieldSurveyStatus !== "submitted" || caseItem.status === "반려") && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditVictimDialog(caseItem);
+                              }}
+                              className="p-2 hover:bg-gray-100 rounded"
+                              data-testid={`button-edit-victim-${caseItem.id}`}
+                            >
+                              <Pencil size={16} className="text-[#6B7280]" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      
-                      {/* 피해자 정보 수정 버튼 - 손해방지인건(-0)은 수정 불가, 협력사 및 관리자만 표시, 현장출동보고서 제출 전 또는 반려 시 수정 가능 */}
-                      {!isReadOnly && !isLossPreventionCase && (caseItem.fieldSurveyStatus !== "submitted" || caseItem.status === "반려") && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEditVictimDialog(caseItem);
-                          }}
-                          data-testid={`button-edit-victim-${caseItem.id}`}
-                          style={{
-                            width: "32px",
-                            height: "32px",
-                            padding: "4px",
-                          }}
-                        >
-                          <Pencil 
-                            size={16} 
-                            style={{ color: "rgba(12, 12, 12, 0.5)" }} 
-                          />
-                        </Button>
-                      )}
-                    </div>
-                  );
+                    );
                   })}
                 </div>
+              </div>
+            </section>
 
-                {/* 새 피해자 추가 폼 - 현장출동보고서 제출 전까지만 추가 가능 */}
+            <section className="mt-8">
+              <div className="flex items-center justify-between">
+                <div className="text-[14px] font-bold">피해자 추가</div>
                 {!isReadOnly && !isSubmitted && (
-                  <div className="mt-6 space-y-4">
-                    <div
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "rgba(12, 12, 12, 0.8)",
-                      }}
-                    >
-                      피해자 추가
-                    </div>
-                    
-                    <div className="flex items-end gap-2">
-                      <div className="flex-1 space-y-2">
-                        <Input
-                          value={newVictimName}
-                          onChange={(e) => { handleUserInput(); setNewVictimName(e.target.value); }}
-                          placeholder="성함을 입력해주세요"
-                          className={inputFieldClass}
-                          style={inputFieldStyle}
-                          data-testid="input-new-victim-name"
-                        />
-                        <Input
-                          value={newVictimContact}
-                          onChange={(e) => { handleUserInput(); setNewVictimContact(e.target.value); }}
-                          placeholder="연락처를 입력해주세요"
-                          className={inputFieldClass}
-                          style={inputFieldStyle}
-                          data-testid="input-new-victim-contact"
-                        />
+                  <button
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F6FA]"
+                    aria-label="add"
+                    onClick={handleAddNewVictim}
+                    disabled={!newVictimName || !newVictimContact || !newVictimAddress}
+                    data-testid="button-add-victim"
+                  >
+                    +
+                  </button>
+                )}
+              </div>
+              <div className="mt-3 border-t border-[#000000]"></div>
+
+              {!isReadOnly && !isSubmitted && (
+                <div className="mt-4 space-y-4">
+                  <div className="grid grid-cols-12 gap-4">
+                    <div className="col-span-12 flex items-center gap-3">
+                      <div
+                        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#008FED] bg-[#008FED] text-[12px] text-white cursor-pointer"
+                        onClick={() => {
+                          setNewVictimName("");
+                          setNewVictimContact("");
+                          setNewVictimAddress("");
+                          setNewVictimAddressDetail("");
+                          setSameAsInsured(false);
+                        }}
+                        data-testid="button-remove-new-victim"
+                      >
+                        −
+                      </div>
+
+                      <div className="flex flex-1 flex-wrap gap-4">
                         <div className="flex items-center gap-2">
-                          <Input
+                          <div className="w-[60px] text-[12px] text-[#6B7280]">성명</div>
+                          <input
+                            className="h-9 w-[220px] rounded-md border border-[#E5E7EB] px-3 text-[13px] outline-none placeholder:text-[#9CA3AF]"
+                            placeholder="성명"
+                            value={newVictimName}
+                            onChange={(e) => { handleUserInput(); setNewVictimName(e.target.value); }}
+                            data-testid="input-new-victim-name"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="w-[60px] text-[12px] text-[#6B7280]">연락처</div>
+                          <input
+                            className="h-9 w-[220px] rounded-md border border-[#E5E7EB] px-3 text-[13px] outline-none placeholder:text-[#9CA3AF]"
+                            placeholder="연락처"
+                            value={newVictimContact}
+                            onChange={(e) => { handleUserInput(); setNewVictimContact(e.target.value); }}
+                            data-testid="input-new-victim-contact"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-span-12 grid grid-cols-12 gap-4">
+                      <div className="col-span-7 flex items-center gap-2">
+                        <div className="w-[60px] text-[12px] text-[#6B7280]">피해 주소</div>
+                        <div className="relative flex-1">
+                          <input
+                            className="h-9 w-full rounded-md border border-[#E5E7EB] px-3 pr-10 text-[13px] outline-none placeholder:text-[#9CA3AF]"
+                            placeholder="도로명 주소, 동/호 포함"
                             value={newVictimAddress}
                             onChange={(e) => { handleUserInput(); setNewVictimAddress(e.target.value); }}
-                            placeholder="주소"
-                            className={inputFieldClass}
-                            style={{
-                              ...inputFieldStyle,
-                              flex: 1,
-                            }}
                             disabled={sameAsInsured}
                             data-testid="input-new-victim-address"
                           />
-                          <Input
-                            value={newVictimAddressDetail}
-                            onChange={(e) => { handleUserInput(); setNewVictimAddressDetail(e.target.value); }}
-                            placeholder="상세주소"
-                            className={inputFieldClass}
-                            style={{
-                              ...inputFieldStyle,
-                              flex: 1,
-                            }}
-                            data-testid="input-new-victim-address-detail"
-                          />
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="same-as-insured-address"
-                              checked={sameAsInsured}
-                              onCheckedChange={(checked) => {
-                                setSameAsInsured(checked === true);
-                                if (checked === true) {
-                                  // 기본 주소만 연동, 상세주소는 연동하지 않음
-                                  setNewVictimAddress(selectedCaseData?.insuredAddress || "");
-                                  // 상세주소는 빈 값 유지 (사용자가 직접 입력)
-                                } else {
-                                  setNewVictimAddress("");
-                                  setNewVictimAddressDetail("");
-                                }
-                              }}
-                              data-testid="checkbox-same-as-insured"
-                            />
-                            <label
-                              htmlFor="same-as-insured-address"
-                              style={{
-                                fontFamily: "Pretendard",
-                                fontSize: "14px",
-                                fontWeight: 500,
-                                color: "#686A6E",
-                                whiteSpace: "nowrap",
-                                cursor: "pointer",
-                              }}
-                            >
-                              주소지 동일
-                            </label>
-                          </div>
+                          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
                         </div>
                       </div>
-                      
-                      <Button
-                        type="button"
-                        onClick={async () => {
-                          if (newVictimName && newVictimContact && newVictimAddress && selectedCaseData) {
-                            try {
-                              // 원본 케이스 접수번호에서 prefix 추출 (예: "251203001-1" -> "251203001")
-                              const parentCaseNumber = selectedCaseData.caseNumber || "";
-                              const casePrefix = parentCaseNumber.split('-')[0];
-                              
-                              // 새 피해세대 케이스 생성 (spread 사용 안 함 - 필요한 필드만 명시적으로 복사)
-                              const newCasePayload = {
-                                // 원본 케이스 번호 prefix 전달 (서버에서 다음 suffix 계산)
-                                parentCasePrefix: casePrefix,
-                                
-                                // 기본 정보 (복사)
-                                receptionDate: selectedCaseData.receptionDate,
-                                accidentDate: selectedCaseData.accidentDate,
-                                
-                                // 보험 정보 (복사)
-                                insuranceCompany: selectedCaseData.insuranceCompany,
-                                insurancePolicyNo: selectedCaseData.insurancePolicyNo,
-                                insuranceAccidentNo: selectedCaseData.insuranceAccidentNo,
-                                
-                                // 의뢰사 정보 (복사)
-                                clientResidence: selectedCaseData.clientResidence,
-                                clientDepartment: selectedCaseData.clientDepartment,
-                                clientName: selectedCaseData.clientName,
-                                clientContact: selectedCaseData.clientContact,
-                                
-                                // 심사사 정보 (복사)
-                                assessorId: selectedCaseData.assessorId,
-                                assessorDepartment: selectedCaseData.assessorDepartment,
-                                assessorTeam: selectedCaseData.assessorTeam,
-                                assessorContact: selectedCaseData.assessorContact,
-                                
-                                // 조사사 정보 (복사)
-                                investigatorTeam: selectedCaseData.investigatorTeam,
-                                investigatorDepartment: selectedCaseData.investigatorDepartment,
-                                investigatorTeamName: selectedCaseData.investigatorTeamName,
-                                investigatorContact: selectedCaseData.investigatorContact,
-                                
-                                // 보험계약자 정보 (복사)
-                                policyHolderName: selectedCaseData.policyHolderName,
-                                policyHolderIdNumber: selectedCaseData.policyHolderIdNumber,
-                                policyHolderAddress: selectedCaseData.policyHolderAddress,
-                                
-                                // 피보험자 정보 (복사)
-                                insuredName: selectedCaseData.insuredName,
-                                insuredIdNumber: selectedCaseData.insuredIdNumber,
-                                insuredContact: selectedCaseData.insuredContact,
-                                insuredAddress: selectedCaseData.insuredAddress,
-                                insuredAddressDetail: selectedCaseData.insuredAddressDetail,
-                                sameAsPolicyHolder: selectedCaseData.sameAsPolicyHolder,
-                                
-                                // 새 피해자 정보 (신규 입력)
-                                victimName: newVictimName,
-                                victimContact: newVictimContact,
-                                victimAddress: newVictimAddress,
-                                victimAddressDetail: newVictimAddressDetail,
-                                
-                                // 피해사항 정보 (빈 배열로 초기화 - 새 피해자는 자신의 피해사항 입력)
-                                damageItems: "[]",
-                                
-                                // 처리 유형: 피해세대복구지원만 (JSON string으로 전송 - schema가 text 타입)
-                                processingTypes: JSON.stringify(["피해세대복구"]),
-                                victimIncidentAssistance: "true",  // schema는 text 타입 ("true" | "false" | null)
-                                damagePreventionCost: "false",     // schema는 text 타입 ("true" | "false" | null)
-                                
-                                // 당사 담당자 정보 (복사)
-                                managerId: selectedCaseData.managerId,
-                                
-                                // 배당 정보 (복사 - 같은 업체에 배당)
-                                assignedPartner: selectedCaseData.assignedPartner,
-                                assignmentDate: selectedCaseData.assignmentDate,
-                                
-                                // 복구 타입 (복사)
-                                recoveryType: selectedCaseData.recoveryType,
-                                
-                                // 상태: 접수완료 (워크플로우 시작점)
-                                status: "접수완료",
-                                
-                                // 워크플로우 필드: 모두 null/초기값 (새 케이스는 처음부터 시작)
-                                progressStatus: null,
-                                reviewDecision: null,
-                                reviewComment: null,
-                                reviewedAt: null,
-                                reviewedBy: null,
-                                visitDate: null,
-                                visitTime: null,
-                                fieldSurveyStatus: "draft",               // 현장조사 상태 (초기값: draft)
-                                
-                                // 현장조사 관련 필드: 모두 null (새 케이스는 입력 전 상태)
-                                accompaniedPerson: null,
-                                travelDistance: null,
-                                dispatchLocation: null,
-                                accidentTime: null,
-                                accidentCategory: null,
-                                processingTypeOther: null,
-                                recoveryMethodType: null,
-                                
-                                // 기타 필드: 모두 null
-                                clientPhone: null,
-                                clientAddress: null,
-                                accidentLocation: null,
-                                accidentDescription: null,
-                                accidentType: null,
-                                accidentCause: null,
-                                restorationMethod: null,
-                                otherVendorEstimate: null,
-                                
-                                // 추가 피해자: 빈 배열 (JSON string)
-                                additionalVictims: "[]",
-                                
-                                // 배당사항 추가 필드: null
-                                assignedPartnerManager: null,
-                                assignedPartnerContact: null,
-                                urgency: null,
-                                specialRequests: null,
-                                
-                                // 진행상황 메모: null
-                                specialNotes: null,
-                                specialNotesConfirmedBy: null,
-                                additionalNotes: null,
-                                
-                                // 금액: null
-                                estimateAmount: null,
-                                
-                                // 기타 연관 필드: null
-                                assignedTo: null,
-                                
-                                // 날짜 필드: 모두 null (접수일/배당일 제외)
-                                inspectionDate: null,
-                                siteVisitDate: null,
-                                fieldSurveyDate: null,
-                                siteInvestigationSubmitDate: null,
-                                firstInspectionDate: null,
-                                firstApprovalDate: null,
-                                secondApprovalDate: null,
-                                firstInvoiceDate: null,
-                                approvalRequestDate: null,
-                                approvalDate: null,
-                                approvalCompletionDate: null,
-                                constructionStartDate: null,
-                                constructionCompletionDate: null,
-                                constructionReportSubmitDate: null,
-                                totalWorkDate: null,
-                                contractorReportDate: null,
-                                contractorRepairDate: null,
-                                completionDate: null,
-                                claimDate: null,
-                              };
-                              
-                              // Debug: log victim address values before sending
-                              console.log("🏠 New Victim Payload Debug:");
-                              console.log("  - victimName:", newVictimName);
-                              console.log("  - victimAddress:", newVictimAddress);
-                              console.log("  - victimAddressDetail:", newVictimAddressDetail);
-                              console.log("  - sameAsInsured:", sameAsInsured);
-                              console.log("  - insuredAddress:", selectedCaseData.insuredAddress);
-                              console.log("  - insuredAddressDetail:", selectedCaseData.insuredAddressDetail);
-                              
-                              await apiRequest("POST", "/api/cases", newCasePayload);
-                              
-                              toast({
-                                title: "추가 피해자 등록 완료",
-                                description: `${newVictimName} 님의 케이스가 생성되었습니다.`,
-                              });
-                              
-                              // 입력 필드 초기화
-                              setNewVictimName("");
-                              setNewVictimContact("");
-                              setNewVictimAddress("");
-                              setNewVictimAddressDetail("");
-                              setSameAsInsured(false);
-                              
-                              // 케이스 목록 새로고침
-                              queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-                            } catch (error) {
-                              toast({
-                                title: "케이스 생성 실패",
-                                description: error instanceof Error ? error.message : "케이스 생성 중 오류가 발생했습니다.",
-                                variant: "destructive",
-                              });
-                            }
-                          }
-                        }}
-                        disabled={!newVictimName || !newVictimContact || !newVictimAddress || !selectedCaseData}
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 600,
-                          height: "68px",
-                          width: "120px",
-                          background: newVictimName && newVictimContact && newVictimAddress 
-                            ? "#ECECEC" 
-                            : "rgba(12, 12, 12, 0.04)",
-                          color: newVictimName && newVictimContact && newVictimAddress 
-                            ? "rgba(12, 12, 12, 0.8)" 
-                            : "rgba(12, 12, 12, 0.3)",
-                          border: "none",
-                          borderRadius: "8px",
-                        }}
-                        data-testid="button-add-new-victim"
-                      >
-                        등록
-                      </Button>
+
+                      <div className="col-span-5 flex items-center gap-2">
+                        <div className="w-[60px] text-[12px] text-[#6B7280]">상세주소</div>
+                        <div className="relative flex-1">
+                          <input
+                            className="h-9 w-full rounded-md border border-[#E5E7EB] px-3 pr-10 text-[13px] outline-none placeholder:text-[#9CA3AF]"
+                            placeholder="상세주소"
+                            value={newVictimAddressDetail}
+                            onChange={(e) => { handleUserInput(); setNewVictimAddressDetail(e.target.value); }}
+                            data-testid="input-new-victim-address-detail"
+                          />
+                          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+                        </div>
+                      </div>
+
+                      <div className="col-span-12 flex items-center justify-end">
+                        <label className="inline-flex items-center gap-2 text-[12px] text-[#6B7280] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={sameAsInsured}
+                            onChange={(e) => {
+                              setSameAsInsured(e.target.checked);
+                              if (e.target.checked) {
+                                setNewVictimAddress(selectedCaseData?.insuredAddress || "");
+                              } else {
+                                setNewVictimAddress("");
+                                setNewVictimAddressDetail("");
+                              }
+                            }}
+                            className="h-4 w-4 accent-[#008FED]"
+                            data-testid="checkbox-same-as-insured"
+                          />
+                          주소지 동일
+                        </label>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </section>
 
-              {/* VOC(고객의 소리) 서브섹션 */}
-              <div>
-                <h3
-                  className="mb-4"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "20px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  VOC(고객의 소리)
-                </h3>
-                <div>
-                  <textarea
-                    id="voc"
-                    value={voc}
-                    onChange={(e) => { handleUserInput(); setVoc(e.target.value); }}
-                    placeholder="내용을 적어주세요"
-                    maxLength={800}
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      padding: "16px 20px",
-                      background: "#FDFDFD",
-                      border: "2px solid rgba(12,12,12,0.08)",
-                      borderRadius: "8px",
-                      resize: "none",
-                      minHeight: "120px",
-                      width: "100%",
-                    }}
-                    disabled={isReadOnly}
-                    data-testid="textarea-voc"
-                  />
-                  <div 
-                    className="text-right mt-1"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "12px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                    }}
-                  >
-                    {voc.length}/800
-                  </div>
+            <section className="mt-8">
+              <div className="text-[14px] font-bold">VOC(고객의 소리)</div>
+              <div className="mt-3 border-t border-[#000000]"></div>
+
+              <div className="mt-4">
+                <textarea
+                  className="min-h-[110px] w-full rounded-md border border-[#E5E7EB] p-3 text-[13px] outline-none placeholder:text-[#9CA3AF]"
+                  placeholder="내용을 적어주세요"
+                  value={voc}
+                  onChange={(e) => { handleUserInput(); setVoc(e.target.value); }}
+                  maxLength={800}
+                  disabled={isReadOnly}
+                  data-testid="textarea-voc"
+                />
+                <div className="text-right mt-1 text-[12px] text-[#6B7280]">
+                  {voc.length}/800
                 </div>
               </div>
-            </div>
-          </div>
+            </section>
 
-          {/* 피해 복구 방식 및 처리 유형 섹션 */}
-          <div className={sectionHeaderStyle}>
-            <h3 style={{ ...valueStyle, fontSize: "16px", marginBottom: "16px" }}>피해 복구 방식 및 처리 유형</h3>
-            <div className="space-y-4">
-              {/* 처리 유형(복수선택) */}
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  처리 유형(복수선택)
-                </Label>
-                <div className="flex gap-2">
-                  {["수리", "비교견적", "기타"].map((type) => (
-                    <Button
-                      key={type}
-                      type="button"
-                      onClick={() => {
-                        const newTypes = new Set(processingTypes);
-                        if (newTypes.has(type)) {
-                          newTypes.delete(type);
-                        } else {
-                          newTypes.add(type);
-                        }
-                        setProcessingTypes(newTypes);
-                      }}
-                      disabled={isReadOnly}
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        height: "52px",
-                        padding: "12px 16px",
-                        borderRadius: "6px",
-                        border: processingTypes.has(type)
-                          ? "2px solid rgba(255, 255, 255, 0.04)" 
-                          : "1px solid rgba(12, 12, 12, 0.3)",
-                        background: processingTypes.has(type)
-                          ? "rgba(0, 143, 237, 0.1)" 
-                          : "#FDFDFD",
-                        color: processingTypes.has(type)
-                          ? "#008FED" 
-                          : "rgba(12, 12, 12, 0.9)",
-                        boxShadow: processingTypes.has(type)
-                          ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
-                          : "none",
-                        backdropFilter: processingTypes.has(type) ? "blur(7px)" : "none",
-                      }}
-                      data-testid={`button-processing-type-${type}`}
-                    >
-                      {type}
-                    </Button>
-                  ))}
-                  <Input
-                    value={processingTypeOther}
-                    onChange={(e) => { handleUserInput(); setProcessingTypeOther(e.target.value); }}
-                    placeholder="기타사항을 입력해주세요"
-                    className="h-[52px] flex-1"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      padding: "12px 16px",
-                      background: "#FDFDFD",
-                      border: "1px solid rgba(12, 12, 12, 0.3)",
-                      borderRadius: "6px",
-                      color: "rgba(12, 12, 12, 0.9)",
-                    }}
-                    disabled={isReadOnly}
-                    data-testid="input-processing-type-other"
-                  />
-                </div>
-              </div>
-
-              {/* 복구 방식 */}
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  복구 방식
-                </Label>
-                <div className="flex gap-2">
-                  {["부분수리", "전체수리"].map((method) => (
-                    <Button
-                      key={method}
-                      type="button"
-                      onClick={() => setRecoveryMethodType(method)}
-                      disabled={isReadOnly}
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        height: "52px",
-                        padding: "12px 16px",
-                        borderRadius: "6px",
-                        border: recoveryMethodType === method
-                          ? "2px solid rgba(255, 255, 255, 0.04)" 
-                          : "1px solid rgba(12, 12, 12, 0.3)",
-                        background: recoveryMethodType === method
-                          ? "rgba(0, 143, 237, 0.1)" 
-                          : "#FDFDFD",
-                        color: recoveryMethodType === method
-                          ? "#008FED" 
-                          : "rgba(12, 12, 12, 0.9)",
-                        boxShadow: recoveryMethodType === method
-                          ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
-                          : "none",
-                        backdropFilter: recoveryMethodType === method ? "blur(7px)" : "none",
-                      }}
-                      data-testid={`button-recovery-method-${method}`}
-                    >
-                      {method}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-        {/* 하단 고정 액션 바 */}
-        {selectedCaseData && canEdit && (
-          <div
-            style={{
-              position: "fixed",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: "#FFFFFF",
-              borderTop: "1px solid rgba(12, 12, 12, 0.1)",
-              padding: "16px 40px",
-              zIndex: 100,
-            }}
-          >
-            <div
-              style={{
-                maxWidth: "1400px",
-                margin: "0 auto",
-                display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-                gap: "12px",
-              }}
-            >
-              {/* 초기화 버튼 */}
-              <Button
-                type="button"
-                onClick={handleReset}
-                disabled={isReadOnly}
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  height: "48px",
-                  padding: "12px 32px",
-                  background: "#FFFFFF",
-                  color: isReadOnly ? "rgba(12, 12, 12, 0.3)" : "rgba(12, 12, 12, 0.7)",
-                  border: "1px solid rgba(12, 12, 12, 0.2)",
-                  borderRadius: "8px",
-                  cursor: isReadOnly ? "not-allowed" : "pointer",
-                }}
-                data-testid="button-reset"
-              >
-                초기화
-              </Button>
-              
-              {/* 저장 버튼 */}
-              <Button
+            {canEdit && (
+              <div className="mt-8 rounded-lg border border-[#E5E7EB] bg-white px-6 py-5">
+                <div className="flex items-center justify-between">
+                  <button
                     type="button"
-                    onClick={async () => {
-                      // 제출 조건 상태 콘솔 로그
-                      console.log("=== 제출 조건 체크 (임시저장) ===");
-                      console.log("현장입력 완료:", isFieldInputComplete);
-                      console.log("제출 가능:", canSubmit);
-                      console.log("================================");
-                      
-                      if (!selectedCaseData?.id) {
-                        toast({
-                          title: "저장 실패",
-                          description: "선택된 접수건이 없습니다.",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-
-                      // 임시저장은 모든 필드가 비어있어도 저장 가능 (검증 없음)
-                      // 누락된 필드가 있더라도 콘솔에 경고만 출력
-                      const missingFields: string[] = [];
-                      if (!visitDate) missingFields.push("방문일자");
-                      if (!visitTime) missingFields.push("방문시간");
-                      if (!accidentCategory) missingFields.push("카테고리");
-                      if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
-                      if (!victimContact && !selectedCaseData?.victimContact) missingFields.push("피해자 연락처");
-                      
-                      // 콘솔에만 경고 출력 (저장은 계속 진행)
-                      if (missingFields.length > 0) {
-                        console.warn("⚠️ 임시저장 - 누락된 필드 (저장은 진행됨):", missingFields.join(", "));
-                      }
-
-                      try {
-                        // 상태 자동 변경 로직
-                        let status = "현장방문"; // 기본값: 방문일시만 입력된 경우
-                        
-                        // 모든 필수 필드가 입력된 경우 → "현장정보 입력" (카테고리는 로컬 상태 필수)
-                        const hasVictimName = victimName || selectedCaseData?.victimName;
-                        if (visitDate && visitTime && accidentCategory && hasVictimName) {
-                          status = "현장정보 입력";
-                        }
-
-                        const payload = {
-                          visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
-                          visitTime,
-                          dispatchLocation,
-                          accompaniedPerson,
-                          accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
-                          accidentTime,
-                          accidentCategory: accidentCategory || null,
-                          accidentCause,
-                          vocContent: voc, // VOC(고객의 소리)를 vocContent에 저장 (협력사 특이사항과 분리)
-                          victimName: victimName || selectedCaseData?.victimName || null,
-                          victimContact: victimContact || selectedCaseData?.victimContact || null,
-                          victimAddress: victimAddress || selectedCaseData?.victimAddress || null,
-                          victimAddressDetail: victimAddressDetail || selectedCaseData?.victimAddressDetail || null,
-                          additionalVictims: JSON.stringify(additionalVictims),
-                          // specialRequests는 관리자 접수시 입력한 값 유지 (협력사가 덮어쓰지 않음)
-                          processingTypes: JSON.stringify(Array.from(processingTypes)),
-                          processingTypeOther,
-                          recoveryMethodType,
-                          fieldSurveyStatus: "draft",
-                          status, // 자동 변경된 상태 추가
-                        };
-
-                        const data = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
-
-                        const syncedCases = (data as any)?.syncedCases || 0;
-                        const syncMessage = syncedCases > 0 
-                          ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
-                          : "";
-
-                        toast({
-                          title: "임시저장 완료",
-                          description: `현장조사 정보가 임시저장되었습니다. (상태: ${status})${syncMessage}`,
-                        });
-
-                        queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-                        queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
-                      } catch (error: any) {
-                        console.error("임시저장 에러:", error);
-                        
-                        // 서버에서 반환된 오류 메시지 파싱
-                        let errorMessage = "현장조사 정보 임시저장 중 오류가 발생했습니다.";
-                        if (error?.message) {
-                          errorMessage = error.message;
-                        }
-                        
-                        toast({
-                          title: "임시저장 실패",
-                          description: errorMessage,
-                          variant: "destructive",
-                        });
-                      }
-                    }}
+                    onClick={handleReset}
                     disabled={isReadOnly}
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      height: "48px",
-                      padding: "12px 32px",
-                      background: isReadOnly ? "rgba(0, 143, 237, 0.3)" : "#008FED",
-                      color: "#FFFFFF",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: isReadOnly ? "not-allowed" : "pointer",
-                    }}
+                    className="text-[14px] font-semibold text-[#EF4444] hover:underline disabled:opacity-50"
+                    data-testid="button-reset"
+                  >
+                    초기화
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isReadOnly}
+                    className="h-10 rounded-md bg-[#008FED] px-7 text-[14px] font-semibold text-white hover:bg-[#0077CC] disabled:opacity-50"
                     data-testid="button-save"
                   >
                     저장
-                  </Button>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <Dialog open={editVictimDialogOpen} onOpenChange={setEditVictimDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-[18px] font-semibold">
+              피해자 정보 수정
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-victim-name" className="text-[14px] font-medium text-[#6B7280]">
+                피해자 성함
+              </Label>
+              <Input
+                id="edit-victim-name"
+                value={editVictimName}
+                onChange={(e) => {
+                  setEditVictimName(e.target.value);
+                  if (editingVictimCase?.id === selectedCase) {
+                    setVictimName(e.target.value);
+                  }
+                }}
+                placeholder="성함을 입력해주세요"
+                data-testid="input-edit-victim-name"
+                className="text-[15px]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-victim-contact" className="text-[14px] font-medium text-[#6B7280]">
+                연락처
+              </Label>
+              <Input
+                id="edit-victim-contact"
+                value={editVictimContact}
+                onChange={(e) => {
+                  setEditVictimContact(e.target.value);
+                  if (editingVictimCase?.id === selectedCase) {
+                    setVictimContact(e.target.value);
+                  }
+                }}
+                placeholder="연락처를 입력해주세요"
+                data-testid="input-edit-victim-contact"
+                className="text-[15px]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-victim-address" className="text-[14px] font-medium text-[#6B7280]">
+                주소
+              </Label>
+              <Input
+                id="edit-victim-address"
+                value={editVictimAddress}
+                onChange={(e) => {
+                  setEditVictimAddress(e.target.value);
+                  if (editingVictimCase?.id === selectedCase) {
+                    setVictimAddress(e.target.value);
+                  }
+                }}
+                placeholder="주소를 입력해주세요"
+                data-testid="input-edit-victim-address"
+                className="text-[15px]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-victim-address-detail" className="text-[14px] font-medium text-[#6B7280]">
+                상세주소
+              </Label>
+              <Input
+                id="edit-victim-address-detail"
+                value={editVictimAddressDetail}
+                onChange={(e) => {
+                  setEditVictimAddressDetail(e.target.value);
+                  if (editingVictimCase?.id === selectedCase) {
+                    setVictimAddressDetail(e.target.value);
+                  }
+                }}
+                placeholder="상세주소를 입력해주세요"
+                data-testid="input-edit-victim-address-detail"
+                className="text-[15px]"
+              />
             </div>
           </div>
-        )}
-        </>
-        )}
-        </div>
-        {/* 하단 고정 액션 바를 위한 여백 */}
-        {selectedCaseData && canEdit && <div style={{ height: "80px" }} />}
-        
-        {/* 피해자 정보 수정 다이얼로그 */}
-        <Dialog open={editVictimDialogOpen} onOpenChange={setEditVictimDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
-                피해자 정보 수정
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label 
-                  htmlFor="edit-victim-name"
-                  style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.7)" }}
-                >
-                  피해자 성함
-                </Label>
-                <Input
-                  id="edit-victim-name"
-                  value={editVictimName}
-                  onChange={(e) => {
-                    setEditVictimName(e.target.value);
-                    // 현재 선택된 케이스를 수정하는 경우, 임시저장에서 사용할 상태도 함께 업데이트
-                    if (editingVictimCase?.id === selectedCase) {
-                      setVictimName(e.target.value);
-                    }
-                  }}
-                  placeholder="성함을 입력해주세요"
-                  data-testid="input-edit-victim-name"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                  }}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label 
-                  htmlFor="edit-victim-contact"
-                  style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.7)" }}
-                >
-                  연락처
-                </Label>
-                <Input
-                  id="edit-victim-contact"
-                  value={editVictimContact}
-                  onChange={(e) => {
-                    setEditVictimContact(e.target.value);
-                    // 현재 선택된 케이스를 수정하는 경우, 임시저장에서 사용할 상태도 함께 업데이트
-                    if (editingVictimCase?.id === selectedCase) {
-                      setVictimContact(e.target.value);
-                    }
-                  }}
-                  placeholder="연락처를 입력해주세요"
-                  data-testid="input-edit-victim-contact"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                  }}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label 
-                  htmlFor="edit-victim-address"
-                  style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.7)" }}
-                >
-                  주소
-                </Label>
-                <Input
-                  id="edit-victim-address"
-                  value={editVictimAddress}
-                  onChange={(e) => {
-                    setEditVictimAddress(e.target.value);
-                    // 현재 선택된 케이스를 수정하는 경우, 임시저장에서 사용할 상태도 함께 업데이트
-                    if (editingVictimCase?.id === selectedCase) {
-                      setVictimAddress(e.target.value);
-                    }
-                  }}
-                  placeholder="주소를 입력해주세요"
-                  data-testid="input-edit-victim-address"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                  }}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label 
-                  htmlFor="edit-victim-address-detail"
-                  style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.7)" }}
-                >
-                  상세주소
-                </Label>
-                <Input
-                  id="edit-victim-address-detail"
-                  value={editVictimAddressDetail}
-                  onChange={(e) => {
-                    setEditVictimAddressDetail(e.target.value);
-                    // 현재 선택된 케이스를 수정하는 경우, 임시저장에서 사용할 상태도 함께 업데이트
-                    if (editingVictimCase?.id === selectedCase) {
-                      setVictimAddressDetail(e.target.value);
-                    }
-                  }}
-                  placeholder="상세주소를 입력해주세요"
-                  data-testid="input-edit-victim-address-detail"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                  }}
-                />
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  // 취소 시 원래 값으로 복원 (현재 선택된 케이스인 경우에만)
-                  if (editingVictimCase?.id === selectedCase) {
-                    setVictimName(originalVictimName);
-                    setVictimContact(originalVictimContact);
-                    setVictimAddress(originalVictimAddress);
-                    setVictimAddressDetail(originalVictimAddressDetail);
-                  }
-                  setEditVictimDialogOpen(false);
-                }}
-                data-testid="button-cancel-edit-victim"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                }}
-              >
-                취소
-              </Button>
-              <Button
-                onClick={handleSaveEditVictim}
-                disabled={isEditingVictim}
-                data-testid="button-save-edit-victim"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  background: "#008FED",
-                  color: "#FFFFFF",
-                }}
-              >
-                {isEditingVictim ? "저장 중..." : "저장"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (editingVictimCase?.id === selectedCase) {
+                  setVictimName(originalVictimName);
+                  setVictimContact(originalVictimContact);
+                  setVictimAddress(originalVictimAddress);
+                  setVictimAddressDetail(originalVictimAddressDetail);
+                }
+                setEditVictimDialogOpen(false);
+              }}
+              data-testid="button-cancel-edit-victim"
+              className="text-[14px] font-medium"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSaveEditVictim}
+              disabled={isEditingVictim}
+              data-testid="button-save-edit-victim"
+              className="text-[14px] font-medium bg-[#008FED] text-white hover:bg-[#0077CC]"
+            >
+              {isEditingVictim ? "저장 중..." : "저장"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
