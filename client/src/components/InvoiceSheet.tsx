@@ -294,11 +294,15 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
 
   const toggleEmail = (email: string) => {
     setSelectedEmails(prev => {
+      let newSelectedEmails: string[];
       if (prev.includes(email)) {
-        return prev.filter(e => e !== email);
+        newSelectedEmails = prev.filter(e => e !== email);
       } else {
-        return [...prev, email];
+        newSelectedEmails = [...prev, email];
       }
+      // 체크박스 변경 시 즉시 이메일 입력 필드에 반영
+      setInvoiceRecipientEmail(newSelectedEmails.join(", "));
+      return newSelectedEmails;
     });
   };
 
@@ -312,11 +316,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     });
   };
 
-  useEffect(() => {
-    if (selectedEmails.length > 0) {
-      setInvoiceRecipientEmail(selectedEmails.join(", "));
-    }
-  }, [selectedEmails]);
 
   const categorizedAmounts = useMemo(() => {
     let damagePreventionAmount = 0;
