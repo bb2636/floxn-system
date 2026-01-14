@@ -491,8 +491,8 @@ export default function FieldEstimate() {
   
   // 철거공사 추가 필요 여부 확인 (일위대가DB의 철거공사 공사명과 매칭)
   const needsDemolitionRow = (workType: string, workName: string): boolean => {
-    // 목공사: 반자틀, 합판, 석고보드 → 일위대가DB 철거공사에 있음
-    if (workType === '목공사' && (workName === '반자틀' || workName === '합판' || workName === '석고보드')) {
+    // 목공사: 합판, 석고보드 → 일위대가DB 철거공사에 있음 (반자틀 제외)
+    if (workType === '목공사' && (workName === '합판' || workName === '석고보드')) {
       return true;
     }
     // 수장공사: 도배, 마루, 장판 → 일위대가DB 철거공사에 있음
