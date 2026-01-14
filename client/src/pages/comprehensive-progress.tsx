@@ -1130,13 +1130,12 @@ export default function ComprehensiveProgress() {
               style={{
                 display: "grid",
                 gridTemplateColumns: user?.role === "협력사" 
-                  ? "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 180px 50px 90px 90px"
-                  : "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 180px 50px 90px",
+                  ? "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 1fr 50px 90px 90px"
+                  : "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 1fr 50px 90px",
                 padding: "14px 20px",
                 background: "rgba(12, 12, 12, 0.04)",
                 borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                 gap: "8px",
-                minWidth: "max-content",
               }}
             >
             {user?.role === "관리자" && (
@@ -1293,14 +1292,13 @@ export default function ComprehensiveProgress() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: user?.role === "협력사"
-                      ? "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 180px 50px 90px 90px"
-                      : "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 180px 50px 90px",
+                      ? "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 1fr 50px 90px 90px"
+                      : "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 1fr 50px 90px",
                     padding: "14px 20px",
                     borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                     gap: "8px",
                     alignItems: "center",
                     cursor: "pointer",
-                    minWidth: "max-content",
                   }}
                   data-testid={`case-row-${caseItem.id}`}
                 >
@@ -1432,33 +1430,33 @@ export default function ComprehensiveProgress() {
                       </div>
                     )}
                   </div>
-                  <div 
-                    style={{ 
-                      fontFamily: "Pretendard", 
-                      fontSize: "13px", 
-                      color: "rgba(12, 12, 12, 0.8)",
-                      lineHeight: "1.4",
-                      wordBreak: "keep-all",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                    title={
-                      caseItem.damagePreventionCost === "true"
-                        ? [caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(" ")
-                        : caseItem.victimIncidentAssistance === "true"
-                          ? [caseItem.victimAddress, caseItem.victimAddressDetail].filter(Boolean).join(" ")
-                          : "-"
-                    }
-                    data-testid={`text-address-${caseItem.id}`}
-                  >
-                    {caseItem.damagePreventionCost === "true"
+                  {(() => {
+                    const addressText = caseItem.damagePreventionCost === "true"
                       ? [caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(" ") || "-"
                       : caseItem.victimIncidentAssistance === "true"
                         ? [caseItem.victimAddress, caseItem.victimAddressDetail].filter(Boolean).join(" ") || "-"
-                        : "-"}
-                  </div>
+                        : "-";
+                    const fontSize = addressText.length > 40 ? "11px" : "13px";
+                    return (
+                      <div 
+                        style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: fontSize,
+                          color: "rgba(12, 12, 12, 0.8)",
+                          lineHeight: "1.4",
+                          wordBreak: "keep-all",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                        title={addressText}
+                        data-testid={`text-address-${caseItem.id}`}
+                      >
+                        {addressText}
+                      </div>
+                    );
+                  })()}
                   <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "4px" }}>
                     {/* 협력사 특이사항 빨간색 점 (관리자가 확인하지 않은 경우만 표시) */}
                     {(caseItem.specialNotes || safeParseNotesHistory(caseItem.partnerNotesHistory as string).length > 0) && caseItem.partnerNotesAckedByAdmin !== "true" && (
