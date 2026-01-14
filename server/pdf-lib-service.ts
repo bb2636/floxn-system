@@ -139,7 +139,8 @@ interface DrawTextOptions {
 }
 
 // 특수문자 패턴 (폰트 글리프 간격 조정이 필요한 문자들)
-const SPECIAL_CHAR_PATTERN = /[-–—:;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…]/;
+const SPECIAL_CHAR_PATTERN =
+  /[-–—:;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…]/;
 
 function measureTextWidth(text: string, font: PDFFont, size: number): number {
   try {
@@ -150,28 +151,32 @@ function measureTextWidth(text: string, font: PDFFont, size: number): number {
 }
 
 // 특수문자 뒤 글리프 간격을 조정하여 실제 시각적 너비 계산
-function measureTextWidthAdjusted(text: string, font: PDFFont, size: number): number {
+function measureTextWidthAdjusted(
+  text: string,
+  font: PDFFont,
+  size: number,
+): number {
   if (!text) return 0;
-  
+
   let totalWidth = 0;
   const chars = Array.from(text);
-  
+
   for (let i = 0; i < chars.length; i++) {
     const char = chars[i];
     try {
       let charWidth = font.widthOfTextAtSize(char, size);
-      
+
       // 특수문자의 경우 글리프 너비를 줄임 (폰트의 과도한 side-bearing 보정)
       if (SPECIAL_CHAR_PATTERN.test(char)) {
         charWidth *= 0.7; // 30% 줄임
       }
-      
+
       totalWidth += charWidth;
     } catch {
       totalWidth += size * 0.5;
     }
   }
-  
+
   return totalWidth;
 }
 
@@ -183,16 +188,16 @@ function drawTextCharByChar(
   y: number,
   font: PDFFont,
   size: number,
-  color: { r: number; g: number; b: number }
+  color: { r: number; g: number; b: number },
 ): void {
   if (!text) return;
-  
+
   let currentX = x;
   const chars = Array.from(text);
-  
+
   for (let i = 0; i < chars.length; i++) {
     const char = chars[i];
-    
+
     try {
       page.drawText(char, {
         x: currentX,
@@ -201,14 +206,14 @@ function drawTextCharByChar(
         font,
         color: rgb(color.r, color.g, color.b),
       });
-      
+
       let charWidth = font.widthOfTextAtSize(char, size);
-      
+
       // 특수문자 뒤의 advance width를 줄여서 간격 조정
       if (SPECIAL_CHAR_PATTERN.test(char)) {
         charWidth *= 0.7; // 30% 줄임
       }
-      
+
       currentX += charWidth;
     } catch {
       currentX += size * 0.5;
@@ -401,7 +406,11 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
       const minusSign = isNegative ? "-" : "";
 
       // 조정된 너비 계산 사용
-      let textWidth = measureTextWidthAdjusted(displayText, font, actualFontSize);
+      let textWidth = measureTextWidthAdjusted(
+        displayText,
+        font,
+        actualFontSize,
+      );
       const minusWidth = isNegative
         ? measureTextWidthAdjusted(minusSign, font, actualFontSize)
         : 0;
@@ -415,7 +424,11 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
 
       let textX = cellX + padding;
       if (cell.align === "center") {
-        const fullWidth = measureTextWidthAdjusted(cellText, font, actualFontSize);
+        const fullWidth = measureTextWidthAdjusted(
+          cellText,
+          font,
+          actualFontSize,
+        );
         textX = cellX + (cell.width - fullWidth) / 2;
       } else if (cell.align === "right") {
         // 숫자 부분만 오른쪽 정렬
@@ -428,11 +441,35 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
         if (isNegative) {
           // 마이너스 기호를 숫자 왼쪽에 고정 간격으로 배치
           const minusX = textX - minusWidth - 2;
-          drawTextCharByChar(page, minusSign, minusX, textY, font, actualFontSize, defaultColor);
-          drawTextCharByChar(page, displayText, textX, textY, font, actualFontSize, defaultColor);
+          drawTextCharByChar(
+            page,
+            minusSign,
+            minusX,
+            textY,
+            font,
+            actualFontSize,
+            defaultColor,
+          );
+          drawTextCharByChar(
+            page,
+            displayText,
+            textX,
+            textY,
+            font,
+            actualFontSize,
+            defaultColor,
+          );
         } else {
           // 문자별로 렌더링하여 특수문자 간격 조정
-          drawTextCharByChar(page, cellText, textX, textY, font, actualFontSize, defaultColor);
+          drawTextCharByChar(
+            page,
+            cellText,
+            textX,
+            textY,
+            font,
+            actualFontSize,
+            defaultColor,
+          );
         }
       } catch (e) {
         console.warn(
@@ -1219,7 +1256,7 @@ async function renderDrawingPage(
 
       const originalMeta = await sharp(imageData).metadata();
       console.log(
-        `[pdf-lib] 원본 크기: ${originalMeta.width}x${originalMeta.height}`,
+        `[pdf-lib] te�본 크기: ${originalMeta.width}x${originalMeta.height}`,
       );
 
       // PNG 이미지 (html2canvas는 PNG로 출력)
@@ -1885,11 +1922,11 @@ async function renderRecoveryAreaPage(
   // 표 전체 너비 계산: 55 + 70 + 70 + 130 + 130 + 60 = 515
   const tableWidth = 515;
   const rightPadding = 4;
-  const unitTextWidth = fonts.regular.widthOfTextAtSize("단위:㎡", 9);
+  const unitTextWidth = fonts.regular.widthOfTextAtSize("단위: ㎡", 9);
   drawText(page, {
     x: MARGIN + tableWidth - unitTextWidth - rightPadding,
     y,
-    text: "단위:㎡",
+    text: "단위: ㎡",
     font: fonts.regular,
     size: 9,
   });
@@ -2113,7 +2150,7 @@ async function renderRecoveryAreaPage(
         groupStartY - groupHeight / 2 - 3,
         fonts.regular,
         8,
-        { r: 0, g: 0, b: 0 }
+        { r: 0, g: 0, b: 0 },
       );
 
       // Draw individual rows (excluding category column)
@@ -2682,7 +2719,7 @@ async function renderEstimatePage(
   drawText(page, {
     x: A4_WIDTH - MARGIN - 270,
     y: y + 5,
-    text: "단위:원",
+    text: "단위: 원",
     font: fonts.regular,
     size: 7,
     maxWidth: 266,
