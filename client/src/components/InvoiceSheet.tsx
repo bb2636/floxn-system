@@ -134,6 +134,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
   const [isSendingPdf, setIsSendingPdf] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [hasPdfAction, setHasPdfAction] = useState(false); // PDF 다운로드 또는 발송 완료 여부
   const [isLoadingAmounts, setIsLoadingAmounts] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
@@ -442,6 +443,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         setSelectedDocumentIds([]);
         setSelectedDocTabByCaseId({});
         setSelectedSubCategoryByCaseId({});
+        setHasPdfAction(false); // 시트 닫을 때 PDF 액션 상태 초기화
       }
     };
     
@@ -518,6 +520,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         title: "PDF 다운로드 완료",
         description: "인보이스 PDF가 다운로드되었습니다.",
       });
+      setHasPdfAction(true); // PDF 다운로드 완료 시 저장 버튼 활성화
     } catch (error: any) {
       console.error("PDF 다운로드 오류:", error);
       toast({
@@ -600,6 +603,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           title: "이메일 전송 완료",
           description: `${invoiceRecipientEmail}으로 INVOICE PDF가 첨부파일로 전송되었습니다.`,
         });
+        setHasPdfAction(true); // PDF 발송 완료 시 저장 버튼 활성화
         onOpenChange(false);
       } else {
         throw new Error(result.error || "이메일 전송에 실패했습니다");
@@ -1771,9 +1775,10 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
               </span>
             </button>
 
-            {/* 저장 Button */}
+            {/* 저장 Button - PDF 다운로드 또는 발송 후에만 활성화 */}
             <button
               onClick={handleSave}
+              disabled={!hasPdfAction}
               style={{
                 display: "flex",
                 flexDirection: "row",
@@ -1783,10 +1788,11 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 gap: "10px",
                 width: "60px",
                 height: "40px",
-                background: "#008FED",
+                background: hasPdfAction ? "#008FED" : "rgba(0, 143, 237, 0.4)",
                 borderRadius: "8px",
                 border: "none",
-                cursor: "pointer",
+                cursor: hasPdfAction ? "pointer" : "not-allowed",
+                opacity: hasPdfAction ? 1 : 0.6,
               }}
               data-testid="button-invoice-save"
             >
