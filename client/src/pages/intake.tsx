@@ -1174,8 +1174,12 @@ export default function Intake({
     });
   };
 
+  const [addressSearchQuery, setAddressSearchQuery] = useState("");
+  const [detailAddressSearchQuery, setDetailAddressSearchQuery] = useState("");
+
   const handleAddressSearch = (type: 'main' | 'detail') => {
     if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+      const query = type === 'main' ? addressSearchQuery : detailAddressSearchQuery;
       setAddressDropdownOpen(type);
       setTimeout(() => {
         const container = type === 'main' ? addressContainerRef.current : detailAddressContainerRef.current;
@@ -1184,6 +1188,8 @@ export default function Intake({
           new (window as any).daum.Postcode({
             oncomplete: function (data: any) {
               handleInputChange("insuredAddress", data.address);
+              setAddressSearchQuery("");
+              setDetailAddressSearchQuery("");
               setAddressDropdownOpen(null);
             },
             onclose: function () {
@@ -1191,7 +1197,7 @@ export default function Intake({
             },
             width: '100%',
             height: '100%',
-          }).embed(container);
+          }).embed(container, { q: query });
         }
       }, 100);
     } else {
@@ -1804,10 +1810,25 @@ export default function Intake({
                   <div className="relative flex-1">
                     <div className="flex gap-1">
                       <input
-                        className={`${inputClasses} flex-1 cursor-pointer`}
-                        value={formData.insuredAddress || ""}
-                        readOnly
-                        onClick={() => !readOnly && handleAddressSearch('main')}
+                        className={`${inputClasses} flex-1`}
+                        value={formData.insuredAddress || addressSearchQuery}
+                        onChange={(e) => {
+                          if (!formData.insuredAddress) {
+                            setAddressSearchQuery(e.target.value);
+                          }
+                        }}
+                        onFocus={() => {
+                          if (formData.insuredAddress) {
+                            handleInputChange("insuredAddress", "");
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            !readOnly && handleAddressSearch('main');
+                          }
+                        }}
+                        disabled={readOnly}
                         placeholder="도로명 주소, 동/호 포함"
                         type="text"
                         data-testid="input-insured-address"
@@ -1834,10 +1855,25 @@ export default function Intake({
                   <div className="relative flex-1">
                     <div className="flex gap-1">
                       <input
-                        className={`${inputClasses} flex-1 cursor-pointer`}
-                        value={formData.insuredAddressDetail || ""}
-                        readOnly
-                        onClick={() => !readOnly && handleAddressSearch('detail')}
+                        className={`${inputClasses} flex-1`}
+                        value={formData.insuredAddressDetail || detailAddressSearchQuery}
+                        onChange={(e) => {
+                          if (!formData.insuredAddressDetail) {
+                            setDetailAddressSearchQuery(e.target.value);
+                          }
+                        }}
+                        onFocus={() => {
+                          if (formData.insuredAddressDetail) {
+                            handleInputChange("insuredAddressDetail", "");
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            !readOnly && handleAddressSearch('detail');
+                          }
+                        }}
+                        disabled={readOnly}
                         placeholder="상세주소"
                         type="text"
                         data-testid="input-insured-address-detail"
