@@ -1663,7 +1663,11 @@ async function renderEvidencePages(
     return { errors };
   }
 
-  // 레이아웃 조정: 2개 이미지가 한 페이지에 완전히 들어가도록 간격 최적화
+  // 현장사진(현장출동사진, 수리중사진, 복구완료사진)과 나머지 증빙자료 분리
+  const fieldPhotos = imageDocs.filter(img => img.tab === "현장사진");
+  const otherDocs = imageDocs.filter(img => img.tab !== "현장사진");
+
+  // 현장사진: 2개 이미지가 한 페이지에 완전히 들어가도록 간격 최적화
   // A4 높이(841.89) - 상단마진(30) - 하단마진(30) - 페이지헤더(30) = 751.89 사용 가능
   // (categoryHeader + image + footer) * 2 + spacing < 751.89
   const imageHeight = 310;
@@ -1671,9 +1675,9 @@ async function renderEvidencePages(
   const headerHeight = 25;
   const spacing = 8;
 
-  for (let i = 0; i < imageDocs.length; i += 2) {
+  for (let i = 0; i < fieldPhotos.length; i += 2) {
     const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
-    const firstImage = imageDocs[i];
+    const firstImage = fieldPhotos[i];
 
     // 주소 생성 (victimAddress 우선, insuredAddress 차선)
     const address = caseData.victimAddress || caseData.insuredAddress || "";
@@ -1809,8 +1813,8 @@ async function renderEvidencePages(
       color: { r: 0.3, g: 0.3, b: 0.3 },
     });
 
-    if (imageDocs[i + 1]) {
-      const secondImage = imageDocs[i + 1];
+    if (fieldPhotos[i + 1]) {
+      const secondImage = fieldPhotos[i + 1];
       // 카테고리 헤더 제거 - headerHeight 제외
       const secondY = firstY - spacing - imageHeight - footerHeight;
 
@@ -1879,6 +1883,145 @@ async function renderEvidencePages(
         color: { r: 0.3, g: 0.3, b: 0.3 },
       });
     }
+  }
+
+  // 나머지 증빙자료(기본자료, 증빙자료, 청구자료): 한 페이지에 1장씩
+  const singleImageHeight = 650; // 더 큰 이미지 영역
+  for (let i = 0; i < otherDocs.length; i++) {
+    const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+    const currentImage = otherDocs[i];
+
+    // 주소 생성 (victimAddress 우선, insuredAddress 차선)
+    const address = caseData.victimAddress || caseData.insuredAddress || "";
+    const addressDetail =
+      caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
+    const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
+
+    // 헤더 형식: 좌측 "사고번호 {번호}" / 중앙 "{주소}" / 우측 "{카테고리}-{세부카테고리}"
+    const accidentNo = normalizeText(
+      caseData.insuranceAccidentNo || caseData.caseNumber || "",
+    );
+    const leftText = `사고번호 ${accidentNo}`;
+    const centerText = normalizeText(fullAddress);
+    const rightText = normalizeText(
+      currentImage.doc.category
+        ? `${currentImage.tab}-${currentImage.doc.category}`
+        : currentImage.tab,
+    );
+
+    page.drawRectangle({
+      x: MARGIN,
+      y: A4_HEIGHT - MARGIN - 30,
+      width: CONTENT_WIDTH,
+      height: 30,
+      color: rgb(0.2, 0.2, 0.2),
+    });
+
+    // 폰트 크기 결정 (전체 텍스트 길이 기준)
+    const totalTextLength =
+      leftText.length + centerText.length + rightText.length;
+    const fontSize = totalTextLength > 70 ? 8 : totalTextLength > 50 ? 9 : 10;
+
+    // 좌측 텍스트 (사고번호)
+    drawText(page, {
+      x: MARGIN + 15,
+      y: A4_HEIGHT - MARGIN - 22,
+      text: leftText,
+      font: fonts.bold,
+      size: fontSize,
+      color: { r: 1, g: 1, b: 1 },
+    });
+
+    // 중앙 텍스트 (주소) - 가운데 정렬
+    const centerTextWidth = fonts.bold.widthOfTextAtSize(centerText, fontSize);
+    const centerX = MARGIN + (CONTENT_WIDTH - centerTextWidth) / 2;
+    drawText(page, {
+      x: centerX,
+      y: A4_HEIGHT - MARGIN - 22,
+      text: centerText,
+      font: fonts.bold,
+      size: fontSize,
+      color: { r: 1, g: 1, b: 1 },
+    });
+
+    // 우측 텍스트 (카테고리) - 우측 정렬
+    const rightTextWidth = fonts.bold.widthOfTextAtSize(rightText, fontSize);
+    drawText(page, {
+      x: A4_WIDTH - MARGIN - 15 - rightTextWidth,
+      y: A4_HEIGHT - MARGIN - 22,
+      text: rightText,
+      font: fonts.bold,
+      size: fontSize,
+      color: { r: 1, g: 1, b: 1 },
+    });
+
+    const footerHeight = 20;
+    const imageY = A4_HEIGHT - MARGIN - 30 - spacing - singleImageHeight - footerHeight;
+
+    // Image area
+    page.drawRectangle({
+      x: MARGIN,
+      y: imageY + footerHeight,
+      width: CONTENT_WIDTH,
+      height: singleImageHeight,
+      borderColor: rgb(0.8, 0.8, 0.8),
+      borderWidth: 0.5,
+    });
+
+    const imageResult = await embedImage(
+      pdfDoc,
+      page,
+      currentImage.imageData,
+      MARGIN + 5,
+      imageY + footerHeight + 5,
+      imageWidth - 10,
+      singleImageHeight - 10,
+      processingConfig,
+    );
+
+    if (!imageResult.success) {
+      drawErrorSection(
+        page,
+        fonts,
+        MARGIN + 5,
+        imageY + footerHeight + 5,
+        imageWidth - 10,
+        singleImageHeight - 10,
+        currentImage.doc.fileName,
+        imageResult.error || "첨부 실패",
+      );
+      errors.push({
+        fileName: currentImage.doc.fileName,
+        reason: imageResult.error || "첨부 실패",
+      });
+    }
+
+    // Footer with filename and upload date
+    const uploadDate = currentImage.doc.createdAt
+      ? new Date(currentImage.doc.createdAt).toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+        })
+      : "-";
+
+    drawText(page, {
+      x: MARGIN + 5,
+      y: imageY + 8,
+      text: currentImage.doc.fileName || "",
+      font: fonts.regular,
+      size: 8,
+      color: { r: 0.3, g: 0.3, b: 0.3 },
+    });
+
+    drawText(page, {
+      x: A4_WIDTH - MARGIN - 100,
+      y: imageY + 8,
+      text: `업로드:${uploadDate}`,
+      font: fonts.regular,
+      size: 8,
+      color: { r: 0.3, g: 0.3, b: 0.3 },
+    });
   }
 
   return { errors };
