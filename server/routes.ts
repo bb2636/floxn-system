@@ -9180,17 +9180,19 @@ Front·Line·Ops·Xpert·Net
       // SMS 메시지 내용 생성
       const messageText = `<접수완료 알림>
 
-접수번호 : ${caseNumber || "-"}
-보험사 : ${insuranceCompany || "-"}
-담당자 : ${managerName || "-"}
-증권번호 : ${insurancePolicyNo || "-"}
-사고번호 : ${insuranceAccidentNo || "-"}
-피보험자 : ${insuredName || "-"}  연락처 ${insuredContact || "-"}
-피해자 : ${victimName || "-"}  연락처 ${victimContact || "-"}
-조사자 : ${investigatorTeamName || "-"}  연락처 ${investigatorContact || "-"}
-사고장소 : ${[accidentLocation, accidentLocationDetail].filter(Boolean).join(" ") || "-"}
-의뢰범위 : ${requestScope || "-"}`;
-
+      접수번호 : ${caseNumber || "-"}
+      보험사 : ${insuranceCompany || "-"}
+      담당자 : ${managerName || "-"}
+      증권번호 : ${insurancePolicyNo || "-"}
+      사고번호 : ${insuranceAccidentNo || "-"}
+      피보험자 : ${insuredName || "-"}  연락처 ${insuredContact || "-"}
+      피해자 : ${victimName || "-"}  연락처 ${victimContact || "-"}
+      ${investigatorTeamName || investigatorContact
+          ? `\n심사자 : ${investigatorTeamName || "-"}  연락처 ${investigatorContact || "-"}`
+          : ""
+      }
+      사고장소 : ${[accidentLocation, accidentLocationDetail].filter(Boolean).join(" ") || "-"}
+      의뢰범위 : ${requestScope || "-"}`;
       console.log(`[send-sms] Sending LMS to: ${normalizedTo} (user: ${req.session.userId})`);
 
       // Solapi LMS 발송 (순수 HTTPS + HMAC-SHA256 인증)

@@ -167,19 +167,43 @@ export function SmsNotificationDialog({
 
   const getMessagePreview = () => {
     if (stage === "접수완료") {
-      const hasInvestigator = caseData.investigatorTeamName || caseData.investigatorContact;
-      const investigatorLine = hasInvestigator 
-        ? `\n심사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}` 
-        : "";
-      return `접수번호 : ${caseData.caseNumber || "-"}
-보험사 : ${caseData.insuranceCompany || "-"}
-담당자 : -
-증권번호 : ${caseData.insurancePolicyNo || "-"}
-사고번호 : ${caseData.insuranceAccidentNo || "-"}
-피보험자 : ${caseData.insuredName || "-"}  연락처 ${caseData.insuredContact || "-"}
-피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}${investigatorLine}
-사고장소 : ${caseData.insuredAddress || "-"}
-의뢰범위 : ${getRequestScope()}`;
+      const lines: string[] = [];
+      
+      if (caseData.caseNumber) lines.push(`접수번호 : ${caseData.caseNumber}`);
+      if (caseData.insuranceCompany) lines.push(`보험사 : ${caseData.insuranceCompany}`);
+      if (caseData.insurancePolicyNo) lines.push(`증권번호 : ${caseData.insurancePolicyNo}`);
+      if (caseData.insuranceAccidentNo) lines.push(`사고번호 : ${caseData.insuranceAccidentNo}`);
+      
+      // 피보험자 라인: 이름 또는 연락처가 있을 때만 표시
+      if (caseData.insuredName || caseData.insuredContact) {
+        const insuredParts = [];
+        if (caseData.insuredName) insuredParts.push(caseData.insuredName);
+        if (caseData.insuredContact) insuredParts.push(`연락처 ${caseData.insuredContact}`);
+        lines.push(`피보험자 : ${insuredParts.join("  ")}`);
+      }
+      
+      // 피해자 라인: 이름 또는 연락처가 있을 때만 표시
+      if (caseData.victimName || caseData.victimContact) {
+        const victimParts = [];
+        if (caseData.victimName) victimParts.push(caseData.victimName);
+        if (caseData.victimContact) victimParts.push(`연락처 ${caseData.victimContact}`);
+        lines.push(`피해자 : ${victimParts.join("  ")}`);
+      }
+      
+      // 심사자 라인: 이름 또는 연락처가 있을 때만 표시
+      if (caseData.investigatorTeamName || caseData.investigatorContact) {
+        const investigatorParts = [];
+        if (caseData.investigatorTeamName) investigatorParts.push(caseData.investigatorTeamName);
+        if (caseData.investigatorContact) investigatorParts.push(`연락처 ${caseData.investigatorContact}`);
+        lines.push(`심사자 : ${investigatorParts.join("  ")}`);
+      }
+      
+      if (caseData.insuredAddress) lines.push(`사고장소 : ${caseData.insuredAddress}`);
+      
+      const requestScope = getRequestScope();
+      if (requestScope !== "기타") lines.push(`의뢰범위 : ${requestScope}`);
+      
+      return lines.join("\n");
     } else if (stage === "접수취소") {
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
