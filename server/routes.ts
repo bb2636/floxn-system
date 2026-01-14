@@ -9576,7 +9576,7 @@ https://peulrogseun-aqaqaq4561.replit.app
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}  연락처 ${caseData.insuredContact || "-"}
 피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}
-조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}
+심사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}
 사고장소 : ${[caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
 의뢰범위 : ${[caseData.damagePreventionCost === "true" ? "손방" : null, caseData.victimIncidentAssistance === "true" ? "대물" : null].filter(Boolean).join(", ") || "기타"}`;
       } else if (stage === "접수취소") {
