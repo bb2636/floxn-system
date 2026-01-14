@@ -419,14 +419,21 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           }
         }
         
-        if (categorizedAmounts.hasFieldDispatchPrevention) {
-          setFieldDispatchPreventionAmount((categorizedAmounts.damagePreventionFieldDispatch * 100000).toString());
+        // 선견적요청 현장출동비용은 케이스 수와 관계없이 1회만 100,000원 청구
+        // 손해방지(-0) 또는 대물복구(-1 이상) 중 하나라도 선견적요청이 있으면 100,000원 1회만 청구
+        const hasAnyFieldDispatch = categorizedAmounts.hasFieldDispatchPrevention || categorizedAmounts.hasFieldDispatchProperty;
+        
+        if (hasAnyFieldDispatch) {
+          // 손해방지 쪽에만 100,000원 설정 (1회만 청구)
+          if (categorizedAmounts.hasFieldDispatchPrevention) {
+            setFieldDispatchPreventionAmount("100000");
+            setFieldDispatchPropertyAmount("0");
+          } else {
+            setFieldDispatchPreventionAmount("0");
+            setFieldDispatchPropertyAmount("100000");
+          }
         } else {
           setFieldDispatchPreventionAmount("0");
-        }
-        if (categorizedAmounts.hasFieldDispatchProperty) {
-          setFieldDispatchPropertyAmount((categorizedAmounts.propertyFieldDispatch * 100000).toString());
-        } else {
           setFieldDispatchPropertyAmount("0");
         }
         
