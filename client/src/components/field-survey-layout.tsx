@@ -42,7 +42,7 @@ export function FieldSurveyLayout({ children }: FieldSurveyLayoutProps) {
 
   return (
     <div 
-      className="bg-gradient-to-b from-[#E7EDFE] to-white relative"
+      className="bg-gradient-to-b from-[#E7EDFE] to-white relative overflow-x-hidden"
       style={{
         minHeight: 'calc(var(--vh, 1vh) * 100)', // 모바일 대응, fallback은 CSS에서
       }}
