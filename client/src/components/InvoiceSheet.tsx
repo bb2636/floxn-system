@@ -136,6 +136,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [isSendingPdf, setIsSendingPdf] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [hasPdfAction, setHasPdfAction] = useState(false); // PDF 다운로드 또는 발송 완료 여부
+  const [dialogInitialized, setDialogInitialized] = useState(false); // 다이얼로그 초기화 여부 추적
   const [isLoadingAmounts, setIsLoadingAmounts] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
@@ -434,14 +435,18 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         setSelectedEmails([]);
         setSelectedDocumentIds([]);
         
-        // 이전에 PDF 다운로드/발송 기록이 있거나 인보이스 데이터가 저장된 경우 저장 버튼 활성화
-        const hasExistingInvoiceData = !!(
-          caseData.invoicePdfGenerated ||
-          caseData.invoiceDamagePreventionAmount || 
-          caseData.invoicePropertyRepairAmount || 
-          caseData.invoiceRemarks
-        );
-        setHasPdfAction(hasExistingInvoiceData);
+        // 다이얼로그가 처음 열릴 때만 DB 값을 기반으로 hasPdfAction 설정
+        // 이후에는 PDF 다운로드/발송 시 직접 설정된 값 유지
+        if (!dialogInitialized) {
+          const hasExistingInvoiceData = !!(
+            caseData.invoicePdfGenerated ||
+            caseData.invoiceDamagePreventionAmount || 
+            caseData.invoicePropertyRepairAmount || 
+            caseData.invoiceRemarks
+          );
+          setHasPdfAction(hasExistingInvoiceData);
+          setDialogInitialized(true);
+        }
       } else if (!open) {
         setInvoiceDamagePreventionAmount("");
         setInvoicePropertyRepairAmount("");
@@ -454,11 +459,12 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         setSelectedDocTabByCaseId({});
         setSelectedSubCategoryByCaseId({});
         setHasPdfAction(false); // 시트 닫을 때 PDF 액션 상태 초기화
+        setDialogInitialized(false); // 다이얼로그 닫을 때 초기화 플래그 리셋
       }
     };
     
     fetchApprovedAmounts();
-  }, [open, caseData, categorizedAmounts, relatedCases]);
+  }, [open, caseData, categorizedAmounts, relatedCases, dialogInitialized]);
 
   // 절사 없이 합계 계산
   const totalAmount = 
