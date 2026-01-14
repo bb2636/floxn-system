@@ -1258,34 +1258,21 @@ export default function FieldReport() {
               </Button>
             )}
 
-          {/* 승인 버튼: 손해방지(-0) 케이스가 현장정보제출 상태일 때 모든 관련 케이스에서 표시 */}
+          {/* 승인 버튼: 손해방지(-0) 케이스에서만 표시 (피해세대 -1, -2 등에서는 숨김) */}
           {!isUserLoading &&
             canApproveReport &&
+            caseData?.caseNumber && /-0$/.test(caseData.caseNumber) &&
             preventionCaseData?.preventionCase?.status === "현장정보제출" && (
               <Button
                 data-testid="button-approve-report"
                 onClick={() => {
-                  // 현재 케이스가 -0 케이스인지 확인
-                  const isPreventionCase = caseData?.caseNumber && /-0$/.test(caseData.caseNumber);
-                  
-                  if (isPreventionCase) {
-                    // 현재 케이스가 -0 케이스인 경우 직접 승인 다이얼로그 열기
-                    if (
-                      caseData.status === "현장정보제출" &&
-                      !caseData.reportApprovalDecision
-                    ) {
-                      setApprovalTargetCaseId(null);
-                      setShowApprovalDialog(true);
-                    }
-                  } else {
-                    // 관련 케이스(-1, -2 등)인 경우: 페이지 이동 대신 모달 직접 열기
-                    if (preventionCaseData?.preventionCase) {
-                      const pc = preventionCaseData.preventionCase;
-                      if (pc.status === "현장정보제출" && !pc.reportApprovalDecision) {
-                        setApprovalTargetCaseId(pc.id);
-                        setShowApprovalDialog(true);
-                      }
-                    }
+                  // -0 케이스에서만 승인 가능
+                  if (
+                    caseData.status === "현장정보제출" &&
+                    !caseData.reportApprovalDecision
+                  ) {
+                    setApprovalTargetCaseId(null);
+                    setShowApprovalDialog(true);
                   }
                 }}
                 disabled={(() => {
