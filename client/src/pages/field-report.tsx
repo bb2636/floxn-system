@@ -1343,86 +1343,138 @@ export default function FieldReport() {
         </div>
       </div>
 
-      {/* 관련 접수건 심사하기 버튼 - 노란색, 기존 버튼 아래 위치 */}
-      {!isUserLoading &&
-        isAdmin &&
-        relatedCasesData?.relatedCases &&
-        relatedCasesData.relatedCases.length > 0 && (
-          <div className="flex justify-end mb-4">
-            <Popover open={isRelatedCasesPopoverOpen} onOpenChange={setIsRelatedCasesPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  data-testid="button-related-cases-review"
-                  className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 border-yellow-500"
+      {/* 관련 접수건 전환 버튼 - 같은 접수번호의 -0, -1, -2 케이스만 표시 */}
+      {(() => {
+        // 현재 케이스 번호에서 기본 번호 추출 (예: "123-456-0" -> "123-456")
+        const currentCaseNumber = caseData?.caseNumber || "";
+        const baseMatch = currentCaseNumber.match(/^(.+)-(\d+)$/);
+        if (!baseMatch) return null;
+        
+        const baseCaseNumber = baseMatch[1];
+        const currentSuffix = baseMatch[2];
+        
+        // 관련 케이스 중 같은 기본 번호를 가진 -0, -1, -2 케이스만 필터링
+        const suffixCases = relatedCasesData?.relatedCases?.filter((rc) => {
+          const match = rc.caseNumber.match(/^(.+)-(\d+)$/);
+          if (!match) return false;
+          const rcBase = match[1];
+          const rcSuffix = match[2];
+          return rcBase === baseCaseNumber && ["0", "1", "2"].includes(rcSuffix);
+        }) || [];
+        
+        // 현재 케이스도 목록에 추가 (중복 방지)
+        const allSuffixCases = [
+          { caseId: selectedCaseId, caseNumber: currentCaseNumber },
+          ...suffixCases.filter(rc => rc.caseId !== selectedCaseId)
+        ].sort((a, b) => {
+          const suffixA = a.caseNumber.match(/-(\d+)$/)?.[1] || "0";
+          const suffixB = b.caseNumber.match(/-(\d+)$/)?.[1] || "0";
+          return parseInt(suffixA) - parseInt(suffixB);
+        });
+        
+        // 2개 이상의 케이스가 있을 때만 버튼 표시
+        if (!isUserLoading && isAdmin && allSuffixCases.length > 1) {
+          return (
+            <div className="flex justify-end mb-4">
+              <Popover open={isRelatedCasesPopoverOpen} onOpenChange={setIsRelatedCasesPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    data-testid="button-related-cases-review"
+                    className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 border-yellow-500"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-1" />
+                    관련 접수건 전환
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-64 p-0"
+                  align="end"
                   style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: "500",
+                    background: "white",
+                    border: "1px solid rgba(0, 0, 0, 0.1)",
+                    borderRadius: "12px",
+                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
                   }}
                 >
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  관련 접수건 심사하기
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-64 p-0"
-                align="end"
-                style={{
-                  background: "white",
-                  border: "1px solid rgba(0, 0, 0, 0.1)",
-                  borderRadius: "12px",
-                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
-                }}
-              >
-                <div className="p-3 border-b" style={{ borderColor: "rgba(0, 0, 0, 0.06)" }}>
-                  <p
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: "#0C0C0C",
-                    }}
-                  >
-                    관련 접수건 심사하기
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "11px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      marginTop: "4px",
-                    }}
-                  >
-                    관련 접수건의 보고서를 확인합니다
-                  </p>
-                </div>
-                <div className="p-2 max-h-48 overflow-y-auto">
-                  {relatedCasesData.relatedCases.map((relatedCase) => (
-                    <button
-                      key={relatedCase.caseId}
-                      onClick={() => {
-                        localStorage.setItem("selectedFieldSurveyCaseId", relatedCase.caseId);
-                        setIsRelatedCasesPopoverOpen(false);
-                        window.location.reload();
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-lg hover-elevate active-elevate-2 transition-all"
+                  <div className="p-3 border-b" style={{ borderColor: "rgba(0, 0, 0, 0.06)" }}>
+                    <p
                       style={{
                         fontFamily: "Pretendard",
                         fontSize: "13px",
+                        fontWeight: 600,
                         color: "#0C0C0C",
                       }}
-                      data-testid={`button-review-${relatedCase.caseNumber}`}
                     >
-                      <span style={{ fontWeight: 500 }}>
-                        {formatCaseNumber(relatedCase.caseNumber)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
+                      관련 접수건 전환
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "11px",
+                        color: "rgba(12, 12, 12, 0.5)",
+                        marginTop: "4px",
+                      }}
+                    >
+                      동일 접수번호의 케이스로 전환합니다
+                    </p>
+                  </div>
+                  <div className="p-2 max-h-48 overflow-y-auto">
+                    {allSuffixCases.map((suffixCase) => {
+                      const isCurrentCase = suffixCase.caseId === selectedCaseId;
+                      const suffix = suffixCase.caseNumber.match(/-(\d+)$/)?.[1] || "0";
+                      const label = suffix === "0" ? "손해방지" : `피해세대 ${suffix}`;
+                      
+                      return (
+                        <button
+                          key={suffixCase.caseId}
+                          onClick={() => {
+                            if (!isCurrentCase) {
+                              localStorage.setItem("selectedFieldSurveyCaseId", suffixCase.caseId);
+                              setIsRelatedCasesPopoverOpen(false);
+                              window.location.reload();
+                            }
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
+                            isCurrentCase 
+                              ? "bg-yellow-100 cursor-default" 
+                              : "hover-elevate active-elevate-2"
+                          }`}
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "13px",
+                            color: isCurrentCase ? "#B45309" : "#0C0C0C",
+                          }}
+                          disabled={isCurrentCase}
+                          data-testid={`button-switch-${suffixCase.caseNumber}`}
+                        >
+                          <span style={{ fontWeight: isCurrentCase ? 600 : 500 }}>
+                            {formatCaseNumber(suffixCase.caseNumber)}
+                          </span>
+                          <span 
+                            style={{ 
+                              marginLeft: "8px", 
+                              fontSize: "11px",
+                              color: isCurrentCase ? "#B45309" : "rgba(12, 12, 12, 0.5)"
+                            }}
+                          >
+                            ({label}){isCurrentCase ? " - 현재" : ""}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* 제출 확인 다이얼로그 */}
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
