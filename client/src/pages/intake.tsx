@@ -55,18 +55,18 @@ interface IntakeProps {
 }
 
 const inputClasses =
-  "h-10 w-full rounded-md bg-slate-100 px-3 text-sm text-slate-600 outline-none border-0 focus:ring-2 focus:ring-sky-200";
+  "h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100";
 const disabledInputClasses =
-  "h-10 w-full rounded-md bg-slate-100 px-3 text-sm text-slate-400 outline-none border-0";
+  "h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-400 outline-none";
 const selectTriggerClasses =
-  "h-10 w-full rounded-md bg-slate-100 px-3 text-sm text-slate-600 outline-none border-0 focus:ring-2 focus:ring-sky-200 [&>span]:text-left";
+  "h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 [&>span]:text-left";
 
-const labelClasses = "flex items-center px-2 text-sm font-medium text-slate-600 whitespace-nowrap min-w-[100px]";
+const labelClasses = "mb-1.5 block text-xs font-medium text-slate-500";
 const labelCellClasses = labelClasses;
 const inputCellClasses = "flex-1";
-const fieldRowClasses = "flex items-center gap-2";
+const fieldRowClasses = "";
 
-const RequiredMark = () => <span className="text-red-500 ml-0.5">*</span>;
+const RequiredMark = () => <span className="text-sky-500 ml-0.5">*</span>;
 
 export default function Intake({
   isModal = false,
@@ -1226,677 +1226,567 @@ export default function Intake({
           </button>
         </div>
 
-        {/* Tabs / Section label */}
-        <div className="mb-6 border-b-2 border-[#008FED]">
-          <h2 className="px-2 pb-3 text-sm font-semibold text-[#008FED]">
-            기본 정보
-          </h2>
-        </div>
-
         {/* Form */}
         <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
           {/* 기본 정보 */}
           <section>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-900">
+            <div className="mb-4 border-b-2 border-sky-500">
+              <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 기본 정보
               </h2>
             </div>
 
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>접수번호</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={disabledInputClasses}
-                      value={displayCaseNumber}
-                      readOnly
-                      type="text"
-                      data-testid="input-case-number"
-                    />
-                  </div>
-                </div>
+            <div className="grid grid-cols-12 gap-x-4 gap-y-4">
+              <div className="col-span-6 md:col-span-2">
+                <label className={labelClasses}>접수번호</label>
+                <input
+                  className={disabledInputClasses}
+                  value={displayCaseNumber}
+                  readOnly
+                  placeholder="접수번호"
+                  type="text"
+                  data-testid="input-case-number"
+                />
               </div>
 
-              <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>접수일자</div>
-                  <div className={inputCellClasses}>
-                    <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={readOnly}
-                          className={`${inputClasses} flex items-center justify-between ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                          data-testid="button-date-picker"
-                        >
-                          <span>
-                            {accidentDate
-                              ? format(accidentDate, "yyyy-MM-dd", { locale: ko })
-                              : "날짜 선택"}
-                          </span>
-                          <CalendarIcon
-                            size={18}
-                            className="text-slate-400 opacity-80"
-                          />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={accidentDate}
-                          onSelect={(date) => {
-                            setAccidentDate(date);
-                            if (date)
-                              handleInputChange(
-                                "accidentDate",
-                                format(date, "yyyy-MM-dd"),
-                              );
-                            setDatePickerOpen(false);
-                          }}
-                          locale={ko}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>담당자명</div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.managerId}
-                      onValueChange={(value) => {
-                        handleInputChange("managerId", value);
-                        const mgr = administrators?.find((a) => a.id === value);
-                        if (mgr)
-                          handleInputChange("managerContact", mgr.phone || "");
-                      }}
+              <div className="col-span-6 md:col-span-2">
+                <label className={labelClasses}>접수일자</label>
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
                       disabled={readOnly}
+                      className={`${inputClasses} flex items-center justify-between ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                      data-testid="button-date-picker"
                     >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-manager"
-                      >
-                        <SelectValue placeholder="담당자명" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {administrators?.map((admin) => (
-                          <SelectItem key={admin.id} value={admin.id}>
-                            {admin.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                      <span>
+                        {accidentDate
+                          ? format(accidentDate, "yyyy-MM-dd", { locale: ko })
+                          : "날짜 선택"}
+                      </span>
+                      <CalendarIcon
+                        size={18}
+                        className="text-slate-400 opacity-80"
+                      />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={accidentDate}
+                      onSelect={(date) => {
+                        setAccidentDate(date);
+                        if (date)
+                          handleInputChange(
+                            "accidentDate",
+                            format(date, "yyyy-MM-dd"),
+                          );
+                        setDatePickerOpen(false);
+                      }}
+                      locale={ko}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>담당자 연락처</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={disabledInputClasses}
-                      value={formData.managerContact}
-                      readOnly
-                      placeholder="연락처"
-                      type="text"
-                      data-testid="input-manager-contact"
-                    />
-                  </div>
-                </div>
+              <div className="col-span-6 md:col-span-2">
+                <label className={labelClasses}>담당자명</label>
+                <Select
+                  value={formData.managerId}
+                  onValueChange={(value) => {
+                    handleInputChange("managerId", value);
+                    const mgr = administrators?.find((a) => a.id === value);
+                    if (mgr)
+                      handleInputChange("managerContact", mgr.phone || "");
+                  }}
+                  disabled={readOnly}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-manager"
+                  >
+                    <SelectValue placeholder="담당자명" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {administrators?.map((admin) => (
+                      <SelectItem key={admin.id} value={admin.id}>
+                        {admin.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-6 md:col-span-2">
+                <label className={labelClasses}>담당자 연락처</label>
+                <input
+                  className={disabledInputClasses}
+                  value={formData.managerContact}
+                  readOnly
+                  placeholder="연락처"
+                  type="text"
+                  data-testid="input-manager-contact"
+                />
               </div>
             </div>
           </section>
 
           {/* 보험 정보 */}
           <section>
-            <div className="mb-3 flex items-center justify-between border-b border-[#008FED]">
-              <h2 className="text-sm font-semibold px-2 pb-3 text-[#008FED]">
+            <div className="mb-4 border-b-2 border-sky-500">
+              <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 보험 정보
               </h2>
             </div>
 
-            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-12 gap-x-4 gap-y-4">
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    보험사 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.insuranceCompany}
-                      onValueChange={(value) =>
-                        handleInputChange("insuranceCompany", value)
-                      }
-                      disabled={readOnly}
-                    >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-insurance-company"
-                      >
-                        <SelectValue placeholder="보험사 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {insuranceCompanies.map((company) => (
-                          <SelectItem key={company} value={company}>
-                            {company}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <label className={labelClasses}>
+                  보험사 <RequiredMark />
+                </label>
+                <Select
+                  value={formData.insuranceCompany}
+                  onValueChange={(value) =>
+                    handleInputChange("insuranceCompany", value)
+                  }
+                  disabled={readOnly}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-insurance-company"
+                  >
+                    <SelectValue placeholder="보험사 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {insuranceCompanies.map((company) => (
+                      <SelectItem key={company} value={company}>
+                        {company}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-12 md:col-span-5">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>보험사 증권번호</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={inputClasses}
-                      value={formData.insurancePolicyNo}
-                      onChange={(e) =>
-                        handleInputChange("insurancePolicyNo", e.target.value)
-                      }
-                      disabled={readOnly}
-                      placeholder="보험사 증권번호"
-                      type="text"
-                      data-testid="input-policy-no"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>보험사 증권번호</label>
+                <input
+                  className={inputClasses}
+                  value={formData.insurancePolicyNo}
+                  onChange={(e) =>
+                    handleInputChange("insurancePolicyNo", e.target.value)
+                  }
+                  disabled={readOnly}
+                  placeholder="보험사 증권번호"
+                  type="text"
+                  data-testid="input-policy-no"
+                />
               </div>
 
               <div className="col-span-12 md:col-span-4">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>보험사 사고번호</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={inputClasses}
-                      value={formData.insuranceAccidentNo}
-                      onChange={(e) =>
-                        handleInputChange("insuranceAccidentNo", e.target.value)
-                      }
-                      disabled={readOnly}
-                      placeholder="보험사 사고번호"
-                      type="text"
-                      data-testid="input-accident-no"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>보험사 사고번호</label>
+                <input
+                  className={inputClasses}
+                  value={formData.insuranceAccidentNo}
+                  onChange={(e) =>
+                    handleInputChange("insuranceAccidentNo", e.target.value)
+                  }
+                  disabled={readOnly}
+                  placeholder="보험사 사고번호"
+                  type="text"
+                  data-testid="input-accident-no"
+                />
               </div>
             </div>
           </section>
 
           {/* 의뢰자/심사자/조사자 정보 */}
           <section>
-            <div className="mb-3">
-              <h2 className="text-sm font-semibold text-slate-900">
+            <div className="mb-4 border-b-2 border-sky-500">
+              <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 의뢰자/심사자/조사자 정보
               </h2>
             </div>
 
-            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-12 gap-x-4 gap-y-4">
               {/* 의뢰사 Row */}
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    의뢰사 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <div className="flex gap-1">
-                      <input
-                        className={`${inputClasses} flex-1`}
-                        value={formData.clientResidence}
-                        readOnly
-                        placeholder="의뢰사 선택"
-                        type="text"
-                        data-testid="input-client-residence"
-                      />
-                      <button
-                        onClick={() => !readOnly && setIsClientSearchOpen(true)}
-                        disabled={readOnly}
-                        className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                        type="button"
-                        data-testid="button-client-search"
-                      >
-                        <Search size={16} />
-                      </button>
-                    </div>
-                  </div>
+                <label className={labelClasses}>
+                  의뢰사 <RequiredMark />
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    className={`${inputClasses} flex-1`}
+                    value={formData.clientResidence}
+                    readOnly
+                    placeholder="의뢰사 선택"
+                    type="text"
+                    data-testid="input-client-residence"
+                  />
+                  <button
+                    onClick={() => !readOnly && setIsClientSearchOpen(true)}
+                    disabled={readOnly}
+                    className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                    type="button"
+                    data-testid="button-client-search"
+                  >
+                    <Search size={16} />
+                  </button>
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>소속부서명</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={disabledInputClasses}
-                      value={formData.clientDepartment}
-                      readOnly
-                      placeholder="소속부서명"
-                      type="text"
-                      data-testid="input-client-department"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>소속부서명</label>
+                <input
+                  className={disabledInputClasses}
+                  value={formData.clientDepartment}
+                  readOnly
+                  placeholder="소속부서명"
+                  type="text"
+                  data-testid="input-client-department"
+                />
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    의뢰자 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.clientName}
-                      onValueChange={(value) =>
-                        handleInputChange("clientName", value)
-                      }
-                      disabled={readOnly || !formData.clientResidence}
-                    >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-client-name"
-                      >
-                        <SelectValue placeholder="의뢰자 성함" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredClientEmployees.map((emp) => (
-                          <SelectItem key={emp.id} value={`${emp.name}::${emp.id}`}>
-                            {emp.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <label className={labelClasses}>
+                  의뢰자 <RequiredMark />
+                </label>
+                <Select
+                  value={formData.clientName}
+                  onValueChange={(value) =>
+                    handleInputChange("clientName", value)
+                  }
+                  disabled={readOnly || !formData.clientResidence}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-client-name"
+                  >
+                    <SelectValue placeholder="의뢰자 성함" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredClientEmployees.map((emp) => (
+                      <SelectItem key={emp.id} value={`${emp.name}::${emp.id}`}>
+                        {emp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>의뢰자 연락처</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={disabledInputClasses}
-                      value={formData.clientContact}
-                      readOnly
-                      placeholder="의뢰사 담당자 연락처"
-                      type="text"
-                      data-testid="input-client-contact"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>의뢰자 연락처</label>
+                <input
+                  className={disabledInputClasses}
+                  value={formData.clientContact}
+                  readOnly
+                  placeholder="의뢰사 담당자 연락처"
+                  type="text"
+                  data-testid="input-client-contact"
+                />
               </div>
 
               {/* 심사사 Row */}
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    심사사 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <div className="flex gap-1">
-                      <input
-                        className={`${inputClasses} flex-1`}
-                        value={formData.assessorId}
-                        readOnly
-                        placeholder="심사사 선택"
-                        type="text"
-                        data-testid="input-assessor-id"
-                      />
-                      <button
-                        onClick={() => !readOnly && setIsAssessorSearchOpen(true)}
-                        disabled={readOnly}
-                        className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                        type="button"
-                        data-testid="button-assessor-search"
-                      >
-                        <Search size={16} />
-                      </button>
-                    </div>
-                  </div>
+                <label className={labelClasses}>
+                  심사사 <RequiredMark />
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    className={`${inputClasses} flex-1`}
+                    value={formData.assessorId}
+                    readOnly
+                    placeholder="심사사 선택"
+                    type="text"
+                    data-testid="input-assessor-id"
+                  />
+                  <button
+                    onClick={() => !readOnly && setIsAssessorSearchOpen(true)}
+                    disabled={readOnly}
+                    className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                    type="button"
+                    data-testid="button-assessor-search"
+                  >
+                    <Search size={16} />
+                  </button>
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>소속부서명</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={disabledInputClasses}
-                      value={formData.assessorDepartment}
-                      readOnly
-                      placeholder="소속부서명"
-                      type="text"
-                      data-testid="input-assessor-department"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>소속부서명</label>
+                <input
+                  className={disabledInputClasses}
+                  value={formData.assessorDepartment}
+                  readOnly
+                  placeholder="소속부서명"
+                  type="text"
+                  data-testid="input-assessor-department"
+                />
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    심사자 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.assessorTeam}
-                      onValueChange={(value) =>
-                        handleInputChange("assessorTeam", value)
-                      }
-                      disabled={readOnly || !formData.assessorId}
-                    >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-assessor-team"
-                      >
-                        <SelectValue placeholder="심사자 성함" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredAssessorEmployees.map((emp) => (
-                          <SelectItem key={emp.id} value={emp.name}>
-                            {emp.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <label className={labelClasses}>
+                  심사자 <RequiredMark />
+                </label>
+                <Select
+                  value={formData.assessorTeam}
+                  onValueChange={(value) =>
+                    handleInputChange("assessorTeam", value)
+                  }
+                  disabled={readOnly || !formData.assessorId}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-assessor-team"
+                  >
+                    <SelectValue placeholder="심사자 성함" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredAssessorEmployees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.name}>
+                        {emp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>심사자 연락처</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={disabledInputClasses}
-                      value={formData.assessorContact}
-                      readOnly
-                      placeholder="심사자 연락처"
-                      type="text"
-                      data-testid="input-assessor-contact"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>심사자 연락처</label>
+                <input
+                  className={disabledInputClasses}
+                  value={formData.assessorContact}
+                  readOnly
+                  placeholder="심사자 연락처"
+                  type="text"
+                  data-testid="input-assessor-contact"
+                />
               </div>
 
               {/* 손사/조사사 Row */}
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>손사명</div>
-                  <div className={inputCellClasses}>
-                    <div className="flex gap-1">
-                      <input
-                        className={`${inputClasses} flex-1`}
-                        value={formData.investigatorTeam}
-                        readOnly
-                        placeholder="손사명"
-                        type="text"
-                        data-testid="input-investigator-team"
-                      />
-                      <button
-                        onClick={() =>
-                          !readOnly && setIsInvestigatorSearchOpen(true)
-                        }
-                        disabled={readOnly}
-                        className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                        type="button"
-                        data-testid="button-investigator-search"
-                      >
-                        <Search size={16} />
-                      </button>
-                    </div>
-                  </div>
+                <label className={labelClasses}>손사명</label>
+                <div className="flex gap-1">
+                  <input
+                    className={`${inputClasses} flex-1`}
+                    value={formData.investigatorTeam}
+                    readOnly
+                    placeholder="손사명"
+                    type="text"
+                    data-testid="input-investigator-team"
+                  />
+                  <button
+                    onClick={() =>
+                      !readOnly && setIsInvestigatorSearchOpen(true)
+                    }
+                    disabled={readOnly}
+                    className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                    type="button"
+                    data-testid="button-investigator-search"
+                  >
+                    <Search size={16} />
+                  </button>
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>소속부서명</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={disabledInputClasses}
-                      value={formData.investigatorDepartment}
-                      readOnly
-                      placeholder="소속부서명"
-                      type="text"
-                      data-testid="input-investigator-department"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>소속부서명</label>
+                <input
+                  className={disabledInputClasses}
+                  value={formData.investigatorDepartment}
+                  readOnly
+                  placeholder="소속부서명"
+                  type="text"
+                  data-testid="input-investigator-department"
+                />
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    조사자 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.investigatorTeamName}
-                      onValueChange={(value) =>
-                        handleInputChange("investigatorTeamName", value)
-                      }
-                      disabled={readOnly || !formData.investigatorTeam}
-                    >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-investigator-name"
-                      >
-                        <SelectValue placeholder="조사자 성함" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {filteredInvestigatorEmployees.map((emp) => (
-                          <SelectItem key={emp.id} value={emp.name}>
-                            {emp.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <label className={labelClasses}>
+                  조사자 <RequiredMark />
+                </label>
+                <Select
+                  value={formData.investigatorTeamName}
+                  onValueChange={(value) =>
+                    handleInputChange("investigatorTeamName", value)
+                  }
+                  disabled={readOnly || !formData.investigatorTeam}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-investigator-name"
+                  >
+                    <SelectValue placeholder="조사자 성함" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredInvestigatorEmployees.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.name}>
+                        {emp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>조사자 연락처</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={disabledInputClasses}
-                      value={formData.investigatorContact}
-                      readOnly
-                      placeholder="조사자 연락처"
-                      type="text"
-                      data-testid="input-investigator-contact"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>조사자 연락처</label>
+                <input
+                  className={disabledInputClasses}
+                  value={formData.investigatorContact}
+                  readOnly
+                  placeholder="조사자 연락처"
+                  type="text"
+                  data-testid="input-investigator-contact"
+                />
               </div>
             </div>
           </section>
 
           {/* 보험계약자 및 피보험자 정보 */}
           <section>
-            <div className="mb-3">
-              <h2 className="text-sm font-semibold text-slate-900">
+            <div className="mb-4 border-b-2 border-sky-500">
+              <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 보험계약자 및 피보험자 정보
               </h2>
             </div>
 
-            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-12 gap-x-4 gap-y-4">
               <div className="col-span-12 md:col-span-6">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>보험계약자</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={inputClasses}
-                      value={formData.policyHolderName}
-                      onChange={(e) =>
-                        handleInputChange("policyHolderName", e.target.value)
-                      }
-                      disabled={readOnly}
-                      placeholder="보험계약자 성함"
-                      type="text"
-                      data-testid="input-policy-holder-name"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>보험계약자</label>
+                <input
+                  className={inputClasses}
+                  value={formData.policyHolderName}
+                  onChange={(e) =>
+                    handleInputChange("policyHolderName", e.target.value)
+                  }
+                  disabled={readOnly}
+                  placeholder="보험계약자 성함"
+                  type="text"
+                  data-testid="input-policy-holder-name"
+                />
               </div>
 
               <div className="col-span-12 md:col-span-6">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    피보험자 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={inputClasses}
-                      value={formData.insuredName}
-                      onChange={(e) =>
-                        handleInputChange("insuredName", e.target.value)
-                      }
-                      disabled={readOnly}
-                      placeholder="피보험자 성함"
-                      type="text"
-                      data-testid="input-insured-name"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>
+                  피보험자 <RequiredMark />
+                </label>
+                <input
+                  className={inputClasses}
+                  value={formData.insuredName}
+                  onChange={(e) =>
+                    handleInputChange("insuredName", e.target.value)
+                  }
+                  disabled={readOnly}
+                  placeholder="피보험자 성함"
+                  type="text"
+                  data-testid="input-insured-name"
+                />
               </div>
 
               <div className="col-span-12 md:col-span-7">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    피보험자 주소 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <div className="relative">
-                      <input
-                        className={`${inputClasses} pr-10`}
-                        value={formData.insuredAddress}
-                        readOnly
-                        placeholder="도로명 주소, 동/호 포함"
-                        type="text"
-                        data-testid="input-insured-address"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddressSearch}
-                        disabled={readOnly}
-                        className="pointer-events-auto absolute inset-y-0 right-3 flex items-center text-slate-400"
-                      >
-                        <Search size={18} className="opacity-80" />
-                      </button>
-                    </div>
-                  </div>
+                <label className={labelClasses}>
+                  피보험자 주소 <RequiredMark />
+                </label>
+                <div className="relative">
+                  <input
+                    className={`${inputClasses} pr-10`}
+                    value={formData.insuredAddress}
+                    readOnly
+                    placeholder="도로명 주소, 동/호 포함"
+                    type="text"
+                    data-testid="input-insured-address"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddressSearch}
+                    disabled={readOnly}
+                    className="pointer-events-auto absolute inset-y-0 right-3 flex items-center text-slate-400"
+                  >
+                    <Search size={18} className="opacity-80" />
+                  </button>
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-5">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>상세주소</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={inputClasses}
-                      value={formData.insuredAddressDetail}
-                      onChange={(e) =>
-                        handleInputChange("insuredAddressDetail", e.target.value)
-                      }
-                      disabled={readOnly}
-                      placeholder="상세주소"
-                      type="text"
-                      data-testid="input-insured-address-detail"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>상세주소</label>
+                <input
+                  className={inputClasses}
+                  value={formData.insuredAddressDetail}
+                  onChange={(e) =>
+                    handleInputChange("insuredAddressDetail", e.target.value)
+                  }
+                  disabled={readOnly}
+                  placeholder="상세주소"
+                  type="text"
+                  data-testid="input-insured-address-detail"
+                />
               </div>
             </div>
           </section>
 
           {/* 피해자 정보 */}
           <section>
-            <div className="mb-3">
-              <h2 className="text-sm font-semibold text-slate-900">
+            <div className="mb-4 border-b-2 border-sky-500">
+              <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 피해자 정보
               </h2>
             </div>
 
-            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-12 gap-x-4 gap-y-4">
               <div className="col-span-12 md:col-span-4">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>피해자</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={inputClasses}
-                      value={formData.victimName}
-                      onChange={(e) =>
-                        handleInputChange("victimName", e.target.value)
-                      }
-                      disabled={readOnly}
-                      placeholder="피해자 성함"
-                      type="text"
-                      data-testid="input-victim-name"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>피해자</label>
+                <input
+                  className={inputClasses}
+                  value={formData.victimName}
+                  onChange={(e) =>
+                    handleInputChange("victimName", e.target.value)
+                  }
+                  disabled={readOnly}
+                  placeholder="피해자 성함"
+                  type="text"
+                  data-testid="input-victim-name"
+                />
               </div>
 
               <div className="col-span-12 md:col-span-4">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>피해자 연락처</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={inputClasses}
-                      value={formData.victimContact}
-                      onChange={(e) =>
-                        handleInputChange("victimContact", e.target.value)
-                      }
-                      disabled={readOnly}
-                      placeholder="피해자 연락처"
-                      type="text"
-                      data-testid="input-victim-contact"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>피해자 연락처</label>
+                <input
+                  className={inputClasses}
+                  value={formData.victimContact}
+                  onChange={(e) =>
+                    handleInputChange("victimContact", e.target.value)
+                  }
+                  disabled={readOnly}
+                  placeholder="피해자 연락처"
+                  type="text"
+                  data-testid="input-victim-contact"
+                />
               </div>
 
               <div className="col-span-12 md:col-span-4">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>상세주소</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={inputClasses}
-                      value={formData.victimAddress}
-                      onChange={(e) =>
-                        handleInputChange("victimAddress", e.target.value)
-                      }
-                      disabled={readOnly}
-                      placeholder="상세주소"
-                      type="text"
-                      data-testid="input-victim-address"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>상세주소</label>
+                <input
+                  className={inputClasses}
+                  value={formData.victimAddress}
+                  onChange={(e) =>
+                    handleInputChange("victimAddress", e.target.value)
+                  }
+                  disabled={readOnly}
+                  placeholder="상세주소"
+                  type="text"
+                  data-testid="input-victim-address"
+                />
               </div>
             </div>
           </section>
 
-          {/* 배b��at�항 */}
+          {/* 배당사항 */}
           <section className="rounded-lg bg-slate-50 p-6">
-            <div className="mb-4">
-              <h2 className="text-sm font-semibold text-slate-900">배당사항</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                손상 및 대물 선택(중복 가능)
-              </p>
+            <div className="mb-4 border-b-2 border-sky-500">
+              <h2 className="pb-2 text-sm font-semibold text-sky-600">배당사항</h2>
             </div>
+            <p className="mb-4 text-xs text-slate-500">
+              손상 및 대물 선택(중복 가능)
+            </p>
 
             <div className="mb-5 flex flex-wrap items-center gap-6">
               <label className="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
@@ -1930,267 +1820,236 @@ export default function Intake({
               </label>
             </div>
 
-            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-12 gap-x-4 gap-y-4">
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    사고 유형 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.accidentType}
-                      onValueChange={(value) =>
-                        handleInputChange("accidentType", value)
-                      }
-                      disabled={readOnly}
-                    >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-accident-type"
-                      >
-                        <SelectValue placeholder="사고 유형 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getMasterDataOptions("accident_type").length > 0 ? (
-                          getMasterDataOptions("accident_type").map((opt) => (
-                            <SelectItem key={opt} value={opt}>
-                              {opt}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <>
-                            <SelectItem value="누수">누수</SelectItem>
-                            <SelectItem value="급배수">급배수</SelectItem>
-                            <SelectItem value="화재">화재</SelectItem>
-                            <SelectItem value="기타">기타</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <label className={labelClasses}>
+                  사고 유형 <RequiredMark />
+                </label>
+                <Select
+                  value={formData.accidentType}
+                  onValueChange={(value) =>
+                    handleInputChange("accidentType", value)
+                  }
+                  disabled={readOnly}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-accident-type"
+                  >
+                    <SelectValue placeholder="사고 유형 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getMasterDataOptions("accident_type").length > 0 ? (
+                      getMasterDataOptions("accident_type").map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="누수">누수</SelectItem>
+                        <SelectItem value="급배수">급배수</SelectItem>
+                        <SelectItem value="화재">화재</SelectItem>
+                        <SelectItem value="기타">기타</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>
-                    복구 유형 <RequiredMark />
-                  </div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.restorationMethod}
-                      onValueChange={(value) =>
-                        handleInputChange("restorationMethod", value)
-                      }
-                      disabled={readOnly}
-                    >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-restoration-method"
-                      >
-                        <SelectValue placeholder="복구 유형 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getMasterDataOptions("recovery_type").length > 0 ? (
-                          getMasterDataOptions("recovery_type").map((opt) => (
-                            <SelectItem key={opt} value={opt}>
-                              {opt}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <>
-                            <SelectItem value="없음">없음</SelectItem>
-                            <SelectItem value="직접복구">직접복구</SelectItem>
-                            <SelectItem value="선견적요청">선견적요청</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <label className={labelClasses}>
+                  복구 유형 <RequiredMark />
+                </label>
+                <Select
+                  value={formData.restorationMethod}
+                  onValueChange={(value) =>
+                    handleInputChange("restorationMethod", value)
+                  }
+                  disabled={readOnly}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-restoration-method"
+                  >
+                    <SelectValue placeholder="복구 유형 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getMasterDataOptions("recovery_type").length > 0 ? (
+                      getMasterDataOptions("recovery_type").map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="없음">없음</SelectItem>
+                        <SelectItem value="직접복구">직접복구</SelectItem>
+                        <SelectItem value="선견적요청">선견적요청</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>사고 원인</div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.accidentCause}
-                      onValueChange={(value) =>
-                        handleInputChange("accidentCause", value)
-                      }
-                      disabled={readOnly}
-                    >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-accident-cause"
-                      >
-                        <SelectValue placeholder="사고 원인 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getMasterDataOptions("accident_cause").length > 0 ? (
-                          getMasterDataOptions("accident_cause").map((opt) => (
-                            <SelectItem key={opt} value={opt}>
-                              {opt}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <>
-                            <SelectItem value="배관">배관</SelectItem>
-                            <SelectItem value="방수">방수</SelectItem>
-                            <SelectItem value="코킹">코킹</SelectItem>
-                            <SelectItem value="공용부">공용부</SelectItem>
-                            <SelectItem value="복합">복합</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <label className={labelClasses}>사고 원인</label>
+                <Select
+                  value={formData.accidentCause}
+                  onValueChange={(value) =>
+                    handleInputChange("accidentCause", value)
+                  }
+                  disabled={readOnly}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-accident-cause"
+                  >
+                    <SelectValue placeholder="사고 원인 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getMasterDataOptions("accident_cause").length > 0 ? (
+                      getMasterDataOptions("accident_cause").map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="배관">배관</SelectItem>
+                        <SelectItem value="방수">방수</SelectItem>
+                        <SelectItem value="코킹">코킹</SelectItem>
+                        <SelectItem value="공용부">공용부</SelectItem>
+                        <SelectItem value="복합">복합</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>타업체 접수 여부</div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.otherVendorEstimate}
-                      onValueChange={(value) =>
-                        handleInputChange("otherVendorEstimate", value)
-                      }
-                      disabled={readOnly}
-                    >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-other-vendor"
-                      >
-                        <SelectValue placeholder="타업체 접수 여부 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getMasterDataOptions("other_company_estimate").length >
-                        0 ? (
-                          getMasterDataOptions("other_company_estimate").map(
-                            (opt) => (
-                              <SelectItem key={opt} value={opt}>
-                                {opt}
-                              </SelectItem>
-                            ),
-                          )
-                        ) : (
-                          <>
-                            <SelectItem value="유">유</SelectItem>
-                            <SelectItem value="무">무</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <label className={labelClasses}>타업체 접수 여부</label>
+                <Select
+                  value={formData.otherVendorEstimate}
+                  onValueChange={(value) =>
+                    handleInputChange("otherVendorEstimate", value)
+                  }
+                  disabled={readOnly}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-other-vendor"
+                  >
+                    <SelectValue placeholder="타업체 접수 여부 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getMasterDataOptions("other_company_estimate").length >
+                    0 ? (
+                      getMasterDataOptions("other_company_estimate").map(
+                        (opt) => (
+                          <SelectItem key={opt} value={opt}>
+                            {opt}
+                          </SelectItem>
+                        ),
+                      )
+                    ) : (
+                      <>
+                        <SelectItem value="유">유</SelectItem>
+                        <SelectItem value="무">무</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </section>
 
           {/* 배당 협력사 정보 */}
           <section>
-            <div className="mb-3">
-              <h2 className="text-sm font-semibold text-slate-900">
+            <div className="mb-4 border-b-2 border-sky-500">
+              <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 배당 협력사 정보
               </h2>
             </div>
 
-            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+            <div className="grid grid-cols-12 gap-x-4 gap-y-4">
               <div className="col-span-12 md:col-span-6">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>협력사</div>
-                  <div className={inputCellClasses}>
-                    <div className="relative">
-                      <input
-                        className={`${inputClasses} pr-10`}
-                        value={formData.assignedPartner}
-                        readOnly
-                        placeholder="협력사 선택"
-                        type="text"
-                        data-testid="input-partner"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => !readOnly && setIsPartnerSearchOpen(true)}
-                        disabled={readOnly}
-                        className="pointer-events-auto absolute inset-y-0 right-3 flex items-center text-slate-400"
-                      >
-                        <Search size={18} className="opacity-80" />
-                      </button>
-                    </div>
-                  </div>
+                <label className={labelClasses}>협력사</label>
+                <div className="flex gap-1">
+                  <input
+                    className={`${inputClasses} flex-1`}
+                    value={formData.assignedPartner}
+                    readOnly
+                    placeholder="협력사 선택"
+                    type="text"
+                    data-testid="input-partner"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => !readOnly && setIsPartnerSearchOpen(true)}
+                    disabled={readOnly}
+                    className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                    data-testid="button-partner-search-inline"
+                  >
+                    <Search size={16} />
+                  </button>
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>담당자</div>
-                  <div className={inputCellClasses}>
-                    <Select
-                      value={formData.assignedPartnerManager}
-                      onValueChange={(value) =>
-                        handleInputChange("assignedPartnerManager", value)
-                      }
-                      disabled={readOnly || !selectedPartner}
-                    >
-                      <SelectTrigger
-                        className={selectTriggerClasses}
-                        data-testid="select-partner-manager"
-                      >
-                        <SelectValue placeholder="담당자" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {partnerManagers.map((mgr) => (
-                          <SelectItem key={mgr.id} value={mgr.name}>
-                            {mgr.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <label className={labelClasses}>담당자</label>
+                <Select
+                  value={formData.assignedPartnerManager}
+                  onValueChange={(value) =>
+                    handleInputChange("assignedPartnerManager", value)
+                  }
+                  disabled={readOnly || !selectedPartner}
+                >
+                  <SelectTrigger
+                    className={selectTriggerClasses}
+                    data-testid="select-partner-manager"
+                  >
+                    <SelectValue placeholder="담당자" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {partnerManagers.map((mgr) => (
+                      <SelectItem key={mgr.id} value={mgr.name}>
+                        {mgr.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>담당자 연락처</div>
-                  <div className={inputCellClasses}>
-                    <input
-                      className={disabledInputClasses}
-                      value={formData.assignedPartnerContact}
-                      readOnly
-                      placeholder="담당자 연락처"
-                      type="text"
-                      data-testid="input-partner-contact"
-                    />
-                  </div>
-                </div>
+                <label className={labelClasses}>담당자 연락처</label>
+                <input
+                  className={disabledInputClasses}
+                  value={formData.assignedPartnerContact}
+                  readOnly
+                  placeholder="담당자 연락처"
+                  type="text"
+                  data-testid="input-partner-contact"
+                />
               </div>
 
               <div className="col-span-12">
-                <div className={fieldRowClasses}>
-                  <div className={labelClasses}>특이사항 및 요청사항</div>
-                  <div className={inputCellClasses}>
-                    <div className="relative">
-                      <textarea
-                        className="min-h-[120px] w-full resize-none rounded-md border-0 bg-white px-3 py-2 text-sm outline-none focus:ring-0"
-                        placeholder="현장 특이사항, 요청사항 등"
-                        value={formData.specialRequests}
-                        onChange={(e) => {
-                          if (e.target.value.length <= 800)
-                            handleInputChange("specialRequests", e.target.value);
-                        }}
-                        disabled={readOnly}
-                        maxLength={800}
-                        data-testid="textarea-special-requests"
-                      />
-                      <div className="absolute bottom-2 right-3 text-xs text-slate-400">
-                        {formData.specialRequests.length}/800
-                      </div>
-                    </div>
+                <label className={labelClasses}>특이사항 및 요청사항</label>
+                <div className="relative">
+                  <textarea
+                    className="min-h-[120px] w-full resize-none rounded-md border-0 bg-white px-3 py-2 text-sm outline-none focus:ring-0"
+                    placeholder="현장 특이사항, 요청사항 등"
+                    value={formData.specialRequests}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 800)
+                        handleInputChange("specialRequests", e.target.value);
+                    }}
+                    disabled={readOnly}
+                    maxLength={800}
+                    data-testid="textarea-special-requests"
+                  />
+                  <div className="absolute bottom-2 right-3 text-xs text-slate-400">
+                    {formData.specialRequests.length}/800
                   </div>
                 </div>
               </div>
