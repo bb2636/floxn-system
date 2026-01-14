@@ -139,11 +139,7 @@ interface DrawTextOptions {
 }
 
 // 기본 텍스트 너비 측정 (pdf-lib 기본 메서드 사용)
-function measureTextWidth(
-  text: string,
-  font: PDFFont,
-  size: number,
-): number {
+function measureTextWidth(text: string, font: PDFFont, size: number): number {
   if (!text) return 0;
   try {
     return font.widthOfTextAtSize(text, size);
@@ -261,9 +257,15 @@ function normalizeText(text: string): string {
       // 1) 보이지 않는 공백/특수 공백을 일반 공백으로 통일
       .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ")
       // 2) 특수문자(콜론 제외) 뒤의 공백 제거
-      .replace(/([-–—;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…])\s+/g, "$1")
+      .replace(
+        /([-–—;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…])\s+/g,
+        "$1",
+      )
       // 3) 특수문자(콜론 제외) 앞의 공백 제거
-      .replace(/\s+([-–—;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…])/g, "$1")
+      .replace(
+        /\s+([-–—;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…])/g,
+        "$1",
+      )
   );
 }
 
@@ -1072,10 +1074,44 @@ async function renderFieldReportPage(
   }
 
   const recoveryInfoRows: TableCell[][] = [
+    // 1️⃣ 제목 (전체 병합)
+    [
+      {
+        text: "복구방식 및 처리 유형",
+        width: 515,
+        isHeader: true,
+        align: "center",
+      },
+    ],
+
+    // 2️⃣ 피해자명 / 피해자 연락처
+    [
+      { text: "피해자명", width: 90, isHeader: true, align: "center" },
+      { text: caseData.victimName || "-", width: 180, align: "left" },
+      { text: "피해자 연락처", width: 110, isHeader: true, align: "center" },
+      { text: caseData.victimContact || "-", width: 135, align: "left" },
+    ],
+
+    // 3️⃣ 피해주소 (우측 병합)
+    [
+      { text: "피해주소", width: 90, isHeader: true, align: "center" },
+      {
+        text:
+          [caseData.accidentLocation, caseData.accidentLocationDetail]
+            .filter(Boolean)
+            .join(" ") || "-",
+        width: 425,
+        align: "left",
+      },
+    ],
+
+    // 4️⃣ 처리유형
     [
       { text: "처리유형", width: 90, isHeader: true, align: "center" },
-      { text: processingTypesStr, width: 425, align: "left" },
+      { text: processingTypesStr || "-", width: 425, align: "left" },
     ],
+
+    // 5️⃣ 복구방식
     [
       { text: "복구방식", width: 90, isHeader: true, align: "center" },
       {
@@ -1089,6 +1125,25 @@ async function renderFieldReportPage(
       },
     ],
   ];
+
+  // const recoveryInfoRows: TableCell[][] = [
+  //   [
+  //     { text: "처리유형", width: 90, isHeader: true, align: "center" },
+  //     { text: processingTypesStr, width: 425, align: "left" },
+  //   ],
+  //   [
+  //     { text: "복구방식", width: 90, isHeader: true, align: "center" },
+  //     {
+  //       text:
+  //         caseData.recoveryMethodType ||
+  //         caseData.restorationMethod ||
+  //         caseData.recoveryMethod ||
+  //         "-",
+  //       width: 425,
+  //       align: "left",
+  //     },
+  //   ],
+  // ];
 
   y = drawTable(page, {
     x: MARGIN,
@@ -1436,7 +1491,7 @@ async function renderEvidencePages(
     건축물대장: "증빙자료",
     "기타증빙자료(민원일지 등)": "증빙자료",
     위임장: "청구자료",
-    도급계약서: "청구자료",
+    도급계약서: "청n��자료",
     복구완료확인서: "청구자료",
     "부가세 청구자료": "청구자료",
     청구: "청구자료",
