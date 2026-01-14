@@ -138,6 +138,20 @@ interface DrawTextOptions {
   align?: "left" | "center" | "right";
 }
 
+// 기본 텍스트 너비 측정 (pdf-lib 기본 메서드 사용)
+function measureTextWidth(
+  text: string,
+  font: PDFFont,
+  size: number,
+): number {
+  if (!text) return 0;
+  try {
+    return font.widthOfTextAtSize(text, size);
+  } catch {
+    return text.length * size * 0.5;
+  }
+}
+
 // 특수문자 뒤 글리프 간격을 조정하여 실제 시각적 너비 계산
 function measureTextWidthAdjusted(
   text: string,
