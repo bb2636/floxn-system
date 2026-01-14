@@ -590,16 +590,51 @@ export default function Dashboard() {
             <div className="col-span-12">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-base font-bold">현황 요약</h2>
-                <button
-                  onClick={() => setIsPeriodSheetOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
-                  type="button"
-                  data-testid="button-period-selector-summary"
-                >
-                  <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
-                  {getPeriodLabel()}
-                  <ChevronDown className="h-4 w-4 text-slate-500" />
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
+                      type="button"
+                      data-testid="button-period-selector-summary"
+                    >
+                      <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
+                      {getPeriodLabel()}
+                      <ChevronDown className="h-4 w-4 text-slate-500" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
+                    <DropdownMenuItem 
+                      onClick={() => handlePeriodSelect('all')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
+                    >
+                      전체
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handlePeriodSelect('today')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
+                    >
+                      오늘
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handlePeriodSelect('thisMonth')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                    >
+                      이번 달
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handlePeriodSelect('lastMonth')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                    >
+                      지난달
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handlePeriodSelect('custom')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
+                    >
+                      날짜 선택
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               <div className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-[#DDE3F3]">
@@ -661,16 +696,51 @@ export default function Dashboard() {
               <div className="col-span-12 lg:col-span-8">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-base font-bold">진행건 요약</h2>
-                  <button
-                    onClick={() => setIsPeriodSheetOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
-                    type="button"
-                    data-testid="button-period-selector-progress"
-                  >
-                    <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
-                    {getPeriodLabel()}
-                    <ChevronDown className="h-4 w-4 text-slate-500" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
+                        type="button"
+                        data-testid="button-period-selector-progress"
+                      >
+                        <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
+                        {getPeriodLabel()}
+                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('all')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
+                        전체
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('today')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
+                        오늘
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('thisMonth')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
+                        이번 달
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('lastMonth')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
+                        지난달
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('custom')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
+                        날짜 선택
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
