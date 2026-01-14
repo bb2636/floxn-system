@@ -861,7 +861,7 @@ export default function FieldManagement() {
 
             <section className="mt-6">
               <div className="text-[14px] font-bold">기본 정보</div>
-              <div className="mt-2 border-t border-[#000000]"></div>
+              <div className="mt-2 border-t border-[#E5E7EB]"></div>
 
               <div className="mt-10 space-y-10">
                 <div className="flex items-center flex-wrap gap-y-4">
@@ -947,7 +947,7 @@ export default function FieldManagement() {
 
             <section className="mt-8">
               <div className="text-[14px] font-bold">현장조사 정보</div>
-              <div className="mt-3 border-t border-[#000000]"></div>
+              <div className="mt-3 border-t border-[#E5E7EB]"></div>
 
               <div className="mt-4 space-y-4">
                 <div className="flex items-center gap-4">
@@ -1103,25 +1103,23 @@ export default function FieldManagement() {
             </section>
 
             <section className="mt-8">
-              <div className="text-[14px] font-bold text-[#111827]">동일사고번호 공사대상건</div>
+              <div className="text-[14px] font-bold">동일사고번호 공사대상건</div>
 
-              <div className="mt-3 border-t border-b border-t-black border-b-[#E5E7EB] bg-white p-4">
-                <div className="mb-3 text-[13px] font-semibold text-[#111827]">
-                  총 {relatedCases.length}건
-                </div>
+              <div className="mt-3 rounded-lg border border-[#E5E7EB] bg-white">
+                <div className="px-4 py-3 text-[13px] font-semibold">총 {relatedCases.length}건</div>
+                <div className="border-t border-[#E5E7EB]"></div>
 
-                <div className="space-y-2">
-                  {relatedCases.map((caseItem) => {
-                    const isLossPreventionCase = /-0$/.test(caseItem.caseNumber || '');
-                    const displayName = isLossPreventionCase 
-                      ? (caseItem.insuredName || "-")
-                      : (caseItem.victimName || "-");
+                {relatedCases.map((caseItem, index) => {
+                  const isLossPreventionCase = /-0$/.test(caseItem.caseNumber || '');
+                  const isSelected = caseItem.id === selectedCaseData?.id;
 
-                    return (
-                      <div key={caseItem.id} className="rounded-lg bg-[#F9FAFB] px-4 py-3">
+                  return (
+                    <div key={caseItem.id}>
+                      {index > 0 && <div className="border-t border-[#E5E7EB]"></div>}
+                      <div className={`px-4 py-3 ${isSelected ? "bg-[#F9FAFB]" : ""}`}>
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-[13px] font-semibold text-[#111827]">
+                            <div className="text-[13px] font-semibold">
                               {caseItem.insuranceCompany || "-"}
                               <span className="ml-1 text-[#6B7280]">{caseItem.insuranceAccidentNo || ""}(사고번호)</span>
                             </div>
@@ -1147,9 +1145,9 @@ export default function FieldManagement() {
                           )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
@@ -1169,14 +1167,14 @@ export default function FieldManagement() {
                   </button>
                 )}
               </div>
-              <div className="mt-3 border-t border-[#000000]"></div>
+              <div className="mt-3 border-t border-[#E5E7EB]"></div>
 
               {!isReadOnly && !isSubmitted && (
                 <div className="mt-4 space-y-4">
                   <div className="grid grid-cols-12 gap-4">
                     <div className="col-span-12 flex items-center gap-3">
                       <div
-                        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#008FED] bg-[#008FED] text-[12px] text-white cursor-pointer"
+                        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#CBD5E1] bg-white text-[12px] text-[#6B7280] cursor-pointer hover:bg-gray-100"
                         onClick={() => {
                           setNewVictimName("");
                           setNewVictimContact("");
@@ -1272,7 +1270,7 @@ export default function FieldManagement() {
 
             <section className="mt-8">
               <div className="text-[14px] font-bold">VOC(고객의 소리)</div>
-              <div className="mt-3 border-t border-[#000000]"></div>
+              <div className="mt-3 border-t border-[#E5E7EB]"></div>
 
               <div className="mt-4">
                 <textarea
