@@ -138,11 +138,81 @@ interface DrawTextOptions {
   align?: "left" | "center" | "right";
 }
 
+// 특수문자 패턴 (폰트 글리프 간격 조정이 필요한 문자들)
+const SPECIAL_CHAR_PATTERN = /[-–—:;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…]/;
+
 function measureTextWidth(text: string, font: PDFFont, size: number): number {
   try {
     return font.widthOfTextAtSize(text, size);
   } catch {
     return text.length * size * 0.5;
+  }
+}
+
+// 특수문자 뒤 글리프 간격을 조정하여 실제 시각적 너비 계산
+function measureTextWidthAdjusted(text: string, font: PDFFont, size: number): number {
+  if (!text) return 0;
+  
+  let totalWidth = 0;
+  const chars = Array.from(text);
+  
+  for (let i = 0; i < chars.length; i++) {
+    const char = chars[i];
+    try {
+      let charWidth = font.widthOfTextAtSize(char, size);
+      
+      // 특수문자의 경우 글리프 너비를 줄임 (폰트의 과도한 side-bearing 보정)
+      if (SPECIAL_CHAR_PATTERN.test(char)) {
+        charWidth *= 0.7; // 30% 줄임
+      }
+      
+      totalWidth += charWidth;
+    } catch {
+      totalWidth += size * 0.5;
+    }
+  }
+  
+  return totalWidth;
+}
+
+// 문자별로 렌더링하여 특수문자 뒤 간격 조정
+function drawTextCharByChar(
+  page: PDFPage,
+  text: string,
+  x: number,
+  y: number,
+  font: PDFFont,
+  size: number,
+  color: { r: number; g: number; b: number }
+): void {
+  if (!text) return;
+  
+  let currentX = x;
+  const chars = Array.from(text);
+  
+  for (let i = 0; i < chars.length; i++) {
+    const char = chars[i];
+    
+    try {
+      page.drawText(char, {
+        x: currentX,
+        y,
+        size,
+        font,
+        color: rgb(color.r, color.g, color.b),
+      });
+      
+      let charWidth = font.widthOfTextAtSize(char, size);
+      
+      // 특수문자 뒤의 advance width를 줄여서 간격 조정
+      if (SPECIAL_CHAR_PATTERN.test(char)) {
+        charWidth *= 0.7; // 30% 줄임
+      }
+      
+      currentX += charWidth;
+    } catch {
+      currentX += size * 0.5;
+    }
   }
 }
 
@@ -184,13 +254,19 @@ function wrapText(
   return lines;
 }
 
-// 모든 특수기호 뒤 공백 제거 함수 (전역)
+// 유니코드 공백(눈에 안 보이는 공백)까지 정규화 + 특수기호 전/후 공백 제거
 function normalizeText(text: string): string {
-  // 특수기호 뒤 공백 제거 - 명시적 특수문자 목록 사용
-  // 하이픈, 콜론, 슬래시, 괄호류, 따옴표류, 기타 특수문자
-  return text
-    .replace(/([-–—:;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…])\s+/g, "$1")
-    .replace(/\s+([-–—:;/\\()[\]{}<>])/g, "$1");  // 일부 특수문자 앞 공백도 제거
+  if (!text) return "";
+
+  return (
+    text
+      // 1) 보이지 않는 공백/특수 공백을 일반 공백으로 통일
+      .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ")
+      // 2) (문장부호/기호) 뒤의 공백 제거
+      .replace(/([\p{P}\p{S}])\s+/gu, "$1")
+      // 3) (문장부호/기호) 앞의 공백 제거
+      .replace(/\s+([\p{P}\p{S}])/gu, "$1")
+  );
 }
 
 function drawText(page: PDFPage, options: DrawTextOptions): number {
@@ -207,7 +283,7 @@ function drawText(page: PDFPage, options: DrawTextOptions): number {
   } = options;
 
   if (!text) return y;
-  
+
   // 모든 텍스트에서 특수기호 뒤 공백 제거
   const normalizedText = normalizeText(text);
 
@@ -224,22 +300,18 @@ function drawText(page: PDFPage, options: DrawTextOptions): number {
   for (const line of lines) {
     let drawX = x;
 
+    // 정렬 시 조정된 너비 사용
     if (align === "center" && maxWidth) {
-      const textWidth = measureTextWidth(line, font, size);
+      const textWidth = measureTextWidthAdjusted(line, font, size);
       drawX = x + (maxWidth - textWidth) / 2;
     } else if (align === "right" && maxWidth) {
-      const textWidth = measureTextWidth(line, font, size);
+      const textWidth = measureTextWidthAdjusted(line, font, size);
       drawX = x + maxWidth - textWidth;
     }
 
     try {
-      page.drawText(line, {
-        x: drawX,
-        y: currentY,
-        size,
-        font,
-        color: rgb(color.r, color.g, color.b),
-      });
+      // 문자별로 렌더링하여 특수문자 간격 조정
+      drawTextCharByChar(page, line, drawX, currentY, font, size, color);
     } catch (e) {
       console.warn(
         `[pdf-lib] Failed to draw text: "${line.substring(0, 20)}..."`,
@@ -328,53 +400,39 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
       const displayText = isNegative ? cellText.substring(1) : cellText;
       const minusSign = isNegative ? "-" : "";
 
-      let textWidth = measureTextWidth(displayText, font, actualFontSize);
+      // 조정된 너비 계산 사용
+      let textWidth = measureTextWidthAdjusted(displayText, font, actualFontSize);
       const minusWidth = isNegative
-        ? measureTextWidth(minusSign, font, actualFontSize)
+        ? measureTextWidthAdjusted(minusSign, font, actualFontSize)
         : 0;
 
       while (textWidth + minusWidth > maxTextWidth && actualFontSize > 5) {
         actualFontSize -= 0.5;
-        textWidth = measureTextWidth(displayText, font, actualFontSize);
+        textWidth = measureTextWidthAdjusted(displayText, font, actualFontSize);
       }
 
       const textY = currentY - rowHeight / 2 - actualFontSize / 3;
 
       let textX = cellX + padding;
       if (cell.align === "center") {
-        const fullWidth = measureTextWidth(cellText, font, actualFontSize);
+        const fullWidth = measureTextWidthAdjusted(cellText, font, actualFontSize);
         textX = cellX + (cell.width - fullWidth) / 2;
       } else if (cell.align === "right") {
         // 숫자 부분만 오른쪽 정렬
         textX = cellX + cell.width - textWidth - rightPadding;
       }
 
+      const defaultColor = { r: 0, g: 0, b: 0 };
+
       try {
         if (isNegative) {
           // 마이너스 기호를 숫자 왼쪽에 고정 간격으로 배치
           const minusX = textX - minusWidth - 2;
-          page.drawText(minusSign, {
-            x: minusX,
-            y: textY,
-            size: actualFontSize,
-            font,
-            color: rgb(0, 0, 0),
-          });
-          page.drawText(displayText, {
-            x: textX,
-            y: textY,
-            size: actualFontSize,
-            font,
-            color: rgb(0, 0, 0),
-          });
+          drawTextCharByChar(page, minusSign, minusX, textY, font, actualFontSize, defaultColor);
+          drawTextCharByChar(page, displayText, textX, textY, font, actualFontSize, defaultColor);
         } else {
-          page.drawText(cellText, {
-            x: textX,
-            y: textY,
-            size: actualFontSize,
-            font,
-            color: rgb(0, 0, 0),
-          });
+          // 문자별로 렌더링하여 특수문자 간격 조정
+          drawTextCharByChar(page, cellText, textX, textY, font, actualFontSize, defaultColor);
         }
       } catch (e) {
         console.warn(
@@ -620,7 +678,9 @@ async function renderCoverPage(
 
   // Main info table
   // 특수기호 뒤 공백 제거
-  const cleanAccidentNo = (caseData.insuranceAccidentNo || "-").replace(/-\s+/g, "-").replace(/:\s+/g, ":");
+  const cleanAccidentNo = (caseData.insuranceAccidentNo || "-")
+    .replace(/-\s+/g, "-")
+    .replace(/:\s+/g, ":");
   const tableRows: TableCell[][] = [
     [
       { text: "사고접수번호", width: 100, isHeader: true, align: "center" },
@@ -1066,7 +1126,8 @@ async function renderDrawingPage(
 
   // 사고번호(계약번호) on the right - 헤더박스 내에 맞도록 폰트 크기 조정
   // 특수기호 뒤 공백 제거
-  const rawAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "-";
+  const rawAccidentNo =
+    caseData.insuranceAccidentNo || caseData.caseNumber || "-";
   const accidentNo = rawAccidentNo.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
   const accidentNoText = `사고번호(계약번호):${accidentNo}`;
   // 텍스트 길이에 따라 폰트 크기 조정 (헤더 영역 안에 들어가도록)
@@ -1252,7 +1313,7 @@ async function renderDrawingPage(
         const scaleY = maxHeight / imgDims.height;
         // 영역에 맞게 최대한 확대하되, 5배까지 확대 (원본이 너무 작을 경우 대비)
         const baseScale = Math.min(scaleX, scaleY);
-        const scale = Math.min(baseScale, 5.0); //  ��대 5배까지 확대
+        const scale = Math.min(baseScale, 5.0); //    대 5배까지 확대
 
         // 도면 크기를 영역의 95% 이상 채우도록 보장
         let drawWidth = imgDims.width * scale;
@@ -1416,16 +1477,22 @@ async function renderEvidencePages(
         : pdfAddress;
 
       // 헤더 형식: "사고번호 {보험사고번호}    {주소}    {카테고리}-{세부카테고리}"
-      const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
+      const pdfAccidentNo = normalizeText(
+        caseData.insuranceAccidentNo || caseData.caseNumber || "",
+      );
       const pdfCategoryDisplay = normalizeText(
         pdfItem.doc.category
           ? `${pdfItem.tab}-${pdfItem.doc.category}`
-          : pdfItem.tab
+          : pdfItem.tab,
       );
       const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`;
 
       const pdfFontSize =
-        normalizedHeaderText.length > 60 ? 8 : normalizedHeaderText.length > 45 ? 9 : 10;
+        normalizedHeaderText.length > 60
+          ? 8
+          : normalizedHeaderText.length > 45
+            ? 9
+            : 10;
 
       // 각 페이지를 embedPage로 처리하여 헤더 공간 확보
       for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
@@ -1530,13 +1597,15 @@ async function renderEvidencePages(
     const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
 
     // 헤더 형식: 좌측 "사고번호 {번호}" / 중앙 "{주소}" / 우측 "{카테고리}-{세부카테고리}"
-    const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
+    const accidentNo = normalizeText(
+      caseData.insuranceAccidentNo || caseData.caseNumber || "",
+    );
     const leftText = `사고번호 ${accidentNo}`;
     const centerText = normalizeText(fullAddress);
     const rightText = normalizeText(
-      firstImage.doc.category 
-        ? `${firstImage.tab}-${firstImage.doc.category}` 
-        : firstImage.tab
+      firstImage.doc.category
+        ? `${firstImage.tab}-${firstImage.doc.category}`
+        : firstImage.tab,
     );
 
     page.drawRectangle({
@@ -1548,7 +1617,8 @@ async function renderEvidencePages(
     });
 
     // 폰트 크기 결정 (전체 텍스트 길이 기준)
-    const totalTextLength = leftText.length + centerText.length + rightText.length;
+    const totalTextLength =
+      leftText.length + centerText.length + rightText.length;
     const fontSize = totalTextLength > 70 ? 8 : totalTextLength > 50 ? 9 : 10;
 
     // 좌측 텍스트 (사고번호)
@@ -1772,20 +1842,26 @@ async function renderRecoveryAreaPage(
 
   // Info table
   // 특수기호 뒤 공백 제거 함수
-  const removeSymbolSpaces = (text: string) => 
+  const removeSymbolSpaces = (text: string) =>
     text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
   const headerRows: TableCell[][] = [
     [
       { text: "사고번호", width: 70, isHeader: true, align: "center" },
       {
-        text: removeSymbolSpaces(caseData.insuranceAccidentNo || caseData.caseNumber || "-"),
+        text: removeSymbolSpaces(
+          caseData.insuranceAccidentNo || caseData.caseNumber || "-",
+        ),
         width: 120,
         align: "left",
       },
       { text: "보험사", width: 60, isHeader: true, align: "center" },
       { text: caseData.insuranceCompany || "-", width: 100, align: "left" },
       { text: "플록슨접수번호", width: 70, isHeader: true, align: "center" },
-      { text: removeSymbolSpaces(caseData.caseNumber || "-"), width: 95, align: "left" },
+      {
+        text: removeSymbolSpaces(caseData.caseNumber || "-"),
+        width: 95,
+        align: "left",
+      },
     ],
     [
       { text: "장소", width: 70, isHeader: true, align: "center" },
@@ -2024,14 +2100,21 @@ async function renderRecoveryAreaPage(
 
       // Draw category text centered vertically in merged cell
       const normalizedCategory = normalizeText(category);
-      const categoryTextWidth = measureTextWidth(normalizedCategory, fonts.regular, 8);
-      page.drawText(normalizedCategory, {
-        x: MARGIN + (categoryColWidth - categoryTextWidth) / 2,
-        y: groupStartY - groupHeight / 2 - 3,
-        size: 8,
-        font: fonts.regular,
-        color: rgb(0, 0, 0),
-      });
+      const categoryTextWidth = measureTextWidthAdjusted(
+        normalizedCategory,
+        fonts.regular,
+        8,
+      );
+      // 문자별로 렌더링하여 특수문자 간격 조정
+      drawTextCharByChar(
+        page,
+        normalizedCategory,
+        MARGIN + (categoryColWidth - categoryTextWidth) / 2,
+        groupStartY - groupHeight / 2 - 3,
+        fonts.regular,
+        8,
+        { r: 0, g: 0, b: 0 }
+      );
 
       // Draw individual rows (excluding category column)
       for (let i = 0; i < rows.length; i++) {
@@ -2154,7 +2237,7 @@ async function renderEstimatePage(
 
   // 좌측 테이블 (현장명/보험사/사고번호)
   // 특수기호 뒤 공백 제거 함수
-  const removeAccidentSpaces = (text: string) => 
+  const removeAccidentSpaces = (text: string) =>
     text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
   const leftTableRows: TableCell[][] = [
     [
@@ -2168,7 +2251,9 @@ async function renderEstimatePage(
     [
       { text: "사고번호", width: 70, isHeader: true, align: "center" },
       {
-        text: removeAccidentSpaces(caseData.insuranceAccidentNo || caseData.caseNumber || "-"),
+        text: removeAccidentSpaces(
+          caseData.insuranceAccidentNo || caseData.caseNumber || "-",
+        ),
         width: 250,
         align: "left",
       },
@@ -3358,7 +3443,9 @@ async function generateSingleTabEvidencePdf(
 
       // 푸터
       // 특수기호 뒤 공백 제거
-      const cleanedAccidentNo = accidentNo.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
+      const cleanedAccidentNo = accidentNo
+        .replace(/-\s+/g, "-")
+        .replace(/:\s+/g, ":");
       drawText(page, {
         x: MARGIN,
         y: MARGIN + 10,
