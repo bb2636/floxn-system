@@ -9735,7 +9735,7 @@ https://peulrogseun-aqaqaq4561.replit.app
           // 플록슨 담당자 번호 조회 (managerId를 통해 사용자 정보에서 조회)
           let floxnManagerPhone: string | null = null;
           if (representativeCase.managerId) {
-            const manager = await storage.getUserById(representativeCase.managerId);
+            const manager = await storage.getUser(representativeCase.managerId);
             floxnManagerPhone = manager?.phone || null;
           }
           
