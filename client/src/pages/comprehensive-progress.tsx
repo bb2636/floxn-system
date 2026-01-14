@@ -1364,7 +1364,9 @@ export default function ComprehensiveProgress() {
                               fontWeight: 600,
                               color: getStatusColor(caseItem.status),
                               textAlign: "center",
-                              whiteSpace: "nowrap",
+                              lineHeight: "1.4",
+                              maxWidth: "140px",
+                              wordBreak: "keep-all",
                               cursor: updateStatusMutation.isPending ? "not-allowed" : "pointer",
                               opacity: updateStatusMutation.isPending ? 0.6 : 1,
                             }}
@@ -1420,7 +1422,9 @@ export default function ComprehensiveProgress() {
                           fontWeight: 600,
                           color: getStatusColor(caseItem.status),
                           textAlign: "center",
-                          whiteSpace: "nowrap",
+                          lineHeight: "1.4",
+                          maxWidth: "140px",
+                          wordBreak: "keep-all",
                         }}
                         data-testid={`text-status-${caseItem.id}`}
                       >
