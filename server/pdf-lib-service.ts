@@ -138,18 +138,6 @@ interface DrawTextOptions {
   align?: "left" | "center" | "right";
 }
 
-// 특수문자 패턴 (폰트 글리프 간격 조정이 필요한 문자들)
-const SPECIAL_CHAR_PATTERN =
-  /[-–—:;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…]/;
-
-function measureTextWidth(text: string, font: PDFFont, size: number): number {
-  try {
-    return font.widthOfTextAtSize(text, size);
-  } catch {
-    return text.length * size * 0.5;
-  }
-}
-
 // 특수문자 뒤 글리프 간격을 조정하여 실제 시각적 너비 계산
 function measureTextWidthAdjusted(
   text: string,
@@ -165,11 +153,6 @@ function measureTextWidthAdjusted(
     const char = chars[i];
     try {
       let charWidth = font.widthOfTextAtSize(char, size);
-
-      // 특수문자의 경우 글리프 너비를 줄임 (폰트의 과도한 side-bearing 보정)
-      if (SPECIAL_CHAR_PATTERN.test(char)) {
-        charWidth *= 0.7; // 30% 줄임
-      }
 
       totalWidth += charWidth;
     } catch {
@@ -208,11 +191,6 @@ function drawTextCharByChar(
       });
 
       let charWidth = font.widthOfTextAtSize(char, size);
-
-      // 특수문자 뒤의 advance width를 줄여서 간격 조정
-      if (SPECIAL_CHAR_PATTERN.test(char)) {
-        charWidth *= 0.7; // 30% 줄임
-      }
 
       currentX += charWidth;
     } catch {
@@ -260,6 +238,7 @@ function wrapText(
 }
 
 // 유니코드 공백(눈에 안 보이는 공백)까지 정규화 + 특수기호 전/후 공백 제거
+// 단, 콜론(:) 뒤의 공백은 유지 (예: "단위: ㎡")
 function normalizeText(text: string): string {
   if (!text) return "";
 
@@ -267,10 +246,10 @@ function normalizeText(text: string): string {
     text
       // 1) 보이지 않는 공백/특수 공백을 일반 공백으로 통일
       .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ")
-      // 2) (문장부호/기호) 뒤의 공백 제거
-      .replace(/([\p{P}\p{S}])\s+/gu, "$1")
-      // 3) (문장부호/기호) 앞의 공백 제거
-      .replace(/\s+([\p{P}\p{S}])/gu, "$1")
+      // 2) 특수문자(콜론 제외) 뒤의 공백 제거
+      .replace(/([-–—;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…])\s+/g, "$1")
+      // 3) 특수문자(콜론 제외) 앞의 공백 제거
+      .replace(/\s+([-–—;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…])/g, "$1")
   );
 }
 
