@@ -248,14 +248,14 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
     return Array.from(companies);
   }, [partners]);
 
-  // 협력사와 통계 결합
+  // 협력사와 통계 결합 (partnerStats 없어도 협력사 목록은 표시)
   const partnersWithStats = useMemo(() => {
-    if (!partners || !partnerStats) return [];
+    if (!partners) return [];
     
     const uniqueCompanies = Array.from(new Set(partners.map(p => p.company)));
     
     return uniqueCompanies.map(companyName => {
-      const stats = partnerStats.find(s => s.partnerName === companyName);
+      const stats = partnerStats?.find(s => s.partnerName === companyName);
       const partnerUser = partners.find(p => p.company === companyName);
       
       return {
