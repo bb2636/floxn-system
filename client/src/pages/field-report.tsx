@@ -362,8 +362,6 @@ export default function FieldReport() {
     "승인",
   );
   const [approvalComment, setApprovalComment] = useState("");
-  // 승인 대상 케이스 ID (-1/-2 케이스에서 -0 케이스 승인 시 사용)
-  const [approvalTargetCaseId, setApprovalTargetCaseId] = useState<string | null>(null);
 
   // 이메일 입력 다이얼로그 상태 (Step 2)
   const [showEmailInputDialog, setShowEmailInputDialog] = useState(false);
@@ -832,14 +830,12 @@ export default function FieldReport() {
     },
   });
 
-  // 보고서 승인 mutation (2차 승인)
-  // approvalTargetCaseId가 있으면 해당 케이스 사용, 없으면 현재 케이스 사용
+  // 보고서 승인 mutation (2차 승인) - 현재 케이스만 승인 가능 (-0 케이스에서만 표시)
   const approvalMutation = useMutation({
     mutationFn: async () => {
-      const targetCaseId = approvalTargetCaseId || selectedCaseId;
       return apiRequest(
         "PATCH",
-        `/api/cases/${targetCaseId}/approve-report`,
+        `/api/cases/${selectedCaseId}/approve-report`,
         {
           decision: approvalDecision,
           approvalComment: approvalComment || "",
@@ -847,13 +843,12 @@ export default function FieldReport() {
       );
     },
     onSuccess: () => {
-      const targetCaseId = approvalTargetCaseId || selectedCaseId;
       toast({
         title: "승인 완료",
         description: `보고서가 ${approvalDecision} 처리되었습니다.`,
       });
       queryClient.invalidateQueries({
-        queryKey: ["/api/field-surveys", targetCaseId, "report"],
+        queryKey: ["/api/field-surveys", selectedCaseId, "report"],
       });
       queryClient.invalidateQueries({
         queryKey: ["/api/cases", selectedCaseId, "prevention-case-status"],
@@ -871,7 +866,6 @@ export default function FieldReport() {
 
       setApprovalDecision("승인");
       setApprovalComment("");
-      setApprovalTargetCaseId(null);
     },
     onError: (error: Error) => {
       toast({
@@ -1262,82 +1256,39 @@ export default function FieldReport() {
           {!isUserLoading &&
             canApproveReport &&
             caseData?.caseNumber && /-0$/.test(caseData.caseNumber) &&
-            preventionCaseData?.preventionCase?.status === "현장정보제출" && (
+            caseData.status === "현장정보제출" && (
               <Button
                 data-testid="button-approve-report"
                 onClick={() => {
-                  // -0 케이스에서만 승인 가능
-                  if (
-                    caseData.status === "현장정보제출" &&
-                    !caseData.reportApprovalDecision
-                  ) {
-                    setApprovalTargetCaseId(null);
+                  // -0 케이스에서만 승인 가능 (현재 케이스만 영향)
+                  if (!caseData.reportApprovalDecision) {
                     setShowApprovalDialog(true);
                   }
                 }}
-                disabled={(() => {
-                  // 현재 케이스가 -0 케이스인지 확인
-                  const isPreventionCase = caseData?.caseNumber && /-0$/.test(caseData.caseNumber);
-                  
-                  if (isPreventionCase) {
-                    // -0 케이스: 기존 로직
-                    return approvalMutation.isPending ||
-                      caseData.status !== "현장정보제출" ||
-                      !!caseData.reportApprovalDecision;
-                  } else {
-                    // 관련 케이스: 손해방지 케이스 상태로 판단
-                    const pc = preventionCaseData?.preventionCase;
-                    return !pc || 
-                      pc.status !== "현장정보제출" ||
-                      !!pc.reportApprovalDecision;
-                  }
-                })()}
-                className={(() => {
-                  // 현재 케이스가 -0 케이스인지 확인
-                  const isPreventionCase = caseData?.caseNumber && /-0$/.test(caseData.caseNumber);
-                  const approvalDecision = isPreventionCase 
-                    ? caseData.reportApprovalDecision 
-                    : preventionCaseData?.preventionCase?.reportApprovalDecision;
-                  const status = isPreventionCase 
-                    ? caseData.status 
-                    : preventionCaseData?.preventionCase?.status;
-                  
-                  if (approvalDecision === "승인") {
-                    return "bg-green-100 text-green-700 hover:bg-green-100 cursor-default";
-                  } else if (approvalDecision === "비승인") {
-                    return "bg-red-100 text-red-700 hover:bg-red-100 cursor-default";
-                  } else if (status === "현장정보제출") {
-                    return "bg-green-500 hover:bg-green-600";
-                  }
-                  return "";
-                })()}
+                disabled={
+                  approvalMutation.isPending ||
+                  !!caseData.reportApprovalDecision
+                }
+                className={
+                  caseData.reportApprovalDecision === "승인"
+                    ? "bg-green-100 text-green-700 hover:bg-green-100 cursor-default"
+                    : caseData.reportApprovalDecision === "비승인"
+                      ? "bg-red-100 text-red-700 hover:bg-red-100 cursor-default"
+                      : "bg-green-500 hover:bg-green-600"
+                }
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
                   fontWeight: "500",
                 }}
               >
-                {(() => {
-                  // 현재 케이스가 -0 케이스인지 확인
-                  const isPreventionCase = caseData?.caseNumber && /-0$/.test(caseData.caseNumber);
-                  
-                  if (approvalMutation.isPending) {
-                    return "승인 중...";
-                  }
-                  
-                  const approvalDecision = isPreventionCase 
-                    ? caseData.reportApprovalDecision 
-                    : preventionCaseData?.preventionCase?.reportApprovalDecision;
-                  
-                  if (approvalDecision === "승인") {
-                    return "승인완료";
-                  } else if (approvalDecision === "비승인") {
-                    return "승인반려";
-                  } else if (!isPreventionCase && preventionCaseData?.preventionCase) {
-                    return "승인 (손해방지)";
-                  }
-                  return "승인";
-                })()}
+                {approvalMutation.isPending
+                  ? "승인 중..."
+                  : caseData.reportApprovalDecision === "승인"
+                    ? "승인완료"
+                    : caseData.reportApprovalDecision === "비승인"
+                      ? "승인반려"
+                      : "승인"}
               </Button>
             )}
         </div>
@@ -1755,15 +1706,10 @@ export default function FieldReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* 보고서 승인 다이얼로그 (2차 승인) */}
+      {/* 보고서 승인 다이얼로그 (2차 승인) - 현재 케이스만 승인 가능 */}
       <AlertDialog
         open={showApprovalDialog}
-        onOpenChange={(open) => {
-          setShowApprovalDialog(open);
-          if (!open) {
-            setApprovalTargetCaseId(null);
-          }
-        }}
+        onOpenChange={setShowApprovalDialog}
       >
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
@@ -1788,7 +1734,7 @@ export default function FieldReport() {
                 color: "rgba(12, 12, 12, 0.5)",
               }}
             >
-              승인대상 건 {approvalTargetCaseId && "(손해방지)"}
+              승인대상 건
             </div>
             <div
               className="p-3 rounded-lg"
@@ -1813,21 +1759,13 @@ export default function FieldReport() {
                   color: "rgba(12, 12, 12, 0.6)",
                 }}
               >
-                {approvalTargetCaseId ? (
-                  <>
-                    접수번호: {preventionCaseData?.preventionCase?.caseNumber || "-"} (손해방지비용)
-                  </>
-                ) : (
-                  <>
-                    접수일:{" "}
-                    {caseData.createdAt
-                      ? new Date(caseData.createdAt).toLocaleDateString("ko-KR")
-                      : "-"}{" "}
-                    | 처리담당: {caseData.assignedPartner || "-"} | 의뢰일:{" "}
-                    {caseData.assignmentDate || "-"} | 긴급여부:{" "}
-                    {caseData.urgency || "-"}
-                  </>
-                )}
+                접수일:{" "}
+                {caseData.createdAt
+                  ? new Date(caseData.createdAt).toLocaleDateString("ko-KR")
+                  : "-"}{" "}
+                | 처리담당: {caseData.assignedPartner || "-"} | 의뢰일:{" "}
+                {caseData.assignmentDate || "-"} | 긴급여부:{" "}
+                {caseData.urgency || "-"}
               </div>
             </div>
           </div>
@@ -1928,7 +1866,6 @@ export default function FieldReport() {
               onClick={() => {
                 setApprovalDecision("승인");
                 setApprovalComment("");
-                setApprovalTargetCaseId(null);
               }}
               style={{
                 fontFamily: "Pretendard",
