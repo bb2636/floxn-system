@@ -208,22 +208,23 @@ export default function Dashboard() {
       
       const existing = companyCounts.get(companyName);
       const isPending = c.status !== '완료' && c.status !== '취소' && c.status !== '종결' && c.status !== '접수취소';
-      const isCompleted = c.status === '완료';
+      // 보험사 미정산: 완료 상태이면서 insuranceSettlementStatus가 '미정산'이거나 정산 전인 경우
+      const isInsuranceUnsettled = c.status === '완료' && (!c.insuranceSettlementStatus || c.insuranceSettlementStatus === '미정산');
+      // 협력사 미정산: 완료 상태이면서 partnerSettlementStatus가 '미정산'이거나 정산 전인 경우
+      const isPartnerUnsettled = c.status === '완료' && (!c.partnerSettlementStatus || c.partnerSettlementStatus === '미정산');
       
       if (existing) {
         existing.reception++;
         if (isPending) existing.pending++;
-        if (isCompleted) {
-          existing.insuranceUnsettled++;
-          existing.partnerUnsettled++;
-        }
+        if (isInsuranceUnsettled) existing.insuranceUnsettled++;
+        if (isPartnerUnsettled) existing.partnerUnsettled++;
       } else {
         companyCounts.set(companyName, {
           name: companyName,
           reception: 1,
           pending: isPending ? 1 : 0,
-          insuranceUnsettled: isCompleted ? 1 : 0,
-          partnerUnsettled: isCompleted ? 1 : 0,
+          insuranceUnsettled: isInsuranceUnsettled ? 1 : 0,
+          partnerUnsettled: isPartnerUnsettled ? 1 : 0,
         });
       }
     });
@@ -773,13 +774,13 @@ export default function Dashboard() {
                     총 <span className="font-bold">{myTasks.length}건</span>의 업데이트
                   </div>
 
-                  <div className="mt-4 space-y-3 max-h-[400px] overflow-y-auto">
+                  <div className="mt-4 space-y-3">
                     {myTasks.length === 0 ? (
                       <div className="text-center text-slate-500 py-8">
                         맡은 작업이 없습니다
                       </div>
                     ) : (
-                      myTasks.slice(0, 10).map((task, index) => {
+                      myTasks.map((task, index) => {
                         const statusStyle = getStatusColor(task.status || '작성중');
                         return (
                           <div
