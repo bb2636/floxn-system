@@ -9,6 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight, X, Mail, Loader2 } from "lucide-react";
 import logoIcon from "@assets/Vector_1762589710900.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, startOfMonth, endOfMonth, startOfToday, subMonths, endOfToday, isWithinInterval, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -209,9 +215,11 @@ export default function Dashboard() {
       const existing = companyCounts.get(companyName);
       const isPending = c.status !== '완료' && c.status !== '취소' && c.status !== '종결' && c.status !== '접수취소';
       // 보험사 미정산: 완료 상태이면서 insuranceSettlementStatus가 '미정산'이거나 정산 전인 경우
-      const isInsuranceUnsettled = c.status === '완료' && (!c.insuranceSettlementStatus || c.insuranceSettlementStatus === '미정산');
+      const insuranceStatus = (c as any).insuranceSettlementStatus;
+      const partnerStatus = (c as any).partnerSettlementStatus;
+      const isInsuranceUnsettled = c.status === '완료' && (!insuranceStatus || insuranceStatus === '미정산');
       // 협력사 미정산: 완료 상태이면서 partnerSettlementStatus가 '미정산'이거나 정산 전인 경우
-      const isPartnerUnsettled = c.status === '완료' && (!c.partnerSettlementStatus || c.partnerSettlementStatus === '미정산');
+      const isPartnerUnsettled = c.status === '완료' && (!partnerStatus || partnerStatus === '미정산');
       
       if (existing) {
         existing.reception++;
@@ -757,16 +765,36 @@ export default function Dashboard() {
               <div className="col-span-12 lg:col-span-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-base font-bold">내 작업</h2>
-                  <button
-                    onClick={() => setIsPeriodSheetOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
-                    type="button"
-                    data-testid="button-period-selector-tasks"
-                  >
-                    <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
-                    {getPeriodLabel()}
-                    <ChevronDown className="h-4 w-4 text-slate-500" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
+                        type="button"
+                        data-testid="button-period-selector-tasks"
+                      >
+                        <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
+                        {getPeriodLabel()}
+                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem onClick={() => handlePeriodSelect('all')}>
+                        전체
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePeriodSelect('today')}>
+                        오늘
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePeriodSelect('thisMonth')}>
+                        이번 달
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePeriodSelect('lastMonth')}>
+                        지난 달
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePeriodSelect('custom')}>
+                        날짜 선택
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
