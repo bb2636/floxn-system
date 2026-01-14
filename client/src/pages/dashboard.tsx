@@ -20,6 +20,7 @@ import { format, startOfMonth, endOfMonth, startOfToday, subMonths, endOfToday, 
 import { ko } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { GlobalHeader } from "@/components/global-header";
+import { DateRangeModal } from "@/components/DateRangeModal";
 
 type PeriodType = 'all' | 'today' | 'thisMonth' | 'lastMonth' | 'custom';
 type StaffTabType = 'reception' | 'pending' | 'insurance' | 'partner';
@@ -36,6 +37,7 @@ export default function Dashboard() {
   const [periodType, setPeriodType] = useState<PeriodType>('thisMonth');
   const [isPeriodSheetOpen, setIsPeriodSheetOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
@@ -431,18 +433,18 @@ export default function Dashboard() {
         break;
       case 'custom':
         setIsPeriodSheetOpen(false);
-        setIsCalendarOpen(true);
+        setIsDateRangeModalOpen(true);
         break;
     }
   };
 
-  const handleCalendarApply = () => {
-    if (dateRange?.from && dateRange?.to) {
+  const handleDateRangeApply = (range: DateRange | undefined) => {
+    if (range?.from && range?.to) {
+      setDateRange(range);
       setPeriodType('custom');
-      setIsCalendarOpen(false);
       toast({
         title: "기간 설정 완료",
-        description: `${format(dateRange.from, 'yyyy-MM-dd')} ~ ${format(dateRange.to, 'yyyy-MM-dd')}`,
+        description: `${format(range.from, 'yyyy-MM-dd')} ~ ${format(range.to, 'yyyy-MM-dd')}`,
       });
     }
   };
@@ -1127,39 +1129,12 @@ export default function Dashboard() {
         </SheetContent>
       </Sheet>
 
-      <Sheet open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-        <SheetContent side="bottom" className="h-auto">
-          <SheetHeader>
-            <SheetTitle>날짜 범위 선택</SheetTitle>
-          </SheetHeader>
-          <div className="flex flex-col items-center gap-4 py-4">
-            <CalendarComponent
-              mode="range"
-              selected={dateRange}
-              onSelect={setDateRange}
-              locale={ko}
-              numberOfMonths={1}
-              className="rounded-md border"
-            />
-            <div className="flex gap-2 w-full">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsCalendarOpen(false)}
-                className="flex-1"
-              >
-                취소
-              </Button>
-              <Button 
-                onClick={handleCalendarApply}
-                className="flex-1"
-                disabled={!dateRange?.from || !dateRange?.to}
-              >
-                적용
-              </Button>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <DateRangeModal
+        isOpen={isDateRangeModalOpen}
+        onClose={() => setIsDateRangeModalOpen(false)}
+        dateRange={dateRange}
+        onApply={handleDateRangeApply}
+      />
     </div>
   );
 }
