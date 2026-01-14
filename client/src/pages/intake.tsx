@@ -6,19 +6,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { User, MasterData, Case } from "@shared/schema";
 import { formatCaseNumber } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Star, X, Calendar as CalendarIcon, Search } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { GlobalHeader } from "@/components/global-header";
-import { SmsNotificationDialog } from "@/components/sms-notification-dialog";
 
 const extractCityFromAddress = (address: string): string => {
   if (!address) return "";
@@ -45,33 +39,16 @@ interface IntakeProps {
   readOnly?: boolean;
 }
 
-const tableBorderStyle = "1px solid rgba(12, 12, 12, 0.1)";
-const labelStyle = { fontFamily: 'Pretendard', fontWeight: 500, fontSize: '13px', color: '#686A6E', whiteSpace: 'nowrap' as const };
-const inputStyle = { height: '40px', padding: '8px 12px', background: '#FDFDFD', border: tableBorderStyle, borderRadius: '6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#0C0C0C', width: '100%' };
-const cellStyle = { padding: '8px 12px', borderRight: tableBorderStyle, borderBottom: tableBorderStyle };
-const sectionTitleStyle = { 
-  writingMode: 'vertical-rl' as const, 
-  textOrientation: 'mixed' as const, 
-  fontFamily: 'Pretendard', 
-  fontWeight: 600, 
-  fontSize: '14px', 
-  color: '#0C0C0C',
-  padding: '16px 12px',
-  background: '#F8F9FA',
-  borderRight: tableBorderStyle,
-  borderBottom: tableBorderStyle,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  minWidth: '40px',
-};
+const inputClasses = "h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
+const disabledInputClasses = "h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm text-slate-400 outline-none";
+const labelClasses = "mb-1 block text-xs font-medium text-slate-600";
+const selectTriggerClasses = "h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
 
-const RequiredMark = () => <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span>;
+const RequiredMark = () => <span className="text-sky-600">*</span>;
 
 export default function Intake({ isModal = false, onClose, onSuccess, initialCaseId = null, readOnly = false }: IntakeProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [activeMenu, setActiveMenu] = useState("접수하기");
   
   const [sameAsPolicyHolder, setSameAsPolicyHolder] = useState(false);
   const [additionalVictims, setAdditionalVictims] = useState<Array<{name: string, phone: string, address: string}>>([]);
@@ -99,11 +76,6 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
   const [isInvestigatorSearchOpen, setIsInvestigatorSearchOpen] = useState(false);
   const [investigatorSearchQuery, setInvestigatorSearchQuery] = useState("");
   const [tempSelectedInvestigator, setTempSelectedInvestigator] = useState<any>(null);
-  
-  const [showInsuredAddressSearch, setShowInsuredAddressSearch] = useState(false);
-  
-  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
-  const [completedCase, setCompletedCase] = useState<Case | null>(null);
   
   const { data: partnerStats } = useQuery<Array<{
     partnerName: string;
@@ -180,11 +152,6 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
     select: (users) => users.filter(u => u.role === "조사사"),
   });
 
-  const { data: insuranceEmployees } = useQuery<User[]>({
-    queryKey: ["/api/users"],
-    select: (users) => users.filter(u => u.role === "보험사"),
-  });
-
   const { data: allUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
@@ -202,12 +169,6 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
   const { data: insuranceCompanies = [] } = useQuery<string[]>({
     queryKey: ["/api/insurance-companies"],
   });
-
-  const partnerCompanies = useMemo(() => {
-    if (!partners) return [];
-    const companies = new Set(partners.map(p => p.company));
-    return Array.from(companies);
-  }, [partners]);
 
   const partnersWithStats = useMemo(() => {
     if (!partners) return [];
@@ -305,12 +266,6 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
     }
     return partnersWithStats;
   }, [partnerSearchQuery, partnersWithStats, formData.insuredAddress]);
-
-  const allCompanies = useMemo(() => {
-    if (!allUsers) return [];
-    const companies = new Set(allUsers.map(u => u.company));
-    return Array.from(companies).sort();
-  }, [allUsers]);
 
   const filteredClientEmployees = useMemo(() => {
     if (!formData.clientResidence || !allUsers) return [];
@@ -867,398 +822,481 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
   if (userLoading || !user) return null;
 
   return (
-    <div className="relative" style={{ minHeight: isModal ? 'auto' : '100vh', background: isModal ? '#F5F7FA' : 'linear-gradient(0deg, #E7EDFE, #E7EDFE)' }}>
-      {!isModal && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute" style={{ width: '1095px', height: '777px', left: '97px', bottom: '1169px', background: 'rgba(254, 240, 230, 0.4)', borderRadius: '9999px', filter: 'blur(212px)', transform: 'rotate(-35.25deg)' }} />
-          <div className="absolute" style={{ width: '1335px', height: '1323px', right: '0px', bottom: '0px', background: 'rgba(234, 230, 254, 0.5)', borderRadius: '9999px', filter: 'blur(212px)' }} />
-          <div className="absolute" style={{ width: '348px', height: '1323px', left: '0px', bottom: '189px', background: 'rgba(234, 230, 254, 0.5)', borderRadius: '9999px', filter: 'blur(212px)' }} />
-        </div>
-      )}
+    <div className={`relative ${isModal ? 'bg-white' : 'bg-white min-h-screen'}`}>
       {!isModal && <GlobalHeader />}
       
-      <main className={`relative flex items-center justify-center ${isModal ? 'px-0' : 'px-4 md:px-6 lg:px-8'} pb-10`}>
-        <div className={`w-full ${isModal ? 'max-w-full' : 'max-w-[1660px]'}`}>
-          <div className={`flex items-center gap-3 md:gap-4 ${isModal ? 'px-4 py-4' : 'px-4 md:px-8 py-6 md:py-9'}`}>
-            {isModal && onClose && (
-              <button onClick={onClose} className="mr-2 p-2 hover:bg-gray-100 rounded-lg transition-colors" data-testid="button-close-intake-modal">
-                <X size={24} color="#686A6E" />
-              </button>
-            )}
-            <h1 className="text-xl md:text-2xl lg:text-[26px]" style={{ fontFamily: 'Pretendard', fontWeight: 600, lineHeight: '128%', letterSpacing: '-0.02em', color: '#0C0C0C' }}>
-              새로운 접수
-            </h1>
-            <button onClick={handleToggleFavorite} className="hover:opacity-70 transition-opacity cursor-pointer" data-testid="button-favorite">
-              <Star className="w-5 h-5" style={{ color: isFavorite ? '#FFD700' : 'rgba(12, 12, 12, 0.24)', fill: isFavorite ? '#FFD700' : 'none' }} />
+      <main className={`mx-auto max-w-[1400px] ${isModal ? 'px-4 pb-24 pt-4' : 'px-6 pb-24 pt-6'}`}>
+        {/* Title */}
+        <div className="mb-4 flex items-center gap-2">
+          {isModal && onClose && (
+            <button onClick={onClose} className="mr-2 p-2 hover:bg-slate-100 rounded-lg transition-colors" data-testid="button-close-intake-modal">
+              <X size={24} className="text-slate-600" />
             </button>
-          </div>
+          )}
+          <h1 className="text-xl font-semibold text-slate-900">새로운 접수</h1>
+          <button
+            onClick={handleToggleFavorite}
+            className="inline-flex h-8 items-center justify-center rounded-md border border-slate-200 px-3 text-sm text-slate-600 hover:bg-slate-50"
+            type="button"
+            data-testid="button-favorite"
+          >
+            <Star className="w-4 h-4" style={{ color: isFavorite ? '#FFD700' : 'currentColor', fill: isFavorite ? '#FFD700' : 'none' }} />
+          </button>
+        </div>
 
-          <div className="flex flex-col gap-4 w-full px-0 md:px-4 lg:px-8">
-            <div style={{ background: '#FFFFFF', boxShadow: '0px 0px 20px #DBE9F5', borderRadius: '12px', overflow: 'hidden', border: tableBorderStyle }}>
-              
-              {/* 기본정보 Section */}
-              <div className="flex" style={{ borderBottom: tableBorderStyle }}>
-                <div style={sectionTitleStyle}>[기본정보]</div>
-                <div className="flex-1">
-                  <div className="grid grid-cols-1 md:grid-cols-4">
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>접수번호</label>
-                      <input type="text" value={displayCaseNumber} readOnly style={{ ...inputStyle, background: '#f5f5f5' }} data-testid="input-case-number" />
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>접수일자</label>
-                      <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                        <PopoverTrigger asChild>
-                          <button type="button" disabled={readOnly} style={{ ...inputStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: readOnly ? 'default' : 'pointer' }} data-testid="button-date-picker">
-                            <span>{accidentDate ? format(accidentDate, 'yyyy-MM-dd', { locale: ko }) : '날짜 선택'}</span>
-                            <CalendarIcon size={16} color="#686A6E" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={accidentDate} onSelect={(date) => { setAccidentDate(date); if (date) handleInputChange("accidentDate", format(date, 'yyyy-MM-dd')); setDatePickerOpen(false); }} locale={ko} />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>본사담당자<RequiredMark /></label>
-                      <Select value={formData.managerId} onValueChange={(value) => { handleInputChange("managerId", value); const mgr = administrators?.find(a => a.id === value); if (mgr) handleInputChange("managerContact", mgr.phone || ""); }} disabled={readOnly}>
-                        <SelectTrigger style={inputStyle} data-testid="select-manager"><SelectValue placeholder="담당자 선택" /></SelectTrigger>
-                        <SelectContent>{administrators?.map(admin => <SelectItem key={admin.id} value={admin.id}>{admin.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>연락처</label>
-                      <input type="text" value={formData.managerContact} readOnly style={{ ...inputStyle, background: '#f5f5f5' }} data-testid="input-manager-contact" />
-                    </div>
-                  </div>
+        {/* Tabs / Section label */}
+        <div className="mb-6 border-b">
+          <button className="border-b-2 border-sky-500 px-2 pb-3 text-sm font-semibold text-sky-600">
+            기본 정보
+          </button>
+        </div>
+
+        {/* Form */}
+        <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
+          {/* 기본 정보 */}
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-900">기본 정보</h2>
+            </div>
+
+            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>접수번호</label>
+                <input className={disabledInputClasses} value={displayCaseNumber} readOnly type="text" data-testid="input-case-number" />
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>접수일자</label>
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <button type="button" disabled={readOnly} className={`${inputClasses} flex items-center justify-between ${readOnly ? 'cursor-default' : 'cursor-pointer'}`} data-testid="button-date-picker">
+                      <span>{accidentDate ? format(accidentDate, 'yyyy-MM-dd', { locale: ko }) : '날짜 선택'}</span>
+                      <CalendarIcon size={18} className="text-slate-400 opacity-80" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={accidentDate} onSelect={(date) => { setAccidentDate(date); if (date) handleInputChange("accidentDate", format(date, 'yyyy-MM-dd')); setDatePickerOpen(false); }} locale={ko} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>담당자명</label>
+                <Select value={formData.managerId} onValueChange={(value) => { handleInputChange("managerId", value); const mgr = administrators?.find(a => a.id === value); if (mgr) handleInputChange("managerContact", mgr.phone || ""); }} disabled={readOnly}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-manager"><SelectValue placeholder="담당자명" /></SelectTrigger>
+                  <SelectContent>{administrators?.map(admin => <SelectItem key={admin.id} value={admin.id}>{admin.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>담당자 연락처</label>
+                <input className={disabledInputClasses} value={formData.managerContact} readOnly placeholder="연락처" type="text" data-testid="input-manager-contact" />
+              </div>
+            </div>
+          </section>
+
+          {/* 보험 정보 */}
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-900">보험 정보</h2>
+            </div>
+
+            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>보험사 <RequiredMark /></label>
+                <Select value={formData.insuranceCompany} onValueChange={(value) => handleInputChange("insuranceCompany", value)} disabled={readOnly}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-insurance-company"><SelectValue placeholder="보험사 선택" /></SelectTrigger>
+                  <SelectContent>{insuranceCompanies.map(company => <SelectItem key={company} value={company}>{company}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-12 md:col-span-5">
+                <label className={labelClasses}>보험사 증권번호</label>
+                <input className={inputClasses} value={formData.insurancePolicyNo} onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)} disabled={readOnly} placeholder="보험사 증권번호" type="text" data-testid="input-policy-no" />
+              </div>
+
+              <div className="col-span-12 md:col-span-4">
+                <label className={labelClasses}>보험사 사고번호</label>
+                <input className={inputClasses} value={formData.insuranceAccidentNo} onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)} disabled={readOnly} placeholder="보험사 사고번호" type="text" data-testid="input-accident-no" />
+              </div>
+            </div>
+          </section>
+
+          {/* 의뢰자/심사자/조사자 정보 */}
+          <section>
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold text-slate-900">의뢰자/심사자/조사자 정보</h2>
+            </div>
+
+            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+              {/* 의뢰사 Row */}
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>의뢰사 <RequiredMark /></label>
+                <div className="flex gap-1">
+                  <input className={`${inputClasses} flex-1`} value={formData.clientResidence} readOnly placeholder="의뢰사 선택" type="text" data-testid="input-client-residence" />
+                  <button onClick={() => !readOnly && setIsClientSearchOpen(true)} disabled={readOnly} className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? 'cursor-default' : 'cursor-pointer'}`} type="button" data-testid="button-client-search"><Search size={16} /></button>
                 </div>
               </div>
 
-              {/* 보험정보 Section */}
-              <div className="flex" style={{ borderBottom: tableBorderStyle }}>
-                <div style={sectionTitleStyle}>[보험정보]</div>
-                <div className="flex-1">
-                  <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>보험사<RequiredMark /></label>
-                      <Select value={formData.insuranceCompany} onValueChange={(value) => handleInputChange("insuranceCompany", value)} disabled={readOnly}>
-                        <SelectTrigger style={inputStyle} data-testid="select-insurance-company"><SelectValue placeholder="보험사 선택" /></SelectTrigger>
-                        <SelectContent>{insuranceCompanies.map(company => <SelectItem key={company} value={company}>{company}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>보험사 증권번호</label>
-                      <input type="text" placeholder="증권번호 입력" value={formData.insurancePolicyNo} onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)} disabled={readOnly} style={inputStyle} data-testid="input-policy-no" />
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>보험사 사고번호</label>
-                      <input type="text" placeholder="사고번호 입력" value={formData.insuranceAccidentNo} onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)} disabled={readOnly} style={inputStyle} data-testid="input-accident-no" />
-                    </div>
-                  </div>
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>소속부서명</label>
+                <input className={disabledInputClasses} value={formData.clientDepartment} readOnly placeholder="소속부서명" type="text" data-testid="input-client-department" />
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>의뢰자 <RequiredMark /></label>
+                <Select value={formData.clientName} onValueChange={(value) => handleInputChange("clientName", value)} disabled={readOnly || !formData.clientResidence}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-client-name"><SelectValue placeholder="의뢰자 성함" /></SelectTrigger>
+                  <SelectContent>{filteredClientEmployees.map(emp => <SelectItem key={emp.id} value={`${emp.name}::${emp.id}`}>{emp.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>의뢰자 연락처</label>
+                <input className={disabledInputClasses} value={formData.clientContact} readOnly placeholder="의뢰사 담당자 연락처" type="text" data-testid="input-client-contact" />
+              </div>
+
+              {/* 심사사 Row */}
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>심사사 <RequiredMark /></label>
+                <div className="flex gap-1">
+                  <input className={`${inputClasses} flex-1`} value={formData.assessorId} readOnly placeholder="심사사 선택" type="text" data-testid="input-assessor-id" />
+                  <button onClick={() => !readOnly && setIsAssessorSearchOpen(true)} disabled={readOnly} className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? 'cursor-default' : 'cursor-pointer'}`} type="button" data-testid="button-assessor-search"><Search size={16} /></button>
                 </div>
               </div>
 
-              {/* 의뢰사 / 심사사 / 조사사 정보 Section */}
-              <div className="flex" style={{ borderBottom: tableBorderStyle }}>
-                <div style={sectionTitleStyle}>[의뢰사/심사사/조사사]</div>
-                <div className="flex-1">
-                  {/* 의뢰사 Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-4" style={{ borderBottom: tableBorderStyle }}>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>의뢰사<RequiredMark /></label>
-                      <div className="flex gap-1">
-                        <input type="text" value={formData.clientResidence} readOnly placeholder="의뢰사 선택" style={{ ...inputStyle, flex: 1 }} data-testid="input-client-residence" />
-                        <button onClick={() => !readOnly && setIsClientSearchOpen(true)} disabled={readOnly} style={{ ...inputStyle, width: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: readOnly ? 'default' : 'pointer' }} data-testid="button-client-search"><Search size={16} /></button>
-                      </div>
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>소속부서</label>
-                      <input type="text" value={formData.clientDepartment} readOnly style={{ ...inputStyle, background: '#f5f5f5' }} data-testid="input-client-department" />
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>의뢰자<RequiredMark /></label>
-                      <Select value={formData.clientName} onValueChange={(value) => handleInputChange("clientName", value)} disabled={readOnly || !formData.clientResidence}>
-                        <SelectTrigger style={inputStyle} data-testid="select-client-name"><SelectValue placeholder="의뢰자 선택" /></SelectTrigger>
-                        <SelectContent>{filteredClientEmployees.map(emp => <SelectItem key={emp.id} value={`${emp.name}::${emp.id}`}>{emp.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>의뢰자 연락처</label>
-                      <input type="text" value={formData.clientContact} readOnly style={{ ...inputStyle, background: '#f5f5f5' }} data-testid="input-client-contact" />
-                    </div>
-                  </div>
-                  {/* 심사사 Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-4" style={{ borderBottom: tableBorderStyle }}>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>심사사<RequiredMark /></label>
-                      <div className="flex gap-1">
-                        <input type="text" value={formData.assessorId} readOnly placeholder="심사사 선택" style={{ ...inputStyle, flex: 1 }} data-testid="input-assessor-id" />
-                        <button onClick={() => !readOnly && setIsAssessorSearchOpen(true)} disabled={readOnly} style={{ ...inputStyle, width: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: readOnly ? 'default' : 'pointer' }} data-testid="button-assessor-search"><Search size={16} /></button>
-                      </div>
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>소속부서</label>
-                      <input type="text" value={formData.assessorDepartment} readOnly style={{ ...inputStyle, background: '#f5f5f5' }} data-testid="input-assessor-department" />
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>심사자<RequiredMark /></label>
-                      <Select value={formData.assessorTeam} onValueChange={(value) => handleInputChange("assessorTeam", value)} disabled={readOnly || !formData.assessorId}>
-                        <SelectTrigger style={inputStyle} data-testid="select-assessor-team"><SelectValue placeholder="심사자 선택" /></SelectTrigger>
-                        <SelectContent>{filteredAssessorEmployees.map(emp => <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>심사자 연락처</label>
-                      <input type="text" value={formData.assessorContact} readOnly style={{ ...inputStyle, background: '#f5f5f5' }} data-testid="input-assessor-contact" />
-                    </div>
-                  </div>
-                  {/* 조사사 Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-4">
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>조사사</label>
-                      <div className="flex gap-1">
-                        <input type="text" value={formData.investigatorTeam} readOnly placeholder="조사사 선택" style={{ ...inputStyle, flex: 1 }} data-testid="input-investigator-team" />
-                        <button onClick={() => !readOnly && setIsInvestigatorSearchOpen(true)} disabled={readOnly} style={{ ...inputStyle, width: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: readOnly ? 'default' : 'pointer' }} data-testid="button-investigator-search"><Search size={16} /></button>
-                      </div>
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>소속부서</label>
-                      <input type="text" value={formData.investigatorDepartment} readOnly style={{ ...inputStyle, background: '#f5f5f5' }} data-testid="input-investigator-department" />
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>조사자</label>
-                      <Select value={formData.investigatorTeamName} onValueChange={(value) => handleInputChange("investigatorTeamName", value)} disabled={readOnly || !formData.investigatorTeam}>
-                        <SelectTrigger style={inputStyle} data-testid="select-investigator-name"><SelectValue placeholder="조사자 선택" /></SelectTrigger>
-                        <SelectContent>{filteredInvestigatorEmployees.map(emp => <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>조사자 연락처</label>
-                      <input type="text" value={formData.investigatorContact} readOnly style={{ ...inputStyle, background: '#f5f5f5' }} data-testid="input-investigator-contact" />
-                    </div>
-                  </div>
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>소속부서명</label>
+                <input className={disabledInputClasses} value={formData.assessorDepartment} readOnly placeholder="소속부서명" type="text" data-testid="input-assessor-department" />
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>심사자 <RequiredMark /></label>
+                <Select value={formData.assessorTeam} onValueChange={(value) => handleInputChange("assessorTeam", value)} disabled={readOnly || !formData.assessorId}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-assessor-team"><SelectValue placeholder="심사자 성함" /></SelectTrigger>
+                  <SelectContent>{filteredAssessorEmployees.map(emp => <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>심사자 연락처</label>
+                <input className={disabledInputClasses} value={formData.assessorContact} readOnly placeholder="심사자 연락처" type="text" data-testid="input-assessor-contact" />
+              </div>
+
+              {/* 손사/조사사 Row */}
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>손사명</label>
+                <div className="flex gap-1">
+                  <input className={`${inputClasses} flex-1`} value={formData.investigatorTeam} readOnly placeholder="손사명" type="text" data-testid="input-investigator-team" />
+                  <button onClick={() => !readOnly && setIsInvestigatorSearchOpen(true)} disabled={readOnly} className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? 'cursor-default' : 'cursor-pointer'}`} type="button" data-testid="button-investigator-search"><Search size={16} /></button>
                 </div>
               </div>
 
-              {/* 피보험자 및 피해자 정보 Section */}
-              <div className="flex" style={{ borderBottom: tableBorderStyle }}>
-                <div style={sectionTitleStyle}>[피보험자/피해자]</div>
-                <div className="flex-1">
-                  {/* Row 1: 보험계약자, 피보험자, 연락처 */}
-                  <div className="grid grid-cols-1 md:grid-cols-3" style={{ borderBottom: tableBorderStyle }}>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>보험계약자</label>
-                      <input type="text" placeholder="보험계약자 성명" value={formData.policyHolderName} onChange={(e) => handleInputChange("policyHolderName", e.target.value)} disabled={readOnly} style={inputStyle} data-testid="input-policy-holder-name" />
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>피보험자<RequiredMark /></label>
-                      <input type="text" placeholder="피보험자 성명" value={formData.insuredName} onChange={(e) => handleInputChange("insuredName", e.target.value)} disabled={readOnly} style={inputStyle} data-testid="input-insured-name" />
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>연락처</label>
-                      <input type="text" placeholder="연락처" value={formData.insuredContact} onChange={(e) => handleInputChange("insuredContact", e.target.value)} disabled={readOnly} style={inputStyle} data-testid="input-insured-contact" />
-                    </div>
-                  </div>
-                  {/* Row 2: 주소, 상세주소 */}
-                  <div className="grid grid-cols-1 md:grid-cols-2" style={{ borderBottom: tableBorderStyle }}>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>주소<RequiredMark /></label>
-                      <div className="flex gap-1">
-                        <input type="text" placeholder="주소 검색" value={formData.insuredAddress} readOnly style={{ ...inputStyle, flex: 1 }} data-testid="input-insured-address" />
-                        <button onClick={handleAddressSearch} disabled={readOnly} style={{ ...inputStyle, width: 'auto', padding: '8px 12px', cursor: readOnly ? 'default' : 'pointer', whiteSpace: 'nowrap' }} data-testid="button-address-search">주소검색</button>
-                      </div>
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>상세주소</label>
-                      <input type="text" placeholder="상세주소 입력" value={formData.insuredAddressDetail} onChange={(e) => handleInputChange("insuredAddressDetail", e.target.value)} disabled={readOnly} style={inputStyle} data-testid="input-insured-address-detail" />
-                    </div>
-                  </div>
-                  {/* Row 3: 피해자, 연락처, 상세주소 */}
-                  <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>피해자</label>
-                      <input type="text" placeholder="피해자 성명" value={formData.victimName} onChange={(e) => handleInputChange("victimName", e.target.value)} disabled={readOnly} style={inputStyle} data-testid="input-victim-name" />
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>연락처</label>
-                      <input type="text" placeholder="피해자 연락처" value={formData.victimContact} onChange={(e) => handleInputChange("victimContact", e.target.value)} disabled={readOnly} style={inputStyle} data-testid="input-victim-contact" />
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>상세주소</label>
-                      <input type="text" placeholder="피해자 주소" value={formData.victimAddress} onChange={(e) => handleInputChange("victimAddress", e.target.value)} disabled={readOnly} style={inputStyle} data-testid="input-victim-address" />
-                    </div>
-                  </div>
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>소속부서명</label>
+                <input className={disabledInputClasses} value={formData.investigatorDepartment} readOnly placeholder="소속부서명" type="text" data-testid="input-investigator-department" />
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>조사자 <RequiredMark /></label>
+                <Select value={formData.investigatorTeamName} onValueChange={(value) => handleInputChange("investigatorTeamName", value)} disabled={readOnly || !formData.investigatorTeam}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-investigator-name"><SelectValue placeholder="조사자 성함" /></SelectTrigger>
+                  <SelectContent>{filteredInvestigatorEmployees.map(emp => <SelectItem key={emp.id} value={emp.name}>{emp.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>조사자 연락처</label>
+                <input className={disabledInputClasses} value={formData.investigatorContact} readOnly placeholder="조사자 연락처" type="text" data-testid="input-investigator-contact" />
+              </div>
+            </div>
+          </section>
+
+          {/* 보험계약자 및 피보험자 정보 */}
+          <section>
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold text-slate-900">보험계약자 및 피보험자 정보</h2>
+            </div>
+
+            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+              <div className="col-span-12 md:col-span-6">
+                <label className={labelClasses}>보험계약자</label>
+                <input className={inputClasses} value={formData.policyHolderName} onChange={(e) => handleInputChange("policyHolderName", e.target.value)} disabled={readOnly} placeholder="보험계약자 성함" type="text" data-testid="input-policy-holder-name" />
+              </div>
+
+              <div className="col-span-12 md:col-span-6">
+                <label className={labelClasses}>피보험자 <RequiredMark /></label>
+                <input className={inputClasses} value={formData.insuredName} onChange={(e) => handleInputChange("insuredName", e.target.value)} disabled={readOnly} placeholder="피보험자 성함" type="text" data-testid="input-insured-name" />
+              </div>
+
+              <div className="col-span-12 md:col-span-7">
+                <label className={labelClasses}>피보험자 주소 <RequiredMark /></label>
+                <div className="relative">
+                  <input className={`${inputClasses} pr-10`} value={formData.insuredAddress} readOnly placeholder="도로명 주소, 동/호 포함" type="text" data-testid="input-insured-address" />
+                  <button type="button" onClick={handleAddressSearch} disabled={readOnly} className="pointer-events-auto absolute inset-y-0 right-3 flex items-center text-slate-400">
+                    <Search size={18} className="opacity-80" />
+                  </button>
                 </div>
               </div>
 
-              {/* 배당 사항 Section */}
-              <div className="flex">
-                <div style={{ ...sectionTitleStyle, borderBottom: 'none' }}>[배당사항]</div>
-                <div className="flex-1">
-                  {/* Row 1: 손방 및 대물 선택 */}
-                  <div style={{ ...cellStyle, borderRight: 'none', borderBottom: tableBorderStyle }}>
-                    <label style={labelStyle}>순방 및 대물 선택<RequiredMark /> (중복 가능)</label>
-                    <div className="flex items-center gap-4 mt-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox checked={formData.damagePreventionCost} onCheckedChange={(checked) => handleInputChange("damagePreventionCost", checked as boolean)} disabled={readOnly} data-testid="checkbox-damage-prevention" />
-                        <span style={{ ...labelStyle, color: formData.damagePreventionCost ? '#008FED' : '#686A6E' }}>손해방지</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <Checkbox checked={formData.victimIncidentAssistance} onCheckedChange={(checked) => handleInputChange("victimIncidentAssistance", checked as boolean)} disabled={readOnly} data-testid="checkbox-victim-incident" />
-                        <span style={{ ...labelStyle, color: formData.victimIncidentAssistance ? '#008FED' : '#686A6E' }}>피해세대복구</span>
-                      </label>
-                    </div>
-                  </div>
-                  {/* Row 2: 사고유형, 복구방식, 사고원인, 타업체결정 */}
-                  <div className="grid grid-cols-1 md:grid-cols-4" style={{ borderBottom: tableBorderStyle }}>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>사고유형<RequiredMark /></label>
-                      <Select value={formData.accidentType} onValueChange={(value) => handleInputChange("accidentType", value)} disabled={readOnly}>
-                        <SelectTrigger style={inputStyle} data-testid="select-accident-type"><SelectValue placeholder="사고유형 선택" /></SelectTrigger>
-                        <SelectContent>
-                          {getMasterDataOptions("accident_type").length > 0 ? getMasterDataOptions("accident_type").map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>) : (<><SelectItem value="누수">누수</SelectItem><SelectItem value="급배수">급배수</SelectItem><SelectItem value="화재">화재</SelectItem><SelectItem value="기타">기타</SelectItem></>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>복구방식<RequiredMark /></label>
-                      <Select value={formData.restorationMethod} onValueChange={(value) => handleInputChange("restorationMethod", value)} disabled={readOnly}>
-                        <SelectTrigger style={inputStyle} data-testid="select-restoration-method"><SelectValue placeholder="복구방식 선택" /></SelectTrigger>
-                        <SelectContent>
-                          {getMasterDataOptions("recovery_type").length > 0 ? getMasterDataOptions("recovery_type").map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>) : (<><SelectItem value="없음">없음</SelectItem><SelectItem value="직접복구">직접복구</SelectItem><SelectItem value="선견적요청">선견적요청</SelectItem></>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>사고원인</label>
-                      <Select value={formData.accidentCause} onValueChange={(value) => handleInputChange("accidentCause", value)} disabled={readOnly}>
-                        <SelectTrigger style={inputStyle} data-testid="select-accident-cause"><SelectValue placeholder="사고원인 선택" /></SelectTrigger>
-                        <SelectContent>
-                          {getMasterDataOptions("accident_cause").length > 0 ? getMasterDataOptions("accident_cause").map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>) : (<><SelectItem value="배관">배관</SelectItem><SelectItem value="방수">방수</SelectItem><SelectItem value="코킹">코킹</SelectItem><SelectItem value="공용부">공용부</SelectItem><SelectItem value="복합">복합</SelectItem></>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>타업체결정</label>
-                      <Select value={formData.otherVendorEstimate} onValueChange={(value) => handleInputChange("otherVendorEstimate", value)} disabled={readOnly}>
-                        <SelectTrigger style={inputStyle} data-testid="select-other-vendor"><SelectValue placeholder="선택" /></SelectTrigger>
-                        <SelectContent>
-                          {getMasterDataOptions("other_company_estimate").length > 0 ? getMasterDataOptions("other_company_estimate").map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>) : (<><SelectItem value="유">유</SelectItem><SelectItem value="무">무</SelectItem></>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  {/* Row 3: 협력사, 담당자명, 담당자 연락처 */}
-                  <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>협력사</label>
-                      <div className="flex gap-1">
-                        <input type="text" value={formData.assignedPartner} readOnly placeholder="협력사 선택" style={{ ...inputStyle, flex: 1 }} data-testid="input-partner" />
-                        <button onClick={() => !readOnly && setIsPartnerSearchOpen(true)} disabled={readOnly} style={{ ...inputStyle, width: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: readOnly ? 'default' : 'pointer' }} data-testid="button-partner-search-open"><Search size={16} /></button>
-                      </div>
-                    </div>
-                    <div style={cellStyle} className="flex flex-col gap-1">
-                      <label style={labelStyle}>담당자명</label>
-                      <Select value={formData.assignedPartnerManager} onValueChange={(value) => handleInputChange("assignedPartnerManager", value)} disabled={readOnly || !selectedPartner}>
-                        <SelectTrigger style={inputStyle} data-testid="select-partner-manager"><SelectValue placeholder="담당자 선택" /></SelectTrigger>
-                        <SelectContent>{partnerManagers.map(mgr => <SelectItem key={mgr.id} value={mgr.name}>{mgr.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div style={{ ...cellStyle, borderRight: 'none', borderBottom: 'none' }} className="flex flex-col gap-1">
-                      <label style={labelStyle}>담당자 연락처</label>
-                      <input type="text" value={formData.assignedPartnerContact} readOnly style={{ ...inputStyle, background: '#f5f5f5' }} data-testid="input-partner-contact" />
-                    </div>
-                  </div>
+              <div className="col-span-12 md:col-span-5">
+                <label className={labelClasses}>상세주소</label>
+                <input className={inputClasses} value={formData.insuredAddressDetail} onChange={(e) => handleInputChange("insuredAddressDetail", e.target.value)} disabled={readOnly} placeholder="상세주소" type="text" data-testid="input-insured-address-detail" />
+              </div>
+            </div>
+          </section>
+
+          {/* 피해자 정보 */}
+          <section>
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold text-slate-900">피해자 정보</h2>
+            </div>
+
+            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className={labelClasses}>피해자</label>
+                <input className={inputClasses} value={formData.victimName} onChange={(e) => handleInputChange("victimName", e.target.value)} disabled={readOnly} placeholder="피해자 성함" type="text" data-testid="input-victim-name" />
+              </div>
+
+              <div className="col-span-12 md:col-span-4">
+                <label className={labelClasses}>피해자 연락처</label>
+                <input className={inputClasses} value={formData.victimContact} onChange={(e) => handleInputChange("victimContact", e.target.value)} disabled={readOnly} placeholder="피해자 연락처" type="text" data-testid="input-victim-contact" />
+              </div>
+
+              <div className="col-span-12 md:col-span-4">
+                <label className={labelClasses}>상세주소</label>
+                <input className={inputClasses} value={formData.victimAddress} onChange={(e) => handleInputChange("victimAddress", e.target.value)} disabled={readOnly} placeholder="상세주소" type="text" data-testid="input-victim-address" />
+              </div>
+            </div>
+          </section>
+
+          {/* 배당사항 */}
+          <section className="rounded-lg bg-slate-50 p-6">
+            <div className="mb-4">
+              <h2 className="text-sm font-semibold text-slate-900">배당사항</h2>
+              <p className="mt-1 text-xs text-slate-500">손상 및 대물 선택(중복 가능)</p>
+            </div>
+
+            <div className="mb-5 flex flex-wrap items-center gap-6">
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <input 
+                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200" 
+                  type="checkbox" 
+                  checked={formData.damagePreventionCost === true}
+                  onChange={(e) => handleInputChange("damagePreventionCost", e.target.checked)}
+                  disabled={readOnly}
+                  data-testid="checkbox-damage-prevention"
+                />
+                손해확정
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <input 
+                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-200" 
+                  type="checkbox" 
+                  checked={formData.victimIncidentAssistance === true}
+                  onChange={(e) => handleInputChange("victimIncidentAssistance", e.target.checked)}
+                  disabled={readOnly}
+                  data-testid="checkbox-victim-incident"
+                />
+                피해세대복구
+              </label>
+            </div>
+
+            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>사고 유형 <RequiredMark /></label>
+                <Select value={formData.accidentType} onValueChange={(value) => handleInputChange("accidentType", value)} disabled={readOnly}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-accident-type"><SelectValue placeholder="사고 유형 선택" /></SelectTrigger>
+                  <SelectContent>
+                    {getMasterDataOptions("accident_type").length > 0 ? getMasterDataOptions("accident_type").map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>) : (<><SelectItem value="누수">누수</SelectItem><SelectItem value="급배수">급배수</SelectItem><SelectItem value="화재">화재</SelectItem><SelectItem value="기타">기타</SelectItem></>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>복구 유형 <RequiredMark /></label>
+                <Select value={formData.restorationMethod} onValueChange={(value) => handleInputChange("restorationMethod", value)} disabled={readOnly}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-restoration-method"><SelectValue placeholder="복구 유형 선택" /></SelectTrigger>
+                  <SelectContent>
+                    {getMasterDataOptions("recovery_type").length > 0 ? getMasterDataOptions("recovery_type").map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>) : (<><SelectItem value="없음">없음</SelectItem><SelectItem value="직접복구">직접복구</SelectItem><SelectItem value="선견적요청">선견적요청</SelectItem></>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>사고 원인</label>
+                <Select value={formData.accidentCause} onValueChange={(value) => handleInputChange("accidentCause", value)} disabled={readOnly}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-accident-cause"><SelectValue placeholder="사고 원인 선택" /></SelectTrigger>
+                  <SelectContent>
+                    {getMasterDataOptions("accident_cause").length > 0 ? getMasterDataOptions("accident_cause").map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>) : (<><SelectItem value="배관">배관</SelectItem><SelectItem value="방수">방수</SelectItem><SelectItem value="코킹">코킹</SelectItem><SelectItem value="공용부">공용부</SelectItem><SelectItem value="복합">복합</SelectItem></>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>타업체 접수 여부</label>
+                <Select value={formData.otherVendorEstimate} onValueChange={(value) => handleInputChange("otherVendorEstimate", value)} disabled={readOnly}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-other-vendor"><SelectValue placeholder="타업체 접수 여부 선택" /></SelectTrigger>
+                  <SelectContent>
+                    {getMasterDataOptions("other_company_estimate").length > 0 ? getMasterDataOptions("other_company_estimate").map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>) : (<><SelectItem value="유">유</SelectItem><SelectItem value="무">무</SelectItem></>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </section>
+
+          {/* 배당 협력사 정보 */}
+          <section>
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold text-slate-900">배당 협력사 정보</h2>
+            </div>
+
+            <div className="grid grid-cols-12 gap-x-6 gap-y-4">
+              <div className="col-span-12 md:col-span-6">
+                <label className={labelClasses}>협력사</label>
+                <div className="relative">
+                  <input className={`${inputClasses} pr-10`} value={formData.assignedPartner} readOnly placeholder="협력사 선택" type="text" data-testid="input-partner" />
+                  <button type="button" onClick={() => !readOnly && setIsPartnerSearchOpen(true)} disabled={readOnly} className="pointer-events-auto absolute inset-y-0 right-3 flex items-center text-slate-400">
+                    <Search size={18} className="opacity-80" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>담당자</label>
+                <Select value={formData.assignedPartnerManager} onValueChange={(value) => handleInputChange("assignedPartnerManager", value)} disabled={readOnly || !selectedPartner}>
+                  <SelectTrigger className={selectTriggerClasses} data-testid="select-partner-manager"><SelectValue placeholder="담당자" /></SelectTrigger>
+                  <SelectContent>{partnerManagers.map(mgr => <SelectItem key={mgr.id} value={mgr.name}>{mgr.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className={labelClasses}>담당자 연락처</label>
+                <input className={disabledInputClasses} value={formData.assignedPartnerContact} readOnly placeholder="담당자 연락처" type="text" data-testid="input-partner-contact" />
+              </div>
+
+              <div className="col-span-12">
+                <label className={labelClasses}>특이사항 및 요청사항</label>
+                <div className="relative">
+                  <textarea
+                    className="min-h-[120px] w-full resize-none rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-4 focus:ring-sky-100"
+                    placeholder="현장 특이사항, 요청사항 등"
+                    value={formData.specialRequests}
+                    onChange={(e) => { if (e.target.value.length <= 800) handleInputChange("specialRequests", e.target.value); }}
+                    disabled={readOnly}
+                    maxLength={800}
+                    data-testid="textarea-special-requests"
+                  />
+                  <div className="absolute bottom-2 right-3 text-xs text-slate-400">{formData.specialRequests.length}/800</div>
                 </div>
               </div>
             </div>
+          </section>
 
-            {/* 특이사항 및 요청사항 */}
-            <div style={{ background: '#FFFFFF', boxShadow: '0px 0px 20px #DBE9F5', borderRadius: '12px', padding: '20px', border: tableBorderStyle }}>
-              <label style={{ ...labelStyle, marginBottom: '8px', display: 'block' }}>특이사항 및 요청사항</label>
-              <textarea
-                placeholder="협력 업체명, 요청사항 등"
-                value={formData.specialRequests}
-                onChange={(e) => { if (e.target.value.length <= 800) handleInputChange("specialRequests", e.target.value); }}
-                disabled={readOnly}
-                maxLength={800}
-                style={{ width: '100%', height: '100px', padding: '12px', background: '#FDFDFD', border: tableBorderStyle, borderRadius: '6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#0C0C0C', resize: 'none' }}
-                data-testid="textarea-special-requests"
-              />
-              <div style={{ textAlign: 'right', fontSize: '12px', color: '#686A6E', marginTop: '4px' }}>{formData.specialRequests.length}/800</div>
-            </div>
+          {/* Spacer for fixed bar */}
+          <div className="h-20"></div>
+        </form>
 
-            {/* Bottom Buttons */}
-            {!readOnly && (
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end w-full mt-4 gap-3">
-                {isModal && initialCaseId ? (
-                  <button onClick={handleUpdateCase} disabled={updateMutation.isPending} className="h-12 px-8 rounded-lg" style={{ fontFamily: 'Pretendard', fontWeight: 600, background: updateMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED', border: 'none', color: '#FFFFFF', cursor: updateMutation.isPending ? 'not-allowed' : 'pointer' }} data-testid="button-update-case">
+        {/* Bottom Actions - Fixed */}
+        {!readOnly && (
+          <div className="fixed inset-x-0 bottom-0 border-t bg-white/95 backdrop-blur z-50">
+            <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-4">
+              {isModal && initialCaseId ? (
+                <>
+                  <div></div>
+                  <button 
+                    onClick={handleUpdateCase} 
+                    disabled={updateMutation.isPending} 
+                    className="inline-flex h-10 items-center justify-center rounded-md bg-sky-500 px-5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-50"
+                    type="button"
+                    data-testid="button-update-case"
+                  >
                     {updateMutation.isPending ? '수정 중...' : '수정하기'}
                   </button>
-                ) : (
-                  <>
-                    <button onClick={handleReset} className="h-12 px-8 rounded-lg" style={{ fontFamily: 'Pretendard', fontWeight: 600, background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer' }} data-testid="button-reset">초기화</button>
-                    <button onClick={handleSave} disabled={saveMutation.isPending} className="h-12 px-8 rounded-lg" style={{ fontFamily: 'Pretendard', fontWeight: 600, background: saveMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED', border: 'none', color: '#FFFFFF', cursor: saveMutation.isPending ? 'not-allowed' : 'pointer' }} data-testid="button-save">
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={handleReset}
+                    className="text-sm font-semibold text-rose-600 hover:text-rose-700" 
+                    type="button"
+                    data-testid="button-reset"
+                  >
+                    초기화
+                  </button>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleSave}
+                      disabled={saveMutation.isPending}
+                      className="inline-flex h-10 items-center justify-center rounded-md bg-slate-100 px-5 text-sm font-semibold text-slate-700 hover:bg-slate-200 disabled:opacity-50"
+                      type="button"
+                      data-testid="button-save"
+                    >
                       {saveMutation.isPending ? '저장 중...' : '저장'}
                     </button>
-                    <button onClick={handleSubmit} disabled={submitMutation.isPending || !isFormValid} className="h-12 px-8 rounded-lg" style={{ fontFamily: 'Pretendard', fontWeight: 600, background: (submitMutation.isPending || !isFormValid) ? 'rgba(12, 12, 12, 0.2)' : '#008FED', border: 'none', color: '#FFFFFF', cursor: (submitMutation.isPending || !isFormValid) ? 'not-allowed' : 'pointer' }} data-testid="button-submit">
+                    <button
+                      onClick={handleSubmit}
+                      disabled={submitMutation.isPending || !isFormValid}
+                      className="inline-flex h-10 items-center justify-center rounded-md bg-slate-300 px-5 text-sm font-semibold text-white disabled:bg-slate-300 enabled:bg-sky-500 enabled:hover:bg-sky-600"
+                      type="button"
+                      data-testid="button-submit"
+                    >
                       {submitMutation.isPending ? '접수 중...' : '접수완료'}
                     </button>
-                  </>
-                )}
-              </div>
-            )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </main>
 
       {/* 협력사 검색 팝업 */}
       {isPartnerSearchOpen && ((() => {
         const modalContent = (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '16px' }} onClick={() => setIsPartnerSearchOpen(false)}>
-            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[864px] max-h-[90vh] overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', padding: '0px 0px 20px', background: '#FFFFFF', boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)', borderRadius: '12px' }}>
-              <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
-                <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', color: '#0C0C0C' }}>협력사 검색</h2>
-                <button onClick={() => setIsPartnerSearchOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }} data-testid="button-close-partner-search"><X size={24} color="#1C1B1F" /></button>
+            <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[864px] max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl">
+              <div className="flex flex-row justify-between items-center w-full px-5 h-[60px] border-b">
+                <h2 className="font-semibold text-lg text-slate-900">협력사 검색</h2>
+                <button onClick={() => setIsPartnerSearchOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg" data-testid="button-close-partner-search"><X size={24} className="text-slate-600" /></button>
               </div>
-              <div className="flex flex-col items-center w-full px-5 gap-4">
+              <div className="flex flex-col items-center w-full px-5 py-4 gap-4">
                 <div className="flex flex-col items-start w-full gap-2">
-                  <label style={labelStyle}>협력사 검색</label>
-                  <div className="flex flex-row items-center w-full h-[58px]">
-                    <input type="text" placeholder="업체명을 입력해주세요." value={partnerSearchQuery} onChange={(e) => setPartnerSearchQuery(e.target.value)} className="flex-1" style={{ ...inputStyle, height: '58px', borderRadius: '6px 0px 0px 6px' }} data-testid="input-partner-search" />
-                    <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0px 16px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer' }} data-testid="button-partner-search">
-                      <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', color: '#FDFDFD' }}>검색</span>
-                    </button>
+                  <label className={labelClasses}>협력사 검색</label>
+                  <div className="flex flex-row items-center w-full">
+                    <input type="text" placeholder="업체명을 입력해주세요." value={partnerSearchQuery} onChange={(e) => setPartnerSearchQuery(e.target.value)} className={`${inputClasses} flex-1 !rounded-r-none`} data-testid="input-partner-search" />
+                    <button className="flex items-center justify-center px-4 h-10 bg-sky-500 rounded-r-md text-white font-semibold text-sm hover:bg-sky-600" data-testid="button-partner-search">검색</button>
                   </div>
                 </div>
-                <div className="flex flex-col items-start w-full gap-6 overflow-x-auto" style={{ maxHeight: '500px' }}>
+                <div className="flex flex-col items-start w-full gap-4 overflow-x-auto" style={{ maxHeight: '400px' }}>
                   {filteredPartners.length === 0 ? (
                     <div className="flex items-center justify-center w-full py-10">
-                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>{partnerSearchQuery ? "검색 결과가 없습니다" : "등록된 협력사가 없습니다"}</span>
+                      <span className="text-sm text-slate-500">{partnerSearchQuery ? "검색 결과가 없습니다" : "등록된 협력사가 없습니다"}</span>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-start w-full" style={{ maxHeight: '373px', minWidth: '700px' }}>
-                      <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
-                        <div style={{ padding: '10px 12px', width: '155px' }}><span style={{ ...labelStyle }}>업체명</span></div>
-                        <div style={{ padding: '10px 12px', width: '93px' }}><span style={{ ...labelStyle }}>일배당건수</span></div>
-                        <div style={{ padding: '10px 12px', width: '93px' }}><span style={{ ...labelStyle }}>월배당건수</span></div>
-                        <div style={{ padding: '10px 12px', width: '93px' }}><span style={{ ...labelStyle }}>진행건수</span></div>
-                        <div style={{ padding: '10px 12px', width: '93px' }}><span style={{ ...labelStyle }}>미결건수</span></div>
-                        <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ ...labelStyle }}>지역</span></div>
-                        <div style={{ padding: '10px 12px', width: '49px' }}><span style={{ ...labelStyle }}>선택</span></div>
+                    <div className="flex flex-col items-start w-full min-w-[700px]">
+                      <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600">
+                        <div className="px-3 w-[155px]">업체명</div>
+                        <div className="px-3 w-[93px]">일배당건수</div>
+                        <div className="px-3 w-[93px]">월배당건수</div>
+                        <div className="px-3 w-[93px]">진행건수</div>
+                        <div className="px-3 w-[93px]">미결건수</div>
+                        <div className="px-3 flex-1">지역</div>
+                        <div className="px-3 w-[49px]">선택</div>
                       </div>
-                      <div className="flex flex-col items-start w-full overflow-y-auto" style={{ maxHeight: '334px' }}>
+                      <div className="flex flex-col items-start w-full overflow-y-auto" style={{ maxHeight: '300px' }}>
                         {filteredPartners.map((partner) => (
-                          <div key={partner.name} className="flex flex-row items-center w-full h-[61px]" style={{ cursor: 'pointer', backgroundColor: tempSelectedPartner?.name === partner.name ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }} onClick={() => setTempSelectedPartner(partner)} data-testid={`row-partner-${partner.name}`}>
-                            <div style={{ padding: '10px 12px', width: '155px' }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: tempSelectedPartner?.name === partner.name ? '#008FED' : '#686A6E' }}>{partner.name}</span></div>
-                            <div style={{ padding: '10px 12px', width: '93px' }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>{partner.dailyCount}</span></div>
-                            <div style={{ padding: '10px 12px', width: '93px' }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>{partner.monthlyCount}</span></div>
-                            <div style={{ padding: '10px 12px', width: '93px' }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>{partner.inProgressCount}</span></div>
-                            <div style={{ padding: '10px 12px', width: '93px' }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>{partner.pendingCount}</span></div>
-                            <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>{partner.region}</span></div>
-                            <div style={{ padding: '10px 12px', width: '49px', display: 'flex', justifyContent: 'center' }}>
-                              <div style={{ width: '18px', height: '18px', background: tempSelectedPartner?.name === partner.name ? '#008FED' : '#FDFDFD', border: tempSelectedPartner?.name === partner.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%', position: 'relative' }}>
-                                {tempSelectedPartner?.name === partner.name && <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }} />}
+                          <div key={partner.name} className={`flex flex-row items-center w-full h-14 cursor-pointer border-b border-slate-100 ${tempSelectedPartner?.name === partner.name ? 'bg-sky-50' : 'hover:bg-slate-50'}`} onClick={() => setTempSelectedPartner(partner)} data-testid={`row-partner-${partner.name}`}>
+                            <div className={`px-3 w-[155px] text-sm ${tempSelectedPartner?.name === partner.name ? 'text-sky-600 font-medium' : 'text-slate-600'}`}>{partner.name}</div>
+                            <div className="px-3 w-[93px] text-sm text-slate-600">{partner.dailyCount}</div>
+                            <div className="px-3 w-[93px] text-sm text-slate-600">{partner.monthlyCount}</div>
+                            <div className="px-3 w-[93px] text-sm text-slate-600">{partner.inProgressCount}</div>
+                            <div className="px-3 w-[93px] text-sm text-slate-600">{partner.pendingCount}</div>
+                            <div className="px-3 flex-1 text-sm text-slate-600">{partner.region}</div>
+                            <div className="px-3 w-[49px] flex justify-center">
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedPartner?.name === partner.name ? 'bg-sky-500 border-sky-500' : 'border-slate-300'}`}>
+                                {tempSelectedPartner?.name === partner.name && <div className="w-2 h-2 bg-white rounded-full" />}
                               </div>
                             </div>
                           </div>
@@ -1268,20 +1306,14 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   )}
                 </div>
                 {tempSelectedPartner && (
-                  <div className="w-full" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ padding: '16px', background: '#F8F8F8', borderRadius: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }} />
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', color: 'rgba(12, 12, 12, 0.9)' }}>{tempSelectedPartner.name}</span>
-                      </div>
+                  <div className="w-full flex flex-col gap-3">
+                    <div className="p-4 bg-slate-100 rounded-lg flex items-center gap-4">
+                      <div className="w-2 h-2 bg-sky-500 rounded-full" />
+                      <span className="font-semibold text-slate-900">{tempSelectedPartner.name}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                      <button onClick={() => setTempSelectedPartner(null)} style={{ padding: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }} data-testid="button-reset-partner">
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', color: 'rgba(12, 12, 12, 0.3)' }}>초기화</span>
-                      </button>
-                      <button onClick={() => { setSelectedPartner(tempSelectedPartner); handleInputChange("assignedPartner", tempSelectedPartner.name); handleInputChange("assignedPartnerManager", ""); handleInputChange("assignedPartnerContact", ""); setIsPartnerSearchOpen(false); setTempSelectedPartner(null); setPartnerSearchQuery(""); }} style={{ padding: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }} data-testid="button-apply-partner">
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', color: '#FDFDFD' }}>적용</span>
-                      </button>
+                    <div className="flex justify-center gap-3">
+                      <button onClick={() => setTempSelectedPartner(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-600" data-testid="button-reset-partner">초기화</button>
+                      <button onClick={() => { setSelectedPartner(tempSelectedPartner); handleInputChange("assignedPartner", tempSelectedPartner.name); handleInputChange("assignedPartnerManager", ""); handleInputChange("assignedPartnerContact", ""); setIsPartnerSearchOpen(false); setTempSelectedPartner(null); setPartnerSearchQuery(""); }} className="px-4 py-2 bg-sky-500 text-white text-sm font-semibold rounded-md hover:bg-sky-600" data-testid="button-apply-partner">적용</button>
                     </div>
                   </div>
                 )}
@@ -1295,39 +1327,37 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       {/* 의뢰사 검색 팝업 */}
       {isClientSearchOpen && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '16px' }} onClick={() => setIsClientSearchOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[600px]" style={{ display: 'flex', flexDirection: 'column', padding: '0px 0px 20px', background: '#FFFFFF', boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)', borderRadius: '12px', maxHeight: '90vh' }}>
-            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
-              <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', color: '#0C0C0C' }}>의뢰사 검색</h2>
-              <button onClick={() => setIsClientSearchOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }} data-testid="button-close-client-search"><X size={24} color="#1C1B1F" /></button>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[600px] bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col">
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px] border-b">
+              <h2 className="font-semibold text-lg text-slate-900">의뢰사 검색</h2>
+              <button onClick={() => setIsClientSearchOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg" data-testid="button-close-client-search"><X size={24} className="text-slate-600" /></button>
             </div>
-            <div className="flex flex-col items-center w-full px-5 gap-4">
+            <div className="flex flex-col items-center w-full px-5 py-4 gap-4">
               <div className="flex flex-col items-start w-full gap-2">
-                <label style={labelStyle}>의뢰사 검색</label>
-                <div className="flex flex-row items-center w-full h-[58px]">
-                  <input type="text" placeholder="의뢰사명을 입력해주세요." value={clientSearchQuery} onChange={(e) => setClientSearchQuery(e.target.value)} className="flex-1" style={{ ...inputStyle, height: '58px', borderRadius: '6px 0px 0px 6px' }} data-testid="input-client-search" />
-                  <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0px 16px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer' }} data-testid="button-client-search-submit">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', color: '#FDFDFD' }}>검색</span>
-                  </button>
+                <label className={labelClasses}>의뢰사 검색</label>
+                <div className="flex flex-row items-center w-full">
+                  <input type="text" placeholder="의뢰사명을 입력해주세요." value={clientSearchQuery} onChange={(e) => setClientSearchQuery(e.target.value)} className={`${inputClasses} flex-1 !rounded-r-none`} data-testid="input-client-search" />
+                  <button className="flex items-center justify-center px-4 h-10 bg-sky-500 rounded-r-md text-white font-semibold text-sm hover:bg-sky-600" data-testid="button-client-search-submit">검색</button>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-start w-full px-5 overflow-y-auto" style={{ flex: 1, minHeight: 0, maxHeight: '300px' }}>
+            <div className="flex flex-col items-start w-full px-5 overflow-y-auto flex-1" style={{ maxHeight: '300px' }}>
               {filteredClients.length === 0 ? (
                 <div className="flex items-center justify-center w-full py-10">
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>{clientSearchQuery ? "검색 결과가 없습니다" : "등록된 의뢰사가 없습니다"}</span>
+                  <span className="text-sm text-slate-500">{clientSearchQuery ? "검색 결과가 없습니다" : "등록된 의뢰사가 없습니다"}</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-start w-full">
-                  <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
-                    <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ ...labelStyle }}>의뢰사명</span></div>
-                    <div style={{ padding: '10px 12px', width: '60px' }}><span style={{ ...labelStyle }}>선택</span></div>
+                  <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600">
+                    <div className="px-3 flex-1">의뢰사명</div>
+                    <div className="px-3 w-[60px]">선택</div>
                   </div>
                   {filteredClients.map((client) => (
-                    <div key={client.name} className="flex flex-row items-center w-full h-[50px]" style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedClient?.name === client.name ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }} onClick={() => setTempSelectedClient(client)} data-testid={`row-client-${client.name}`}>
-                      <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: tempSelectedClient?.name === client.name ? '#008FED' : '#686A6E' }}>{client.name}</span></div>
-                      <div style={{ padding: '10px 12px', width: '60px', display: 'flex', justifyContent: 'center' }}>
-                        <div style={{ width: '18px', height: '18px', background: tempSelectedClient?.name === client.name ? '#008FED' : '#FDFDFD', border: tempSelectedClient?.name === client.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%', position: 'relative' }}>
-                          {tempSelectedClient?.name === client.name && <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }} />}
+                    <div key={client.name} className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedClient?.name === client.name ? 'bg-sky-50' : 'hover:bg-slate-50'}`} onClick={() => setTempSelectedClient(client)} data-testid={`row-client-${client.name}`}>
+                      <div className={`px-3 flex-1 text-sm ${tempSelectedClient?.name === client.name ? 'text-sky-600 font-medium' : 'text-slate-600'}`}>{client.name}</div>
+                      <div className="px-3 w-[60px] flex justify-center">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedClient?.name === client.name ? 'bg-sky-500 border-sky-500' : 'border-slate-300'}`}>
+                          {tempSelectedClient?.name === client.name && <div className="w-2 h-2 bg-white rounded-full" />}
                         </div>
                       </div>
                     </div>
@@ -1336,20 +1366,14 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               )}
             </div>
             {tempSelectedClient && (
-              <div className="w-full px-5" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ padding: '16px', background: '#F8F8F8', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }} />
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', color: 'rgba(12, 12, 12, 0.9)' }}>{tempSelectedClient.name}</span>
-                  </div>
+              <div className="w-full px-5 pb-5 flex flex-col gap-3">
+                <div className="p-4 bg-slate-100 rounded-lg flex items-center gap-4">
+                  <div className="w-2 h-2 bg-sky-500 rounded-full" />
+                  <span className="font-semibold text-slate-900">{tempSelectedClient.name}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                  <button onClick={() => setTempSelectedClient(null)} style={{ padding: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }} data-testid="button-reset-client">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', color: 'rgba(12, 12, 12, 0.3)' }}>초기화</span>
-                  </button>
-                  <button onClick={() => { handleInputChange("clientResidence", tempSelectedClient.name); setIsClientSearchOpen(false); setTempSelectedClient(null); setClientSearchQuery(""); }} style={{ padding: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }} data-testid="button-apply-client">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', color: '#FDFDFD' }}>적용</span>
-                  </button>
+                <div className="flex justify-center gap-3">
+                  <button onClick={() => setTempSelectedClient(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-600" data-testid="button-reset-client">초기화</button>
+                  <button onClick={() => { handleInputChange("clientResidence", tempSelectedClient.name); setIsClientSearchOpen(false); setTempSelectedClient(null); setClientSearchQuery(""); }} className="px-4 py-2 bg-sky-500 text-white text-sm font-semibold rounded-md hover:bg-sky-600" data-testid="button-apply-client">적용</button>
                 </div>
               </div>
             )}
@@ -1361,69 +1385,53 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       {/* 심사사 검색 팝업 */}
       {isAssessorSearchOpen && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '16px' }} onClick={() => setIsAssessorSearchOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[600px]" style={{ display: 'flex', flexDirection: 'column', padding: '0px 0px 20px', background: '#FFFFFF', boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)', borderRadius: '12px', maxHeight: '90vh' }}>
-            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
-              <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', color: '#0C0C0C' }}>심사사 검색</h2>
-              <button onClick={() => setIsAssessorSearchOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }} data-testid="button-close-assessor-search"><X size={24} color="#1C1B1F" /></button>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[600px] bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col">
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px] border-b">
+              <h2 className="font-semibold text-lg text-slate-900">심사사 검색</h2>
+              <button onClick={() => setIsAssessorSearchOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg" data-testid="button-close-assessor-search"><X size={24} className="text-slate-600" /></button>
             </div>
-            <div className="flex flex-col items-center w-full px-5 gap-4">
+            <div className="flex flex-col items-center w-full px-5 py-4 gap-4">
               <div className="flex flex-col items-start w-full gap-2">
-                <label style={labelStyle}>심사사 검색</label>
-                <div className="flex flex-row items-center w-full h-[58px]">
-                  <input type="text" placeholder="심사사명을 입력해주세요." value={assessorSearchQuery} onChange={(e) => setAssessorSearchQuery(e.target.value)} className="flex-1" style={{ ...inputStyle, height: '58px', borderRadius: '6px 0px 0px 6px' }} data-testid="input-assessor-search" />
-                  <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0px 16px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer' }} data-testid="button-assessor-search-submit">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', color: '#FDFDFD' }}>검색</span>
-                  </button>
+                <label className={labelClasses}>심사사 검색</label>
+                <div className="flex flex-row items-center w-full">
+                  <input type="text" placeholder="심사사명을 입력해주세요." value={assessorSearchQuery} onChange={(e) => setAssessorSearchQuery(e.target.value)} className={`${inputClasses} flex-1 !rounded-r-none`} data-testid="input-assessor-search" />
+                  <button className="flex items-center justify-center px-4 h-10 bg-sky-500 rounded-r-md text-white font-semibold text-sm hover:bg-sky-600" data-testid="button-assessor-search-submit">검색</button>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-start w-full px-5 overflow-y-auto" style={{ flex: 1, minHeight: 0, maxHeight: '300px' }}>
+            <div className="flex flex-col items-start w-full px-5 overflow-y-auto flex-1" style={{ maxHeight: '300px' }}>
               {filteredAssessors.length === 0 ? (
                 <div className="flex items-center justify-center w-full py-10">
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>{assessorSearchQuery ? "검색 결과가 없습니다" : "등록된 심사사가 없습니다"}</span>
+                  <span className="text-sm text-slate-500">{assessorSearchQuery ? "검색 결과가 없습니다" : "등록된 심사사가 없습니다"}</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-start w-full">
-                  <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
-                    <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ ...labelStyle }}>심사사명</span></div>
-                    <div style={{ padding: '10px 12px', width: '60px' }}><span style={{ ...labelStyle }}>선택</span></div>
+                  <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600">
+                    <div className="px-3 flex-1">심사사명</div>
+                    <div className="px-3 w-[60px]">선택</div>
                   </div>
                   {filteredAssessors.map((assessor) => (
-                    <div key={assessor.name} className="flex flex-row items-center w-full h-[50px]" style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedAssessor?.name === assessor.name ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }} onClick={() => setTempSelectedAssessor(assessor)} data-testid={`row-assessor-${assessor.name}`}>
-                      <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: tempSelectedAssessor?.name === assessor.name ? '#008FED' : '#686A6E' }}>{assessor.name}</span></div>
-                      <div style={{ padding: '10px 12px', width: '60px', display: 'flex', justifyContent: 'center' }}>
-                        <div style={{ width: '18px', height: '18px', background: tempSelectedAssessor?.name === assessor.name ? '#008FED' : '#FDFDFD', border: tempSelectedAssessor?.name === assessor.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%', position: 'relative' }}>
-                          {tempSelectedAssessor?.name === assessor.name && <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }} />}
+                    <div key={assessor.name} className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedAssessor?.name === assessor.name ? 'bg-sky-50' : 'hover:bg-slate-50'}`} onClick={() => setTempSelectedAssessor(assessor)} data-testid={`row-assessor-${assessor.name}`}>
+                      <div className={`px-3 flex-1 text-sm ${tempSelectedAssessor?.name === assessor.name ? 'text-sky-600 font-medium' : 'text-slate-600'}`}>{assessor.name}</div>
+                      <div className="px-3 w-[60px] flex justify-center">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedAssessor?.name === assessor.name ? 'bg-sky-500 border-sky-500' : 'border-slate-300'}`}>
+                          {tempSelectedAssessor?.name === assessor.name && <div className="w-2 h-2 bg-white rounded-full" />}
                         </div>
                       </div>
                     </div>
                   ))}
-                  <div className="flex flex-row items-center w-full h-[50px]" style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedAssessor?.name === '__NONE__' ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }} onClick={() => setTempSelectedAssessor({ name: '__NONE__', displayName: '없음' })} data-testid="row-assessor-none">
-                    <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', fontStyle: 'italic', color: tempSelectedAssessor?.name === '__NONE__' ? '#008FED' : '#999' }}>없음</span></div>
-                    <div style={{ padding: '10px 12px', width: '60px', display: 'flex', justifyContent: 'center' }}>
-                      <div style={{ width: '18px', height: '18px', background: tempSelectedAssessor?.name === '__NONE__' ? '#008FED' : '#FDFDFD', border: tempSelectedAssessor?.name === '__NONE__' ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%', position: 'relative' }}>
-                        {tempSelectedAssessor?.name === '__NONE__' && <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }} />}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
             {tempSelectedAssessor && (
-              <div className="w-full px-5" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ padding: '16px', background: '#F8F8F8', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '8px', height: '8px', background: tempSelectedAssessor.name === '__NONE__' ? '#999' : '#008FED', borderRadius: '50%' }} />
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', color: 'rgba(12, 12, 12, 0.9)', fontStyle: tempSelectedAssessor.name === '__NONE__' ? 'italic' : 'normal' }}>{tempSelectedAssessor.name === '__NONE__' ? '없음 (심사사 정보 삭제)' : tempSelectedAssessor.name}</span>
-                  </div>
+              <div className="w-full px-5 pb-5 flex flex-col gap-3">
+                <div className="p-4 bg-slate-100 rounded-lg flex items-center gap-4">
+                  <div className="w-2 h-2 bg-sky-500 rounded-full" />
+                  <span className="font-semibold text-slate-900">{tempSelectedAssessor.name}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                  <button onClick={() => setTempSelectedAssessor(null)} style={{ padding: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }} data-testid="button-reset-assessor">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', color: 'rgba(12, 12, 12, 0.3)' }}>초기화</span>
-                  </button>
-                  <button onClick={() => { if (tempSelectedAssessor.name === '__NONE__') { handleInputChange("assessorId", ""); handleInputChange("assessorTeam", ""); handleInputChange("assessorContact", ""); } else { handleInputChange("assessorId", tempSelectedAssessor.name); } setIsAssessorSearchOpen(false); setTempSelectedAssessor(null); setAssessorSearchQuery(""); }} style={{ padding: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }} data-testid="button-apply-assessor">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', color: '#FDFDFD' }}>적용</span>
-                  </button>
+                <div className="flex justify-center gap-3">
+                  <button onClick={() => setTempSelectedAssessor(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-600" data-testid="button-reset-assessor">초기화</button>
+                  <button onClick={() => { handleInputChange("assessorId", tempSelectedAssessor.name); setIsAssessorSearchOpen(false); setTempSelectedAssessor(null); setAssessorSearchQuery(""); }} className="px-4 py-2 bg-sky-500 text-white text-sm font-semibold rounded-md hover:bg-sky-600" data-testid="button-apply-assessor">적용</button>
                 </div>
               </div>
             )}
@@ -1435,79 +1443,59 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       {/* 조사사 검색 팝업 */}
       {isInvestigatorSearchOpen && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '16px' }} onClick={() => setIsInvestigatorSearchOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[600px]" style={{ display: 'flex', flexDirection: 'column', padding: '0px 0px 20px', background: '#FFFFFF', boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)', borderRadius: '12px', maxHeight: '90vh' }}>
-            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
-              <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', color: '#0C0C0C' }}>손사명 검색</h2>
-              <button onClick={() => setIsInvestigatorSearchOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }} data-testid="button-close-investigator-search"><X size={24} color="#1C1B1F" /></button>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[600px] bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col">
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px] border-b">
+              <h2 className="font-semibold text-lg text-slate-900">조사사 검색</h2>
+              <button onClick={() => setIsInvestigatorSearchOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg" data-testid="button-close-investigator-search"><X size={24} className="text-slate-600" /></button>
             </div>
-            <div className="flex flex-col items-center w-full px-5 gap-4">
+            <div className="flex flex-col items-center w-full px-5 py-4 gap-4">
               <div className="flex flex-col items-start w-full gap-2">
-                <label style={labelStyle}>손사명 검색</label>
-                <div className="flex flex-row items-center w-full h-[58px]">
-                  <input type="text" placeholder="손사명을 입력해주세요." value={investigatorSearchQuery} onChange={(e) => setInvestigatorSearchQuery(e.target.value)} className="flex-1" style={{ ...inputStyle, height: '58px', borderRadius: '6px 0px 0px 6px' }} data-testid="input-investigator-search" />
-                  <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0px 16px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer' }} data-testid="button-investigator-search-submit">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', color: '#FDFDFD' }}>검색</span>
-                  </button>
+                <label className={labelClasses}>조사사 검색</label>
+                <div className="flex flex-row items-center w-full">
+                  <input type="text" placeholder="조사사명을 입력해주세요." value={investigatorSearchQuery} onChange={(e) => setInvestigatorSearchQuery(e.target.value)} className={`${inputClasses} flex-1 !rounded-r-none`} data-testid="input-investigator-search" />
+                  <button className="flex items-center justify-center px-4 h-10 bg-sky-500 rounded-r-md text-white font-semibold text-sm hover:bg-sky-600" data-testid="button-investigator-search-submit">검색</button>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-start w-full px-5 overflow-y-auto" style={{ flex: 1, minHeight: 0, maxHeight: '300px' }}>
+            <div className="flex flex-col items-start w-full px-5 overflow-y-auto flex-1" style={{ maxHeight: '300px' }}>
               {filteredInvestigators.length === 0 ? (
                 <div className="flex items-center justify-center w-full py-10">
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>{investigatorSearchQuery ? "검색 결과가 없습니다" : "등록된 손사가 없습니다"}</span>
+                  <span className="text-sm text-slate-500">{investigatorSearchQuery ? "검색 결과가 없습니다" : "등록된 조사사가 없습니다"}</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-start w-full">
-                  <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
-                    <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ ...labelStyle }}>손사명</span></div>
-                    <div style={{ padding: '10px 12px', width: '60px' }}><span style={{ ...labelStyle }}>선택</span></div>
+                  <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600">
+                    <div className="px-3 flex-1">조사사명</div>
+                    <div className="px-3 w-[60px]">선택</div>
                   </div>
                   {filteredInvestigators.map((investigator) => (
-                    <div key={investigator.name} className="flex flex-row items-center w-full h-[50px]" style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedInvestigator?.name === investigator.name ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }} onClick={() => setTempSelectedInvestigator(investigator)} data-testid={`row-investigator-${investigator.name}`}>
-                      <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: tempSelectedInvestigator?.name === investigator.name ? '#008FED' : '#686A6E' }}>{investigator.name}</span></div>
-                      <div style={{ padding: '10px 12px', width: '60px', display: 'flex', justifyContent: 'center' }}>
-                        <div style={{ width: '18px', height: '18px', background: tempSelectedInvestigator?.name === investigator.name ? '#008FED' : '#FDFDFD', border: tempSelectedInvestigator?.name === investigator.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%', position: 'relative' }}>
-                          {tempSelectedInvestigator?.name === investigator.name && <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }} />}
+                    <div key={investigator.name} className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedInvestigator?.name === investigator.name ? 'bg-sky-50' : 'hover:bg-slate-50'}`} onClick={() => setTempSelectedInvestigator(investigator)} data-testid={`row-investigator-${investigator.name}`}>
+                      <div className={`px-3 flex-1 text-sm ${tempSelectedInvestigator?.name === investigator.name ? 'text-sky-600 font-medium' : 'text-slate-600'}`}>{investigator.name}</div>
+                      <div className="px-3 w-[60px] flex justify-center">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedInvestigator?.name === investigator.name ? 'bg-sky-500 border-sky-500' : 'border-slate-300'}`}>
+                          {tempSelectedInvestigator?.name === investigator.name && <div className="w-2 h-2 bg-white rounded-full" />}
                         </div>
                       </div>
                     </div>
                   ))}
-                  <div className="flex flex-row items-center w-full h-[50px]" style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedInvestigator?.name === '__NONE__' ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }} onClick={() => setTempSelectedInvestigator({ name: '__NONE__', displayName: '없음' })} data-testid="row-investigator-none">
-                    <div style={{ padding: '10px 12px', flex: 1 }}><span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', fontStyle: 'italic', color: tempSelectedInvestigator?.name === '__NONE__' ? '#008FED' : '#999' }}>없음</span></div>
-                    <div style={{ padding: '10px 12px', width: '60px', display: 'flex', justifyContent: 'center' }}>
-                      <div style={{ width: '18px', height: '18px', background: tempSelectedInvestigator?.name === '__NONE__' ? '#008FED' : '#FDFDFD', border: tempSelectedInvestigator?.name === '__NONE__' ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%', position: 'relative' }}>
-                        {tempSelectedInvestigator?.name === '__NONE__' && <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }} />}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
             {tempSelectedInvestigator && (
-              <div className="w-full px-5" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ padding: '16px', background: '#F8F8F8', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '8px', height: '8px', background: tempSelectedInvestigator.name === '__NONE__' ? '#999' : '#008FED', borderRadius: '50%' }} />
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', color: 'rgba(12, 12, 12, 0.9)', fontStyle: tempSelectedInvestigator.name === '__NONE__' ? 'italic' : 'normal' }}>{tempSelectedInvestigator.name === '__NONE__' ? '없음 (조사사 정보 삭제)' : tempSelectedInvestigator.name}</span>
-                  </div>
+              <div className="w-full px-5 pb-5 flex flex-col gap-3">
+                <div className="p-4 bg-slate-100 rounded-lg flex items-center gap-4">
+                  <div className="w-2 h-2 bg-sky-500 rounded-full" />
+                  <span className="font-semibold text-slate-900">{tempSelectedInvestigator.name}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                  <button onClick={() => setTempSelectedInvestigator(null)} style={{ padding: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }} data-testid="button-reset-investigator">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', color: 'rgba(12, 12, 12, 0.3)' }}>초기화</span>
-                  </button>
-                  <button onClick={() => { if (tempSelectedInvestigator.name === '__NONE__') { handleInputChange("investigatorTeam", ""); handleInputChange("investigatorTeamName", ""); handleInputChange("investigatorContact", ""); } else { handleInputChange("investigatorTeam", tempSelectedInvestigator.name); } setIsInvestigatorSearchOpen(false); setTempSelectedInvestigator(null); setInvestigatorSearchQuery(""); }} style={{ padding: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }} data-testid="button-apply-investigator">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', color: '#FDFDFD' }}>적용</span>
-                  </button>
+                <div className="flex justify-center gap-3">
+                  <button onClick={() => setTempSelectedInvestigator(null)} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-600" data-testid="button-reset-investigator">초기화</button>
+                  <button onClick={() => { handleInputChange("investigatorTeam", tempSelectedInvestigator.name); setIsInvestigatorSearchOpen(false); setTempSelectedInvestigator(null); setInvestigatorSearchQuery(""); }} className="px-4 py-2 bg-sky-500 text-white text-sm font-semibold rounded-md hover:bg-sky-600" data-testid="button-apply-investigator">적용</button>
                 </div>
               </div>
             )}
           </div>
         </div>,
         document.body
-      )}
-
-      {smsDialogOpen && completedCase && (
-        <SmsNotificationDialog isOpen={smsDialogOpen} onClose={() => { setSmsDialogOpen(false); setCompletedCase(null); }} caseData={completedCase} />
       )}
     </div>
   );
