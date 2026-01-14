@@ -1167,8 +1167,15 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       }
       
       // 의뢰자를 선택하면 해당 직원의 연락처를 자동으로 설정
-      if (field === "clientName" && value) {
-        const selectedEmployee = filteredClientEmployees.find(emp => emp.name === value);
+      // value 형식: "이름::ID" (동명이인 구분을 위해 ID 포함)
+      if (field === "clientName" && value && typeof value === 'string') {
+        const [employeeName, employeeId] = value.split("::");
+        // formData에는 이름만 저장
+        updated.clientName = employeeName;
+        // ID로 직원을 찾아 연락처 설정
+        const selectedEmployee = employeeId 
+          ? filteredClientEmployees.find(emp => emp.id === employeeId)
+          : filteredClientEmployees.find(emp => emp.name === employeeName);
         if (selectedEmployee) {
           updated.clientContact = selectedEmployee.phone || "";
         }
@@ -1978,7 +1985,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       <div className="flex flex-col gap-2 flex-1 min-w-[80px]">
                         <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자</label>
                         <Select 
-                          value={formData.clientName} 
+                          value={(() => {
+                            // 기존 데이터 호환성: clientName으로 매칭되는 직원 찾아서 value 생성
+                            if (!formData.clientName) return "";
+                            const matchingEmployee = filteredClientEmployees.find(emp => emp.name === formData.clientName);
+                            return matchingEmployee ? `${matchingEmployee.name}::${matchingEmployee.id}` : "";
+                          })()} 
                           onValueChange={(value) => handleInputChange("clientName", value)}
                           disabled={readOnly || !formData.clientResidence}
                         >
@@ -1988,7 +2000,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           <SelectContent>
                             {filteredClientEmployees.length > 0 ? (
                               filteredClientEmployees.map((employee) => (
-                                <SelectItem key={employee.id} value={employee.name} data-testid={`select-option-client-${employee.id}`}>
+                                <SelectItem key={employee.id} value={`${employee.name}::${employee.id}`} data-testid={`select-option-client-${employee.id}`}>
                                   {employee.name}
                                 </SelectItem>
                               ))
