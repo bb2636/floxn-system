@@ -777,20 +777,35 @@ export default function Dashboard() {
                         <ChevronDown className="h-4 w-4 text-slate-500" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40">
-                      <DropdownMenuItem onClick={() => handlePeriodSelect('all')}>
+                    <DropdownMenuContent align="end" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('all')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
                         전체
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handlePeriodSelect('today')}>
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('today')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
                         오늘
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handlePeriodSelect('thisMonth')}>
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('thisMonth')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
                         이번 달
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handlePeriodSelect('lastMonth')}>
-                        지난 달
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('lastMonth')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
+                        지난달
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handlePeriodSelect('custom')}>
+                      <DropdownMenuItem 
+                        onClick={() => handlePeriodSelect('custom')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
+                      >
                         날짜 선택
                       </DropdownMenuItem>
                     </DropdownMenuContent>
