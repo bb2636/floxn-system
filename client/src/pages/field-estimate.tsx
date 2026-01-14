@@ -1918,7 +1918,8 @@ export default function FieldEstimate() {
     }
     
     // 철거공사 필요한 공사명 목록 (일위대가DB 철거공사에 있는 공사명과 매칭)
-    const DEMOLITION_WORK_NAMES = ['합판', '반자틀', '석고보드', '도배', '마루', '장판'];
+    // 반자틀은 철거공사 자동 연동 제외
+    const DEMOLITION_WORK_NAMES = ['합판', '석고보드', '도배', '마루', '장판'];
     
     // 정규화된 공사명 → 원본 DEMOLITION_WORK_NAMES 매핑 함수
     const matchDemolitionWorkName = (workName: string): string | null => {
