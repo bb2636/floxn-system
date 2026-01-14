@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -61,7 +61,8 @@ const disabledInputClasses =
 const selectTriggerClasses =
   "h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 [&>span]:text-left";
 
-const labelClasses = "text-xs font-medium text-slate-500 whitespace-nowrap min-w-[70px] shrink-0";
+const labelClasses =
+  "text-xs font-medium text-slate-500 whitespace-nowrap min-w-[70px] shrink-0";
 const fieldRowClasses = "flex items-center gap-2";
 
 const RequiredMark = () => <span className="text-sky-500 ml-0.5">*</span>;
@@ -108,6 +109,10 @@ export default function Intake({
   const [investigatorSearchQuery, setInvestigatorSearchQuery] = useState("");
   const [tempSelectedInvestigator, setTempSelectedInvestigator] =
     useState<any>(null);
+
+  const [addressDropdownOpen, setAddressDropdownOpen] = useState<'main' | 'detail' | null>(null);
+  const addressContainerRef = useRef<HTMLDivElement>(null);
+  const detailAddressContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: partnerStats } = useQuery<
     Array<{
@@ -1169,13 +1174,26 @@ export default function Intake({
     });
   };
 
-  const handleAddressSearch = () => {
+  const handleAddressSearch = (type: 'main' | 'detail') => {
     if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
-      new (window as any).daum.Postcode({
-        oncomplete: function (data: any) {
-          handleInputChange("insuredAddress", data.address);
-        },
-      }).open();
+      setAddressDropdownOpen(type);
+      setTimeout(() => {
+        const container = type === 'main' ? addressContainerRef.current : detailAddressContainerRef.current;
+        if (container) {
+          container.innerHTML = '';
+          new (window as any).daum.Postcode({
+            oncomplete: function (data: any) {
+              handleInputChange("insuredAddress", data.address);
+              setAddressDropdownOpen(null);
+            },
+            onclose: function () {
+              setAddressDropdownOpen(null);
+            },
+            width: '100%',
+            height: '100%',
+          }).embed(container);
+        }
+      }, 100);
     } else {
       toast({
         description:
@@ -1252,7 +1270,10 @@ export default function Intake({
               <div className="col-span-6 md:col-span-2">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>접수일자</label>
-                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <Popover
+                    open={datePickerOpen}
+                    onOpenChange={setDatePickerOpen}
+                  >
                     <PopoverTrigger asChild>
                       <button
                         type="button"
@@ -1348,7 +1369,10 @@ export default function Intake({
             <div className="grid grid-cols-12 gap-x-4 gap-y-3">
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>보험사<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    보험사
+                    <RequiredMark />
+                  </label>
                   <Select
                     value={formData.insuranceCompany}
                     onValueChange={(value) =>
@@ -1411,8 +1435,8 @@ export default function Intake({
 
           {/* 의뢰자/심사자/조사자 정보 */}
           <section>
-            <div className="mb-4 border-b-2 border-sky-500">
-              <h2 className="pb-2 text-sm font-semibold text-sky-600">
+            <div className="mb-4">
+              <h2 className="pb-2 text-sm font-semibold font-bold">
                 의뢰자/심사자/조사자 정보
               </h2>
             </div>
@@ -1421,10 +1445,15 @@ export default function Intake({
               {/* 의뢰사 Row */}
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>의뢰사<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    의뢰사
+                    <RequiredMark />
+                  </label>
                   <Select
                     value={formData.clientResidence}
-                    onValueChange={(value) => handleInputChange("clientResidence", value)}
+                    onValueChange={(value) =>
+                      handleInputChange("clientResidence", value)
+                    }
                     disabled={readOnly}
                   >
                     <SelectTrigger
@@ -1434,7 +1463,14 @@ export default function Intake({
                       <SelectValue placeholder="의뢰사 선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from(new Set(allUsers?.filter(u => u.role === "의뢰사").map(u => u.company).filter(Boolean) || [])).map((company) => (
+                      {Array.from(
+                        new Set(
+                          allUsers
+                            ?.filter((u) => u.role === "의뢰사")
+                            .map((u) => u.company)
+                            .filter(Boolean) || [],
+                        ),
+                      ).map((company) => (
                         <SelectItem key={company} value={company!}>
                           {company}
                         </SelectItem>
@@ -1460,7 +1496,10 @@ export default function Intake({
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>의뢰자<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    의뢰자
+                    <RequiredMark />
+                  </label>
                   <Select
                     value={formData.clientName}
                     onValueChange={(value) =>
@@ -1476,7 +1515,10 @@ export default function Intake({
                     </SelectTrigger>
                     <SelectContent>
                       {filteredClientEmployees.map((emp) => (
-                        <SelectItem key={emp.id} value={`${emp.name}::${emp.id}`}>
+                        <SelectItem
+                          key={emp.id}
+                          value={`${emp.name}::${emp.id}`}
+                        >
                           {emp.name}
                         </SelectItem>
                       ))}
@@ -1502,10 +1544,15 @@ export default function Intake({
               {/* 심사사 Row */}
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>심사사<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    심사사
+                    <RequiredMark />
+                  </label>
                   <Select
                     value={formData.assessorId}
-                    onValueChange={(value) => handleInputChange("assessorId", value)}
+                    onValueChange={(value) =>
+                      handleInputChange("assessorId", value)
+                    }
                     disabled={readOnly}
                   >
                     <SelectTrigger
@@ -1515,7 +1562,12 @@ export default function Intake({
                       <SelectValue placeholder="심사사 선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from(new Set(assessors?.map(u => u.company).filter(Boolean) || [])).map((company) => (
+                      {Array.from(
+                        new Set(
+                          assessors?.map((u) => u.company).filter(Boolean) ||
+                            [],
+                        ),
+                      ).map((company) => (
                         <SelectItem key={company} value={company!}>
                           {company}
                         </SelectItem>
@@ -1541,7 +1593,10 @@ export default function Intake({
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>심사자<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    심사자
+                    <RequiredMark />
+                  </label>
                   <Select
                     value={formData.assessorTeam}
                     onValueChange={(value) =>
@@ -1586,7 +1641,9 @@ export default function Intake({
                   <label className={labelClasses}>손사명</label>
                   <Select
                     value={formData.investigatorTeam}
-                    onValueChange={(value) => handleInputChange("investigatorTeam", value)}
+                    onValueChange={(value) =>
+                      handleInputChange("investigatorTeam", value)
+                    }
                     disabled={readOnly}
                   >
                     <SelectTrigger
@@ -1596,7 +1653,13 @@ export default function Intake({
                       <SelectValue placeholder="손사명" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from(new Set(investigators?.map(u => u.company).filter(Boolean) || [])).map((company) => (
+                      {Array.from(
+                        new Set(
+                          investigators
+                            ?.map((u) => u.company)
+                            .filter(Boolean) || [],
+                        ),
+                      ).map((company) => (
                         <SelectItem key={company} value={company!}>
                           {company}
                         </SelectItem>
@@ -1622,7 +1685,10 @@ export default function Intake({
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>조사자<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    조사자
+                    <RequiredMark />
+                  </label>
                   <Select
                     value={formData.investigatorTeamName}
                     onValueChange={(value) =>
@@ -1665,8 +1731,8 @@ export default function Intake({
 
           {/* 보험계약자 및 피보험자 정보 */}
           <section>
-            <div className="mb-4 border-b-2 border-sky-500">
-              <h2 className="pb-2 text-sm font-semibold text-sky-600">
+            <div className="mb-4">
+              <h2 className="pb-2 text-sm font-bold">
                 보험계약자 및 피보험자 정보
               </h2>
             </div>
@@ -1691,7 +1757,10 @@ export default function Intake({
 
               <div className="col-span-12 md:col-span-4">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>피보험자<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    피보험자
+                    <RequiredMark />
+                  </label>
                   <input
                     className={inputClasses}
                     value={formData.insuredName}
@@ -1708,7 +1777,10 @@ export default function Intake({
 
               <div className="col-span-12 md:col-span-4">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>피보험자 연락처<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    피보험자 연락처
+                    <RequiredMark />
+                  </label>
                   <input
                     className={inputClasses}
                     value={formData.insuredContact}
@@ -1725,24 +1797,33 @@ export default function Intake({
 
               <div className="col-span-12 md:col-span-6">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>피보험자 주소<RequiredMark /></label>
-                  <div className="flex gap-1 flex-1">
-                    <input
-                      className={`${inputClasses} flex-1`}
-                      value={formData.insuredAddress}
-                      readOnly
-                      placeholder="도로명 주소, 동/호 포함"
-                      type="text"
-                      data-testid="input-insured-address"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddressSearch}
-                      disabled={readOnly}
-                      className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                    >
-                      <Search size={16} />
-                    </button>
+                  <label className={labelClasses}>
+                    피보험자 주소
+                    <RequiredMark />
+                  </label>
+                  <div className="relative flex-1">
+                    <div className="flex gap-1">
+                      <input
+                        className={`${inputClasses} flex-1 cursor-pointer`}
+                        value={formData.insuredAddress || ""}
+                        readOnly
+                        onClick={() => !readOnly && handleAddressSearch('main')}
+                        placeholder="도로명 주소, 동/호 포함"
+                        type="text"
+                        data-testid="input-insured-address"
+                      />
+                      <div
+                        onClick={() => !readOnly && handleAddressSearch('main')}
+                        className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                      >
+                        <Search size={16} />
+                      </div>
+                    </div>
+                    {addressDropdownOpen === 'main' && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                        <div ref={addressContainerRef} style={{ height: '400px', width: '100%' }} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1750,26 +1831,29 @@ export default function Intake({
               <div className="col-span-12 md:col-span-6">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>상세주소</label>
-                  <div className="flex gap-1 flex-1">
-                    <input
-                      className={`${inputClasses} flex-1`}
-                      value={formData.insuredAddressDetail}
-                      onChange={(e) =>
-                        handleInputChange("insuredAddressDetail", e.target.value)
-                      }
-                      disabled={readOnly}
-                      placeholder="상세주소"
-                      type="text"
-                      data-testid="input-insured-address-detail"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddressSearch}
-                      disabled={readOnly}
-                      className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                    >
-                      <Search size={16} />
-                    </button>
+                  <div className="relative flex-1">
+                    <div className="flex gap-1">
+                      <input
+                        className={`${inputClasses} flex-1 cursor-pointer`}
+                        value={formData.insuredAddressDetail || ""}
+                        readOnly
+                        onClick={() => !readOnly && handleAddressSearch('detail')}
+                        placeholder="상세주소"
+                        type="text"
+                        data-testid="input-insured-address-detail"
+                      />
+                      <div
+                        onClick={() => !readOnly && handleAddressSearch('detail')}
+                        className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                      >
+                        <Search size={16} />
+                      </div>
+                    </div>
+                    {addressDropdownOpen === 'detail' && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                        <div ref={detailAddressContainerRef} style={{ height: '400px', width: '100%' }} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1778,10 +1862,8 @@ export default function Intake({
 
           {/* 피해자 정보 */}
           <section>
-            <div className="mb-4 border-b-2 border-sky-500">
-              <h2 className="pb-2 text-sm font-semibold text-sky-600">
-                피해자 정보
-              </h2>
+            <div className="mb-4">
+              <h2 className="pb-2 text-sm font-bold">피해자 정보</h2>
             </div>
 
             <div className="grid grid-cols-12 gap-x-4 gap-y-3">
@@ -1841,7 +1923,9 @@ export default function Intake({
           {/* 배당사항 */}
           <section className="rounded-lg bg-slate-50 p-6">
             <div className="mb-4 border-b-2 border-sky-500">
-              <h2 className="pb-2 text-sm font-semibold text-sky-600">배당사항</h2>
+              <h2 className="pb-2 text-sm font-semibold text-sky-600">
+                배당사항
+              </h2>
             </div>
             <p className="mb-4 text-xs text-slate-500">
               손상 및 대물 선택(중복 가능)
@@ -1882,7 +1966,10 @@ export default function Intake({
             <div className="grid grid-cols-12 gap-x-4 gap-y-3">
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>사고 유형<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    사고 유형
+                    <RequiredMark />
+                  </label>
                   <Select
                     value={formData.accidentType}
                     onValueChange={(value) =>
@@ -1918,7 +2005,10 @@ export default function Intake({
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>복구 유형<RequiredMark /></label>
+                  <label className={labelClasses}>
+                    복구 유형
+                    <RequiredMark />
+                  </label>
                   <Select
                     value={formData.restorationMethod}
                     onValueChange={(value) =>
