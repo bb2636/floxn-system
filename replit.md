@@ -74,6 +74,15 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Backend Libraries**: Express.js, bcrypt, express-session, memorystore, Zod.
 - **Database**: PostgreSQL (Neon-backed) with Drizzle ORM.
 
+## Recent Changes (2026-01-14)
+- **Intake Form Redesign**: Completely redesigned the 접수단계 (intake) tab with a cleaner table-style layout
+  - 5 main sections with vertical headers: [기본정보], [보험정보], [의뢰사/심사사/조사사], [피보험자/피해자], [배당사항]
+  - Required fields marked with red asterisks (*): 본사담당자, 보험사, 의뢰사, 의뢰자, 심사사, 심사자, 피보험자, 주소, 순방 및 대물 선택, 사고유형, 복구방식
+  - Removed "사고내용" and "피해사항(선택)" sections per user request
+  - Reduced file size from ~4500 to ~1400 lines while preserving all essential functionality
+  - Checkboxes for 손해방지/피해세대복구 retained in [배당사항] section
+  - Bottom buttons remain: 초기화 (reset), 저장 (save), 접수완료 (submit)
+
 ## Recent Changes (2026-01-03)
 - **Field Survey Status Workflow Update**: Updated the field survey approval workflow
   - 심사 (Review) → status "1차승인" (unchanged)
