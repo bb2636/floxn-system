@@ -1957,14 +1957,14 @@ export default function Intake({
           </section>
 
           {/* 배당사항 */}
-          <section className="rounded-lg bg-slate-50 p-6">
+          <section>
             <div className="mb-4 border-b-2 border-sky-500">
               <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 배당사항
               </h2>
             </div>
             <p className="mb-4 text-xs text-slate-500">
-              손상 및 대물 선택(중복 가능)
+              손방 및 대물 선택(중복 가능)
             </p>
 
             <div className="mb-5 flex flex-wrap items-center gap-6">
@@ -1979,7 +1979,7 @@ export default function Intake({
                   disabled={readOnly}
                   data-testid="checkbox-damage-prevention"
                 />
-                손해확정
+                손해방지
               </label>
               <label className="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
                 <input
@@ -2116,7 +2116,7 @@ export default function Intake({
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>타업체 접수</label>
+                  <label className={labelClasses}>타업체 견적 여부</label>
                   <Select
                     value={formData.otherVendorEstimate}
                     onValueChange={(value) =>
@@ -2128,7 +2128,7 @@ export default function Intake({
                       className={selectTriggerClasses}
                       data-testid="select-other-vendor"
                     >
-                      <SelectValue placeholder="타업체 접수 여부 선택" />
+                      <SelectValue placeholder="타업체 견적 여부 선택" />
                     </SelectTrigger>
                     <SelectContent>
                       {getMasterDataOptions("other_company_estimate").length >
@@ -2229,11 +2229,11 @@ export default function Intake({
               </div>
 
               <div className="col-span-12">
-                <div className={fieldRowClasses}>
-                  <label className={labelClasses}>특이사항</label>
-                  <div className="relative flex-1">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium text-slate-500">특이사항 및 요청사항</label>
+                  <div className="relative">
                     <textarea
-                      className="min-h-[120px] w-full resize-none rounded-md border-0 bg-white px-3 py-2 text-sm outline-none focus:ring-0"
+                      className="min-h-[100px] w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                       placeholder="현장 특이사항, 요청사항 등"
                       value={formData.specialRequests}
                       onChange={(e) => {
