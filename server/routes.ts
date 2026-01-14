@@ -1,7 +1,30 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, changeMyPasswordSchema, updateUserSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema, approveReportSchema, insertSettlementSchema } from "@shared/schema";
+import {
+  loginSchema,
+  updatePasswordSchema,
+  deleteAccountSchema,
+  createAccountSchema,
+  changeMyPasswordSchema,
+  updateUserSchema,
+  insertCaseSchema,
+  insertCaseRequestSchema,
+  insertProgressUpdateSchema,
+  insertRolePermissionSchema,
+  insertExcelDataSchema,
+  insertInquirySchema,
+  updateInquirySchema,
+  respondInquirySchema,
+  insertDrawingSchema,
+  insertCaseDocumentSchema,
+  insertMasterDataSchema,
+  insertLaborCostSchema,
+  insertMaterialSchema,
+  reviewCaseSchema,
+  approveReportSchema,
+  insertSettlementSchema,
+} from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
@@ -11,12 +34,30 @@ import https from "https";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
+import {
+  registerObjectStorageRoutes,
+  objectStorageClient,
+  signObjectURL,
+} from "./replit_integrations/object_storage";
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
-import { generatePdfWithPdfLib, generatePdfWithSizeLimitPdfLib, generateEvidencePDFsByTab } from "./pdf-lib-service";
-import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
-import { sendFieldReportEmail, sendFieldReportEmailWithLink, sendEmailWithAttachment } from "./hiworks-email";
-import { generateEvidencePdfs, logAttachmentSummary } from "./evidence-pdf-service";
+import {
+  generatePdfWithPdfLib,
+  generatePdfWithSizeLimitPdfLib,
+  generateEvidencePDFsByTab,
+} from "./pdf-lib-service";
+import {
+  generateInvoicePdf,
+  sendInvoiceEmailWithAttachment,
+} from "./invoice-pdf-service";
+import {
+  sendFieldReportEmail,
+  sendFieldReportEmailWithLink,
+  sendEmailWithAttachment,
+} from "./hiworks-email";
+import {
+  generateEvidencePdfs,
+  logAttachmentSummary,
+} from "./evidence-pdf-service";
 import { compressPdf, isPdfFile, compressPdfForEmail } from "./pdf-compression";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
@@ -31,7 +72,12 @@ function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
 }
 
 // Solapi HTTPS 요청 함수
-function solapiHttpsRequest({ method, path, headers, body }: {
+function solapiHttpsRequest({
+  method,
+  path,
+  headers,
+  body,
+}: {
   method: string;
   path: string;
   headers: Record<string, string | number>;
@@ -39,25 +85,40 @@ function solapiHttpsRequest({ method, path, headers, body }: {
 }): Promise<any> {
   return new Promise((resolve, reject) => {
     const req = https.request(
-      { hostname: "api.solapi.com", port: 443, method, path, headers, timeout: 15000 },
+      {
+        hostname: "api.solapi.com",
+        port: 443,
+        method,
+        path,
+        headers,
+        timeout: 15000,
+      },
       (res) => {
         let data = "";
         res.on("data", (c) => (data += c));
         res.on("end", () => {
           try {
             const json = data ? JSON.parse(data) : {};
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            if (
+              res.statusCode &&
+              res.statusCode >= 200 &&
+              res.statusCode < 300
+            ) {
               return resolve(json);
             }
             reject({ statusCode: res.statusCode, body: json });
           } catch {
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            if (
+              res.statusCode &&
+              res.statusCode >= 200 &&
+              res.statusCode < 300
+            ) {
               return resolve({ raw: data });
             }
             reject({ statusCode: res.statusCode, body: data });
           }
         });
-      }
+      },
     );
     req.on("timeout", () => req.destroy(new Error("REQUEST_TIMEOUT")));
     req.on("error", reject);
@@ -74,23 +135,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/login", async (req, res) => {
     try {
       const validatedData = loginSchema.parse(req.body);
-      
+
       console.log("[LOGIN ATTEMPT]", {
         username: validatedData.username,
-        isProduction: process.env.REPLIT_DEPLOYMENT === '1',
+        isProduction: process.env.REPLIT_DEPLOYMENT === "1",
         nodeEnv: process.env.NODE_ENV,
-        dbUrl: process.env.REPLIT_DEPLOYMENT === '1' ? 'PROD_DATABASE' : 'DEV_DATABASE'
+        dbUrl:
+          process.env.REPLIT_DEPLOYMENT === "1"
+            ? "PROD_DATABASE"
+            : "DEV_DATABASE",
       });
-      
+
       const user = await storage.verifyPassword(
         validatedData.username,
-        validatedData.password
+        validatedData.password,
       );
 
       if (!user) {
-        console.log("[LOGIN FAILED] User not found or password mismatch:", validatedData.username);
-        return res.status(401).json({ 
-          error: "아이디 또는 비밀번호가 올바르지 않습니다" 
+        console.log(
+          "[LOGIN FAILED] User not found or password mismatch:",
+          validatedData.username,
+        );
+        return res.status(401).json({
+          error: "아이디 또는 비밀번호가 올바르지 않습니다",
         });
       }
 
@@ -98,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.userId = user.id;
         req.session.userRole = user.role;
         req.session.rememberMe = validatedData.rememberMe;
-        
+
         console.log("[LOGIN SUCCESS]", {
           userId: user.id,
           userRole: user.role,
@@ -107,20 +174,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cookieSecure: req.session.cookie.secure,
           cookieSameSite: req.session.cookie.sameSite,
         });
-        
+
         if (validatedData.rememberMe) {
           req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
         } else {
           req.session.cookie.maxAge = 24 * 60 * 60 * 1000;
         }
-        
+
         // Force session save and then respond
         req.session.save((err) => {
           if (err) {
             console.error("[LOGIN] Session save error:", err);
-            return res.status(500).json({ error: "세션 저장 중 오류가 발생했습니다" });
+            return res
+              .status(500)
+              .json({ error: "세션 저장 중 오류가 발생했습니다" });
           }
-          console.log("[LOGIN] Session saved successfully, sessionId:", req.sessionID);
+          console.log(
+            "[LOGIN] Session saved successfully, sessionId:",
+            req.sessionID,
+          );
           const { password, ...userWithoutPassword } = user;
           res.json(userWithoutPassword);
         });
@@ -144,7 +216,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.destroy((err) => {
         if (err) {
           console.error("Logout error:", err);
-          return res.status(500).json({ error: "로그아웃 중 오류가 발생했습니다" });
+          return res
+            .status(500)
+            .json({ error: "로그아웃 중 오류가 발생했습니다" });
         }
         res.clearCookie("connect.sid");
         res.json({ success: true });
@@ -161,11 +235,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       hasSession: !!req.session,
       userId: req.session?.userId,
       userRole: req.session?.userRole,
-      cookieHeader: req.headers.cookie ? 'present' : 'missing',
+      cookieHeader: req.headers.cookie ? "present" : "missing",
       nodeEnv: process.env.NODE_ENV,
-      isProduction: process.env.REPLIT_DEPLOYMENT === '1',
+      isProduction: process.env.REPLIT_DEPLOYMENT === "1",
     });
-    
+
     if (!req.session?.userId) {
       console.log("[API/USER] Auth failed - no userId in session", {
         sessionExists: !!req.session,
@@ -176,17 +250,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const user = await storage.getUser(req.session.userId);
     if (!user) {
-      console.log("[API/USER] User not found in DB", { userId: req.session.userId });
+      console.log("[API/USER] User not found in DB", {
+        userId: req.session.userId,
+      });
       return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
     }
 
-    console.log("[API/USER] Success", { 
-      username: user.username, 
-      role: user.role,
-      isActive: user.isActive,
-      deletedAt: user.deletedAt,
-    });
-    
+    // console.log("[API/USER] Success", {
+    //   username: user.username,
+    //   role: user.role,
+    //   isActive: user.isActive,
+    //   deletedAt: user.deletedAt,
+    // });
+
     const { password, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
   });
@@ -206,70 +282,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Force reset admin passwords and reactivate accounts endpoint (temporary fix for production)
   app.post("/api/reset-admin-passwords", async (req, res) => {
     try {
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      const dbUrl = isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL;
-      const dbHost = dbUrl ? dbUrl.match(/@([^/]+)\//)?.[1] : 'unknown';
-      
-      console.log("[RESET ADMIN] Starting password reset and reactivation", { isProduction, dbHost });
-      
-      const adminUsernames = ["admin01", "admin02", "admin03", "admin04", "admin05"];
+      const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
+      const dbUrl = isProduction
+        ? process.env.PROD_DATABASE_URL
+        : process.env.DEV_DATABASE_URL;
+      const dbHost = dbUrl ? dbUrl.match(/@([^/]+)\//)?.[1] : "unknown";
+
+      console.log("[RESET ADMIN] Starting password reset and reactivation", {
+        isProduction,
+        dbHost,
+      });
+
+      const adminUsernames = [
+        "admin01",
+        "admin02",
+        "admin03",
+        "admin04",
+        "admin05",
+      ];
       const results = [];
-      
+
       for (const username of adminUsernames) {
         try {
           // First reactivate the account (set status to active)
           const reactivated = await storage.reactivateAccount(username);
-          console.log(`[RESET ADMIN] ${username} reactivation: ${reactivated ? 'SUCCESS' : 'USER NOT FOUND'}`);
-          
+          console.log(
+            `[RESET ADMIN] ${username} reactivation: ${reactivated ? "SUCCESS" : "USER NOT FOUND"}`,
+          );
+
           // Then reset password
           const updated = await storage.updatePassword(username, "1234");
-          results.push({ 
-            username, 
-            success: !!updated, 
+          results.push({
+            username,
+            success: !!updated,
             reactivated: !!reactivated,
-            error: null 
+            error: null,
           });
-          console.log(`[RESET ADMIN] ${username} password: ${updated ? 'SUCCESS' : 'USER NOT FOUND'}`);
+          console.log(
+            `[RESET ADMIN] ${username} password: ${updated ? "SUCCESS" : "USER NOT FOUND"}`,
+          );
         } catch (err: any) {
-          results.push({ username, success: false, reactivated: false, error: err.message });
+          results.push({
+            username,
+            success: false,
+            reactivated: false,
+            error: err.message,
+          });
           console.error(`[RESET ADMIN] ${username} ERROR:`, err.message);
         }
       }
-      
-      res.json({ 
+
+      res.json({
         message: "Admin passwords reset and accounts reactivated",
         isProduction,
         dbHost,
-        results 
+        results,
       });
     } catch (error: any) {
       console.error("[RESET ADMIN] Error:", error);
-      res.status(500).json({ error: "Failed to reset passwords", details: error.message });
+      res
+        .status(500)
+        .json({ error: "Failed to reset passwords", details: error.message });
     }
   });
 
   // Debug endpoint to check database connection
   app.get("/api/debug/db-check", async (req, res) => {
     try {
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      const dbUrl = isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL;
-      const dbHost = dbUrl ? dbUrl.match(/@([^/]+)\//)?.[1] : 'unknown';
-      
+      const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
+      const dbUrl = isProduction
+        ? process.env.PROD_DATABASE_URL
+        : process.env.DEV_DATABASE_URL;
+      const dbHost = dbUrl ? dbUrl.match(/@([^/]+)\//)?.[1] : "unknown";
+
       // Try to get user count
       const users = await storage.getAllUsers();
-      const adminUsers = users.filter(u => u.role === '관리자');
-      
+      const adminUsers = users.filter((u) => u.role === "관리자");
+
       res.json({
         isProduction,
         dbHost,
         totalUsers: users.length,
-        adminUsers: adminUsers.map(u => ({ username: u.username, status: u.status }))
+        adminUsers: adminUsers.map((u) => ({
+          username: u.username,
+          status: u.status,
+        })),
       });
     } catch (error: any) {
-      res.status(500).json({ 
-        error: "Database check failed", 
+      res.status(500).json({
+        error: "Database check failed",
         details: error.message,
-        isProduction: process.env.REPLIT_DEPLOYMENT === '1'
+        isProduction: process.env.REPLIT_DEPLOYMENT === "1",
       });
     }
   });
@@ -277,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // BUILD VERSION - Always accessible to verify deployment
   const BUILD_TIME = new Date().toISOString();
   const BUILD_ID = `build-${Date.now()}`;
-  
+
   app.get("/api/debug/version", async (req, res) => {
     res.json({
       buildId: BUILD_ID,
@@ -285,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       appVersion: "1.0.0-debug",
       nodeEnv: process.env.NODE_ENV,
       replitDeployment: process.env.REPLIT_DEPLOYMENT,
-      isProduction: process.env.REPLIT_DEPLOYMENT === '1',
+      isProduction: process.env.REPLIT_DEPLOYMENT === "1",
       hasDbStatusRoute: true,
       registeredDebugRoutes: ["/api/debug/version", "/api/debug/db-status"],
       serverStartTime: new Date().toISOString(),
@@ -299,36 +402,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.session?.userId) {
         return res.status(401).json({ error: "인증 필요" });
       }
-      
+
       const user = await storage.getUser(req.session.userId);
       if (!user || user.role !== "관리자") {
         return res.status(403).json({ error: "관리자 권한 필요" });
       }
 
       // Get environment info
-      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      const dbUrl = isProduction 
-        ? (process.env.PROD_DATABASE_URL || process.env.DATABASE_URL)
-        : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
-      
+      const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
+      const dbUrl = isProduction
+        ? process.env.PROD_DATABASE_URL || process.env.DATABASE_URL
+        : process.env.DEV_DATABASE_URL || process.env.DATABASE_URL;
+
       // Mask the DB URL for security (only show host)
-      const maskedDbUrl = dbUrl ? dbUrl.replace(/\/\/[^@]+@/, '//***:***@').split('?')[0] : 'NOT SET';
-      
+      const maskedDbUrl = dbUrl
+        ? dbUrl.replace(/\/\/[^@]+@/, "//***:***@").split("?")[0]
+        : "NOT SET";
+
       // Get total cases count directly from DB
-      const casesResult = await db.select({ count: sql<number>`count(*)` }).from(cases);
+      const casesResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(cases);
       const totalCases = casesResult[0]?.count || 0;
-      
+
       // Get cases through storage (with user filter applied)
       const filteredCases = await storage.getAllCases(user);
-      
+
       // Get all users count
       const allUsers = await storage.getAllUsers();
-      
+
       // Get cases by status breakdown
       const allCasesRaw = await db.select().from(cases);
       const statusBreakdown: Record<string, number> = {};
-      allCasesRaw.forEach(c => {
-        const status = c.status || 'null';
+      allCasesRaw.forEach((c) => {
+        const status = c.status || "null";
         statusBreakdown[status] = (statusBreakdown[status] || 0) + 1;
       });
 
@@ -354,13 +461,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: user.username,
           role: user.role,
         },
-        sampleCaseIds: allCasesRaw.slice(0, 3).map(c => ({ id: c.id, caseNumber: c.caseNumber, status: c.status })),
+        sampleCaseIds: allCasesRaw.slice(0, 3).map((c) => ({
+          id: c.id,
+          caseNumber: c.caseNumber,
+          status: c.status,
+        })),
       });
     } catch (error) {
       console.error("[DEBUG] Error:", error);
-      res.status(500).json({ 
-        error: "Debug endpoint error", 
-        message: error instanceof Error ? error.message : String(error) 
+      res.status(500).json({
+        error: "Debug endpoint error",
+        message: error instanceof Error ? error.message : String(error),
       });
     }
   });
@@ -375,19 +486,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getAllUsers();
       // Return only basic info: id, name, username, phone, role, bankName, accountNumber
-      const basicUsers = users.map(({ id, name, username, phone, role, bankName, accountNumber }) => ({
-        id,
-        name,
-        username,
-        contact: phone,
-        role,
-        bankName,
-        accountNumber
-      }));
+      const basicUsers = users.map(
+        ({ id, name, username, phone, role, bankName, accountNumber }) => ({
+          id,
+          name,
+          username,
+          contact: phone,
+          role,
+          bankName,
+          accountNumber,
+        }),
+      );
       res.json(basicUsers);
     } catch (error) {
       console.error("Get basic users error:", error);
-      res.status(500).json({ error: "사용자 목록을 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "사용자 목록을 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -403,13 +518,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get unique company names from users with role '보험사'
       const companySet = new Set<string>();
       users
-        .filter(u => u.role === '보험사' && u.company)
-        .forEach(u => companySet.add(u.company!));
+        .filter((u) => u.role === "보험사" && u.company)
+        .forEach((u) => companySet.add(u.company!));
       const insuranceCompanies = Array.from(companySet).sort();
       res.json(insuranceCompanies);
     } catch (error) {
       console.error("Get insurance companies error:", error);
-      res.status(500).json({ error: "보험사 목록을 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "보험사 목록을 불러오는 중 오류가 발p��했습니다" });
     }
   });
 
@@ -432,7 +549,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(usersWithoutPasswords);
     } catch (error) {
       console.error("Get users error:", error);
-      res.status(500).json({ error: "사용자 목록을 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "사용자 목록을 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -454,7 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedUser = await storage.updatePassword(
         validatedData.username,
-        validatedData.newPassword
+        validatedData.newPassword,
       );
 
       if (!updatedUser) {
@@ -490,22 +609,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify current password
-      const isPasswordValid = await storage.verifyPassword(user.username, validatedData.currentPassword);
+      const isPasswordValid = await storage.verifyPassword(
+        user.username,
+        validatedData.currentPassword,
+      );
       if (!isPasswordValid) {
-        return res.status(400).json({ error: "현재 비밀번호가 올바르지 않습니다" });
+        return res
+          .status(400)
+          .json({ error: "현재 비밀번호가 올바르지 않습니다" });
       }
 
       // Update password
-      const updatedUser = await storage.updatePassword(user.username, validatedData.newPassword);
+      const updatedUser = await storage.updatePassword(
+        user.username,
+        validatedData.newPassword,
+      );
       if (!updatedUser) {
-        return res.status(500).json({ error: "비밀번호 변경 중 오류가 발생했습니다" });
+        return res
+          .status(500)
+          .json({ error: "비밀번호 변경 중 오류가 발생했습니다" });
       }
 
       const { password, ...userWithoutPassword } = updatedUser;
-      res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다" });
+      res.json({
+        success: true,
+        message: "비밀번호가 성공적으로 변경되었습니다",
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors[0]?.message || "입력 값이 올바르지 않습니다" });
+        return res.status(400).json({
+          error: error.errors[0]?.message || "입력 값이 올바르지 않습니다",
+        });
       }
       console.error("Change my password error:", error);
       res.status(500).json({ error: "비밀번호 변경 중 오류가 발생했습니다" });
@@ -559,7 +693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.params.id;
-      
+
       // Validate request body with Zod
       const validatedData = updateUserSchema.parse(req.body);
 
@@ -593,15 +727,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      console.log("Create account request body:", JSON.stringify(req.body, null, 2));
-      
+      console.log(
+        "Create account request body:",
+        JSON.stringify(req.body, null, 2),
+      );
+
       // Validate request body with Zod
       const validatedData = createAccountSchema.parse(req.body);
-      
+
       console.log("Validated data:", JSON.stringify(validatedData, null, 2));
 
       // Check if username already exists
-      const existingUser = await storage.getUserByUsername(validatedData.username);
+      const existingUser = await storage.getUserByUsername(
+        validatedData.username,
+      );
       if (existingUser) {
         return res.status(409).json({ error: "이미 사용 중인 아이디입니다" });
       }
@@ -626,7 +765,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attachments: validatedData.attachments,
         status: "active",
       });
-      
+
       console.log("Created user:", JSON.stringify(newUser, null, 2));
 
       const { password, ...userWithoutPassword } = newUser;
@@ -649,15 +788,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const date = req.query.date as string;
-      
+
       if (!date) {
         return res.status(400).json({ error: "날짜가 필요합니다" });
       }
 
       // Get next sequence info for the given date
-      const insuranceAccidentNo = req.query.insuranceAccidentNo as string | undefined;
-      const result = await storage.getNextCaseSequence(date, insuranceAccidentNo);
-      
+      const insuranceAccidentNo = req.query.insuranceAccidentNo as
+        | string
+        | undefined;
+      const result = await storage.getNextCaseSequence(
+        date,
+        insuranceAccidentNo,
+      );
+
       res.json(result);
     } catch (error) {
       console.error("Get next sequence error:", error);
@@ -674,81 +818,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Debug: log incoming sameAsPolicyHolder with type
-      console.log("📥 Incoming sameAsPolicyHolder:", req.body.sameAsPolicyHolder, "type:", typeof req.body.sameAsPolicyHolder);
+      console.log(
+        "📥 Incoming sameAsPolicyHolder:",
+        req.body.sameAsPolicyHolder,
+        "type:",
+        typeof req.body.sameAsPolicyHolder,
+      );
       console.log("📥 Incoming managerId:", req.body.managerId);
-      console.log("📥 Incoming assignedPartnerManager:", req.body.assignedPartnerManager);
-      
+      console.log(
+        "📥 Incoming assignedPartnerManager:",
+        req.body.assignedPartnerManager,
+      );
+
       // Validate request body with Zod
       const validatedData = insertCaseRequestSchema.parse(req.body);
-      
+
       // Debug: log validated sameAsPolicyHolder with type
-      console.log("✅ Validated sameAsPolicyHolder:", validatedData.sameAsPolicyHolder, "type:", typeof validatedData.sameAsPolicyHolder);
+      console.log(
+        "✅ Validated sameAsPolicyHolder:",
+        validatedData.sameAsPolicyHolder,
+        "type:",
+        typeof validatedData.sameAsPolicyHolder,
+      );
       console.log("✅ Validated managerId:", validatedData.managerId);
-      console.log("✅ Validated assignedPartnerManager:", validatedData.assignedPartnerManager);
-      console.log("✅ Validated assignedPartnerContact:", validatedData.assignedPartnerContact);
-      console.log("✅ Validated assignedPartner:", validatedData.assignedPartner);
-      
+      console.log(
+        "✅ Validated assignedPartnerManager:",
+        validatedData.assignedPartnerManager,
+      );
+      console.log(
+        "✅ Validated assignedPartnerContact:",
+        validatedData.assignedPartnerContact,
+      );
+      console.log(
+        "✅ Validated assignedPartner:",
+        validatedData.assignedPartner,
+      );
+
       // Debug: log victim address info for troubleshooting
       console.log("🏠 Victim Address Debug:");
       console.log("  - victimName:", validatedData.victimName);
       console.log("  - victimAddress:", validatedData.victimAddress);
-      console.log("  - victimAddressDetail:", validatedData.victimAddressDetail);
+      console.log(
+        "  - victimAddressDetail:",
+        validatedData.victimAddressDetail,
+      );
       console.log("  - insuredAddress:", validatedData.insuredAddress);
-      console.log("  - insuredAddressDetail:", validatedData.insuredAddressDetail);
+      console.log(
+        "  - insuredAddressDetail:",
+        validatedData.insuredAddressDetail,
+      );
       console.log("  - parentCasePrefix:", (req.body as any).parentCasePrefix);
-      
+
       // 사용자 정보 가져오기 (자동 채우기용)
       const allUsersForAutoPopulate = await storage.getAllUsers();
-      
+
       // 협력사 배정 시 담당자 정보 자동 채우기
       // assignedPartner가 설정되고, assignedPartnerManager/Contact가 제공되지 않은 경우
-      if (validatedData.assignedPartner && !validatedData.assignedPartnerManager) {
+      if (
+        validatedData.assignedPartner &&
+        !validatedData.assignedPartnerManager
+      ) {
         const partnerCompanyName = validatedData.assignedPartner;
         // 해당 회사명을 가진 협력사 사용자 찾기
-        const partnerUser = allUsersForAutoPopulate.find(u => u.company === partnerCompanyName && u.role === "협력사");
+        const partnerUser = allUsersForAutoPopulate.find(
+          (u) => u.company === partnerCompanyName && u.role === "협력사",
+        );
         if (partnerUser) {
           // 담당자명과 연락처 자동 채우기
           if (partnerUser.name) {
             (validatedData as any).assignedPartnerManager = partnerUser.name;
-            console.log(`[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`);
+            console.log(
+              `[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`,
+            );
           }
           if (partnerUser.phone && !validatedData.assignedPartnerContact) {
             (validatedData as any).assignedPartnerContact = partnerUser.phone;
-            console.log(`[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`);
+            console.log(
+              `[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`,
+            );
           }
         }
       }
-      
+
       // 심사사 이메일 자동 채우기
       // assessorTeam(심사자 이름)이 설정되면 해당 사용자의 이메일을 자동으로 채움
       if (validatedData.assessorTeam) {
-        const assessorUser = allUsersForAutoPopulate.find(u => u.role === "심사사" && u.name === validatedData.assessorTeam);
+        const assessorUser = allUsersForAutoPopulate.find(
+          (u) => u.role === "심사사" && u.name === validatedData.assessorTeam,
+        );
         if (assessorUser?.email) {
           (validatedData as any).assessorEmail = assessorUser.email;
-          console.log(`[Auto-populate] Assessor email set to: ${assessorUser.email} for assessor: ${validatedData.assessorTeam}`);
+          console.log(
+            `[Auto-populate] Assessor email set to: ${assessorUser.email} for assessor: ${validatedData.assessorTeam}`,
+          );
         }
       }
 
       // 조사사 이메일 자동 채우기
       // investigatorTeamName(조사자 이름)이 설정되면 해당 사용자의 이메일을 자동으로 채움
       if (validatedData.investigatorTeamName) {
-        const investigatorUser = allUsersForAutoPopulate.find(u => u.role === "조사사" && u.name === validatedData.investigatorTeamName);
+        const investigatorUser = allUsersForAutoPopulate.find(
+          (u) =>
+            u.role === "조사사" &&
+            u.name === validatedData.investigatorTeamName,
+        );
         if (investigatorUser?.email) {
           (validatedData as any).investigatorEmail = investigatorUser.email;
-          console.log(`[Auto-populate] Investigator email set to: ${investigatorUser.email} for investigator: ${validatedData.investigatorTeamName}`);
+          console.log(
+            `[Auto-populate] Investigator email set to: ${investigatorUser.email} for investigator: ${validatedData.investigatorTeamName}`,
+          );
         }
       }
-      
+
       // Determine case types based on damagePreventionCost and victimIncidentAssistance fields
       // 프론트엔드에서 boolean 또는 "true"/"false" 문자열로 전송될 수 있음
-      const hasDamagePrevention = validatedData.damagePreventionCost === "true" || (validatedData.damagePreventionCost as unknown) === true;
-      const hasVictimRecovery = validatedData.victimIncidentAssistance === "true" || (validatedData.victimIncidentAssistance as unknown) === true;
-      
-      console.log("🔍 Processing types:", { hasDamagePrevention, hasVictimRecovery, damagePreventionCost: validatedData.damagePreventionCost, victimIncidentAssistance: validatedData.victimIncidentAssistance });
-      
+      const hasDamagePrevention =
+        validatedData.damagePreventionCost === "true" ||
+        (validatedData.damagePreventionCost as unknown) === true;
+      const hasVictimRecovery =
+        validatedData.victimIncidentAssistance === "true" ||
+        (validatedData.victimIncidentAssistance as unknown) === true;
+
+      console.log("🔍 Processing types:", {
+        hasDamagePrevention,
+        hasVictimRecovery,
+        damagePreventionCost: validatedData.damagePreventionCost,
+        victimIncidentAssistance: validatedData.victimIncidentAssistance,
+      });
+
       // Generate caseGroupId (use insuranceAccidentNo or generate unique ID)
-      const caseGroupId = validatedData.insuranceAccidentNo || `GROUP-${Date.now()}`;
-      
+      const caseGroupId =
+        validatedData.insuranceAccidentNo || `GROUP-${Date.now()}`;
+
       // Handle draft cases (배당대기 status)
       if (validatedData.status === "배당대기") {
         // 기존 임시저장 건이 있으면 업데이트
@@ -757,49 +958,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (existingCase && existingCase.status === "배당대기") {
             // 기존 케이스 업데이트 (접수번호 prefix 유지, suffix는 처리구분에 따라 변경)
             const existingCaseNumber = existingCase.caseNumber || "";
-            
+
             // "-"이거나 "DRAFT-"로 시작하거나 빈 값이면 새 prefix 생성 필요
-            const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-" || existingCaseNumber.startsWith("DRAFT-");
-            
+            const needsNewPrefix =
+              !existingCaseNumber ||
+              existingCaseNumber === "-" ||
+              existingCaseNumber.startsWith("DRAFT-");
+
             let existingPrefix = "";
             let existingSuffix: string | null = null;
-            
-            if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-" && !existingCaseNumber.startsWith("DRAFT-")) {
-              existingPrefix = existingCaseNumber.split('-')[0];
-              existingSuffix = existingCaseNumber.split('-')[1];
+
+            if (
+              !needsNewPrefix &&
+              existingCaseNumber.includes("-") &&
+              existingCaseNumber !== "-" &&
+              !existingCaseNumber.startsWith("DRAFT-")
+            ) {
+              existingPrefix = existingCaseNumber.split("-")[0];
+              existingSuffix = existingCaseNumber.split("-")[1];
             } else if (!needsNewPrefix) {
               existingPrefix = existingCaseNumber;
             }
-            
+
             // 접수번호 prefix가 없으면 새로 생성
             if (needsNewPrefix || !existingPrefix) {
-              const draftDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
-              const { prefix } = await storage.getNextCaseSequence(draftDate, validatedData.insuranceAccidentNo || undefined);
+              const draftDate =
+                validatedData.accidentDate ||
+                new Date().toISOString().split("T")[0];
+              const { prefix } = await storage.getNextCaseSequence(
+                draftDate,
+                validatedData.insuranceAccidentNo || undefined,
+              );
               existingPrefix = prefix;
             }
-            
+
             // 처리구분에 따라 접수번호 suffix 결정
             let newCaseNumber: string;
             const createdCases: any[] = [];
-            
+
             if (!hasDamagePrevention && !hasVictimRecovery) {
               // 아무것도 선택 안함 → 고유한 임시 접수번호 생성
               newCaseNumber = `DRAFT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
             } else if (hasDamagePrevention && !hasVictimRecovery) {
               // 손해방지만 선택 → -0 suffix
               // 먼저 -0 케이스가 이미 존재하는지 확인
-              const existingPreventionCase = await storage.getPreventionCaseByPrefix(existingPrefix);
-              
-              if (existingPreventionCase && existingPreventionCase.id !== validatedData.id) {
+              const existingPreventionCase =
+                await storage.getPreventionCaseByPrefix(existingPrefix);
+
+              if (
+                existingPreventionCase &&
+                existingPreventionCase.id !== validatedData.id
+              ) {
                 // -0 케이스가 이미 존재함 (현재 케이스와 다른 케이스)
                 // 기존 -0 케이스가 배당대기(임시저장) 상태이면 삭제 후 현재 케이스를 -0으로 변경
                 if (existingPreventionCase.status === "배당대기") {
                   await storage.deleteCase(existingPreventionCase.id);
-                  console.log(`[Case Draft] Deleted existing draft prevention case ${existingPreventionCase.caseNumber} to replace with current case`);
+                  console.log(
+                    `[Case Draft] Deleted existing draft prevention case ${existingPreventionCase.caseNumber} to replace with current case`,
+                  );
                   newCaseNumber = `${existingPrefix}-0`;
                 } else {
                   // -0 케이스가 이미 접수완료 상태이면 현재 케이스 번호 유지
-                  console.log(`[Case Draft] Prevention case ${existingPreventionCase.caseNumber} already exists and completed, keeping current case number`);
+                  console.log(
+                    `[Case Draft] Prevention case ${existingPreventionCase.caseNumber} already exists and completed, keeping current case number`,
+                  );
                   newCaseNumber = existingCaseNumber; // 기존 번호 유지
                 }
               } else {
@@ -809,26 +1031,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } else if (!hasDamagePrevention && hasVictimRecovery) {
               // 피해세대만 선택 → -1 이상 suffix
               // 기존이 피해세대 suffix (-1 이상)이면 유지, 아니면 새로 할당
-              if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+              if (
+                existingSuffix &&
+                existingSuffix !== "0" &&
+                parseInt(existingSuffix) >= 1
+              ) {
                 newCaseNumber = existingCaseNumber; // 기존 피해세대 번호 유지
               } else {
-                const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                const nextSuffix =
+                  await storage.getNextVictimSuffix(existingPrefix);
                 newCaseNumber = `${existingPrefix}-${nextSuffix}`;
               }
             } else {
               // 둘 다 선택 → 기존 케이스는 -0, 새 피해세대 케이스 추가 생성
               // 먼저 -0 케이스가 이미 존재하는지 확인
-              const existingPreventionCase = await storage.getPreventionCaseByPrefix(existingPrefix);
-              
-              if (existingPreventionCase && existingPreventionCase.id !== validatedData.id) {
+              const existingPreventionCase =
+                await storage.getPreventionCaseByPrefix(existingPrefix);
+
+              if (
+                existingPreventionCase &&
+                existingPreventionCase.id !== validatedData.id
+              ) {
                 // -0 케이스가 이미 존재함 → 현재 케이스는 피해세대 번호 유지하고 업데이트
-                if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+                if (
+                  existingSuffix &&
+                  existingSuffix !== "0" &&
+                  parseInt(existingSuffix) >= 1
+                ) {
                   newCaseNumber = existingCaseNumber; // 기존 피해세대 번호 유지
                 } else {
-                  const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                  const nextSuffix =
+                    await storage.getNextVictimSuffix(existingPrefix);
                   newCaseNumber = `${existingPrefix}-${nextSuffix}`;
                 }
-                
+
                 // 현재 케이스 업데이트 (피해세대 케이스로)
                 const updatedCase = await storage.updateCase(validatedData.id, {
                   ...validatedData,
@@ -836,19 +1072,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   caseGroupId,
                 });
                 createdCases.push(updatedCase);
-                
+
                 // 기존 -0 케이스도 동기화 (정보 업데이트)
                 await storage.updateCase(existingPreventionCase.id, {
                   ...validatedData,
                   caseNumber: existingPreventionCase.caseNumber || undefined,
                   caseGroupId,
                 });
-                
-                console.log(`[Case Draft] Updated existing prevention case ${existingPreventionCase.caseNumber} and victim case ${newCaseNumber}`);
+
+                console.log(
+                  `[Case Draft] Updated existing prevention case ${existingPreventionCase.caseNumber} and victim case ${newCaseNumber}`,
+                );
               } else {
                 // -0 케이스가 없음 → 기존 케이스를 -0으로, 새 피해세대 케이스 생성
                 newCaseNumber = `${existingPrefix}-0`;
-                
+
                 // 기존 케이스를 손해방지 케이스로 업데이트
                 const updatedCase = await storage.updateCase(validatedData.id, {
                   ...validatedData,
@@ -856,9 +1094,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   caseGroupId,
                 });
                 createdCases.push(updatedCase);
-                
+
                 // 피해세대 케이스 새로 생성
-                const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                const nextSuffix =
+                  await storage.getNextVictimSuffix(existingPrefix);
                 const recoveryData = JSON.parse(JSON.stringify(validatedData));
                 const recoveryCase = await storage.createCase({
                   ...recoveryData,
@@ -869,51 +1108,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
                 createdCases.push(recoveryCase);
               }
-              
+
               // 임시저장 시에도 관련 케이스에 동기화
               if (createdCases.length > 0) {
                 try {
-                  const syncCount = await storage.syncIntakeDataToRelatedCases(createdCases[0].id);
+                  const syncCount = await storage.syncIntakeDataToRelatedCases(
+                    createdCases[0].id,
+                  );
                   if (syncCount > 0) {
-                    console.log(`[Case Draft] Auto-synced intake data to ${syncCount} related cases`);
+                    console.log(
+                      `[Case Draft] Auto-synced intake data to ${syncCount} related cases`,
+                    );
                   }
                 } catch (syncError) {
                   console.error("Failed to sync intake data:", syncError);
                 }
               }
-              return res.status(200).json({ success: true, cases: createdCases });
+              return res
+                .status(200)
+                .json({ success: true, cases: createdCases });
             }
-            
+
             const updatedCase = await storage.updateCase(validatedData.id, {
               ...validatedData,
               caseNumber: newCaseNumber,
               caseGroupId,
             });
-            
+
             // 임시저장 시에도 관련 케이스에 동기화
             try {
-              const syncCount = await storage.syncIntakeDataToRelatedCases(updatedCase!.id);
+              const syncCount = await storage.syncIntakeDataToRelatedCases(
+                updatedCase!.id,
+              );
               if (syncCount > 0) {
-                console.log(`[Case Draft] Auto-synced intake data to ${syncCount} related cases`);
+                console.log(
+                  `[Case Draft] Auto-synced intake data to ${syncCount} related cases`,
+                );
               }
             } catch (syncError) {
               console.error("Failed to sync intake data:", syncError);
             }
-            
-            return res.status(200).json({ success: true, cases: [updatedCase] });
+
+            return res
+              .status(200)
+              .json({ success: true, cases: [updatedCase] });
           }
         }
-        
+
         // 새 임시저장 생성
-        const draftDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
+        const draftDate =
+          validatedData.accidentDate || new Date().toISOString().split("T")[0];
         const { prefix, suffix } = await storage.getNextCaseSequence(
           draftDate,
-          validatedData.insuranceAccidentNo || undefined
+          validatedData.insuranceAccidentNo || undefined,
         );
-        
+
         // Create draft based on processing types
         const createdCases: any[] = [];
-        
+
         if (hasDamagePrevention && !hasVictimRecovery) {
           // Only damage prevention: create single draft with -0 suffix
           const draftCase = await storage.createCase({
@@ -936,8 +1188,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (hasDamagePrevention && hasVictimRecovery) {
           // Both types selected
           // 1. Check if prevention case already exists for this prefix
-          const existingPrevention = await storage.getPreventionCaseByPrefix(prefix);
-          
+          const existingPrevention =
+            await storage.getPreventionCaseByPrefix(prefix);
+
           if (!existingPrevention) {
             // Create prevention case with -0 suffix
             const preventionData = JSON.parse(JSON.stringify(validatedData));
@@ -949,7 +1202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             createdCases.push(preventionDraft);
           }
-          
+
           // 2. Always create victim recovery case with next available suffix
           const nextSuffix = await storage.getNextVictimSuffix(prefix);
           const recoveryData = JSON.parse(JSON.stringify(validatedData));
@@ -971,68 +1224,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           createdCases.push(draftCase);
         }
-        
+
         return res.status(201).json({ success: true, cases: createdCases });
       }
-      
+
       // Handle case completion (접수완료 status)
       if (validatedData.status === "접수완료") {
         const receptionDate = validatedData.receptionDate;
         if (!receptionDate) {
           return res.status(400).json({ error: "접수일이 필요합니다" });
         }
-        
-        const fullDate = receptionDate.split('T')[0];
+
+        const fullDate = receptionDate.split("T")[0];
         const completedCases: any[] = [];
-        
+
         // 기존 임시저장 건이 있으면 업데이트
         if (validatedData.id) {
           const existingCase = await storage.getCaseById(validatedData.id);
           if (existingCase && existingCase.status === "배당대기") {
             // 기존 케이스의 접수번호 prefix/suffix 추출
             const existingCaseNumber = existingCase.caseNumber || "";
-            
+
             // "-"이거나 "DRAFT-"로 시작하거나 빈 값이면 새 prefix 생성 필요
-            const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-" || existingCaseNumber.startsWith("DRAFT-");
-            
+            const needsNewPrefix =
+              !existingCaseNumber ||
+              existingCaseNumber === "-" ||
+              existingCaseNumber.startsWith("DRAFT-");
+
             let existingPrefix = "";
             let existingSuffix: string | null = null;
-            
-            if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-" && !existingCaseNumber.startsWith("DRAFT-")) {
-              existingPrefix = existingCaseNumber.split('-')[0];
-              existingSuffix = existingCaseNumber.split('-')[1];
+
+            if (
+              !needsNewPrefix &&
+              existingCaseNumber.includes("-") &&
+              existingCaseNumber !== "-" &&
+              !existingCaseNumber.startsWith("DRAFT-")
+            ) {
+              existingPrefix = existingCaseNumber.split("-")[0];
+              existingSuffix = existingCaseNumber.split("-")[1];
             } else if (!needsNewPrefix) {
               existingPrefix = existingCaseNumber;
             }
-            
+
             // 접수번호 prefix가 없으면 새로 생성
             if (needsNewPrefix || !existingPrefix) {
-              const { prefix } = await storage.getNextCaseSequence(fullDate, validatedData.insuranceAccidentNo || undefined);
+              const { prefix } = await storage.getNextCaseSequence(
+                fullDate,
+                validatedData.insuranceAccidentNo || undefined,
+              );
               existingPrefix = prefix;
             }
-            
+
             // 처리구분에 따라 접수번호 suffix 결정
             let newCaseNumber: string;
-            
+
             if (!hasDamagePrevention && !hasVictimRecovery) {
               // 아무것도 선택 안함 → 기본 피해세대 (-1)로 처리
-              const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+              const nextSuffix =
+                await storage.getNextVictimSuffix(existingPrefix);
               newCaseNumber = `${existingPrefix}-${nextSuffix}`;
             } else if (hasDamagePrevention && !hasVictimRecovery) {
               // 손해방지만 선택 → -0 suffix
               // 먼저 -0 케이스가 이미 존재하는지 확인
-              const existingPreventionCase = await storage.getPreventionCaseByPrefix(existingPrefix);
-              
-              if (existingPreventionCase && existingPreventionCase.id !== validatedData.id) {
+              const existingPreventionCase =
+                await storage.getPreventionCaseByPrefix(existingPrefix);
+
+              if (
+                existingPreventionCase &&
+                existingPreventionCase.id !== validatedData.id
+              ) {
                 // -0 케이스가 이미 존재함 (현재 케이스와 다른 케이스)
                 // 기존 -0 케이스가 배당대기(임시저장) 상태이면 삭제 후 현재 케이스를 -0으로 변경
                 if (existingPreventionCase.status === "배당대기") {
                   await storage.deleteCase(existingPreventionCase.id);
-                  console.log(`[Case Complete] Deleted existing draft prevention case ${existingPreventionCase.caseNumber} to replace with current case`);
+                  console.log(
+                    `[Case Complete] Deleted existing draft prevention case ${existingPreventionCase.caseNumber} to replace with current case`,
+                  );
                   newCaseNumber = `${existingPrefix}-0`;
                 } else {
                   // -0 케이스가 이미 접수완료 상태이면 현재 케이스 번호 유지
-                  console.log(`[Case Complete] Prevention case ${existingPreventionCase.caseNumber} already exists and completed, keeping current case number`);
+                  console.log(
+                    `[Case Complete] Prevention case ${existingPreventionCase.caseNumber} already exists and completed, keeping current case number`,
+                  );
                   newCaseNumber = existingCaseNumber; // 기존 번호 유지
                 }
               } else {
@@ -1041,28 +1314,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else if (!hasDamagePrevention && hasVictimRecovery) {
               // 피해세대만 선택 → -1 이상 suffix
-              if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+              if (
+                existingSuffix &&
+                existingSuffix !== "0" &&
+                parseInt(existingSuffix) >= 1
+              ) {
                 newCaseNumber = existingCaseNumber; // 기존 피해세대 번호 유지
               } else {
-                const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                const nextSuffix =
+                  await storage.getNextVictimSuffix(existingPrefix);
                 newCaseNumber = `${existingPrefix}-${nextSuffix}`;
               }
             } else {
               // 둘 다 선택 → 손해방지(-0)와 피해세대(-1+) 케이스 필요
               // 저장 시 이미 두 케이스가 생성되었을 수 있으므로 모두 업데이트
-              
+
               // 먼저 같은 prefix를 가진 모든 draft 케이스를 찾음
-              const relatedDraftCases = await storage.getCasesByPrefix(existingPrefix);
-              const draftCases = relatedDraftCases.filter(c => c.status === "배당대기");
-              
-              console.log(`[Case Complete] Found ${draftCases.length} draft cases with prefix ${existingPrefix}`);
-              
+              const relatedDraftCases =
+                await storage.getCasesByPrefix(existingPrefix);
+              const draftCases = relatedDraftCases.filter(
+                (c) => c.status === "배당대기",
+              );
+
+              console.log(
+                `[Case Complete] Found ${draftCases.length} draft cases with prefix ${existingPrefix}`,
+              );
+
               if (draftCases.length >= 2) {
                 // 이미 두 케이스가 존재함 (저장 시 생성됨) → 모두 접수완료로 업데이트
                 // validatedData에서 id 제거하여 중복 키 오류 방지
                 const updateDataWithoutId = { ...validatedData };
                 delete (updateDataWithoutId as any).id;
-                
+
                 for (const draftCase of draftCases) {
                   const updatedCase = await storage.updateCase(draftCase.id, {
                     ...updateDataWithoutId,
@@ -1071,76 +1354,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     status: "접수완료",
                   });
                   completedCases.push(updatedCase);
-                  console.log(`[Case Complete] Updated draft case ${draftCase.caseNumber} to 접수완료`);
+                  console.log(
+                    `[Case Complete] Updated draft case ${draftCase.caseNumber} to 접수완료`,
+                  );
                 }
               } else {
                 // 기존 케이스만 있거나 새로 생성 필요
-                const existingPreventionCase = await storage.getPreventionCaseByPrefix(existingPrefix);
-                
-                if (existingPreventionCase && existingPreventionCase.id !== validatedData.id) {
+                const existingPreventionCase =
+                  await storage.getPreventionCaseByPrefix(existingPrefix);
+
+                if (
+                  existingPreventionCase &&
+                  existingPreventionCase.id !== validatedData.id
+                ) {
                   // -0 케이스가 다른 케이스로 존재함 → 현재 케이스는 피해세대로 유지
-                  if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+                  if (
+                    existingSuffix &&
+                    existingSuffix !== "0" &&
+                    parseInt(existingSuffix) >= 1
+                  ) {
                     newCaseNumber = existingCaseNumber;
                   } else {
-                    const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                    const nextSuffix =
+                      await storage.getNextVictimSuffix(existingPrefix);
                     newCaseNumber = `${existingPrefix}-${nextSuffix}`;
                   }
-                  
+
                   // 현재 케이스 업데이트 (피해세대 케이스로)
-                  const updatedCase = await storage.updateCase(validatedData.id, {
-                    ...validatedData,
-                    caseNumber: newCaseNumber,
-                    caseGroupId,
-                    status: "접수완료",
-                  });
+                  const updatedCase = await storage.updateCase(
+                    validatedData.id,
+                    {
+                      ...validatedData,
+                      caseNumber: newCaseNumber,
+                      caseGroupId,
+                      status: "접수완료",
+                    },
+                  );
                   completedCases.push(updatedCase);
-                  
+
                   // 기존 -0 케이스도 동기화 (정보 업데이트 및 접수완료)
                   if (existingPreventionCase.status === "배당대기") {
                     await storage.updateCase(existingPreventionCase.id, {
                       ...validatedData,
-                      caseNumber: existingPreventionCase.caseNumber || undefined,
+                      caseNumber:
+                        existingPreventionCase.caseNumber || undefined,
                       caseGroupId,
                       status: "접수완료",
                     });
                   }
-                  
-                  console.log(`[Case Complete] Updated existing prevention case ${existingPreventionCase.caseNumber} and victim case ${newCaseNumber}`);
-                } else if (existingPreventionCase && existingPreventionCase.id === validatedData.id) {
+
+                  console.log(
+                    `[Case Complete] Updated existing prevention case ${existingPreventionCase.caseNumber} and victim case ${newCaseNumber}`,
+                  );
+                } else if (
+                  existingPreventionCase &&
+                  existingPreventionCase.id === validatedData.id
+                ) {
                   // 현재 케이스가 -0 케이스임 → -0은 유지하고 피해세대 케이스 확인/생성
                   newCaseNumber = `${existingPrefix}-0`;
-                  
+
                   // 기존 피해세대 케이스가 있는지 확인
-                  const existingVictimCases = relatedDraftCases.filter(c => 
-                    c.id !== validatedData.id && 
-                    c.caseNumber?.includes('-') && 
-                    parseInt(c.caseNumber.split('-')[1]) >= 1
+                  const existingVictimCases = relatedDraftCases.filter(
+                    (c) =>
+                      c.id !== validatedData.id &&
+                      c.caseNumber?.includes("-") &&
+                      parseInt(c.caseNumber.split("-")[1]) >= 1,
                   );
-                  
+
                   // 현재 케이스(손방-0) 업데이트
-                  const updatedPrevention = await storage.updateCase(validatedData.id, {
-                    ...validatedData,
-                    caseNumber: newCaseNumber,
-                    caseGroupId,
-                    status: "접수완료",
-                  });
+                  const updatedPrevention = await storage.updateCase(
+                    validatedData.id,
+                    {
+                      ...validatedData,
+                      caseNumber: newCaseNumber,
+                      caseGroupId,
+                      status: "접수완료",
+                    },
+                  );
                   completedCases.push(updatedPrevention);
-                  
+
                   if (existingVictimCases.length > 0) {
                     // 기존 피해세대 케이스 업데이트
                     for (const victimCase of existingVictimCases) {
-                      const updatedVictim = await storage.updateCase(victimCase.id, {
-                        ...validatedData,
-                        caseNumber: victimCase.caseNumber || undefined,
-                        caseGroupId,
-                        status: "접수완료",
-                      });
+                      const updatedVictim = await storage.updateCase(
+                        victimCase.id,
+                        {
+                          ...validatedData,
+                          caseNumber: victimCase.caseNumber || undefined,
+                          caseGroupId,
+                          status: "접수완료",
+                        },
+                      );
                       completedCases.push(updatedVictim);
                     }
                   } else {
                     // 피해세대 케이스 새로 생성
-                    const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-                    const recoveryData = JSON.parse(JSON.stringify(validatedData));
+                    const nextSuffix =
+                      await storage.getNextVictimSuffix(existingPrefix);
+                    const recoveryData = JSON.parse(
+                      JSON.stringify(validatedData),
+                    );
                     const recoveryCase = await storage.createCase({
                       ...recoveryData,
                       caseNumber: `${existingPrefix}-${nextSuffix}`,
@@ -1150,22 +1463,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     });
                     completedCases.push(recoveryCase);
                   }
-                  
-                  console.log(`[Case Complete] Updated prevention case and ${existingVictimCases.length > 0 ? 'existing' : 'new'} victim case`);
+
+                  console.log(
+                    `[Case Complete] Updated prevention case and ${existingVictimCases.length > 0 ? "existing" : "new"} victim case`,
+                  );
                 } else {
                   // -0 케이스가 없음 → 기존 케이스를 -0으로, 새 피해세대 케이스 생성
                   newCaseNumber = `${existingPrefix}-0`;
-                  
-                  const updatedCase = await storage.updateCase(validatedData.id, {
-                    ...validatedData,
-                    caseNumber: newCaseNumber,
-                    caseGroupId,
-                    status: "접수완료",
-                  });
+
+                  const updatedCase = await storage.updateCase(
+                    validatedData.id,
+                    {
+                      ...validatedData,
+                      caseNumber: newCaseNumber,
+                      caseGroupId,
+                      status: "접수완료",
+                    },
+                  );
                   completedCases.push(updatedCase);
-                  
-                  const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-                  const recoveryData = JSON.parse(JSON.stringify(validatedData));
+
+                  const nextSuffix =
+                    await storage.getNextVictimSuffix(existingPrefix);
+                  const recoveryData = JSON.parse(
+                    JSON.stringify(validatedData),
+                  );
                   const recoveryCase = await storage.createCase({
                     ...recoveryData,
                     caseNumber: `${existingPrefix}-${nextSuffix}`,
@@ -1174,25 +1495,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     createdBy: req.session.userId,
                   });
                   completedCases.push(recoveryCase);
-                  
-                  console.log(`[Case Complete] Created prevention case ${newCaseNumber} and victim case`);
+
+                  console.log(
+                    `[Case Complete] Created prevention case ${newCaseNumber} and victim case`,
+                  );
                 }
               }
-              
+
               // 동기화 및 응답
               if (completedCases.length > 0) {
                 try {
-                  const syncCount = await storage.syncIntakeDataToRelatedCases(completedCases[0].id);
+                  const syncCount = await storage.syncIntakeDataToRelatedCases(
+                    completedCases[0].id,
+                  );
                   if (syncCount > 0) {
-                    console.log(`[Case Complete] Auto-synced intake data to ${syncCount} related cases`);
+                    console.log(
+                      `[Case Complete] Auto-synced intake data to ${syncCount} related cases`,
+                    );
                   }
                 } catch (syncError) {
                   console.error("Failed to sync intake data:", syncError);
                 }
               }
-              return res.status(200).json({ success: true, cases: completedCases });
+              return res
+                .status(200)
+                .json({ success: true, cases: completedCases });
             }
-            
+
             // 기존 케이스 업데이트
             const updatedCase = await storage.updateCase(validatedData.id, {
               ...validatedData,
@@ -1201,30 +1530,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: "접수완료",
             });
             completedCases.push(updatedCase);
-            
+
             // 동기화 및 응답
             if (completedCases.length > 0) {
               try {
-                const syncCount = await storage.syncIntakeDataToRelatedCases(completedCases[0].id);
+                const syncCount = await storage.syncIntakeDataToRelatedCases(
+                  completedCases[0].id,
+                );
                 if (syncCount > 0) {
-                  console.log(`[Case Complete] Auto-synced intake data to ${syncCount} related cases`);
+                  console.log(
+                    `[Case Complete] Auto-synced intake data to ${syncCount} related cases`,
+                  );
                 }
               } catch (syncError) {
                 console.error("Failed to sync intake data:", syncError);
               }
             }
-            return res.status(200).json({ success: true, cases: completedCases });
+            return res
+              .status(200)
+              .json({ success: true, cases: completedCases });
           }
         }
-        
+
         // 추가 피해자 생성 시: parentCasePrefix가 있으면 해당 prefix 기반으로 케이스 생성
         const parentCasePrefix = (req.body as any).parentCasePrefix;
         if (parentCasePrefix) {
-          console.log(`[Case Create] Creating additional victim case with parentCasePrefix: ${parentCasePrefix}`);
-          const nextSuffix = await storage.getNextVictimSuffix(parentCasePrefix);
+          console.log(
+            `[Case Create] Creating additional victim case with parentCasePrefix: ${parentCasePrefix}`,
+          );
+          const nextSuffix =
+            await storage.getNextVictimSuffix(parentCasePrefix);
           const caseNumber = `${parentCasePrefix}-${nextSuffix}`;
-          console.log(`[Case Create] Generated case number: ${caseNumber} (suffix: ${nextSuffix})`);
-          
+          console.log(
+            `[Case Create] Generated case number: ${caseNumber} (suffix: ${nextSuffix})`,
+          );
+
           const newCase = await storage.createCase({
             ...validatedData,
             caseNumber,
@@ -1232,26 +1572,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
             createdBy: req.session.userId,
           });
           completedCases.push(newCase);
-          
+
           // 동기화
           try {
-            const syncCount = await storage.syncIntakeDataToRelatedCases(newCase.id);
+            const syncCount = await storage.syncIntakeDataToRelatedCases(
+              newCase.id,
+            );
             if (syncCount > 0) {
-              console.log(`[Case Create] Auto-synced intake data to ${syncCount} related cases`);
+              console.log(
+                `[Case Create] Auto-synced intake data to ${syncCount} related cases`,
+              );
             }
           } catch (syncError) {
-            console.error("Failed to sync intake data to related cases:", syncError);
+            console.error(
+              "Failed to sync intake data to related cases:",
+              syncError,
+            );
           }
-          
+
           return res.status(201).json({ success: true, cases: completedCases });
         }
-        
+
         // 새 케이스 생성 (임시저장 없이 바로 접수완료)
         const { prefix, suffix } = await storage.getNextCaseSequence(
-          fullDate, 
-          validatedData.insuranceAccidentNo || undefined
+          fullDate,
+          validatedData.insuranceAccidentNo || undefined,
         );
-        
+
         if (hasDamagePrevention && !hasVictimRecovery) {
           const caseNumber = `${prefix}-0`;
           const newCase = await storage.createCase({
@@ -1271,8 +1618,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           completedCases.push(newCase);
         } else if (hasDamagePrevention && hasVictimRecovery) {
-          const existingPrevention = await storage.getPreventionCaseByPrefix(prefix);
-          
+          const existingPrevention =
+            await storage.getPreventionCaseByPrefix(prefix);
+
           if (!existingPrevention) {
             const preventionData = JSON.parse(JSON.stringify(validatedData));
             const preventionCase = await storage.createCase({
@@ -1283,7 +1631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             completedCases.push(preventionCase);
           }
-          
+
           const nextSuffix = await storage.getNextVictimSuffix(prefix);
           const recoveryData = JSON.parse(JSON.stringify(validatedData));
           const recoveryCase = await storage.createCase({
@@ -1303,60 +1651,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           completedCases.push(newCase);
         }
-        
+
         // 동기화
         if (completedCases.length > 0) {
           try {
-            const syncCount = await storage.syncIntakeDataToRelatedCases(completedCases[0].id);
+            const syncCount = await storage.syncIntakeDataToRelatedCases(
+              completedCases[0].id,
+            );
             if (syncCount > 0) {
-              console.log(`[Case Create] Auto-synced intake data to ${syncCount} related cases`);
+              console.log(
+                `[Case Create] Auto-synced intake data to ${syncCount} related cases`,
+              );
             }
           } catch (syncError) {
-            console.error("Failed to sync intake data to related cases:", syncError);
+            console.error(
+              "Failed to sync intake data to related cases:",
+              syncError,
+            );
           }
         }
-        
+
         return res.status(201).json({ success: true, cases: completedCases });
       }
-      
+
       // Fallback: single case creation for other statuses
       // 다른 상태의 경우에도 실제 접수번호 형식 사용
       let caseNumber = validatedData.caseNumber;
-      
+
       // 추가 피해자 생성 시: parentCasePrefix가 있으면 해당 prefix 기반으로 suffix 계산
       const parentCasePrefix = (req.body as any).parentCasePrefix;
-      console.log(`[Case Create] parentCasePrefix: ${parentCasePrefix}, existing caseNumber: ${caseNumber}`);
+      console.log(
+        `[Case Create] parentCasePrefix: ${parentCasePrefix}, existing caseNumber: ${caseNumber}`,
+      );
       if (parentCasePrefix && !caseNumber) {
         const nextSuffix = await storage.getNextVictimSuffix(parentCasePrefix);
         caseNumber = `${parentCasePrefix}-${nextSuffix}`;
-        console.log(`[Case Create] Creating additional victim case with number: ${caseNumber} (suffix: ${nextSuffix})`);
+        console.log(
+          `[Case Create] Creating additional victim case with number: ${caseNumber} (suffix: ${nextSuffix})`,
+        );
       } else if (!caseNumber) {
         console.log(`[Case Create] Fallback - generating new case number`);
-        const fallbackDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
+        const fallbackDate =
+          validatedData.accidentDate || new Date().toISOString().split("T")[0];
         const { prefix, suffix } = await storage.getNextCaseSequence(
           fallbackDate,
-          validatedData.insuranceAccidentNo || undefined
+          validatedData.insuranceAccidentNo || undefined,
         );
         caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
         console.log(`[Case Create] Generated new case number: ${caseNumber}`);
       }
-      
+
       const newCase = await storage.createCase({
         ...validatedData,
         caseNumber,
         caseGroupId,
         createdBy: req.session.userId,
       });
-      
+
       // 추가 피해자 케이스 생성 후 동기화
       if (parentCasePrefix) {
         try {
-          const syncCount = await storage.syncIntakeDataToRelatedCases(newCase.id);
+          const syncCount = await storage.syncIntakeDataToRelatedCases(
+            newCase.id,
+          );
           if (syncCount > 0) {
-            console.log(`[Case Create] Auto-synced intake data to ${syncCount} related cases`);
+            console.log(
+              `[Case Create] Auto-synced intake data to ${syncCount} related cases`,
+            );
           }
         } catch (syncError) {
-          console.error("Failed to sync intake data to related cases:", syncError);
+          console.error(
+            "Failed to sync intake data to related cases:",
+            syncError,
+          );
         }
       }
 
@@ -1380,17 +1747,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get current user for permission-based filtering
       const currentUser = await storage.getUser(req.session.userId);
-      
+
       if (!currentUser) {
         return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       }
-      
+
       // Get cases filtered by user role and permissions
       const cases = await storage.getAllCases(currentUser);
       res.json(cases);
     } catch (error) {
       console.error("Get cases error:", error);
-      res.status(500).json({ error: "케이스 목록을 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "케이스 목록을 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -1404,7 +1773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const caseData = await storage.getCaseById(id);
-      
+
       if (!caseData) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -1419,29 +1788,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 심사사/조사사 이메일 자동 조회 (DB에 저장되지 않은 경우 users 테이블에서 찾기)
       const allUsers = await storage.getAllUsers();
-      
+
       // 심사사 이메일이 없고 심사자 이름이 있으면 조회
       if (!caseData.assessorEmail && caseData.assessorTeam) {
-        const assessorUser = allUsers.find(u => u.role === "심사사" && u.name === caseData.assessorTeam);
+        const assessorUser = allUsers.find(
+          (u) => u.role === "심사사" && u.name === caseData.assessorTeam,
+        );
         if (assessorUser?.email) {
           (caseData as any).assessorEmail = assessorUser.email;
-          console.log(`[GET /api/cases/${id}] Auto-populated assessorEmail: ${assessorUser.email}`);
+          console.log(
+            `[GET /api/cases/${id}] Auto-populated assessorEmail: ${assessorUser.email}`,
+          );
         }
       }
-      
+
       // 조사사 이메일이 없고 조사자 이름이 있으면 조회
       if (!caseData.investigatorEmail && caseData.investigatorTeamName) {
-        const investigatorUser = allUsers.find(u => u.role === "조사사" && u.name === caseData.investigatorTeamName);
+        const investigatorUser = allUsers.find(
+          (u) =>
+            u.role === "조사사" && u.name === caseData.investigatorTeamName,
+        );
         if (investigatorUser?.email) {
           (caseData as any).investigatorEmail = investigatorUser.email;
-          console.log(`[GET /api/cases/${id}] Auto-populated investigatorEmail: ${investigatorUser.email}`);
+          console.log(
+            `[GET /api/cases/${id}] Auto-populated investigatorEmail: ${investigatorUser.email}`,
+          );
         }
       }
 
       res.json(caseData);
     } catch (error) {
       console.error("Get case by ID error:", error);
-      res.status(500).json({ error: "케이스를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "케이스를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -1523,32 +1903,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 변경 사항 추적
-      const changes: Array<{field: string; fieldLabel: string; before: string | null; after: string | null}> = [];
+      const changes: Array<{
+        field: string;
+        fieldLabel: string;
+        before: string | null;
+        after: string | null;
+      }> = [];
       const trackedFields = [
         // 담당자 정보
-        "managerId", "managerDepartment", "managerPosition", "managerContact",
+        "managerId",
+        "managerDepartment",
+        "managerPosition",
+        "managerContact",
         // 기본 정보
-        "accidentDate", "insuranceCompany", "insurancePolicyNo", "insuranceAccidentNo",
-        "clientResidence", "clientDepartment", "clientName", "clientContact",
-        "assessorId", "assessorDepartment", "assessorTeam", "assessorContact",
-        "investigatorTeam", "investigatorDepartment", "investigatorTeamName", "investigatorContact",
+        "accidentDate",
+        "insuranceCompany",
+        "insurancePolicyNo",
+        "insuranceAccidentNo",
+        "clientResidence",
+        "clientDepartment",
+        "clientName",
+        "clientContact",
+        "assessorId",
+        "assessorDepartment",
+        "assessorTeam",
+        "assessorContact",
+        "investigatorTeam",
+        "investigatorDepartment",
+        "investigatorTeamName",
+        "investigatorContact",
         // 보험계약자/피보험자/피해자/가해자 정보
-        "policyHolderName", "policyHolderIdNumber", "policyHolderAddress",
-        "insuredName", "insuredIdNumber", "insuredAddress", "insuredAddressDetail", "insuredContact",
-        "victimName", "victimIdNumber", "victimAddress", "victimAddressDetail", "victimPhone", "victimContact",
-        "perpetratorName", "perpetratorIdNumber", "perpetratorAddress", "perpetratorPhone",
+        "policyHolderName",
+        "policyHolderIdNumber",
+        "policyHolderAddress",
+        "insuredName",
+        "insuredIdNumber",
+        "insuredAddress",
+        "insuredAddressDetail",
+        "insuredContact",
+        "victimName",
+        "victimIdNumber",
+        "victimAddress",
+        "victimAddressDetail",
+        "victimPhone",
+        "victimContact",
+        "perpetratorName",
+        "perpetratorIdNumber",
+        "perpetratorAddress",
+        "perpetratorPhone",
         // 상태 및 기타 정보
-        "status", "recoveryType", "specialNotes", "additionalNotes",
-        "buildingType", "buildingStructure", "accidentLocation", "accidentType", "causeOfDamage", "partnerCompany",
+        "status",
+        "recoveryType",
+        "specialNotes",
+        "additionalNotes",
+        "buildingType",
+        "buildingStructure",
+        "accidentLocation",
+        "accidentType",
+        "causeOfDamage",
+        "partnerCompany",
         // 협력사 정보
-        "assignedPartner", "assignedPartnerManager", "assignedPartnerContact",
+        "assignedPartner",
+        "assignedPartnerManager",
+        "assignedPartnerContact",
         // 처리 유형
-        "damagePreventionCost", "victimIncidentAssistance"
+        "damagePreventionCost",
+        "victimIncidentAssistance",
       ];
 
       // Helper function to normalize values for comparison
       const normalizeValue = (value: any): string | null => {
-        if (value === null || value === undefined || value === '') {
+        if (value === null || value === undefined || value === "") {
           return null;
         }
         return String(value).trim();
@@ -1556,23 +1981,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all users for resolving managerId to names
       const allUsers = await storage.getAllUsers();
-      const userMap = new Map(allUsers.map(u => [u.id, u.name]));
+      const userMap = new Map(allUsers.map((u) => [u.id, u.name]));
 
       // 협력사 배정 시 담당자 정보 자동 채우기
       // assignedPartner가 설정되고, assignedPartnerManager/Contact가 제공되지 않은 경우
       if (updateData.assignedPartner && !updateData.assignedPartnerManager) {
         const partnerCompanyName = updateData.assignedPartner;
         // 해당 회사명을 가진 협력사 사용자 찾기
-        const partnerUser = allUsers.find(u => u.company === partnerCompanyName && u.role === "협력사");
+        const partnerUser = allUsers.find(
+          (u) => u.company === partnerCompanyName && u.role === "협력사",
+        );
         if (partnerUser) {
           // 담당자명과 연락처 자동 채우기
           if (partnerUser.name) {
             updateData.assignedPartnerManager = partnerUser.name;
-            console.log(`[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`);
+            console.log(
+              `[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`,
+            );
           }
           if (partnerUser.phone && !updateData.assignedPartnerContact) {
             updateData.assignedPartnerContact = partnerUser.phone;
-            console.log(`[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`);
+            console.log(
+              `[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`,
+            );
           }
         }
       }
@@ -1581,38 +2012,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // assessorTeam(심사자 이름)이 설정되면 해당 사용자의 이메일을 자동으로 채움
       const assessorName = updateData.assessorTeam || existingCase.assessorTeam;
       if (assessorName) {
-        const assessorUser = allUsers.find(u => u.role === "심사사" && u.name === assessorName);
+        const assessorUser = allUsers.find(
+          (u) => u.role === "심사사" && u.name === assessorName,
+        );
         if (assessorUser?.email) {
           updateData.assessorEmail = assessorUser.email;
-          console.log(`[Auto-populate] Assessor email set to: ${assessorUser.email} for assessor: ${assessorName}`);
+          console.log(
+            `[Auto-populate] Assessor email set to: ${assessorUser.email} for assessor: ${assessorName}`,
+          );
         }
       }
 
       // 조사사 이메일 자동 채우기
       // investigatorTeamName(조사자 이름)이 설정되면 해당 사용자의 이메일을 자동으로 채움
-      const investigatorName = updateData.investigatorTeamName || existingCase.investigatorTeamName;
+      const investigatorName =
+        updateData.investigatorTeamName || existingCase.investigatorTeamName;
       if (investigatorName) {
-        const investigatorUser = allUsers.find(u => u.role === "조사사" && u.name === investigatorName);
+        const investigatorUser = allUsers.find(
+          (u) => u.role === "조사사" && u.name === investigatorName,
+        );
         if (investigatorUser?.email) {
           updateData.investigatorEmail = investigatorUser.email;
-          console.log(`[Auto-populate] Investigator email set to: ${investigatorUser.email} for investigator: ${investigatorName}`);
+          console.log(
+            `[Auto-populate] Investigator email set to: ${investigatorUser.email} for investigator: ${investigatorName}`,
+          );
         }
       }
 
       for (const field of trackedFields) {
         const oldValue = (existingCase as any)[field];
         const newValue = updateData[field];
-        
+
         // Normalize values for comparison
         const normalizedOld = normalizeValue(oldValue);
         const normalizedNew = normalizeValue(newValue);
-        
+
         // Only track if the field is being updated and the value actually changed
         if (field in updateData && normalizedOld !== normalizedNew) {
           // Special handling for managerId - resolve to user names
-          if (field === 'managerId') {
-            const oldUserName = normalizedOld ? (userMap.get(normalizedOld) || '(알수없음)') : null;
-            const newUserName = normalizedNew ? (userMap.get(normalizedNew) || '(알수없음)') : null;
+          if (field === "managerId") {
+            const oldUserName = normalizedOld
+              ? userMap.get(normalizedOld) || "(알수없음)"
+              : null;
+            const newUserName = normalizedNew
+              ? userMap.get(normalizedNew) || "(알수없음)"
+              : null;
             changes.push({
               field,
               fieldLabel: getFieldLabel(field),
@@ -1632,69 +2076,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 처리구분(손해방지/피해세대)에 따른 접수번호 suffix 재계산
       // 중요: 처리구분 필드가 요청 데이터에 포함된 경우에만 접수번호 재계산
-      const hasDamagePreventionField = 'damagePreventionCost' in updateData;
-      const hasVictimRecoveryField = 'victimIncidentAssistance' in updateData;
-      
+      const hasDamagePreventionField = "damagePreventionCost" in updateData;
+      const hasVictimRecoveryField = "victimIncidentAssistance" in updateData;
+
       // 처리구분 필드가 없으면 기존 값 사용, 있으면 새 값 사용
-      const hasDamagePrevention = hasDamagePreventionField 
-        ? (updateData.damagePreventionCost === "true" || (updateData.damagePreventionCost as unknown) === true)
-        : (existingCase.damagePreventionCost === "true" || (existingCase.damagePreventionCost as unknown) === true);
+      const hasDamagePrevention = hasDamagePreventionField
+        ? updateData.damagePreventionCost === "true" ||
+          (updateData.damagePreventionCost as unknown) === true
+        : existingCase.damagePreventionCost === "true" ||
+          (existingCase.damagePreventionCost as unknown) === true;
       const hasVictimRecovery = hasVictimRecoveryField
-        ? (updateData.victimIncidentAssistance === "true" || (updateData.victimIncidentAssistance as unknown) === true)
-        : (existingCase.victimIncidentAssistance === "true" || (existingCase.victimIncidentAssistance as unknown) === true);
-      
+        ? updateData.victimIncidentAssistance === "true" ||
+          (updateData.victimIncidentAssistance as unknown) === true
+        : existingCase.victimIncidentAssistance === "true" ||
+          (existingCase.victimIncidentAssistance as unknown) === true;
+
       // 기존 접수번호에서 prefix 추출
       const existingCaseNumber = existingCase.caseNumber || "";
-      const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-" || existingCaseNumber.startsWith("DRAFT-");
-      
+      const needsNewPrefix =
+        !existingCaseNumber ||
+        existingCaseNumber === "-" ||
+        existingCaseNumber.startsWith("DRAFT-");
+
       let existingPrefix = "";
       let existingSuffix: string | null = null;
-      
-      if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-" && !existingCaseNumber.startsWith("DRAFT-")) {
-        existingPrefix = existingCaseNumber.split('-')[0];
-        existingSuffix = existingCaseNumber.split('-')[1];
+
+      if (
+        !needsNewPrefix &&
+        existingCaseNumber.includes("-") &&
+        existingCaseNumber !== "-" &&
+        !existingCaseNumber.startsWith("DRAFT-")
+      ) {
+        existingPrefix = existingCaseNumber.split("-")[0];
+        existingSuffix = existingCaseNumber.split("-")[1];
       } else if (!needsNewPrefix) {
         existingPrefix = existingCaseNumber;
       }
-      
+
       // prefix가 없으면 새로 생성
       if (needsNewPrefix || !existingPrefix) {
-        const accDate = updateData.accidentDate || existingCase.accidentDate || new Date().toISOString().split('T')[0];
-        const { prefix } = await storage.getNextCaseSequence(accDate, updateData.insuranceAccidentNo || existingCase.insuranceAccidentNo || undefined);
+        const accDate =
+          updateData.accidentDate ||
+          existingCase.accidentDate ||
+          new Date().toISOString().split("T")[0];
+        const { prefix } = await storage.getNextCaseSequence(
+          accDate,
+          updateData.insuranceAccidentNo ||
+            existingCase.insuranceAccidentNo ||
+            undefined,
+        );
         existingPrefix = prefix;
       }
-      
+
       // 기존 처리구분 확인
-      const hadDamagePrevention = existingCase.damagePreventionCost === "true" || (existingCase.damagePreventionCost as unknown) === true;
-      const hadVictimRecovery = existingCase.victimIncidentAssistance === "true" || (existingCase.victimIncidentAssistance as unknown) === true;
-      
+      const hadDamagePrevention =
+        existingCase.damagePreventionCost === "true" ||
+        (existingCase.damagePreventionCost as unknown) === true;
+      const hadVictimRecovery =
+        existingCase.victimIncidentAssistance === "true" ||
+        (existingCase.victimIncidentAssistance as unknown) === true;
+
       // 처리구분 변경 감지 및 관련 케이스 삭제 처리
       const caseGroupId = existingCase.caseGroupId;
       let deletedCases: string[] = [];
-      
+
       // 중요: 처리구분 필드가 업데이트에 포함되지 않으면 케이스 생성/삭제 로직 스킵
       // 이렇게 하면 인보이스 관리 팝업 등에서 단순 필드 업데이트 시 새 케이스가 생성되지 않음
-      const shouldProcessCaseNumberLogic = hasDamagePreventionField || hasVictimRecoveryField;
-      
+      const shouldProcessCaseNumberLogic =
+        hasDamagePreventionField || hasVictimRecoveryField;
+
       // 둘 다 선택 → 하나만 선택으로 변경된 경우
       if (shouldProcessCaseNumberLogic && existingPrefix) {
         // 같은 그룹 또는 같은 prefix의 모든 케이스 조회
         const allCases = await storage.getAllCases();
-        const siblingCases = allCases.filter(c => {
+        const siblingCases = allCases.filter((c) => {
           if (c.id === id) return false; // 자기 자신 제외
-          
+
           // caseGroupId가 있으면 그룹으로 비교
           if (caseGroupId && c.caseGroupId === caseGroupId) return true;
-          
+
           // caseGroupId가 없으면 prefix로 비교
           const siblingNumber = c.caseNumber || "";
-          if (siblingNumber.includes('-') && siblingNumber !== "-" && !siblingNumber.startsWith("DRAFT-")) {
-            const siblingPrefix = siblingNumber.split('-')[0];
+          if (
+            siblingNumber.includes("-") &&
+            siblingNumber !== "-" &&
+            !siblingNumber.startsWith("DRAFT-")
+          ) {
+            const siblingPrefix = siblingNumber.split("-")[0];
             return siblingPrefix === existingPrefix;
           }
           return false;
         });
-        
+
         // 손해방지만 선택 → 모든 형제 케이스 삭제 (현재 케이스가 -0이 됨)
         if (hasDamagePrevention && !hasVictimRecovery) {
           for (const sibling of siblingCases) {
@@ -1702,38 +2175,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (sibling.status === "배당대기") {
               await storage.deleteCase(sibling.id);
               deletedCases.push(sibling.caseNumber || sibling.id);
-              console.log(`[Case Delete] Deleted sibling case ${sibling.caseNumber} for damage prevention only (status: ${sibling.status})`);
+              console.log(
+                `[Case Delete] Deleted sibling case ${sibling.caseNumber} for damage prevention only (status: ${sibling.status})`,
+              );
             }
           }
         }
-        
-        // 피해세대만 선택 → 모든 형제 케이스 삭제 (현재 케이스만 유지)
+
+        // 피해세대만 선택 → 모든 형제 케이스 삭제 (현at� 케이스만 유지)
         if (!hasDamagePrevention && hasVictimRecovery) {
           for (const sibling of siblingCases) {
             // 배당대기 상태만 삭제 가능
             if (sibling.status === "배당대기") {
               await storage.deleteCase(sibling.id);
               deletedCases.push(sibling.caseNumber || sibling.id);
-              console.log(`[Case Delete] Deleted sibling case ${sibling.caseNumber} for victim recovery only (status: ${sibling.status})`);
+              console.log(
+                `[Case Delete] Deleted sibling case ${sibling.caseNumber} for victim recovery only (status: ${sibling.status})`,
+              );
             }
           }
         }
-        
+
         // 아무것도 선택 안함 → 모든 형제 케이스 삭제
         if (!hasDamagePrevention && !hasVictimRecovery) {
           for (const sibling of siblingCases) {
             if (sibling.status === "배당대기") {
               await storage.deleteCase(sibling.id);
               deletedCases.push(sibling.caseNumber || sibling.id);
-              console.log(`[Case Delete] Deleted sibling case ${sibling.caseNumber} (status: ${sibling.status})`);
+              console.log(
+                `[Case Delete] Deleted sibling case ${sibling.caseNumber} (status: ${sibling.status})`,
+              );
             }
           }
         }
       }
-      
+
       // 처리구분에 따른 접수번호 결정 (처리구분 필드가 업데이트에 포함된 경우에만 실행)
       let newCaseNumber = existingCaseNumber;
-      
+
       if (shouldProcessCaseNumberLogic) {
         if (!hasDamagePrevention && !hasVictimRecovery) {
           // 아무것도 선택 안함 → 고유한 임시 접수번호 생성
@@ -1743,42 +2222,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           newCaseNumber = `${existingPrefix}-0`;
         } else if (!hasDamagePrevention && hasVictimRecovery) {
           // 피해세대만 → 기존 피해세대 suffix 유지 또는 새로 할당
-          if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+          if (
+            existingSuffix &&
+            existingSuffix !== "0" &&
+            parseInt(existingSuffix) >= 1
+          ) {
             newCaseNumber = existingCaseNumber;
           } else {
-            const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+            const nextSuffix =
+              await storage.getNextVictimSuffix(existingPrefix);
             newCaseNumber = `${existingPrefix}-${nextSuffix}`;
           }
         } else {
           // 둘 다 선택 → 기존 케이스와 형제 케이스 모두 업데이트
-          
+
           // 같은 prefix를 가진 기존 케이스들 확인
           const relatedCases = await storage.getCasesByPrefix(existingPrefix);
-          const existingPreventionCase = relatedCases.find(c => c.caseNumber === `${existingPrefix}-0`);
-          const existingVictimCases = relatedCases.filter(c => 
-            c.caseNumber?.includes('-') && 
-            parseInt(c.caseNumber.split('-')[1]) >= 1
+          const existingPreventionCase = relatedCases.find(
+            (c) => c.caseNumber === `${existingPrefix}-0`,
           );
-          
+          const existingVictimCases = relatedCases.filter(
+            (c) =>
+              c.caseNumber?.includes("-") &&
+              parseInt(c.caseNumber.split("-")[1]) >= 1,
+          );
+
           // 현재 케이스가 -0인지 확인
-          const currentIsPrevention = existingCaseNumber === `${existingPrefix}-0`;
-          
+          const currentIsPrevention =
+            existingCaseNumber === `${existingPrefix}-0`;
+
           if (currentIsPrevention) {
             // 현재 케이스가 손해방지(-0)인 경우 → 번호 유지, 기존 피해세대 케이스 업데이트 또는 생성
             newCaseNumber = existingCaseNumber;
-            
-            const updatedCase = await storage.updateCase(id, { ...updateData, caseNumber: newCaseNumber });
+
+            const updatedCase = await storage.updateCase(id, {
+              ...updateData,
+              caseNumber: newCaseNumber,
+            });
             if (!updatedCase) {
-              return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+              return res
+                .status(404)
+                .json({ error: "케이스 업데이트에 실패했습니다" });
             }
-            
+
             const completedCases = [updatedCase];
-            
+
             if (existingVictimCases.length > 0) {
               // 기존 피해세대 케이스가 있으면 업데이트
               const updateDataWithoutId = { ...updateData };
               delete (updateDataWithoutId as any).id;
-              
+
               for (const victimCase of existingVictimCases) {
                 const updatedVictim = await storage.updateCase(victimCase.id, {
                   ...updateDataWithoutId,
@@ -1787,14 +2280,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
                 if (updatedVictim) completedCases.push(updatedVictim);
               }
-              console.log(`[Case Update] Updated prevention case and ${existingVictimCases.length} existing victim case(s)`);
+              console.log(
+                `[Case Update] Updated prevention case and ${existingVictimCases.length} existing victim case(s)`,
+              );
             } else {
               // 피해세대 케이스가 없으면 새로 생성
-              const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-              const caseGroupIdForNew = existingCase.caseGroupId || `group-${Date.now()}`;
+              const nextSuffix =
+                await storage.getNextVictimSuffix(existingPrefix);
+              const caseGroupIdForNew =
+                existingCase.caseGroupId || `group-${Date.now()}`;
               const recoveryData = JSON.parse(JSON.stringify(updateData));
               delete recoveryData.id;
-              
+
               const recoveryCase = await storage.createCase({
                 ...recoveryData,
                 caseNumber: `${existingPrefix}-${nextSuffix}`,
@@ -1803,9 +2300,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 createdBy: req.session.userId,
               });
               completedCases.push(recoveryCase);
-              console.log(`[Case Update] Updated prevention case and created new victim case`);
+              console.log(
+                `[Case Update] Updated prevention case and created new victim case`,
+              );
             }
-            
+
             // 변경 로그 저장
             if (changes.length > 0) {
               try {
@@ -1822,44 +2321,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.error("Failed to create change log:", logError);
               }
             }
-            
+
             try {
               await storage.syncIntakeDataToRelatedCases(id);
             } catch (syncError) {
               console.error("Failed to sync intake data:", syncError);
             }
-            
+
             return res.json({ success: true, cases: completedCases });
           } else {
             // 현재 케이스가 피해세대(-1 이상)인 경우
             // 현재 케이스 번호 유지, 손해방지 케이스 업데이트 또는 생성
             newCaseNumber = existingCaseNumber;
-            
-            const updatedCase = await storage.updateCase(id, { ...updateData, caseNumber: newCaseNumber });
+
+            const updatedCase = await storage.updateCase(id, {
+              ...updateData,
+              caseNumber: newCaseNumber,
+            });
             if (!updatedCase) {
-              return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+              return res
+                .status(404)
+                .json({ error: "케이스 업데이트에 실패했습니다" });
             }
-            
+
             const completedCases = [updatedCase];
-            
+
             if (existingPreventionCase) {
               // 기존 손해방지 케이스가 있으면 업데이트
               const updateDataWithoutId = { ...updateData };
               delete (updateDataWithoutId as any).id;
-              
-              const updatedPrevention = await storage.updateCase(existingPreventionCase.id, {
-                ...updateDataWithoutId,
-                caseNumber: existingPreventionCase.caseNumber,
-                status: updateData.status || existingPreventionCase.status,
-              });
+
+              const updatedPrevention = await storage.updateCase(
+                existingPreventionCase.id,
+                {
+                  ...updateDataWithoutId,
+                  caseNumber: existingPreventionCase.caseNumber,
+                  status: updateData.status || existingPreventionCase.status,
+                },
+              );
               if (updatedPrevention) completedCases.push(updatedPrevention);
-              console.log(`[Case Update] Updated victim case and existing prevention case`);
+              console.log(
+                `[Case Update] Updated victim case and existing prevention case`,
+              );
             } else {
               // 손해방지 케이스가 없으면 새로 생성
-              const caseGroupIdForNew = existingCase.caseGroupId || `group-${Date.now()}`;
+              const caseGroupIdForNew =
+                existingCase.caseGroupId || `group-${Date.now()}`;
               const preventionData = JSON.parse(JSON.stringify(updateData));
               delete preventionData.id;
-              
+
               const preventionCase = await storage.createCase({
                 ...preventionData,
                 caseNumber: `${existingPrefix}-0`,
@@ -1868,9 +2378,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 createdBy: req.session.userId,
               });
               completedCases.push(preventionCase);
-              console.log(`[Case Update] Updated victim case and created new prevention case`);
+              console.log(
+                `[Case Update] Updated victim case and created new prevention case`,
+              );
             }
-            
+
             // 변경 로그 저장
             if (changes.length > 0) {
               try {
@@ -1887,28 +2399,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.error("Failed to create change log:", logError);
               }
             }
-            
+
             try {
               await storage.syncIntakeDataToRelatedCases(id);
             } catch (syncError) {
               console.error("Failed to sync intake data:", syncError);
             }
-            
+
             return res.json({ success: true, cases: completedCases });
           }
         }
       }
-      
+
       // 접수번호 업데이트 포함 (처리구분 로직을 실행한 경우에만 접수번호 변경)
-      const updateDataWithCaseNumber = shouldProcessCaseNumberLogic 
+      const updateDataWithCaseNumber = shouldProcessCaseNumberLogic
         ? { ...updateData, caseNumber: newCaseNumber }
         : updateData;
-      
+
       // 케이스 업데이트
-      const updatedCase = await storage.updateCase(id, updateDataWithCaseNumber);
-      
+      const updatedCase = await storage.updateCase(
+        id,
+        updateDataWithCaseNumber,
+      );
+
       if (!updatedCase) {
-        return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+        return res
+          .status(404)
+          .json({ error: "케이스 업데이트에 실패했습니다" });
       }
 
       // 변경 로그 저장 (변경 사항이 있을 때만)
@@ -1923,7 +2440,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             changes,
             note: null,
           });
-          console.log(`[Change Log] Recorded ${changes.length} changes for case ${id}:`, changes.map(c => `${c.fieldLabel}: ${c.before} → ${c.after}`).join(', '));
+          console.log(
+            `[Change Log] Recorded ${changes.length} changes for case ${id}:`,
+            changes
+              .map((c) => `${c.fieldLabel}: ${c.before} → ${c.after}`)
+              .join(", "),
+          );
         } catch (logError) {
           console.error("Failed to create change log:", logError);
           // Don't fail the request if logging fails
@@ -1935,10 +2457,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const syncCount = await storage.syncIntakeDataToRelatedCases(id);
         if (syncCount > 0) {
-          console.log(`[Case Update] Auto-synced intake data to ${syncCount} related cases`);
+          console.log(
+            `[Case Update] Auto-synced intake data to ${syncCount} related cases`,
+          );
         }
       } catch (syncError) {
-        console.error("Failed to sync intake data to related cases:", syncError);
+        console.error(
+          "Failed to sync intake data to related cases:",
+          syncError,
+        );
         // Don't fail the request if sync fails
       }
 
@@ -1966,8 +2493,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 관리자는 모든 케이스 삭제 가능, 그 외는 배당대기 상태만 삭제 가능
-      if (req.session.userRole !== "관리자" && existingCase.status !== "배당대기") {
-        return res.status(403).json({ error: "임시저장 건(배당대기 상태)만 삭제할 수 있습니다" });
+      if (
+        req.session.userRole !== "관리자" &&
+        existingCase.status !== "배당대기"
+      ) {
+        return res
+          .status(403)
+          .json({ error: "임시저장 건(배당대기 상태)만 삭제할 수 있습니다" });
       }
 
       // 케이스 삭제
@@ -1988,7 +2520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const userRole = req.session.userRole;
-    
+
     // Check authorization (관리자 또는 협력사)
     if (userRole !== "관리자" && userRole !== "협력사") {
       return res.status(403).json({ error: "권한이 없습니다" });
@@ -2004,31 +2536,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 허용된 상태값 검증
       const ALLOWED_STATUSES = [
-        "배당대기", "접수완료", "현장방문", "현장정보입력", "검토중", "반려",
-        "1차승인", "현장정보제출", "복구요청(2차승인)", "직접복구", "선견적요청", "(직접복구인 경우) 청구자료제출",
-        "(선견적요청인 경우) 출동비 청구", "청구", "입금완료", "부분입금", "정산완료", "접수취소"
+        "배당대기",
+        "접수완료",
+        "현장방문",
+        "현장정보입력",
+        "검토중",
+        "반려",
+        "1차승인",
+        "현장정보제출",
+        "복구요청(2차승인)",
+        "직접복구",
+        "선견적요청",
+        "(직접복구인 경우) 청구자료제출",
+        "(선견적요청인 경우) 출동비 청구",
+        "청구",
+        "입금완료",
+        "부분입금",
+        "정산완료",
+        "접수취소",
       ];
 
       if (!ALLOWED_STATUSES.includes(status)) {
-        return res.status(400).json({ error: `허용되지 않은 상태값입니다: ${status}` });
+        return res
+          .status(400)
+          .json({ error: `허용되지 않은 상태값입니다: ${status}` });
       }
 
       // 협력사는 직접복구/선견적요청 및 그 자동전환 상태만 변경 가능
       if (userRole === "협력사") {
         const PARTNER_ALLOWED = [
-          "직접복구", 
+          "직접복구",
           "선견적요청",
           "(직접복구인 경우) 청구자료제출",
-          "(선견적요청인 경우) 출동비 청구"
+          "(선견적요청인 경우) 출동비 청구",
         ];
         if (!PARTNER_ALLOWED.includes(status)) {
-          return res.status(403).json({ error: "협력사는 직접복구/선견적요청만 선택할 수 있습니다" });
+          return res.status(403).json({
+            error: "협력사는 직접복구/선견적요청만 선택할 수 있습니다",
+          });
         }
       }
 
       // storage.updateCaseStatus에서 미복구→출동비 청구 정규화 처리 및 날짜 자동 기록
       const updatedCase = await storage.updateCaseStatus(caseId, status);
-      
+
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -2057,16 +2608,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      
+
       // Validate specialNotes with Zod
       const updateSchema = z.object({
-        specialNotes: z.string().max(1000, "특이사항은 최대 1000자까지 입력 가능합니다").nullable(),
+        specialNotes: z
+          .string()
+          .max(1000, "특이사항은 최대 1000자까지 입력 가능합니다")
+          .nullable(),
       });
-      
+
       const { specialNotes } = updateSchema.parse(req.body);
 
-      const updatedCase = await storage.updateCaseSpecialNotes(caseId, specialNotes);
-      
+      const updatedCase = await storage.updateCaseSpecialNotes(
+        caseId,
+        specialNotes,
+      );
+
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -2096,8 +2653,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { caseId } = req.params;
 
-      const updatedCase = await storage.confirmCaseSpecialNotes(caseId, req.session.userId);
-      
+      const updatedCase = await storage.confirmCaseSpecialNotes(
+        caseId,
+        req.session.userId,
+      );
+
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -2117,36 +2677,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Check authorization (협력사 또는 관리자만)
-    if (req.session.userRole !== "협력사" && req.session.userRole !== "관리자") {
-      return res.status(403).json({ error: "협력사 또는 관리자 권한이 필요합니다" });
+    if (
+      req.session.userRole !== "협력사" &&
+      req.session.userRole !== "관리자"
+    ) {
+      return res
+        .status(403)
+        .json({ error: "협력사 또는 관리자 권한이 필요합니다" });
     }
 
     try {
       const { caseId } = req.params;
-      
+
       // Validate input with Zod
       const noteSchema = z.object({
-        content: z.string().min(1, "내용을 입력해주세요").max(1000, "특이사항은 최대 1000자까지 입력 가능합니다"),
+        content: z
+          .string()
+          .min(1, "내용을 입력해주세요")
+          .max(1000, "특이사항은 최대 1000자까지 입력 가능합니다"),
       });
-      
+
       const { content } = noteSchema.parse(req.body);
       const noteType = req.session.userRole === "협력사" ? "partner" : "admin";
-      
+
       // Get existing case
       const existingCase = await storage.getCaseById(caseId);
       if (!existingCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
-      
+
       // Get user info for name
       const currentUser = await storage.getUser(req.session.userId);
-      
+
       // Get current notes history
-      const historyField = noteType === "partner" ? "partnerNotesHistory" : "adminNotesHistory";
-      const currentHistory = existingCase[historyField] 
+      const historyField =
+        noteType === "partner" ? "partnerNotesHistory" : "adminNotesHistory";
+      const currentHistory = existingCase[historyField]
         ? JSON.parse(existingCase[historyField] as string)
         : [];
-      
+
       // Add new note
       const newNote = {
         content,
@@ -2154,24 +2723,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: req.session.userId,
         createdByName: currentUser?.name || "",
       };
-      
+
       currentHistory.push(newNote);
-      
+
       // Update case and reset ack flag (새 메모 추가시 확인 상태 리셋)
       const updateData: any = {};
       updateData[historyField] = JSON.stringify(currentHistory);
-      
+
       // Reset ack flag when new note is added
       if (noteType === "partner") {
         updateData.partnerNotesAckedByAdmin = null; // 협력사 메모 추가 → 관리자 확인 리셋 → 빨간점 다시 표시
       } else {
         updateData.adminNotesAckedByPartner = null; // 관리자 메모 추가 → 협력사 확인 리셋 → 파란점 다시 표시
       }
-      
+
       const updatedCase = await storage.updateCase(caseId, updateData);
-      
+
       if (!updatedCase) {
-        return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+        return res
+          .status(404)
+          .json({ error: "케이스 업데이트에 실패했습니다" });
       }
 
       res.json({ success: true, case: updatedCase, noteType });
@@ -2192,19 +2763,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     // Check authorization (협력사 또는 관리자만)
-    if (req.session.userRole !== "협력사" && req.session.userRole !== "관리자") {
-      return res.status(403).json({ error: "협력사 또는 관리자 권한이 필요합니다" });
+    if (
+      req.session.userRole !== "협력사" &&
+      req.session.userRole !== "관리자"
+    ) {
+      return res
+        .status(403)
+        .json({ error: "협력사 또는 관리자 권한이 필요합니다" });
     }
 
     try {
       const { caseId } = req.params;
-      
+
       // Get existing case
       const existingCase = await storage.getCaseById(caseId);
       if (!existingCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
-      
+
       // Update appropriate ack field based on role
       const updateData: any = {};
       if (req.session.userRole === "협력사") {
@@ -2214,17 +2790,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 관리자가 협력사 특이사항 확인 → 빨간점 사라짐
         updateData.partnerNotesAckedByAdmin = "true";
       }
-      
+
       const updatedCase = await storage.updateCase(caseId, updateData);
-      
+
       if (!updatedCase) {
-        return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+        return res
+          .status(404)
+          .json({ error: "케이스 업데이트에 실패했습니다" });
       }
 
       res.json({ success: true, case: updatedCase });
     } catch (error) {
       console.error("Acknowledge notes error:", error);
-      res.status(500).json({ error: "특이사항 확인 처리 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "특이사항 확인 처리 중 오류가 발생했습니다" });
     }
   });
 
@@ -2242,12 +2822,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      
+
       // Validate content with Zod
       const progressSchema = z.object({
         content: z.string().min(1, "진행상황 내용이 필요합니다"),
       });
-      
+
       const { content } = progressSchema.parse(req.body);
 
       const progressUpdate = await storage.createProgressUpdate({
@@ -2280,16 +2860,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      
+
       // Validate additionalNotes with Zod (800자 제한)
       const updateSchema = z.object({
-        additionalNotes: z.string().max(800, "기타사항은 800자를 초과할 수 없습니다").nullable(),
+        additionalNotes: z
+          .string()
+          .max(800, "기타사항은 800자를 초과할 수 없습니다")
+          .nullable(),
       });
-      
+
       const { additionalNotes } = updateSchema.parse(req.body);
 
-      const updatedCase = await storage.updateCaseAdditionalNotes(caseId, additionalNotes);
-      
+      const updatedCase = await storage.updateCaseAdditionalNotes(
+        caseId,
+        additionalNotes,
+      );
+
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -2318,7 +2904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      
+
       // 케이스 정보 조회
       const caseData = await storage.getCaseById(caseId);
       if (!caseData) {
@@ -2327,60 +2913,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 도면 조회
       const drawing = await storage.getDrawingByCaseId(caseId);
-      
+
       // 증빙자료 조회
       const documents = await storage.getDocumentsByCaseId(caseId);
-      
+
       // 최신 견적 조회
       const estimateData = await storage.getLatestEstimate(caseId);
-      
+
       // 손해방지 케이스 여부 (접수번호가 -0으로 끝나면 손해방지)
-      const isLossPreventionCase = /-0$/.test(caseData.caseNumber || '');
-      
+      const isLossPreventionCase = /-0$/.test(caseData.caseNumber || "");
+
       // 견적 완료 여부 체크
       // - 손해방지 케이스: 복구면적 산출표 없어도 노무비/자재비만 있으면 완료
       // - 피해복구 케이스: 복구면적 산출표 필수
-      const hasRecoveryRows = !!(estimateData?.rows && estimateData.rows.length > 0);
+      const hasRecoveryRows = !!(
+        estimateData?.rows && estimateData.rows.length > 0
+      );
       let hasLaborCosts = false;
       let hasMaterialCosts = false;
-      
+
       if (estimateData?.estimate?.laborCostData) {
         try {
-          const data = typeof estimateData.estimate.laborCostData === 'string' 
-            ? JSON.parse(estimateData.estimate.laborCostData) 
-            : estimateData.estimate.laborCostData;
+          const data =
+            typeof estimateData.estimate.laborCostData === "string"
+              ? JSON.parse(estimateData.estimate.laborCostData)
+              : estimateData.estimate.laborCostData;
           hasLaborCosts = Array.isArray(data) && data.length > 0;
-        } catch { hasLaborCosts = false; }
+        } catch {
+          hasLaborCosts = false;
+        }
       }
-      
+
       if (estimateData?.estimate?.materialCostData) {
         try {
-          const data = typeof estimateData.estimate.materialCostData === 'string' 
-            ? JSON.parse(estimateData.estimate.materialCostData) 
-            : estimateData.estimate.materialCostData;
+          const data =
+            typeof estimateData.estimate.materialCostData === "string"
+              ? JSON.parse(estimateData.estimate.materialCostData)
+              : estimateData.estimate.materialCostData;
           hasMaterialCosts = Array.isArray(data) && data.length > 0;
-        } catch { hasMaterialCosts = false; }
+        } catch {
+          hasMaterialCosts = false;
+        }
       }
-      
+
       // 완료 여부 체크
-      const isFieldSurveyComplete = !!(caseData.visitDate && caseData.visitTime && caseData.accidentCategory);
+      const isFieldSurveyComplete = !!(
+        caseData.visitDate &&
+        caseData.visitTime &&
+        caseData.accidentCategory
+      );
       const isDrawingComplete = !!drawing;
       const isDocumentsComplete = documents.length > 0;
       // 손해방지 케이스: 노무비 또는 자재비만 있으면 완료
       // 피해복구 케이스: 복구면적 산출표 필수
-      const isEstimateComplete = isLossPreventionCase 
-        ? (hasLaborCosts || hasMaterialCosts)
+      const isEstimateComplete = isLossPreventionCase
+        ? hasLaborCosts || hasMaterialCosts
         : hasRecoveryRows;
-      
-      if (!isFieldSurveyComplete || !isDrawingComplete || !isDocumentsComplete || !isEstimateComplete) {
+
+      if (
+        !isFieldSurveyComplete ||
+        !isDrawingComplete ||
+        !isDocumentsComplete ||
+        !isEstimateComplete
+      ) {
         const missingItems = [];
         if (!isFieldSurveyComplete) missingItems.push("현장조사 정보");
         if (!isDrawingComplete) missingItems.push("도면");
         if (!isDocumentsComplete) missingItems.push("증빙자료");
         if (!isEstimateComplete) missingItems.push("견적서");
-        
-        return res.status(400).json({ 
-          error: `다음 항목을 완료해주세요: ${missingItems.join(", ")}` 
+
+        return res.status(400).json({
+          error: `다음 항목을 완료해주세요: ${missingItems.join(", ")}`,
         });
       }
 
@@ -2389,58 +2992,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (estimateData && estimateData.rows) {
         const rows = estimateData.rows as any[];
         const vatIncluded = (estimateData as any).vatIncluded ?? true;
-        
+
         // 노임비 합계 (경비 제외)
         const laborCosts = rows.reduce((sum: number, row: any) => {
           const laborAmount = parseFloat(row.laborCost?.toString() || "0") || 0;
           const includeInEstimate = row.includeInEstimate !== false;
           return sum + (includeInEstimate ? laborAmount : 0);
         }, 0);
-        
+
         // 경비 합계 (includeInEstimate가 false인 노임비)
         const expenseCosts = rows.reduce((sum: number, row: any) => {
           const laborAmount = parseFloat(row.laborCost?.toString() || "0") || 0;
           const includeInEstimate = row.includeInEstimate !== false;
           return sum + (includeInEstimate ? 0 : laborAmount);
         }, 0);
-        
+
         // 재료비 합계
         const materialCosts = rows.reduce((sum: number, row: any) => {
           return sum + (parseFloat(row.materialCost?.toString() || "0") || 0);
         }, 0);
-        
+
         // 기초금액 (노임비 + 재료비, 경비 제외)
         const baseAmount = laborCosts + materialCosts;
-        
+
         // 관리비 6%, 이윤 15%
         const managementFee = Math.round(baseAmount * 0.06);
         const profit = Math.round(baseAmount * 0.15);
-        
+
         // 소계 (노임비 + 경비 + 재료비 + 관리비 + 이윤)
-        const subtotal = laborCosts + expenseCosts + materialCosts + managementFee + profit;
-        
+        const subtotal =
+          laborCosts + expenseCosts + materialCosts + managementFee + profit;
+
         // VAT 10%
         const vat = vatIncluded ? Math.round(subtotal * 0.1) : 0;
-        
+
         // 최종 합계
         estimateTotal = subtotal + vat;
       }
-      
+
       // 견적 rows가 없으면 기존 estimateAmount 사용 (fallback)
       if (estimateTotal === null && caseData.estimateAmount) {
-        const parsedAmount = parseFloat(caseData.estimateAmount.replace(/,/g, ''));
+        const parsedAmount = parseFloat(
+          caseData.estimateAmount.replace(/,/g, ""),
+        );
         estimateTotal = isNaN(parsedAmount) ? 0 : parsedAmount;
       }
-      
+
       // 여전히 null이면 0으로 설정 (견적이 없는 경우)
       if (estimateTotal === null) {
         estimateTotal = 0;
       }
-      
+
       // 케이스 번호로 손해방지비용(-0) 또는 대물비용(-1,-2...) 판별
       const caseNumber = caseData.caseNumber || "";
       const caseNumberParts = caseNumber.split("-");
-      const suffix = caseNumberParts.length > 1 ? parseInt(caseNumberParts[caseNumberParts.length - 1], 10) : 0;
+      const suffix =
+        caseNumberParts.length > 1
+          ? parseInt(caseNumberParts[caseNumberParts.length - 1], 10)
+          : 0;
       const isPrevention = suffix === 0;
 
       // 제출 처리 (초기 견적금액 포함)
@@ -2448,7 +3057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         estimateTotal: estimateTotal.toString(),
         isPrevention,
       });
-      
+
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -2456,7 +3065,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, case: updatedCase });
     } catch (error) {
       console.error("Submit field survey error:", error);
-      res.status(500).json({ error: "현장조사 보고서 제출 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "현장조사 보고서 제출 중 오류가 발생했습니다" });
     }
   });
 
@@ -2474,13 +3085,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      
+
       // Validate review data with Zod
       const parsed = reviewCaseSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "입력 데이터가 유효하지 않습니다",
-          details: parsed.error.errors 
+          details: parsed.error.errors,
         });
       }
 
@@ -2494,19 +3105,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 제출된 보고서만 심사 가능
       if (existingCase.fieldSurveyStatus !== "submitted") {
-        return res.status(400).json({ 
-          error: "제출된 보고서만 심사할 수 있습니다" 
+        return res.status(400).json({
+          error: "제출된 보고서만 심사할 수 있습니다",
         });
       }
 
       // 심사 처리
       const updatedCase = await storage.reviewCase(
-        caseId, 
-        decision, 
-        reviewComment || null, 
-        req.session.userId
+        caseId,
+        decision,
+        reviewComment || null,
+        req.session.userId,
       );
-      
+
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -2532,13 +3143,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      
+
       // Validate approval data with Zod
       const parsed = approveReportSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "입력 데이터가 유효하지 않습니다",
-          details: parsed.error.errors 
+          details: parsed.error.errors,
         });
       }
 
@@ -2552,19 +3163,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 현장정보제출 상태만 보고서 승인 가능 (이메일 전송 후 상태)
       if (existingCase.status !== "현장정보제출") {
-        return res.status(400).json({ 
-          error: "현장정보제출 상태인 보고서만 승인할 수 있습니다" 
+        return res.status(400).json({
+          error: "현장정보제출 상태인 보고서만 승인할 수 있습니다",
         });
       }
 
       // 보고서 승인 처리
       const updatedCase = await storage.approveReport(
-        caseId, 
-        decision, 
-        approvalComment || null, 
-        req.session.userId
+        caseId,
+        decision,
+        approvalComment || null,
+        req.session.userId,
       );
-      
+
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -2589,7 +3200,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // 협력사: 언제든지 수정 가능
     // 관리자: 협력사가 제출(submitted) 후에만 수정 가능
     if (userRole !== "협력사" && userRole !== "관리자") {
-      return res.status(403).json({ error: "협력사 또는 관리자 권한이 필요합니다" });
+      return res
+        .status(403)
+        .json({ error: "협력사 또는 관리자 권한이 필요합니다" });
     }
 
     // 관리자인 경우, 케이스가 제출된 상태인지 확인
@@ -2599,7 +3212,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
       if (existingCase.fieldSurveyStatus !== "submitted") {
-        return res.status(403).json({ error: "협력사가 보고서를 제출한 후에만 수정할 수 있습니다" });
+        return res.status(403).json({
+          error: "협력사가 보고서를 제출한 후에만 수정할 수 있습니다",
+        });
       }
     }
 
@@ -2629,47 +3244,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fieldSurveyStatus: z.string().nullable().optional(),
         status: z.string().nullable().optional(), // 케이스 상태 자동 변경용
       });
-      
+
       const fieldData = updateSchema.parse(req.body);
 
-      const updatedCase = await storage.updateCaseFieldSurvey(caseId, fieldData);
-      
+      const updatedCase = await storage.updateCaseFieldSurvey(
+        caseId,
+        fieldData,
+      );
+
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
       // Sync field survey data to related cases (same accident number, different receipt)
       // Create a new object excluding status fields and victim info - each case has its own victim
-      const { 
-        status, 
-        fieldSurveyStatus, 
-        victimName, 
-        victimContact, 
-        victimAddress, 
+      const {
+        status,
+        fieldSurveyStatus,
+        victimName,
+        victimContact,
+        victimAddress,
         victimAddressDetail,
         additionalVictims,
-        ...syncData 
+        ...syncData
       } = fieldData;
-      
+
       let syncedCount = 0;
       try {
-        syncedCount = await storage.syncFieldSurveyToRelatedCases(caseId, syncData);
+        syncedCount = await storage.syncFieldSurveyToRelatedCases(
+          caseId,
+          syncData,
+        );
       } catch (syncError) {
         console.error("Sync to related cases failed:", syncError);
         // Don't fail the request if sync fails
       }
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         case: updatedCase,
-        syncedCases: syncedCount 
+        syncedCases: syncedCount,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
       console.error("Update case field survey error:", error);
-      res.status(500).json({ error: "현장조사 정보 저장 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "현장조사 정보 저장 중 오류가 발생했습니다" });
     }
   });
 
@@ -2685,7 +3308,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error("Get partner stats error:", error);
-      res.status(500).json({ error: "협력사 통계를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "협력사 통계를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -2709,7 +3334,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       console.error("Create progress update error:", error);
-      res.status(500).json({ error: "진행상황 업데이트 생성 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "진행상황 업데이트 생성 중 오류가 발생했습니다" });
     }
   });
 
@@ -2721,11 +3348,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const updates = await storage.getProgressUpdatesByCaseId(req.params.caseId);
+      const updates = await storage.getProgressUpdatesByCaseId(
+        req.params.caseId,
+      );
       res.json(updates);
     } catch (error) {
       console.error("Get progress updates error:", error);
-      res.status(500).json({ error: "진행상황 업데이트를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "진행상황 업데이트를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -2741,7 +3372,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(filters);
     } catch (error) {
       console.error("Get statistics filters error:", error);
-      res.status(500).json({ error: "필터 데이터를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "필터 데이터를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -2755,17 +3388,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get current user for permission-based filtering
       const currentUser = await storage.getUser(req.session.userId);
-      
+
       if (!currentUser) {
         return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       }
-      
+
       // Get cases filtered by user role and permissions
       const allCases = await storage.getAllCases(currentUser);
       res.json(allCases);
     } catch (error) {
       console.error("Get statistics cases error:", error);
-      res.status(500).json({ error: "통계 데이터를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "통계 데이터를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -2775,7 +3410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       userId: req.session?.userId,
       userRole: req.session?.userRole,
     });
-    
+
     // Check authentication
     if (!req.session?.userId) {
       console.log("[GET /api/role-permissions] 401: Not authenticated");
@@ -2784,17 +3419,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Check admin authorization
     if (req.session.userRole !== "관리자") {
-      console.log("[GET /api/role-permissions] 403: Not admin, role is:", req.session.userRole);
+      console.log(
+        "[GET /api/role-permissions] 403: Not admin, role is:",
+        req.session.userRole,
+      );
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
     }
 
     try {
       const permissions = await storage.getAllRolePermissions();
-      console.log("[GET /api/role-permissions] Success, returning", permissions.length, "permissions");
+      console.log(
+        "[GET /api/role-permissions] Success, returning",
+        permissions.length,
+        "permissions",
+      );
       res.json(permissions);
     } catch (error) {
       console.error("Get role permissions error:", error);
-      res.status(500).json({ error: "권한 정보를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "권한 정보를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -2818,7 +3462,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(permission);
     } catch (error) {
       console.error("Get role permission error:", error);
-      res.status(500).json({ error: "권한 정보를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "권한 정보를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -2833,19 +3479,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session.userRole;
     const userId = req.session.userId;
     if (!userRole) {
-      return res.status(400).json({ error: "사용자 역할 정보를 찾을 수 없습니다" });
+      return res
+        .status(400)
+        .json({ error: "사용자 역할 정보를 찾을 수 없습니다" });
     }
 
     try {
       // For admin users, check for individual admin permissions first
       if (userRole === "관리자") {
         const individualKey = `관리자_${userId}`;
-        const individualPermission = await storage.getRolePermission(individualKey);
+        const individualPermission =
+          await storage.getRolePermission(individualKey);
         if (individualPermission) {
           return res.json(individualPermission);
         }
       }
-      
+
       // Fall back to role-based permissions
       const permission = await storage.getRolePermission(userRole);
       if (!permission) {
@@ -2855,17 +3504,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(permission);
     } catch (error) {
       console.error("Get my permissions error:", error);
-      res.status(500).json({ error: "권한 정보를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "권한 정보를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
   // Save role permission endpoint (admin only)
   app.post("/api/role-permissions", async (req, res) => {
-    console.log("[POST /api/role-permissions] Request received, session:", {
-      userId: req.session?.userId,
-      userRole: req.session?.userRole,
-    }, "body:", req.body);
-    
+    console.log(
+      "[POST /api/role-permissions] Request received, session:",
+      {
+        userId: req.session?.userId,
+        userRole: req.session?.userRole,
+      },
+      "body:",
+      req.body,
+    );
+
     // Check authentication
     if (!req.session?.userId) {
       console.log("[POST /api/role-permissions] 401: Not authenticated");
@@ -2874,22 +3530,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Check admin authorization
     if (req.session.userRole !== "관리자") {
-      console.log("[POST /api/role-permissions] 403: Not admin, role is:", req.session.userRole);
+      console.log(
+        "[POST /api/role-permissions] 403: Not admin, role is:",
+        req.session.userRole,
+      );
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
     }
 
     try {
       const validatedData = insertRolePermissionSchema.parse(req.body);
       const permission = await storage.saveRolePermission(validatedData);
-      console.log("[POST /api/role-permissions] Success, saved permission for role:", validatedData.roleName);
+      console.log(
+        "[POST /api/role-permissions] Success, saved permission for role:",
+        validatedData.roleName,
+      );
       res.json(permission);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.log("[POST /api/role-permissions] 400: Validation error:", error.errors);
+        console.log(
+          "[POST /api/role-permissions] 400: Validation error:",
+          error.errors,
+        );
         return res.status(400).json({ error: error.errors });
       }
       console.error("Save role permission error:", error);
-      res.status(500).json({ error: "권한 정보를 저장하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "권한 정보를 저장하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -2907,7 +3574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { roleName } = req.params;
       const deleted = await storage.deleteRolePermission(roleName);
       if (deleted) {
-        console.log("[DELETE /api/role-permissions] Deleted permission for role:", roleName);
+        console.log(
+          "[DELETE /api/role-permissions] Deleted permission for role:",
+          roleName,
+        );
         res.json({ success: true });
       } else {
         res.status(404).json({ error: "권한을 찾을 수 없습니다" });
@@ -2939,7 +3609,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(data);
     } catch (error) {
       console.error("Get excel data error:", error);
-      res.status(500).json({ error: "데이터를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "데이터를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -2963,7 +3635,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(dataList);
     } catch (error) {
       console.error("List excel data versions error:", error);
-      res.status(500).json({ error: "데이터를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "데이터를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -2980,21 +3654,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const data = await storage.getExcelDataById(id);
-      
+
       if (!data) {
         return res.status(404).json({ error: "데이터를 찾을 수 없습니다" });
       }
-      
+
       res.json(data);
     } catch (error) {
       console.error("Get excel data by ID error:", error);
-      res.status(500).json({ error: "데이터를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "데이터를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
   app.post("/api/excel-data", async (req, res) => {
     console.log("[Excel Upload] POST /api/excel-data called");
-    
+
     if (!req.session?.userId) {
       console.log("[Excel Upload] Error: 인증되지 않은 사용자");
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
@@ -3010,12 +3686,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: req.body?.type,
         title: req.body?.title,
         headersCount: req.body?.headers?.length,
-        dataRowsCount: req.body?.data?.length
+        dataRowsCount: req.body?.data?.length,
       });
-      
+
       const validatedData = insertExcelDataSchema.parse(req.body);
       const result = await storage.saveExcelData(validatedData);
-      
+
       console.log("[Excel Upload] Success! Saved with ID:", result.id);
       res.json(result);
     } catch (error) {
@@ -3024,14 +3700,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       // Handle unique constraint violation (Postgres error code 23505)
-      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "23505"
+      ) {
         console.log("[Excel Upload] Error: 동일한 제목 존재");
-        return res.status(409).json({ 
-          error: "동일한 제목의 데이터가 이미 존재합니다. 다른 제목을 사용해주세요." 
+        return res.status(409).json({
+          error:
+            "동일한 제목의 데이터가 이미 존재합니다. 다른 제목을 사용해주세요.",
         });
       }
       console.error("[Excel Upload] Save excel data error:", error);
-      res.status(500).json({ error: "데이터를 저장하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "데이터를 저장하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3048,33 +3732,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const existing = await storage.getExcelDataById(id);
-      
+
       if (!existing) {
         return res.status(404).json({ error: "데이터를 찾을 수 없습니다" });
       }
 
       // Combine current headers and data to re-detect the correct header row
       const allRows = [existing.headers, ...existing.data];
-      
+
       // Find header row: look for row containing both "공종" and "공사명"
       let headerRowIdx = 0;
       for (let i = 0; i < Math.min(allRows.length, 10); i++) {
         const row = allRows[i] as any[];
         if (!row) continue;
-        const rowStr = row.map((c: any) => c?.toString() || '').join('|');
-        if (rowStr.includes('공종') && rowStr.includes('공사명')) {
+        const rowStr = row.map((c: any) => c?.toString() || "").join("|");
+        if (rowStr.includes("공종") && rowStr.includes("공사명")) {
           headerRowIdx = i;
-          console.log('[Reparse] Found header row at index:', i, 'Row:', row);
+          console.log("[Reparse] Found header row at index:", i, "Row:", row);
           break;
         }
       }
 
-      const newHeaders = (allRows[headerRowIdx] as any[]).map((h: any) => h?.toString() || '');
+      const newHeaders = (allRows[headerRowIdx] as any[]).map(
+        (h: any) => h?.toString() || "",
+      );
       const newData = allRows.slice(headerRowIdx + 1);
 
-      console.log('[Reparse] Original headers:', existing.headers);
-      console.log('[Reparse] New headers:', newHeaders);
-      console.log('[Reparse] New data rows:', newData.length);
+      console.log("[Reparse] Original headers:", existing.headers);
+      console.log("[Reparse] New headers:", newHeaders);
+      console.log("[Reparse] New data rows:", newData.length);
 
       const updated = await storage.updateExcelData(id, newHeaders, newData);
       res.json(updated);
@@ -3104,7 +3790,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       console.error("Delete excel data error:", error);
-      res.status(500).json({ error: "데이터를 삭제하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "데이터를 삭제하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3120,16 +3808,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { id } = req.params;
-      
+
       const deleted = await storage.deleteExcelDataById(id);
       if (!deleted) {
         return res.status(404).json({ error: "데이터를 찾을 수 없습니다" });
       }
-      
+
       res.json({ success: true });
     } catch (error) {
       console.error("Delete excel data error:", error);
-      res.status(500).json({ error: "데이터를 삭제하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "데이터를 삭제하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3151,7 +3841,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(inquiries);
     } catch (error) {
       console.error("Get inquiries error:", error);
-      res.status(500).json({ error: "문의 목록을 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "문의 목록을 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3189,7 +3881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { id } = req.params;
-      
+
       // Validate response content
       const validatedData = respondInquirySchema.parse(req.body);
 
@@ -3226,14 +3918,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Extract drawingId if provided (for updates)
       const { drawingId, ...bodyData } = req.body;
-      
+
       // Debug: Check if canvasImage is received
-      console.log('[Drawing Save] canvasImage received:', {
+      console.log("[Drawing Save] canvasImage received:", {
         hasCanvasImage: !!bodyData.canvasImage,
         canvasImageLength: bodyData.canvasImage?.length || 0,
-        canvasImagePreview: bodyData.canvasImage?.substring(0, 100) || 'null',
+        canvasImagePreview: bodyData.canvasImage?.substring(0, 100) || "null",
       });
-      
+
       // Validate the request data
       const validatedData = insertDrawingSchema.parse({
         ...bodyData,
@@ -3248,9 +3940,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Note: Additional permission checks could be added here based on user role
       // Currently relying on frontend filtering (field-management page shows only accessible cases)
-      
+
       let drawing;
-      
+
       // If drawingId is provided, update existing drawing
       if (drawingId) {
         const existing = await storage.getDrawing(drawingId);
@@ -3261,7 +3953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existing.caseId !== validatedData.caseId) {
           return res.status(403).json({ error: "다른 케이스의 도면입니다" });
         }
-        
+
         const updateData = {
           uploadedImages: validatedData.uploadedImages,
           rectangles: validatedData.rectangles,
@@ -3290,10 +3982,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           drawing = await storage.saveDrawing(validatedData);
         }
       }
-      
+
       // 도면 자동 동기화 비활성화 - 각 케이스 개별 관리
       // Auto-sync drawing disabled - each case manages its own drawing
-      
+
       res.json(drawing);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -3313,7 +4005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const drawing = await storage.getDrawing(id);
-      
+
       if (!drawing) {
         return res.status(404).json({ error: "도면을 찾을 수 없습니다" });
       }
@@ -3334,7 +4026,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { caseId } = req.params;
       const drawing = await storage.getDrawingByCaseId(caseId);
-      
+
       if (!drawing) {
         return res.status(404).json({ error: "도면을 찾을 수 없습니다" });
       }
@@ -3353,11 +4045,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const activeCase = await storage.getOrCreateActiveCase(req.session.userId!);
+      const activeCase = await storage.getOrCreateActiveCase(
+        req.session.userId!,
+      );
       res.json({ caseId: activeCase.id });
     } catch (error) {
       console.error("Get active case ID error:", error);
-      res.status(500).json({ error: "활성 케이스 ID를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "활성 케이스 ID를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3372,19 +4068,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { caseId } = req.params;
       const relatedCase = await storage.getRelatedCaseWithDrawing(caseId);
-      
+
       if (!relatedCase) {
         return res.json({ hasRelatedDrawing: false });
       }
 
-      res.json({ 
-        hasRelatedDrawing: true, 
-        sourceCaseId: relatedCase.caseId, 
-        sourceCaseNumber: relatedCase.caseNumber 
+      res.json({
+        hasRelatedDrawing: true,
+        sourceCaseId: relatedCase.caseId,
+        sourceCaseNumber: relatedCase.caseNumber,
       });
     } catch (error) {
       console.error("Get related drawing error:", error);
-      res.status(500).json({ error: "관련 도면을 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "관련 도면을 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3400,7 +4098,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ relatedCases });
     } catch (error) {
       console.error("Get all related drawings error:", error);
-      res.status(500).json({ error: "관련 도면 목록을 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "관련 도면 목록을 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3413,7 +4113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { caseId } = req.params;
       const currentCase = await storage.getCaseById(caseId);
-      
+
       if (!currentCase || !currentCase.caseNumber) {
         return res.json({ preventionCase: null });
       }
@@ -3423,28 +4123,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!match) {
         return res.json({ preventionCase: null });
       }
-      
+
       const prefix = match[1];
-      
+
       // Get the prevention case (-0 case)
       const preventionCase = await storage.getPreventionCaseByPrefix(prefix);
-      
+
       if (!preventionCase) {
         return res.json({ preventionCase: null });
       }
 
-      res.json({ 
+      res.json({
         preventionCase: {
           id: preventionCase.id,
           caseNumber: preventionCase.caseNumber,
           status: preventionCase.status,
           fieldSurveyStatus: preventionCase.fieldSurveyStatus,
           reportApprovalDecision: preventionCase.reportApprovalDecision,
-        }
+        },
       });
     } catch (error) {
       console.error("Get prevention case status error:", error);
-      res.status(500).json({ error: "손해방지 케이스 상태를 조회하는 중 오류가 발생했습니다" });
+      res.status(500).json({
+        error: "손해방지 케이스 상태를 조회하는 중 오류가 발생했습니다",
+      });
     }
   });
 
@@ -3463,9 +4165,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const clonedDrawing = await storage.cloneDrawingFromCase(
-        sourceCaseId, 
-        caseId, 
-        req.session.userId!
+        sourceCaseId,
+        caseId,
+        req.session.userId!,
       );
 
       if (!clonedDrawing) {
@@ -3488,19 +4190,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { caseId } = req.params;
       const relatedCase = await storage.getRelatedCaseWithEstimate(caseId);
-      
+
       if (!relatedCase) {
         return res.json({ hasRelatedEstimate: false });
       }
 
-      res.json({ 
-        hasRelatedEstimate: true, 
-        sourceCaseId: relatedCase.caseId, 
-        sourceCaseNumber: relatedCase.caseNumber 
+      res.json({
+        hasRelatedEstimate: true,
+        sourceCaseId: relatedCase.caseId,
+        sourceCaseNumber: relatedCase.caseNumber,
       });
     } catch (error) {
       console.error("Get related estimate error:", error);
-      res.status(500).json({ error: "관련 견적서를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "관련 견적서를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3519,19 +4223,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const clonedEstimate = await storage.cloneEstimateFromCase(
-        sourceCaseId, 
-        caseId, 
-        req.session.userId!
+        sourceCaseId,
+        caseId,
+        req.session.userId!,
       );
 
       if (!clonedEstimate) {
-        return res.status(404).json({ error: "소스 케이스에 견적서가 없습니다" });
+        return res
+          .status(404)
+          .json({ error: "소스 케이스에 견적서가 없습니다" });
       }
 
       res.json({ success: true, estimate: clonedEstimate });
     } catch (error) {
       console.error("Clone estimate error:", error);
-      res.status(500).json({ error: "견적서를 복제하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "견적서를 복제하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3544,20 +4252,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { caseId } = req.params;
       const relatedCase = await storage.getRelatedCaseWithDocuments(caseId);
-      
+
       if (!relatedCase) {
         return res.json({ hasRelatedDocuments: false });
       }
 
-      res.json({ 
-        hasRelatedDocuments: true, 
-        sourceCaseId: relatedCase.caseId, 
+      res.json({
+        hasRelatedDocuments: true,
+        sourceCaseId: relatedCase.caseId,
         sourceCaseNumber: relatedCase.caseNumber,
-        documentCount: relatedCase.documentCount
+        documentCount: relatedCase.documentCount,
       });
     } catch (error) {
       console.error("Get related documents error:", error);
-      res.status(500).json({ error: "관련 증빙자료를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "관련 증빙자료를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3576,20 +4286,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const clonedDocuments = await storage.cloneDocumentsFromCase(
-        sourceCaseId, 
-        caseId, 
-        req.session.userId!
+        sourceCaseId,
+        caseId,
+        req.session.userId!,
       );
 
-      res.json({ success: true, documents: clonedDocuments, count: clonedDocuments.length });
+      res.json({
+        success: true,
+        documents: clonedDocuments,
+        count: clonedDocuments.length,
+      });
     } catch (error) {
       console.error("Clone documents error:", error);
-      res.status(500).json({ error: "증빙자료를 복제하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "증빙자료를 복제하는 중 오류가 발생했습니다" });
     }
   });
 
   // ===== 증빙자료 Documents API =====
-  
+
   // Upload document(s) to a case
   app.post("/api/documents", async (req, res) => {
     if (!req.session?.userId) {
@@ -3599,55 +4315,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertCaseDocumentSchema.parse(req.body);
       const document = await storage.saveDocument(validatedData);
-      
+
       // 청구자료 카테고리 목록
-      const claimDocumentCategories = ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"];
+      const claimDocumentCategories = [
+        "위임장",
+        "도급계약서",
+        "복구완료확인서",
+        "부가세 청구자료",
+      ];
       // 정산 관련 상태 목록 (이미 정산 프로세스에 있는 상태들)
       const settlementStatuses = ["청구", "입금완료", "부분입금", "정산완료"];
-      
+
       // parentCategory 체크 - 프론트엔드에서 전송한 탭 정보 (스키마에서 검증됨)
       const parentCategory = validatedData.parentCategory;
       const isClaimTab = parentCategory === "청구자료";
-      
+
       // 청구자료 탭에서 업로드하거나, 청구자료 카테고리 문서 제출 시 처리
-      if ((isClaimTab || claimDocumentCategories.includes(validatedData.category) || validatedData.category === "청구") && validatedData.caseId) {
+      if (
+        (isClaimTab ||
+          claimDocumentCategories.includes(validatedData.category) ||
+          validatedData.category === "청구") &&
+        validatedData.caseId
+      ) {
         // 현재 케이스 상태를 다시 조회 (동시성 문제 방지)
         const existingCase = await storage.getCaseById(validatedData.caseId);
         if (existingCase) {
           const updateData: Record<string, any> = {};
-          const currentDate = new Date().toLocaleString("en-CA", { 
-            timeZone: "Asia/Seoul" 
-          }).split(",")[0];
-          
+          const currentDate = new Date()
+            .toLocaleString("en-CA", {
+              timeZone: "Asia/Seoul",
+            })
+            .split(",")[0];
+
           // 상태가 아직 정산 관련 상태가 아닌 경우에만 '청구'로 변경
           // (이미 입금완료, 부분입금, 정산완료인 경우 상태를 되돌리지 않음)
           if (!settlementStatuses.includes(existingCase.status)) {
             updateData.status = "청구";
             updateData.claimDate = currentDate;
           }
-          
+
           // 복구완료일이 없는 경우에만 설정
           if (!existingCase.constructionCompletionDate) {
             updateData.constructionCompletionDate = currentDate;
           }
-          
+
           // 변경할 내용이 있는 경우에만 단일 업데이트 수행
           if (Object.keys(updateData).length > 0) {
             await storage.updateCase(validatedData.caseId, updateData);
           }
         }
       }
-      
+
       // 문서 자동 동기화 비활성화 - 각 케이스 개별 관리
       // Auto-sync document disabled - each case manages its own documents
-      
+
       res.json(document);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
       console.error("Upload document error:", error);
-      res.status(500).json({ error: "문서를 업로드하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "문서를 업로드하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3659,18 +4389,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      
+
       // Validate caseId format
       if (!caseId || caseId === "null" || caseId === "undefined") {
         console.error("Invalid caseId for documents:", caseId);
         return res.status(400).json({ error: "유효하지 않은 케이스 ID입니다" });
       }
-      
+
       const documents = await storage.getDocumentsByCaseId(caseId);
       res.json(documents);
     } catch (error) {
       console.error("Get documents error:", error);
-      console.error("Get documents error details:", error instanceof Error ? error.message : String(error));
+      console.error(
+        "Get documents error details:",
+        error instanceof Error ? error.message : String(error),
+      );
       res.status(500).json({ error: "문서를 조회하는 중 오류가 발생했습니다" });
     }
   });
@@ -3683,34 +4416,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { id } = req.params;
-      
+
       if (!id || id === "null" || id === "undefined") {
         return res.status(400).json({ error: "유효하지 않은 문서 ID입니다" });
       }
-      
+
       // Verify document exists and check authorization
       const document = await storage.getDocument(id);
       if (!document) {
         return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
       }
-      
+
       // Allow admins and assessors to access all documents, others only their own
       const userRole = req.session.userRole;
       const isPrivilegedRole = userRole === "관리자" || userRole === "심사사";
-      
+
       if (!isPrivilegedRole && document.createdBy !== req.session.userId) {
         return res.status(403).json({ error: "권한이 없습니다" });
       }
-      
+
       const fileData = await storage.getDocumentFileData(id);
       if (!fileData) {
-        return res.status(404).json({ error: "문서 데이터를 찾을 수 없습니다" });
+        return res
+          .status(404)
+          .json({ error: "문서 데이터를 찾을 수 없습니다" });
       }
-      
+
       res.json({ fileData });
     } catch (error) {
       console.error("Get document data error:", error);
-      res.status(500).json({ error: "문서 데이터를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "문서 데이터를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3722,17 +4459,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { id } = req.params;
-      
+
       // Verify existence
       const document = await storage.getDocument(id);
       if (!document) {
         return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
       }
-      
+
       // Allow admins and assessors to manage all documents, others only their own
       const userRole = req.session.userRole;
       const isPrivilegedRole = userRole === "관리자" || userRole === "심사사";
-      
+
       if (!isPrivilegedRole && document.createdBy !== req.session.userId) {
         return res.status(403).json({ error: "권한이 없습니다" });
       }
@@ -3764,11 +4501,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!document) {
         return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
       }
-      
+
       // Allow admins and assessors to manage all documents, others only their own
       const userRole = req.session.userRole;
       const isPrivilegedRole = userRole === "관리자" || userRole === "심사사";
-      
+
       if (!isPrivilegedRole && document.createdBy !== req.session.userId) {
         return res.status(403).json({ error: "권한이 없습니다" });
       }
@@ -3777,7 +4514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updated);
     } catch (error) {
       console.error("Update document category error:", error);
-      res.status(500).json({ error: "카테고리를 변경하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "카테고리를 변경하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -3791,39 +4530,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // 요청 바디 크기 로그
-      const contentLength = req.headers['content-length'];
+      const contentLength = req.headers["content-length"];
       console.log(`[presign] Content-Length: ${contentLength} bytes`);
-      
+
       const { caseId, fileName, fileType, fileSize } = req.body;
-      
+
       // 파일 바이너리/base64가 포함되지 않았는지 확인
       if (req.body.fileData || req.body.data || req.body.base64) {
         console.error("[presign] ERROR: 파일 바이너리/base64가 요청에 포함됨!");
-        return res.status(400).json({ error: "presign 요청에는 파일 데이터를 포함하지 마세요" });
-      }
-      
-      if (!caseId || !fileName || !fileType || !fileSize) {
-        return res.status(400).json({ error: "필수 필드가 누락되었습니다 (caseId, fileName, fileType, fileSize)" });
+        return res
+          .status(400)
+          .json({ error: "presign 요청에는 파일 데이터를 포함하지 마세요" });
       }
 
-      console.log(`[presign] Generating presigned URL for case ${caseId}, file: ${fileName}, size: ${fileSize}`);
+      if (!caseId || !fileName || !fileType || !fileSize) {
+        return res.status(400).json({
+          error:
+            "필수 필드가 누락되었습니다 (caseId, fileName, fileType, fileSize)",
+        });
+      }
+
+      console.log(
+        `[presign] Generating presigned URL for case ${caseId}, file: ${fileName}, size: ${fileSize}`,
+      );
 
       // storageKey 생성: documents/{caseId}/{timestamp}_{uuid}_{fileName}
       const timestamp = Date.now();
       const uuid = crypto.randomUUID();
       const safeFileName = fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, "_");
       const storageKey = `documents/${caseId}/${timestamp}_${uuid}_${safeFileName}`;
-      
+
       // PRIVATE_OBJECT_DIR에서 bucket 정보 추출
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
       if (!privateObjectDir) {
         console.error("[presign] PRIVATE_OBJECT_DIR not set");
-        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+        return res
+          .status(500)
+          .json({ error: "Object Storage가 설정되지 않았습니다" });
       }
 
       // Full path: /{bucket}/.../{storageKey}
       const fullPath = `${privateObjectDir}/${storageKey}`;
-      const pathParts = fullPath.split("/").filter(p => p);
+      const pathParts = fullPath.split("/").filter((p) => p);
       if (pathParts.length < 2) {
         return res.status(500).json({ error: "잘못된 스토리지 경로입니다" });
       }
@@ -3840,7 +4588,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ttlSec: 900,
       });
 
-      console.log(`[presign] Generated presigned URL successfully for storageKey: ${storageKey}`);
+      console.log(
+        `[presign] Generated presigned URL successfully for storageKey: ${storageKey}`,
+      );
 
       // DB 저장 없이 presigned URL만 반환
       res.json({
@@ -3853,8 +4603,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("  stack:", error.stack);
       if (error.code) console.error("  code:", error.code);
       if (error.statusCode) console.error("  statusCode:", error.statusCode);
-      if (error.response) console.error("  response:", JSON.stringify(error.response));
-      res.status(500).json({ error: "presigned URL 발급 중 오류가 발생했습니다", details: error.message });
+      if (error.response)
+        console.error("  response:", JSON.stringify(error.response));
+      res.status(500).json({
+        error: "presigned URL 발급 중 오류가 발생했습니다",
+        details: error.message,
+      });
     }
   });
 
@@ -3865,22 +4619,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const { caseId, category, fileName, fileType, fileSize, storageKey, displayOrder, checksum } = req.body;
-      
-      if (!caseId || !category || !fileName || !fileType || !fileSize || !storageKey) {
+      const {
+        caseId,
+        category,
+        fileName,
+        fileType,
+        fileSize,
+        storageKey,
+        displayOrder,
+        checksum,
+      } = req.body;
+
+      if (
+        !caseId ||
+        !category ||
+        !fileName ||
+        !fileType ||
+        !fileSize ||
+        !storageKey
+      ) {
         return res.status(400).json({ error: "필수 필드가 누락되었습니다" });
       }
 
-      console.log(`[upload-complete] Verifying and saving document for case ${caseId}, file: ${fileName}`);
+      console.log(
+        `[upload-complete] Verifying and saving document for case ${caseId}, file: ${fileName}`,
+      );
 
       // Object Storage에서 파일 존재 확인
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
       if (!privateObjectDir) {
-        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+        return res
+          .status(500)
+          .json({ error: "Object Storage가 설정되지 않았습니다" });
       }
 
       const fullPath = `${privateObjectDir}/${storageKey}`;
-      const pathParts = fullPath.split("/").filter(p => p);
+      const pathParts = fullPath.split("/").filter((p) => p);
       const bucketName = pathParts[0];
       const objectName = pathParts.slice(1).join("/");
 
@@ -3889,38 +4663,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [exists] = await file.exists();
 
       if (!exists) {
-        console.error(`[upload-complete] File not found in storage: ${storageKey}`);
-        return res.status(400).json({ error: "업로드된 파일을 찾을 수 없습니다. 업로드가 실패했을 수 있습니다." });
+        console.error(
+          `[upload-complete] File not found in storage: ${storageKey}`,
+        );
+        return res.status(400).json({
+          error:
+            "업로드된 파일을 찾을 수 없습니다. 업로드가 실패했을 수 있습니다.",
+        });
       }
 
       let finalFileSize = fileSize;
-      let compressionInfo: { originalSize: number; compressedSize: number; ratio: number } | null = null;
+      let compressionInfo: {
+        originalSize: number;
+        compressedSize: number;
+        ratio: number;
+      } | null = null;
 
       // PDF 파일인 경우 압축 처리
       if (isPdfFile(fileType, fileName)) {
         console.log(`[upload-complete] PDF 파일 감지, 압축 시작: ${fileName}`);
-        
+
         try {
           // 1. Object Storage에서 PDF 다운로드
           const [pdfBuffer] = await file.download();
-          console.log(`[upload-complete] PDF 다운로드 완료: ${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB`);
-          
+          console.log(
+            `[upload-complete] PDF 다운로드 완료: ${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB`,
+          );
+
           // 2. PDF 압축
           const compressionResult = await compressPdf(pdfBuffer);
-          
+
           if (!compressionResult.success) {
             // 압축 실패 (용량 초과 등)
-            console.error(`[upload-complete] PDF 압축 거부: ${compressionResult.error}`);
+            console.error(
+              `[upload-complete] PDF 압축 거부: ${compressionResult.error}`,
+            );
             // 업로드된 파일 삭제
             await file.delete();
             return res.status(400).json({ error: compressionResult.error });
           }
-          
+
           // 3. 압축된 파일로 교체 (원본과 다른 경우)
-          if (compressionResult.compressedBuffer && compressionResult.compressedSize !== compressionResult.originalSize) {
+          if (
+            compressionResult.compressedBuffer &&
+            compressionResult.compressedSize !== compressionResult.originalSize
+          ) {
             console.log(`[upload-complete] 압축된 PDF 업로드 중...`);
             await file.save(compressionResult.compressedBuffer, {
-              contentType: 'application/pdf',
+              contentType: "application/pdf",
             });
             finalFileSize = compressionResult.compressedSize!;
             compressionInfo = {
@@ -3928,7 +4718,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               compressedSize: compressionResult.compressedSize!,
               ratio: compressionResult.compressionRatio!,
             };
-            console.log(`[upload-complete] PDF 압축 완료: ${(compressionResult.originalSize / 1024 / 1024).toFixed(2)}MB → ${(finalFileSize / 1024 / 1024).toFixed(2)}MB (${compressionResult.compressionRatio}%)`);
+            console.log(
+              `[upload-complete] PDF 압축 완료: ${(compressionResult.originalSize / 1024 / 1024).toFixed(2)}MB → ${(finalFileSize / 1024 / 1024).toFixed(2)}MB (${compressionResult.compressionRatio}%)`,
+            );
           } else {
             console.log(`[upload-complete] PDF 압축 불필요 또는 효과 없음`);
           }
@@ -3953,7 +4745,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // status를 ready로 업데이트
       await storage.updateDocumentStatus(document.id, "ready", checksum);
 
-      console.log(`[upload-complete] Document ${document.id} saved with status ready${compressionInfo ? ` (compressed: ${compressionInfo.ratio}%)` : ''}`);
+      console.log(
+        `[upload-complete] Document ${document.id} saved with status ready${compressionInfo ? ` (compressed: ${compressionInfo.ratio}%)` : ""}`,
+      );
 
       res.json({
         success: true,
@@ -3966,7 +4760,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("  message:", error.message);
       console.error("  stack:", error.stack);
       if (error.code) console.error("  code:", error.code);
-      res.status(500).json({ error: "문서 저장 중 오류가 발생했습니다", details: error.message });
+      res.status(500).json({
+        error: "문서 저장 중 오류가 발생했습니다",
+        details: error.message,
+      });
     }
   });
 
@@ -3977,40 +4774,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const contentLength = req.headers['content-length'];
+      const contentLength = req.headers["content-length"];
       console.log(`[request-upload] Content-Length: ${contentLength} bytes`);
-      
-      const { caseId, category, fileName, fileType, fileSize, displayOrder } = req.body;
-      
+
+      const { caseId, category, fileName, fileType, fileSize, displayOrder } =
+        req.body;
+
       if (!caseId || !category || !fileName || !fileType || !fileSize) {
-        return res.status(400).json({ error: "필수 필드가 누락되었습니다 (caseId, category, fileName, fileType, fileSize)" });
+        return res.status(400).json({
+          error:
+            "필수 필드가 누락되었습니다 (caseId, category, fileName, fileType, fileSize)",
+        });
       }
 
-      console.log(`[request-upload] Starting upload request for case ${caseId}, file: ${fileName}, size: ${fileSize}`);
+      console.log(
+        `[request-upload] Starting upload request for case ${caseId}, file: ${fileName}, size: ${fileSize}`,
+      );
 
       // storageKey 생성: documents/{caseId}/{timestamp}_{uuid}_{fileName}
       const timestamp = Date.now();
       const uuid = crypto.randomUUID();
       const safeFileName = fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, "_");
       const storageKey = `documents/${caseId}/${timestamp}_${uuid}_${safeFileName}`;
-      
+
       // PRIVATE_OBJECT_DIR에서 bucket 정보 추출
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
       if (!privateObjectDir) {
         console.error("[request-upload] PRIVATE_OBJECT_DIR not set");
-        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+        return res
+          .status(500)
+          .json({ error: "Object Storage가 설정되지 않았습니다" });
       }
 
       // Full path: /{bucket}/.../{storageKey}
       const fullPath = `${privateObjectDir}/${storageKey}`;
-      const pathParts = fullPath.split("/").filter(p => p);
+      const pathParts = fullPath.split("/").filter((p) => p);
       if (pathParts.length < 2) {
         return res.status(500).json({ error: "잘못된 스토리지 경로입니다" });
       }
       const bucketName = pathParts[0];
       const objectName = pathParts.slice(1).join("/");
 
-      console.log(`[request-upload] Bucket: ${bucketName}, Object: ${objectName}`);
+      console.log(
+        `[request-upload] Bucket: ${bucketName}, Object: ${objectName}`,
+      );
 
       // Presigned URL 발급 (15분 TTL)
       const uploadURL = await signObjectURL({
@@ -4032,7 +4839,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: req.session.userId!,
       });
 
-      console.log(`[request-upload] Created pending document ${document.id} with storageKey: ${storageKey}`);
+      console.log(
+        `[request-upload] Created pending document ${document.id} with storageKey: ${storageKey}`,
+      );
 
       res.json({
         documentId: document.id,
@@ -4045,8 +4854,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("  stack:", error.stack);
       if (error.code) console.error("  code:", error.code);
       if (error.statusCode) console.error("  statusCode:", error.statusCode);
-      if (error.response) console.error("  response:", JSON.stringify(error.response));
-      res.status(500).json({ error: "업로드 URL 발급 중 오류가 발생했습니다", details: error.message });
+      if (error.response)
+        console.error("  response:", JSON.stringify(error.response));
+      res.status(500).json({
+        error: "업로드 URL 발급 중 오류가 발생했습니다",
+        details: error.message,
+      });
     }
   });
 
@@ -4063,7 +4876,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "documentId가 필요합니다" });
       }
 
-      console.log(`[complete-upload] Completing upload for document ${documentId}`);
+      console.log(
+        `[complete-upload] Completing upload for document ${documentId}`,
+      );
 
       // 문서 조회
       const document = await storage.getDocument(documentId);
@@ -4072,17 +4887,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!document.storageKey) {
-        return res.status(400).json({ error: "해당 문서는 Object Storage 업로드가 아닙니다" });
+        return res
+          .status(400)
+          .json({ error: "해당 문서는 Object Storage 업로드가 아닙니다" });
       }
 
       // Object Storage에서 파일 존재 확인
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
       if (!privateObjectDir) {
-        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+        return res
+          .status(500)
+          .json({ error: "Object Storage가 설정되지 않았습니다" });
       }
 
       const fullPath = `${privateObjectDir}/${document.storageKey}`;
-      const pathParts = fullPath.split("/").filter(p => p);
+      const pathParts = fullPath.split("/").filter((p) => p);
       const bucketName = pathParts[0];
       const objectName = pathParts.slice(1).join("/");
 
@@ -4091,16 +4910,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [exists] = await file.exists();
 
       if (!exists) {
-        console.error(`[complete-upload] File not found in storage: ${document.storageKey}`);
+        console.error(
+          `[complete-upload] File not found in storage: ${document.storageKey}`,
+        );
         // 파일이 없으면 failed 상태로 업데이트
         await storage.updateDocumentStatus(documentId, "failed");
-        return res.status(400).json({ error: "업로드된 파일을 찾을 수 없습니다" });
+        return res
+          .status(400)
+          .json({ error: "업로드된 파일을 찾을 수 없습니다" });
       }
 
       // status를 ready로 업데이트
-      const updatedDocument = await storage.updateDocumentStatus(documentId, "ready", checksum);
-      
-      console.log(`[complete-upload] Document ${documentId} status updated to ready`);
+      const updatedDocument = await storage.updateDocumentStatus(
+        documentId,
+        "ready",
+        checksum,
+      );
+
+      console.log(
+        `[complete-upload] Document ${documentId} status updated to ready`,
+      );
 
       res.json({
         success: true,
@@ -4108,7 +4937,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[complete-upload] Error:", error);
-      res.status(500).json({ error: "업로드 완료 처리 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "업로드 완료 처리 중 오류가 발생했습니다" });
     }
   });
 
@@ -4125,7 +4956,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "documentId가 필요합니다" });
       }
 
-      console.log(`[fail-upload] Marking upload as failed for document ${documentId}`);
+      console.log(
+        `[fail-upload] Marking upload as failed for document ${documentId}`,
+      );
 
       // 문서 조회
       const document = await storage.getDocument(documentId);
@@ -4134,9 +4967,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // status를 failed로 업데이트
-      const updatedDocument = await storage.updateDocumentStatus(documentId, "failed");
-      
-      console.log(`[fail-upload] Document ${documentId} status updated to failed`);
+      const updatedDocument = await storage.updateDocumentStatus(
+        documentId,
+        "failed",
+      );
+
+      console.log(
+        `[fail-upload] Document ${documentId} status updated to failed`,
+      );
 
       res.json({
         success: true,
@@ -4144,7 +4982,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[fail-upload] Error:", error);
-      res.status(500).json({ error: "업로드 실패 처리 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "업로드 실패 처리 중 오류가 발생했습니다" });
     }
   });
 
@@ -4176,12 +5016,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Object Storage 문서인지 확인
       if (!document.storageKey) {
-        return res.status(400).json({ error: "해당 문서는 Object Storage 문서가 아닙니다 (레거시 문서)" });
+        return res.status(400).json({
+          error: "해당 문서는 Object Storage 문서가 아닙니다 (레거시 문서)",
+        });
       }
 
       // status가 ready인지 확인
       if (document.status !== "ready") {
-        return res.status(400).json({ error: `문서가 준비되지 않았습니다 (현재 상태: ${document.status})` });
+        return res.status(400).json({
+          error: `문서가 준비되지 않았습니다 (현재 상태: ${document.status})`,
+        });
       }
 
       console.log(`[download-url] Generating download URL for document ${id}`);
@@ -4189,11 +5033,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Download URL 생성 (1시간 TTL)
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
       if (!privateObjectDir) {
-        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+        return res
+          .status(500)
+          .json({ error: "Object Storage가 설정되지 않았습니다" });
       }
 
       const fullPath = `${privateObjectDir}/${document.storageKey}`;
-      const pathParts = fullPath.split("/").filter(p => p);
+      const pathParts = fullPath.split("/").filter((p) => p);
       const bucketName = pathParts[0];
       const objectName = pathParts.slice(1).join("/");
 
@@ -4212,7 +5058,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[download-url] Error:", error);
-      res.status(500).json({ error: "다운로드 URL 생성 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "다운로드 URL 생성 중 오류가 발생했습니다" });
     }
   });
 
@@ -4238,11 +5086,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (document.storageKey && document.status === "ready") {
         const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
         if (!privateObjectDir) {
-          return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+          return res
+            .status(500)
+            .json({ error: "Object Storage가 설정되지 않았습니다" });
         }
 
         const fullPath = `${privateObjectDir}/${document.storageKey}`;
-        const pathParts = fullPath.split("/").filter(p => p);
+        const pathParts = fullPath.split("/").filter((p) => p);
         const bucketName = pathParts[0];
         const objectName = pathParts.slice(1).join("/");
 
@@ -4258,14 +5108,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 레거시 문서 (fileData base64)
       if (document.fileData) {
-        const buffer = Buffer.from(document.fileData, 'base64');
-        res.set('Content-Type', document.fileType);
-        res.set('Content-Length', buffer.length.toString());
-        res.set('Cache-Control', 'public, max-age=3600');
+        const buffer = Buffer.from(document.fileData, "base64");
+        res.set("Content-Type", document.fileType);
+        res.set("Content-Length", buffer.length.toString());
+        res.set("Cache-Control", "public, max-age=3600");
         return res.send(buffer);
       }
 
-      return res.status(404).json({ error: "이미지 데이터를 찾을 수 없습니다" });
+      return res
+        .status(404)
+        .json({ error: "이미지 데이터를 찾을 수 없습니다" });
     } catch (error) {
       console.error("[image] Error:", error);
       res.status(500).json({ error: "이미지 로드 중 오류가 발생했습니다" });
@@ -4282,19 +5134,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { search } = req.query;
       const currentUser = await storage.getUser(req.session.userId);
-      
+
       if (!currentUser) {
         return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       }
 
-      const cases = await storage.getAssignedCasesForUser(currentUser, search as string);
-      
+      const cases = await storage.getAssignedCasesForUser(
+        currentUser,
+        search as string,
+      );
+
       // Return simplified case summary for picker
-      const caseSummaries = cases.map(c => ({
+      const caseSummaries = cases.map((c) => ({
         id: c.id,
         caseNumber: c.caseNumber,
         insuredName: c.insuredName,
-        accidentLocation: c.insuredAddress || c.victimAddress || '-',
+        accidentLocation: c.insuredAddress || c.victimAddress || "-",
         insuranceCompany: c.insuranceCompany,
         status: c.status,
       }));
@@ -4302,7 +5157,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(caseSummaries);
     } catch (error) {
       console.error("Get assigned cases error:", error);
-      res.status(500).json({ error: "배정된 케이스를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "배정된 케이스를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4315,7 +5172,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      const { rows, laborCostData, materialCostData, totalAmount, vatIncluded } = req.body;
+      const {
+        rows,
+        laborCostData,
+        materialCostData,
+        totalAmount,
+        vatIncluded,
+      } = req.body;
 
       if (!rows || !Array.isArray(rows)) {
         return res.status(400).json({ error: "견적 행 데이터가 필요합니다" });
@@ -4349,15 +5212,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Convert to DB format with safe parsing
         // For width/height: parse as float (m 단위)
-        const toNumber = (val: string | number | null | undefined): number | null => {
-          if (val === null || val === undefined || val === "" || val === "0") return null;
+        const toNumber = (
+          val: string | number | null | undefined,
+        ): number | null => {
+          if (val === null || val === undefined || val === "" || val === "0")
+            return null;
           const num = typeof val === "string" ? parseFloat(val) : val;
           return !isNaN(num) && num >= 0 ? num : null;
         };
 
         // For area: parse as float (m² 단위, 변환 없이 그대로 저장)
-        const toArea = (val: string | number | null | undefined): number | null => {
-          if (val === null || val === undefined || val === "" || val === "0") return null;
+        const toArea = (
+          val: string | number | null | undefined,
+        ): number | null => {
+          if (val === null || val === undefined || val === "" || val === "0")
+            return null;
           const num = typeof val === "string" ? parseFloat(val) : val;
           if (isNaN(num) || num < 0) return null;
           // 이미 m² 단위이므로 변환 없이 그대로 저장
@@ -4370,12 +5239,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("[B] 서버: request body 수신 직후");
           console.log("케이스 ID:", caseId);
           console.log("Raw row from request:");
-          console.log("  repairWidth:", row.repairWidth, "타입:", typeof row.repairWidth);
-          console.log("  repairHeight:", row.repairHeight, "타입:", typeof row.repairHeight);
-          console.log("  repairArea:", row.repairArea, "타입:", typeof row.repairArea);
-          console.log("  damageWidth:", row.damageWidth, "타입:", typeof row.damageWidth);
-          console.log("  damageHeight:", row.damageHeight, "타입:", typeof row.damageHeight);
-          console.log("  damageArea:", row.damageArea, "타입:", typeof row.damageArea);
+          console.log(
+            "  repairWidth:",
+            row.repairWidth,
+            "타입:",
+            typeof row.repairWidth,
+          );
+          console.log(
+            "  repairHeight:",
+            row.repairHeight,
+            "타입:",
+            typeof row.repairHeight,
+          );
+          console.log(
+            "  repairArea:",
+            row.repairArea,
+            "타입:",
+            typeof row.repairArea,
+          );
+          console.log(
+            "  damageWidth:",
+            row.damageWidth,
+            "타입:",
+            typeof row.damageWidth,
+          );
+          console.log(
+            "  damageHeight:",
+            row.damageHeight,
+            "타입:",
+            typeof row.damageHeight,
+          );
+          console.log(
+            "  damageArea:",
+            row.damageArea,
+            "타입:",
+            typeof row.damageArea,
+          );
           console.log("Validated row:");
           console.log("  repairWidth:", validated.repairWidth);
           console.log("  repairHeight:", validated.repairHeight);
@@ -4411,29 +5310,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const result = await storage.createEstimateVersion(
-        caseId, 
-        req.session.userId, 
+        caseId,
+        req.session.userId,
         dbRows,
         laborCostData || null,
         materialCostData || null,
-        vatIncluded ?? true // VAT 포함/별도 옵션
+        vatIncluded ?? true, // VAT 포함/별도 옵션
       );
-      
+
       // 견적 총액을 케이스에 항상 업데이트 (최신 견적금액 유지)
       if (totalAmount !== undefined && totalAmount !== null) {
         await storage.updateCaseEstimateAmount(caseId, totalAmount.toString());
       }
-      
+
       // 견적은 케이스별 개별 관리 - 동기화하지 않음
       // (접수정보, 현장입력만 동기화됨)
-      
+
       res.json(result);
     } catch (error: any) {
       // Enhanced error logging for debugging production issues
       const errorDetails = {
-        message: error?.message || 'Unknown error',
-        stack: error?.stack || 'No stack trace',
-        code: error?.code || 'No error code',
+        message: error?.message || "Unknown error",
+        stack: error?.stack || "No stack trace",
+        code: error?.code || "No error code",
         caseId: req.params.caseId,
         userId: req.session?.userId,
         rowCount: req.body?.rows?.length || 0,
@@ -4441,22 +5340,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hasMaterialData: !!req.body?.materialCostData,
         timestamp: new Date().toISOString(),
       };
-      console.error("[Estimate Save Error]", JSON.stringify(errorDetails, null, 2));
-      
+      console.error(
+        "[Estimate Save Error]",
+        JSON.stringify(errorDetails, null, 2),
+      );
+
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "견적 데이터 형식이 올바르지 않습니다",
           details: error.errors,
-          errorCode: "VALIDATION_ERROR"
+          errorCode: "VALIDATION_ERROR",
         });
       }
-      
+
       // Return more detailed error for debugging (excluding sensitive stack in response)
-      res.status(500).json({ 
+      res.status(500).json({
         error: "견적을 저장하는 중 오류가 발생했습니다",
         errorCode: error?.code || "UNKNOWN_ERROR",
         errorMessage: error?.message || "Unknown error",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   });
@@ -4470,7 +5372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { caseId } = req.params;
       const result = await storage.getLatestEstimate(caseId);
-      
+
       if (!result) {
         // Return empty result instead of 404 for easier frontend handling
         return res.json({ estimate: null, rows: [] });
@@ -4482,9 +5384,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("[D] 서버: GET /api/estimates/:caseId/latest 응답 직전");
         console.log("케이스 ID:", caseId);
         console.log("첫 번째 행 DB에서 조회된 값:");
-        console.log("  repairWidth:", result.rows[0].repairWidth, "타입:", typeof result.rows[0].repairWidth);
-        console.log("  repairHeight:", result.rows[0].repairHeight, "타입:", typeof result.rows[0].repairHeight);
-        console.log("  repairArea:", result.rows[0].repairArea, "타입:", typeof result.rows[0].repairArea);
+        console.log(
+          "  repairWidth:",
+          result.rows[0].repairWidth,
+          "타입:",
+          typeof result.rows[0].repairWidth,
+        );
+        console.log(
+          "  repairHeight:",
+          result.rows[0].repairHeight,
+          "타입:",
+          typeof result.rows[0].repairHeight,
+        );
+        console.log(
+          "  repairArea:",
+          result.rows[0].repairArea,
+          "타입:",
+          typeof result.rows[0].repairArea,
+        );
         console.log("========================================");
       }
 
@@ -4528,16 +5445,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               error: "견적 조회 실패",
             };
           }
-        })
+        }),
       );
 
       res.json(results);
     } catch (error) {
       console.error("Batch get estimates error:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "요청 데이터 형식이 올바르지 않습니다",
-          details: error.errors 
+          details: error.errors,
         });
       }
       res.status(500).json({ error: "견적을 조회하는 중 오류가 발생했습니다" });
@@ -4556,7 +5473,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(versions);
     } catch (error) {
       console.error("List estimate versions error:", error);
-      res.status(500).json({ error: "견적 버전을 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "견적 버전을 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4575,7 +5494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = await storage.getEstimateVersion(caseId, versionNum);
-      
+
       if (!result) {
         return res.status(404).json({ error: "견적 버전을 찾을 수 없습니다" });
       }
@@ -4583,7 +5502,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Get estimate version error:", error);
-      res.status(500).json({ error: "견적 버전을 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "견적 버전을 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4598,11 +5519,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { category, includeInactive } = req.query;
       const includeAll = includeInactive === "true";
-      const data = await storage.getMasterData(category as string | undefined, includeAll);
+      const data = await storage.getMasterData(
+        category as string | undefined,
+        includeAll,
+      );
       res.json(data);
     } catch (error) {
       console.error("Get master data error:", error);
-      res.status(500).json({ error: "기준정보를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "기준정보를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4614,7 +5540,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const userRole = req.session.userRole;
     if (userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자만 기준정보를 추가할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 기준정보를 추가할 수 있습니다" });
     }
 
     try {
@@ -4627,12 +5555,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create master data error:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "입력 데이터 형식이 올바르지 않습니다",
-          details: error.errors 
+          details: error.errors,
         });
       }
-      res.status(500).json({ error: "기준정보를 추가하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "기준정보를 추가하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4644,7 +5574,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const userRole = req.session.userRole;
     if (userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자만 기준정보를 삭제할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 기준정보를 삭제할 수 있습니다" });
     }
 
     try {
@@ -4655,7 +5587,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       console.error("[Master Data DELETE] Error deleting:", error);
-      res.status(500).json({ error: "기준정보를 삭제하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "기준정보를 삭제하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4667,7 +5601,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const userRole = req.session.userRole;
     if (userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자만 기준정보를 수정할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 기준정보를 수정할 수 있습니다" });
     }
 
     try {
@@ -4688,7 +5624,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updated);
     } catch (error) {
       console.error("Update master data error:", error);
-      res.status(500).json({ error: "기준정보를 수정하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "기준정보를 수정하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4701,17 +5639,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { category, workName, detailWork } = req.query;
-      const filters: { category?: string; workName?: string; detailWork?: string } = {};
-      
-      if (typeof category === 'string') filters.category = category;
-      if (typeof workName === 'string') filters.workName = workName;
-      if (typeof detailWork === 'string') filters.detailWork = detailWork;
-      
-      const data = await storage.getLaborCosts(Object.keys(filters).length > 0 ? filters : undefined);
+      const filters: {
+        category?: string;
+        workName?: string;
+        detailWork?: string;
+      } = {};
+
+      if (typeof category === "string") filters.category = category;
+      if (typeof workName === "string") filters.workName = workName;
+      if (typeof detailWork === "string") filters.detailWork = detailWork;
+
+      const data = await storage.getLaborCosts(
+        Object.keys(filters).length > 0 ? filters : undefined,
+      );
       res.json(data);
     } catch (error) {
       console.error("Get labor costs error:", error);
-      res.status(500).json({ error: "노무비를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "노무비를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4725,7 +5671,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(options);
     } catch (error) {
       console.error("Get labor cost options error:", error);
-      res.status(500).json({ error: "노무비 옵션을 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "노무비 옵션을 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4738,69 +5686,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Get latest 노무비 data from excel_data table
-      const excelDataList = await storage.listExcelData('노무비');
-      
+      const excelDataList = await storage.listExcelData("노무비");
+
       if (!excelDataList || excelDataList.length === 0) {
         return res.json([]);
       }
 
       // Use the most recent entry
       const excelData = excelDataList[0];
-      
+
       if (!excelData.data || !Array.isArray(excelData.data)) {
         return res.json([]);
       }
 
       const catalog: any[] = [];
-      
+
       // Helper functions
       const safeString = (val: any): string => {
-        if (val === null || val === undefined) return '';
+        if (val === null || val === undefined) return "";
         return String(val).trim();
       };
-      
+
       const parsePrice = (val: any): number | null => {
-        if (val === null || val === undefined || val === '') return null;
-        if (typeof val === 'number') return val;
-        const cleaned = String(val).replace(/,/g, '').trim();
+        if (val === null || val === undefined || val === "") return null;
+        if (typeof val === "number") return val;
+        const cleaned = String(val).replace(/,/g, "").trim();
         const num = parseFloat(cleaned);
         return isNaN(num) ? null : num;
       };
 
       // Detect format by checking headers
       const headers = excelData.headers || [];
-      const isNewFormat = headers.some((h: string) => h && h.includes('노임항목'));
-      
-      console.log('Labor catalog headers:', headers);
-      console.log('Is new format:', isNewFormat);
+      const isNewFormat = headers.some(
+        (h: string) => h && h.includes("노임항목"),
+      );
+
+      console.log("Labor catalog headers:", headers);
+      console.log("Is new format:", isNewFormat);
 
       if (isNewFormat) {
         // NEW FORMAT: 공종, 공사명, 노임항목DB, 금액
         // Find column indices by header names with EXACT match priority
         // NOTE: Headers like '노임항목(공종에 종속)' contain '공종' substring, so use exact match first
-        let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = 3;
-        
+        let categoryIdx = 0,
+          workNameIdx = 1,
+          laborItemIdx = 2,
+          priceIdx = 3;
+
         // First pass: exact or near-exact matches (priority)
         headers.forEach((h: string, idx: number) => {
-          const trimmed = (h || '').trim();
+          const trimmed = (h || "").trim();
           // Exact match for 공종 (not substring match to avoid '노임항목(공종에 종속)')
-          if (trimmed === '공종') categoryIdx = idx;
+          if (trimmed === "공종") categoryIdx = idx;
           // 노임항목 must be detected before checking for 공사명
-          if (trimmed.includes('노임항목')) laborItemIdx = idx;
+          if (trimmed.includes("노임항목")) laborItemIdx = idx;
           // 금액 exact or near-exact
-          if (trimmed.includes('금액')) priceIdx = idx;
+          if (trimmed.includes("금액")) priceIdx = idx;
         });
-        
+
         // Second pass: 공사명 with more specific matching (exclude 노임항목 column)
         headers.forEach((h: string, idx: number) => {
-          const trimmed = (h || '').trim();
+          const trimmed = (h || "").trim();
           // 공사명 match (but not if already matched as 노임항목)
-          if ((trimmed.includes('공사명') || trimmed.includes('품명')) && idx !== laborItemIdx) {
+          if (
+            (trimmed.includes("공사명") || trimmed.includes("품명")) &&
+            idx !== laborItemIdx
+          ) {
             workNameIdx = idx;
           }
         });
-        
-        console.log('NEW FORMAT column indices:', { categoryIdx, workNameIdx, laborItemIdx, priceIdx });
+
+        console.log("NEW FORMAT column indices:", {
+          categoryIdx,
+          workNameIdx,
+          laborItemIdx,
+          priceIdx,
+        });
 
         let prevCategory: string | null = null;
         let prevWorkName: string | null = null;
@@ -4809,8 +5770,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const row = excelData.data[i];
           if (!row || row.length === 0) continue;
 
-          const category: string = safeString(row[categoryIdx]) || prevCategory || '';
-          const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
+          const category: string =
+            safeString(row[categoryIdx]) || prevCategory || "";
+          const workName: string =
+            safeString(row[workNameIdx]) || prevWorkName || "";
           const laborItem: string = safeString(row[laborItemIdx]);
           const price = parsePrice(row[priceIdx]);
 
@@ -4824,9 +5787,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           catalog.push({
             공종: category,
             공사명: workName,
-            세부공사: '노무비', // 새 형식은 모두 노무비로 간주
+            세부공사: "노무비", // 새 형식은 모두 노무비로 간주
             세부항목: laborItem, // 노임항목DB 값
-            단위: '인',
+            단위: "인",
             단가_인: price,
             단가_천장: null,
             단가_벽체: null,
@@ -4844,9 +5807,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const row = excelData.data[i];
           if (!row || row.length === 0) continue;
 
-          const category: string = safeString(row[0]) || prevCategory || '';
-          const workName: string = safeString(row[1]) || prevWorkName || '';
-          const detailWork: string = safeString(row[2]) || prevDetailWork || '';
+          const category: string = safeString(row[0]) || prevCategory || "";
+          const workName: string = safeString(row[1]) || prevWorkName || "";
+          const detailWork: string = safeString(row[2]) || prevDetailWork || "";
           const detailItem: string = safeString(row[3]);
 
           // Column indices for old format
@@ -4864,13 +5827,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Skip rows without enough data
           if (!category || !workName || !detailWork) continue;
 
-          let unit = 'm';
-          if (detailWork === '노무비') {
-            unit = '인';
+          let unit = "m";
+          if (detailWork === "노무비") {
+            unit = "인";
           } else if (ceilingPrice || wallPrice || floorPrice) {
-            unit = '㎡';
+            unit = "㎡";
           } else if (lengthPrice) {
-            unit = 'm';
+            unit = "m";
           }
 
           catalog.push({
@@ -4885,15 +5848,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             단가_바닥: floorPrice,
             단가_길이: lengthPrice,
           });
-          
+
           // 피해철거공사 항목을 철거공사로 변환하여 추가 엔트리 생성
           // 예: 피해철거공사-피해철거-일위대가-석고보드 해체 → 철거공사-석고보드-일위대가-석고보드 해체
-          if (category === '피해철거공사' && detailWork === '일위대가' && detailItem) {
+          if (
+            category === "피해철거공사" &&
+            detailWork === "일위대가" &&
+            detailItem
+          ) {
             // 세부항목에서 공사명 추출 (예: "석고보드 해체" → "석고보드")
-            const extractedWorkName = detailItem.replace(/\s*(해체|철거)\s*$/g, '').trim();
+            const extractedWorkName = detailItem
+              .replace(/\s*(해체|철거)\s*$/g, "")
+              .trim();
             if (extractedWorkName) {
               catalog.push({
-                공종: '철거공사',
+                공종: "철거공사",
                 공사명: extractedWorkName,
                 세부공사: detailWork,
                 세부항목: detailItem,
@@ -4906,13 +5875,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
           }
-          
+
           // 원인철거공사 항목도 철거공사로 변환
-          if (category === '원인철거공사' && detailWork === '일위대가' && detailItem) {
-            const extractedWorkName = detailItem.replace(/\s*(해체|철거|및.*|\/.*)\s*$/g, '').trim();
+          if (
+            category === "원인철거공사" &&
+            detailWork === "일위대가" &&
+            detailItem
+          ) {
+            const extractedWorkName = detailItem
+              .replace(/\s*(해체|철거|및.*|\/.*)\s*$/g, "")
+              .trim();
             if (extractedWorkName) {
               catalog.push({
-                공종: '철거공사',
+                공종: "철거공사",
                 공사명: extractedWorkName,
                 세부공사: detailWork,
                 세부항목: detailItem,
@@ -4928,20 +5903,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log('========== LABOR CATALOG DEBUG ==========');
-      console.log('Parsed catalog items count:', catalog.length);
+      console.log("========== LABOR CATALOG DEBUG ==========");
+      console.log("Parsed catalog items count:", catalog.length);
       // Debug: 첫 5개 항목 출력
-      console.log('첫 5개 항목:', JSON.stringify(catalog.slice(0, 5), null, 2));
-      
+      console.log("첫 5개 항목:", JSON.stringify(catalog.slice(0, 5), null, 2));
+
       // Debug: 모든 공종 목록 확인
-      const allCategories = Array.from(new Set(catalog.map((item: any) => item.공종)));
-      console.log('전체 공종 목록:', allCategories);
-      console.log('==========================================');
-      
+      const allCategories = Array.from(
+        new Set(catalog.map((item: any) => item.공종)),
+      );
+      console.log("전체 공종 목록:", allCategories);
+      console.log("==========================================");
+
       res.json(catalog);
     } catch (error) {
       console.error("Get labor catalog error:", error);
-      res.status(500).json({ error: "노무비 카탈로그를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "노무비 카탈로그를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -4953,84 +5932,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Get latest 일위대가 data from excel_data table
-      const excelDataList = await storage.listExcelData('일위대가');
-      
-      console.log('[일위대가 API] 조회 결과:', excelDataList?.length || 0, '개');
-      
+      const excelDataList = await storage.listExcelData("일위대가");
+
+      console.log(
+        "[일위대가 API] 조회 결과:",
+        excelDataList?.length || 0,
+        "개",
+      );
+
       if (!excelDataList || excelDataList.length === 0) {
-        console.log('[일위대가 API] 일위대가 데이터 없음');
+        console.log("[일위대가 API] 일위대가 데이터 없음");
         return res.json([]);
       }
 
       // Use the most recent entry
       const excelData = excelDataList[0];
-      console.log('[일위대가 API] 사용할 데이터:', excelData.id, excelData.title);
-      
+      console.log(
+        "[일위대가 API] 사용할 데이터:",
+        excelData.id,
+        excelData.title,
+      );
+
       if (!excelData.data || !Array.isArray(excelData.data)) {
-        console.log('[일위대가 API] 데이터 배열 없음');
+        console.log("[일위대가 API] 데이터 배열 없음");
         return res.json([]);
       }
-      
-      console.log('[일위대가 API] 행 수:', excelData.data.length);
+
+      console.log("[일위대가 API] 행 수:", excelData.data.length);
 
       // Helper functions
       const safeString = (val: any): string => {
-        if (val === null || val === undefined) return '';
+        if (val === null || val === undefined) return "";
         return String(val).trim();
       };
-      
+
       const parsePrice = (val: any): number | null => {
-        if (val === null || val === undefined || val === '') return null;
-        if (typeof val === 'number') return val;
-        const cleaned = String(val).replace(/,/g, '').trim();
+        if (val === null || val === undefined || val === "") return null;
+        if (typeof val === "number") return val;
+        const cleaned = String(val).replace(/,/g, "").trim();
         const num = parseFloat(cleaned);
         return isNaN(num) ? null : num;
       };
 
       const catalog: any[] = [];
       const headers = excelData.headers || [];
-      
+
       // 일위대가 format: 공종, 공사명, 노임항목, 기준작업량(D), 노임단가(인당)(E), 일위대가(노임단가/기준작업량)
       // D = 기준작업량, E = 노임단가(인당)
-      let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2;
-      let standardWorkQuantityIdx = -1;  // D: 기준작업량
-      let laborUnitPriceIdx = -1;        // E: 노임단가(인당)
-      let ilwidaegaIdx = -1;             // 일위대가 (참고용)
-      
+      let categoryIdx = 0,
+        workNameIdx = 1,
+        laborItemIdx = 2;
+      let standardWorkQuantityIdx = -1; // D: 기준작업량
+      let laborUnitPriceIdx = -1; // E: 노임단가(인당)
+      let ilwidaegaIdx = -1; // 일위대가 (참고용)
+
       // Find column indices by header names
       headers.forEach((h: string, idx: number) => {
-        const trimmed = (h || '').trim();
-        
+        const trimmed = (h || "").trim();
+
         // 공종 - exact match only
-        if (trimmed === '공종') categoryIdx = idx;
-        
+        if (trimmed === "공종") categoryIdx = idx;
+
         // 공사명
-        if (trimmed.includes('공사명') || trimmed.includes('품명')) workNameIdx = idx;
-        
+        if (trimmed.includes("공사명") || trimmed.includes("품명"))
+          workNameIdx = idx;
+
         // 노임항목
-        if (trimmed.includes('노임항목') && !trimmed.includes('공종')) laborItemIdx = idx;
-        
+        if (trimmed.includes("노임항목") && !trimmed.includes("공종"))
+          laborItemIdx = idx;
+
         // 기준작업량 (D) - must not contain 일위대가 or 노임단가
-        if (trimmed.includes('기준작업량') && !trimmed.includes('일위대가') && !trimmed.includes('노임단가')) {
+        if (
+          trimmed.includes("기준작업량") &&
+          !trimmed.includes("일위대가") &&
+          !trimmed.includes("노임단가")
+        ) {
           standardWorkQuantityIdx = idx;
         }
-        
+
         // 노임단가(인당) (E) - the labor unit price per person
         // Must contain '노임단가' but NOT '일위대가'
-        if (trimmed.includes('노임단가') && !trimmed.includes('일위대가')) {
+        if (trimmed.includes("노임단가") && !trimmed.includes("일위대가")) {
           laborUnitPriceIdx = idx;
         }
-        
+
         // 일위대가 - for reference (E/D)
-        if (trimmed.includes('일위대가')) {
+        if (trimmed.includes("일위대가")) {
           ilwidaegaIdx = idx;
         }
       });
-      
-      console.log('일위대가 headers:', headers);
-      console.log('일위대가 column indices:', { 
-        categoryIdx, workNameIdx, laborItemIdx, 
-        standardWorkQuantityIdx, laborUnitPriceIdx, ilwidaegaIdx 
+
+      console.log("일위대가 headers:", headers);
+      console.log("일위대가 column indices:", {
+        categoryIdx,
+        workNameIdx,
+        laborItemIdx,
+        standardWorkQuantityIdx,
+        laborUnitPriceIdx,
+        ilwidaegaIdx,
       });
 
       let prevCategory: string | null = null;
@@ -5040,14 +6039,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const row = excelData.data[i];
         if (!row || row.length === 0) continue;
 
-        const category: string = safeString(row[categoryIdx]) || prevCategory || '';
-        const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
+        const category: string =
+          safeString(row[categoryIdx]) || prevCategory || "";
+        const workName: string =
+          safeString(row[workNameIdx]) || prevWorkName || "";
         const laborItem: string = safeString(row[laborItemIdx]);
-        
+
         // D = 기준작업량, E = 노임단가(인당)
-        const D = standardWorkQuantityIdx >= 0 ? parsePrice(row[standardWorkQuantityIdx]) : null;
-        const E = laborUnitPriceIdx >= 0 ? parsePrice(row[laborUnitPriceIdx]) : null;
-        const ilwidaega = ilwidaegaIdx >= 0 ? parsePrice(row[ilwidaegaIdx]) : null;
+        const D =
+          standardWorkQuantityIdx >= 0
+            ? parsePrice(row[standardWorkQuantityIdx])
+            : null;
+        const E =
+          laborUnitPriceIdx >= 0 ? parsePrice(row[laborUnitPriceIdx]) : null;
+        const ilwidaega =
+          ilwidaegaIdx >= 0 ? parsePrice(row[ilwidaegaIdx]) : null;
 
         // Update forward-fill values
         if (safeString(row[categoryIdx])) prevCategory = category;
@@ -5055,23 +6061,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Skip rows without essential data
         if (!category || !laborItem) continue;
-        
+
         // Skip header rows (rows where values look like header names)
-        if (category === '공종' || laborItem === '노임항목' || laborItem.includes('노임항목')) continue;
+        if (
+          category === "공종" ||
+          laborItem === "노임항목" ||
+          laborItem.includes("노임항목")
+        )
+          continue;
 
         catalog.push({
           공종: category,
           공사명: workName,
           노임항목: laborItem,
-          기준작업량: D,      // D
-          노임단가: E,        // E (노임단가(인당))
+          기준작업량: D, // D
+          노임단가: E, // E (노임단가(인당))
           일위대가: ilwidaega, // 참고용 (E/D)
         });
       }
 
       // Remove duplicate entries (based on 공종+공사명+노임항목 combination)
       const seen = new Set<string>();
-      const uniqueCatalog = catalog.filter(item => {
+      const uniqueCatalog = catalog.filter((item) => {
         const key = `${item.공종}|${item.공사명}|${item.노임항목}`;
         if (seen.has(key)) {
           return false; // Duplicate
@@ -5079,13 +6090,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         seen.add(key);
         return true;
       });
-      
-      console.log('Parsed 일위대가 catalog items:', catalog.length, '→ 중복 제거 후:', uniqueCatalog.length);
-      
+
+      console.log(
+        "Parsed 일위대가 catalog items:",
+        catalog.length,
+        "→ 중복 제거 후:",
+        uniqueCatalog.length,
+      );
+
       res.json(uniqueCatalog);
     } catch (error) {
       console.error("Get 일위대가 catalog error:", error);
-      res.status(500).json({ error: "일위대가 카탈로그를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "일위대가 카탈로그를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -5101,7 +6119,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(overrides);
     } catch (error) {
       console.error("Get unit price overrides error:", error);
-      res.status(500).json({ error: "기준작업량 데이터를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "기준작업량 데이터를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -5113,12 +6133,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const userRole = req.session.userRole;
     if (userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자만 기준작업량을 수정할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 기준작업량을 수정할 수 있습니다" });
     }
 
     try {
       const { category, workName, laborItem, standardWorkQuantity } = req.body;
-      
+
       if (!category || !laborItem || standardWorkQuantity === undefined) {
         return res.status(400).json({ error: "필수 필드가 누락되었습니다" });
       }
@@ -5126,16 +6148,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate standardWorkQuantity is a positive finite number
       const parsedValue = Number(standardWorkQuantity);
       if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
-        return res.status(400).json({ error: "기준작업량은 0보다 큰 숫자여야 합니다" });
+        return res
+          .status(400)
+          .json({ error: "기준작업량은 0보다 큰 숫자여야 합니다" });
       }
 
       const result = await storage.upsertUnitPriceOverride({
         category,
-        workName: workName || '',
+        workName: workName || "",
         laborItem,
         standardWorkQuantity: parsedValue,
       });
-      
+
       res.json(result);
     } catch (error) {
       console.error("Update unit price override error:", error);
@@ -5151,45 +6175,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const userRole = req.session.userRole;
     if (userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자만 기준작업량을 수정할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 기준작업량을 수정할 수 있습니다" });
     }
 
     try {
       const { items } = req.body;
-      
+
       if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: "업데이트할 항목이 없습니다" });
       }
 
       // Validate all items have valid standardWorkQuantity values before processing
       const validationErrors: string[] = [];
-      const validatedItems = items.map((item: any, index: number) => {
-        const parsedValue = Number(item.standardWorkQuantity);
-        if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
-          validationErrors.push(`[${index + 1}] ${item.category || '(없음)'} - ${item.laborItem || '(없음)'}: 기준작업량은 0보다 큰 숫자여야 합니다`);
-          return null;
-        }
-        return {
-          category: item.category,
-          workName: item.workName || '',
-          laborItem: item.laborItem,
-          standardWorkQuantity: parsedValue,
-        };
-      }).filter((item): item is NonNullable<typeof item> => item !== null);
+      const validatedItems = items
+        .map((item: any, index: number) => {
+          const parsedValue = Number(item.standardWorkQuantity);
+          if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+            validationErrors.push(
+              `[${index + 1}] ${item.category || "(없음)"} - ${item.laborItem || "(없음)"}: 기준작업량은 0보다 큰 숫자여야 합니다`,
+            );
+            return null;
+          }
+          return {
+            category: item.category,
+            workName: item.workName || "",
+            laborItem: item.laborItem,
+            standardWorkQuantity: parsedValue,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
 
       if (validationErrors.length > 0) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "일부 항목의 기준작업량이 유효하지 않습니다",
-          details: validationErrors 
+          details: validationErrors,
         });
       }
 
-      const results = await storage.bulkUpsertUnitPriceOverrides(validatedItems);
-      
+      const results =
+        await storage.bulkUpsertUnitPriceOverrides(validatedItems);
+
       res.json({ success: true, count: results.length });
     } catch (error) {
       console.error("Bulk update unit price overrides error:", error);
-      res.status(500).json({ error: "기준작업량 일괄 저장 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "기준작업량 일괄 저장 중 오류가 발생했습니다" });
     }
   });
 
@@ -5201,68 +6234,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       // Get latest 자재비 data from excel_data table
-      const excelDataList = await storage.listExcelData('자재비');
-      
+      const excelDataList = await storage.listExcelData("자재비");
+
       if (!excelDataList || excelDataList.length === 0) {
         return res.json([]);
       }
 
       // Use the most recent entry
       const excelData = excelDataList[0];
-      
-      console.log('[자재비 API] Excel 데이터:', {
+
+      console.log("[자재비 API] Excel 데이터:", {
         id: excelData.id,
         title: excelData.title,
         headerType: typeof excelData.headers,
         headersRaw: JSON.stringify(excelData.headers),
-        dataRows: excelData.data?.length || 0
+        dataRows: excelData.data?.length || 0,
       });
-      
+
       if (!excelData.data || !Array.isArray(excelData.data)) {
         return res.json([]);
       }
 
       // Helper functions
       const safeString = (val: any): string => {
-        if (val === null || val === undefined) return '';
+        if (val === null || val === undefined) return "";
         return String(val).trim();
       };
-      
+
       const parsePrice = (val: any): number | string | null => {
-        if (val === null || val === undefined || val === '') return null;
-        if (typeof val === 'string' && val.trim() === '입력') return '입력';
-        if (typeof val === 'number') return val;
-        const cleaned = String(val).replace(/,/g, '').trim();
+        if (val === null || val === undefined || val === "") return null;
+        if (typeof val === "string" && val.trim() === "입력") return "입력";
+        if (typeof val === "number") return val;
+        const cleaned = String(val).replace(/,/g, "").trim();
         const num = parseFloat(cleaned);
         return isNaN(num) ? null : num;
       };
 
       const catalog: any[] = [];
       const headers = excelData.headers || [];
-      
+
       // 자재비 format: 공종, 공사명, 자재항목(공사명에 종속), 단위, 단가
-      console.log('[자재비 API] 헤더:', headers);
-      let categoryIdx = 0, workNameIdx = 1, materialItemIdx = 2, unitIdx = 3, priceIdx = 4;
-      
+      console.log("[자재비 API] 헤더:", headers);
+      let categoryIdx = 0,
+        workNameIdx = 1,
+        materialItemIdx = 2,
+        unitIdx = 3,
+        priceIdx = 4;
+
       // First pass: find 자재항목 column (to exclude it from 공사명 matching)
       headers.forEach((h: string, idx: number) => {
         if (!h) return;
-        if (h.includes('자재항목') || h.includes('자재명')) materialItemIdx = idx;
+        if (h.includes("자재항목") || h.includes("자재명"))
+          materialItemIdx = idx;
       });
-      
+
       // Second pass: find other columns (excluding 자재항목 from 공사명 match)
       headers.forEach((h: string, idx: number) => {
         if (!h) return;
         // 공종 (exact match or column name that is just "공종")
-        if (h.trim() === '공종' || h.includes('공종명')) categoryIdx = idx;
+        if (h.trim() === "공종" || h.includes("공종명")) categoryIdx = idx;
         // 공사명 - but NOT if it's the 자재항목 column
-        if ((h.includes('공사명') || h.includes('품명')) && idx !== materialItemIdx && !h.includes('자재')) {
+        if (
+          (h.includes("공사명") || h.includes("품명")) &&
+          idx !== materialItemIdx &&
+          !h.includes("자재")
+        ) {
           workNameIdx = idx;
         }
-        if (h.includes('단위')) unitIdx = idx;
-        if (h.includes('금액') || h.includes('단가')) priceIdx = idx;
+        if (h.includes("단위")) unitIdx = idx;
+        if (h.includes("금액") || h.includes("단가")) priceIdx = idx;
       });
-      console.log('[자재비 API] 인덱스:', { categoryIdx, workNameIdx, materialItemIdx, unitIdx, priceIdx });
+      console.log("[자재비 API] 인덱스:", {
+        categoryIdx,
+        workNameIdx,
+        materialItemIdx,
+        unitIdx,
+        priceIdx,
+      });
 
       let prevCategory: string | null = null;
       let prevWorkName: string | null = null;
@@ -5271,8 +6319,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const row = excelData.data[i];
         if (!row || row.length === 0) continue;
 
-        const category: string = safeString(row[categoryIdx]) || prevCategory || '';
-        const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
+        const category: string =
+          safeString(row[categoryIdx]) || prevCategory || "";
+        const workName: string =
+          safeString(row[workNameIdx]) || prevWorkName || "";
         const materialItem: string = safeString(row[materialItemIdx]); // 자재항목
         const unit: string = safeString(row[unitIdx]);
         const price = parsePrice(row[priceIdx]);
@@ -5293,12 +6343,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log('Parsed 자재비 catalog items:', catalog.length);
-      
+      console.log("Parsed 자재비 catalog items:", catalog.length);
+
       res.json(catalog);
     } catch (error) {
       console.error("Get 자재비 catalog error:", error);
-      res.status(500).json({ error: "자재비 카탈로그를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "자재비 카탈로그를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -5314,7 +6366,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(catalog);
     } catch (error) {
       console.error("Get materials catalog error:", error);
-      res.status(500).json({ error: "자재비 카탈로그를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "자재비 카탈로그를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -5326,7 +6380,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const userRole = req.session.userRole;
     if (userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자만 자재를 추가할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 자재를 추가할 수 있습니다" });
     }
 
     try {
@@ -5336,9 +6392,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create material error:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "입력 데이터 형식이 올바르지 않습니다",
-          details: error.errors 
+          details: error.errors,
         });
       }
       res.status(500).json({ error: "자재를 추가하는 중 오류가 발생했습니다" });
@@ -5353,7 +6409,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const userRole = req.session.userRole;
     if (userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자만 자재를 삭제할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 자재를 삭제할 수 있습니다" });
     }
 
     try {
@@ -5374,7 +6432,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const userRole = req.session.userRole;
     if (userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자만 노무비를 추가할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 노무비를 추가할 수 있습니다" });
     }
 
     try {
@@ -5384,12 +6444,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create labor cost error:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "입력 데이터 형식이 올바르지 않습니다",
-          details: error.errors 
+          details: error.errors,
         });
       }
-      res.status(500).json({ error: "노무비를 추가하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "노무비를 추가하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -5401,7 +6463,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const userRole = req.session.userRole;
     if (userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자만 노무비를 삭제할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 노무비를 삭제할 수 있습니다" });
     }
 
     try {
@@ -5410,7 +6474,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       console.error("Delete labor cost error:", error);
-      res.status(500).json({ error: "노무비를 삭제하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "노무비를 삭제하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -5419,171 +6485,227 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const requestPath = req.path;
     const queryString = JSON.stringify(req.query);
     const rawCaseId = req.params.caseId;
-    
+
     // 디버깅 로그 - 요청 정보
     console.log(`[FieldSurveyReport] === REQUEST START ===`);
     console.log(`[FieldSurveyReport] Path: ${requestPath}`);
     console.log(`[FieldSurveyReport] Query: ${queryString}`);
     console.log(`[FieldSurveyReport] CaseId raw value: "${rawCaseId}"`);
     console.log(`[FieldSurveyReport] CaseId type: ${typeof rawCaseId}`);
-    console.log(`[FieldSurveyReport] CaseId empty check: isEmpty=${!rawCaseId}, isNull=${rawCaseId === 'null'}, isUndefined=${rawCaseId === 'undefined'}`);
-    
+    console.log(
+      `[FieldSurveyReport] CaseId empty check: isEmpty=${!rawCaseId}, isNull=${rawCaseId === "null"}, isUndefined=${rawCaseId === "undefined"}`,
+    );
+
     if (!req.session?.userId) {
-      console.log(`[FieldSurveyReport] ERROR: Unauthorized - no session userId`);
+      console.log(
+        `[FieldSurveyReport] ERROR: Unauthorized - no session userId`,
+      );
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     try {
       const { caseId } = req.params;
-      
+
       // Validate caseId format
       if (!caseId || caseId === "null" || caseId === "undefined") {
-        console.error(`[FieldSurveyReport] ERROR: Invalid caseId format: "${caseId}"`);
+        console.error(
+          `[FieldSurveyReport] ERROR: Invalid caseId format: "${caseId}"`,
+        );
         return res.status(400).json({ error: "유효하지 않은 케이스 ID입니다" });
       }
-      
+
       // 케이스 정보 조회
-      console.log(`[FieldSurveyReport] Step 1: Fetching case data for caseId: ${caseId}`);
+      console.log(
+        `[FieldSurveyReport] Step 1: Fetching case data for caseId: ${caseId}`,
+      );
       let caseData;
       try {
         caseData = await storage.getCaseById(caseId);
-        console.log(`[FieldSurveyReport] Step 1 result: caseData ${caseData ? 'FOUND' : 'NOT FOUND'}`);
+        console.log(
+          `[FieldSurveyReport] Step 1 result: caseData ${caseData ? "FOUND" : "NOT FOUND"}`,
+        );
         if (caseData) {
-          console.log(`[FieldSurveyReport] Case caseNumber: ${caseData.caseNumber || 'N/A'}`);
+          console.log(
+            `[FieldSurveyReport] Case caseNumber: ${caseData.caseNumber || "N/A"}`,
+          );
         }
       } catch (caseError: any) {
-        console.error(`[FieldSurveyReport] Step 1 ERROR: Failed to fetch case`, {
-          message: caseError?.message,
-          code: caseError?.code,
-          detail: caseError?.detail
-        });
+        console.error(
+          `[FieldSurveyReport] Step 1 ERROR: Failed to fetch case`,
+          {
+            message: caseError?.message,
+            code: caseError?.code,
+            detail: caseError?.detail,
+          },
+        );
         throw caseError;
       }
-      
+
       if (!caseData) {
-        console.log(`[FieldSurveyReport] ERROR: Case not found for caseId: ${caseId}`);
+        console.log(
+          `[FieldSurveyReport] ERROR: Case not found for caseId: ${caseId}`,
+        );
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
       // 심사사/조사사 이메일 자동 조회 (DB에 저장되지 않은 경우 users 테이블에서 찾기)
       const allUsers = await storage.getAllUsers();
-      
+
       // 심사사 이메일이 없고 심사자 이름이 있으면 조회
       if (!caseData.assessorEmail && caseData.assessorTeam) {
-        const assessorUser = allUsers.find(u => u.role === "심사사" && u.name === caseData.assessorTeam);
+        const assessorUser = allUsers.find(
+          (u) => u.role === "심사사" && u.name === caseData.assessorTeam,
+        );
         if (assessorUser?.email) {
           (caseData as any).assessorEmail = assessorUser.email;
-          console.log(`[Report] Auto-populated assessorEmail: ${assessorUser.email} (from ${caseData.assessorTeam})`);
+          console.log(
+            `[Report] Auto-populated assessorEmail: ${assessorUser.email} (from ${caseData.assessorTeam})`,
+          );
         }
       }
-      
+
       // 조사사 이메일이 없고 조사자 이름이 있으면 조회
       if (!caseData.investigatorEmail && caseData.investigatorTeamName) {
-        const investigatorUser = allUsers.find(u => u.role === "조사사" && u.name === caseData.investigatorTeamName);
+        const investigatorUser = allUsers.find(
+          (u) =>
+            u.role === "조사사" && u.name === caseData.investigatorTeamName,
+        );
         if (investigatorUser?.email) {
           (caseData as any).investigatorEmail = investigatorUser.email;
-          console.log(`[Report] Auto-populated investigatorEmail: ${investigatorUser.email} (from ${caseData.investigatorTeamName})`);
+          console.log(
+            `[Report] Auto-populated investigatorEmail: ${investigatorUser.email} (from ${caseData.investigatorTeamName})`,
+          );
         }
       }
 
       // 도면 조회
-      console.log(`[FieldSurveyReport] Step 2: Fetching drawing for caseId: ${caseId}`);
+      console.log(
+        `[FieldSurveyReport] Step 2: Fetching drawing for caseId: ${caseId}`,
+      );
       let drawing = null;
       try {
         drawing = await storage.getDrawingByCaseId(caseId);
-        console.log(`[FieldSurveyReport] Step 2 result: drawing ${drawing ? 'FOUND' : 'NOT FOUND'}`);
+        console.log(
+          `[FieldSurveyReport] Step 2 result: drawing ${drawing ? "FOUND" : "NOT FOUND"}`,
+        );
       } catch (drawingError: any) {
-        console.error(`[FieldSurveyReport] Step 2 ERROR: Failed to fetch drawing`, {
-          message: drawingError?.message,
-          code: drawingError?.code,
-          detail: drawingError?.detail
-        });
+        console.error(
+          `[FieldSurveyReport] Step 2 ERROR: Failed to fetch drawing`,
+          {
+            message: drawingError?.message,
+            code: drawingError?.code,
+            detail: drawingError?.detail,
+          },
+        );
         // 도면 조회 실패해도 계속 진행
       }
-      
+
       // 증빙자료 조회
-      console.log(`[FieldSurveyReport] Step 3: Fetching documents for caseId: ${caseId}`);
+      console.log(
+        `[FieldSurveyReport] Step 3: Fetching documents for caseId: ${caseId}`,
+      );
       let documents: any[] = [];
       try {
         documents = await storage.getDocumentsByCaseId(caseId);
-        console.log(`[FieldSurveyReport] Step 3 result: documents count = ${documents?.length || 0}`);
+        console.log(
+          `[FieldSurveyReport] Step 3 result: documents count = ${documents?.length || 0}`,
+        );
       } catch (docsError: any) {
-        console.error(`[FieldSurveyReport] Step 3 ERROR: Failed to fetch documents`, {
-          message: docsError?.message,
-          code: docsError?.code,
-          detail: docsError?.detail
-        });
+        console.error(
+          `[FieldSurveyReport] Step 3 ERROR: Failed to fetch documents`,
+          {
+            message: docsError?.message,
+            code: docsError?.code,
+            detail: docsError?.detail,
+          },
+        );
         // 문서 조회 실패해도 계속 진행
       }
-      
+
       // 최신 견적 조회
-      console.log(`[FieldSurveyReport] Step 4: Fetching estimate for caseId: ${caseId}`);
+      console.log(
+        `[FieldSurveyReport] Step 4: Fetching estimate for caseId: ${caseId}`,
+      );
       let estimateData = null;
       try {
         estimateData = await storage.getLatestEstimate(caseId);
-        console.log(`[FieldSurveyReport] Step 4 result: estimate ${estimateData?.estimate ? 'FOUND' : 'NOT FOUND'}, rows count = ${estimateData?.rows?.length || 0}`);
+        console.log(
+          `[FieldSurveyReport] Step 4 result: estimate ${estimateData?.estimate ? "FOUND" : "NOT FOUND"}, rows count = ${estimateData?.rows?.length || 0}`,
+        );
       } catch (estimateError: any) {
-        console.error(`[FieldSurveyReport] Step 4 ERROR: Failed to fetch estimate`, {
-          message: estimateError?.message,
-          code: estimateError?.code,
-          detail: estimateError?.detail
-        });
+        console.error(
+          `[FieldSurveyReport] Step 4 ERROR: Failed to fetch estimate`,
+          {
+            message: estimateError?.message,
+            code: estimateError?.code,
+            detail: estimateError?.detail,
+          },
+        );
         // 견적 조회 실패해도 계속 진행
       }
-      
+
       // 손해방지 케이스 여부 (접수번호가 -0으로 끝나면 손해방지)
-      const isLossPreventionCase = /-0$/.test(caseData.caseNumber || '');
-      
+      const isLossPreventionCase = /-0$/.test(caseData.caseNumber || "");
+
       // 견적 완료 여부 체크
       // - 손해방지 케이스: 복구면적 산출표 없어도 노무비/자재비만 있으면 완료
       // - 피해복구 케이스: 복구면적 산출표 필수
-      const hasRecoveryRows = !!(estimateData?.rows && estimateData.rows.length > 0);
+      const hasRecoveryRows = !!(
+        estimateData?.rows && estimateData.rows.length > 0
+      );
       // laborCostData와 materialCostData는 이미 파싱된 객체일 수 있음
       let hasLaborCosts = false;
       let hasMaterialCosts = false;
-      
+
       if (estimateData?.estimate?.laborCostData) {
         try {
-          const data = typeof estimateData.estimate.laborCostData === 'string' 
-            ? JSON.parse(estimateData.estimate.laborCostData) 
-            : estimateData.estimate.laborCostData;
+          const data =
+            typeof estimateData.estimate.laborCostData === "string"
+              ? JSON.parse(estimateData.estimate.laborCostData)
+              : estimateData.estimate.laborCostData;
           hasLaborCosts = Array.isArray(data) && data.length > 0;
-        } catch { hasLaborCosts = false; }
+        } catch {
+          hasLaborCosts = false;
+        }
       }
-      
+
       if (estimateData?.estimate?.materialCostData) {
         try {
-          const data = typeof estimateData.estimate.materialCostData === 'string' 
-            ? JSON.parse(estimateData.estimate.materialCostData) 
-            : estimateData.estimate.materialCostData;
+          const data =
+            typeof estimateData.estimate.materialCostData === "string"
+              ? JSON.parse(estimateData.estimate.materialCostData)
+              : estimateData.estimate.materialCostData;
           hasMaterialCosts = Array.isArray(data) && data.length > 0;
-        } catch { hasMaterialCosts = false; }
+        } catch {
+          hasMaterialCosts = false;
+        }
       }
-      
+
       // 건축물대장 또는 등기부등본 첨부 여부 확인 (category 필드 사용)
       const hasBuildingLedger = documents.some(
-        (doc: any) => doc.category === "건축물대장"
+        (doc: any) => doc.category === "건축물대장",
       );
       const hasPropertyRegistry = documents.some(
-        (doc: any) => doc.category === "등기부등본"
+        (doc: any) => doc.category === "등기부등본",
       );
-      
+
       // 미입력 항목 목록 생성
       const missingItems: string[] = [];
-      
+
       // 현장조사 필수 항목 체크
       if (!caseData.visitDate) missingItems.push("방문일시");
-      if (!caseData.visitTime && caseData.visitDate) {} // visitDate 없으면 방문일시로 통합
+      if (!caseData.visitTime && caseData.visitDate) {
+      } // visitDate 없으면 방문일시로 통합
       if (!caseData.accidentCategory) missingItems.push("사고유형");
-      
+
       // 도면 체크
       if (!drawing) missingItems.push("도면");
-      
+
       // 증빙자료 체크 (건축물대장 또는 등기부등본 중 하나 필수)
       if (!hasBuildingLedger && !hasPropertyRegistry) {
         missingItems.push("건축물대장 또는 등기부등본");
       }
-      
+
       // 견적서 체크
       if (isLossPreventionCase) {
         if (!hasLaborCosts && !hasMaterialCosts) {
@@ -5594,30 +6716,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           missingItems.push("복구면적 산출표");
         }
       }
-      
+
       // 각 섹션 완료 여부 체크
       // 손해방지 케이스(-0): 건축물대장 또는 등기부등본 중 하나 필수 (주민등록등본은 선택)
       // 피해세대 복구건(-1,-2 등): 건축물대장 또는 등기부등본 중 하나 필수
       const completionStatus = {
-        fieldSurvey: !!(caseData.visitDate && caseData.visitTime && caseData.accidentCategory),
+        fieldSurvey: !!(
+          caseData.visitDate &&
+          caseData.visitTime &&
+          caseData.accidentCategory
+        ),
         drawing: !!drawing,
         documents: hasBuildingLedger || hasPropertyRegistry,
         // 손해방지 케이스: 노무비 또는 자재비만 있으면 완료
         // 피해복구 케이스: 복구면적 산출표 필수
-        estimate: isLossPreventionCase 
-          ? (hasLaborCosts || hasMaterialCosts)
+        estimate: isLossPreventionCase
+          ? hasLaborCosts || hasMaterialCosts
           : hasRecoveryRows,
         isComplete: false,
-        missingItems,  // 미입력 항목 목록 추가
+        missingItems, // 미입력 항목 목록 추가
       };
-      
+
       // 전체 완료 여부 (기타사항은 optional이므로 제외)
-      completionStatus.isComplete = 
+      completionStatus.isComplete =
         completionStatus.fieldSurvey &&
         completionStatus.drawing &&
         completionStatus.documents &&
         completionStatus.estimate;
-      
+
       // 디버그 로그
       console.log(`[Report completionStatus] Case: ${caseData.caseNumber}`, {
         isLossPreventionCase,
@@ -5636,10 +6762,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           hasPropertyRegistry,
           hasLaborCosts,
           hasMaterialCosts,
-          hasRecoveryRows
-        }
+          hasRecoveryRows,
+        },
       });
-      
+
       // 응답 데이터 shape 로그
       const responseShape = {
         hasCase: !!caseData,
@@ -5648,10 +6774,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         documentsCount: documents?.length || 0,
         hasEstimate: !!estimateData?.estimate,
         estimateRowsCount: estimateData?.rows?.length || 0,
-        completionStatus
+        completionStatus,
       };
-      console.log(`[FieldSurveyReport] === SUCCESS === Response shape:`, responseShape);
-      
+      console.log(
+        `[FieldSurveyReport] === SUCCESS === Response shape:`,
+        responseShape,
+      );
+
       // 통합된 보고서 데이터 반환
       res.json({
         case: caseData,
@@ -5663,30 +6792,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       // 상세 에러 로깅
       console.error(`[FieldSurveyReport] === FATAL ERROR ===`);
-      console.error(`[FieldSurveyReport] Error message: ${error?.message || 'Unknown error'}`);
-      console.error(`[FieldSurveyReport] Error stack: ${error?.stack || 'No stack trace'}`);
-      console.error(`[FieldSurveyReport] DB error code: ${error?.code || 'N/A'}`);
-      console.error(`[FieldSurveyReport] DB error detail: ${error?.detail || 'N/A'}`);
+      console.error(
+        `[FieldSurveyReport] Error message: ${error?.message || "Unknown error"}`,
+      );
+      console.error(
+        `[FieldSurveyReport] Error stack: ${error?.stack || "No stack trace"}`,
+      );
+      console.error(
+        `[FieldSurveyReport] DB error code: ${error?.code || "N/A"}`,
+      );
+      console.error(
+        `[FieldSurveyReport] DB error detail: ${error?.detail || "N/A"}`,
+      );
       console.error(`[FieldSurveyReport] Full error object:`, error);
-      
+
       // 에러 타입에 따른 상태 코드 분리
-      if (error?.code === '22P02' || error?.message?.includes('invalid input syntax')) {
-        return res.status(400).json({ 
+      if (
+        error?.code === "22P02" ||
+        error?.message?.includes("invalid input syntax")
+      ) {
+        return res.status(400).json({
           error: "잘못된 케이스 ID 형식입니다",
-          details: error?.message
+          details: error?.message,
         });
       }
-      
-      if (error?.code === '42P01') {
-        return res.status(500).json({ 
+
+      if (error?.code === "42P01") {
+        return res.status(500).json({
           error: "데이터베이스 테이블이 존재하지 않습니다",
-          details: error?.message
+          details: error?.message,
         });
       }
-      
-      res.status(500).json({ 
+
+      res.status(500).json({
         error: "현장조사 보고서를 조회하는 중 오류가 발생했습니다",
-        details: error?.message || 'Unknown server error'
+        details: error?.message || "Unknown server error",
       });
     }
   });
@@ -5700,14 +6840,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get current user for permission-based filtering
       const currentUser = await storage.getUser(req.session.userId);
-      
+
       if (!currentUser) {
         return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       }
-      
+
       // Get cases filtered by user role and permissions
       const filteredCases = await storage.getAllCases(currentUser);
-      
+
       // Helper function to parse date from case
       const parseAccidentDate = (dateStr: string | null): Date | null => {
         if (!dateStr) return null;
@@ -5717,54 +6857,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return null;
         }
       };
-      
+
       // Calculate current month and last month ranges dynamically
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
-      
+
       // Calculate last month (handle year boundary)
       const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
       const lastYear = currentMonth === 1 ? currentYear - 1 : currentYear;
-      
+
       // Filter cases for current month
-      const currentMonthCases = filteredCases.filter(c => {
+      const currentMonthCases = filteredCases.filter((c) => {
         const accidentDate = parseAccidentDate(c.accidentDate);
         if (!accidentDate) return false;
-        return accidentDate.getFullYear() === currentYear && accidentDate.getMonth() + 1 === currentMonth;
+        return (
+          accidentDate.getFullYear() === currentYear &&
+          accidentDate.getMonth() + 1 === currentMonth
+        );
       });
-      
+
       // Filter cases for last month
-      const lastMonthCases = filteredCases.filter(c => {
+      const lastMonthCases = filteredCases.filter((c) => {
         const accidentDate = parseAccidentDate(c.accidentDate);
         if (!accidentDate) return false;
-        return accidentDate.getFullYear() === lastYear && accidentDate.getMonth() + 1 === lastMonth;
+        return (
+          accidentDate.getFullYear() === lastYear &&
+          accidentDate.getMonth() + 1 === lastMonth
+        );
       });
-      
+
       // 미결건: 청구단계 이전 (청구, 입금완료, 부분입금, 정산완료 제외)
-      const claimStatuses = ["청구", "입금완료", "부분입금", "정산완료", "접수취소"];
-      
+      const claimStatuses = [
+        "청구",
+        "입금완료",
+        "부분입금",
+        "정산완료",
+        "접수취소",
+      ];
+
       // 접수건: 전체 케이스 (취소 제외)
-      const receivedCases = filteredCases.filter(c => c.status !== "접수취소").length;
-      const lastMonthReceivedCases = lastMonthCases.filter(c => c.status !== "접수취소").length;
-      
+      const receivedCases = filteredCases.filter(
+        (c) => c.status !== "접수취소",
+      ).length;
+      const lastMonthReceivedCases = lastMonthCases.filter(
+        (c) => c.status !== "접수취소",
+      ).length;
+
       // 미결건: 청구단계 이전 (청구, 입금완료, 부분입금, 정산완료, 접수취소 제외)
-      const pendingCases = filteredCases.filter(c => !claimStatuses.includes(c.status)).length;
-      const lastMonthPendingCases = lastMonthCases.filter(c => !claimStatuses.includes(c.status)).length;
-      
+      const pendingCases = filteredCases.filter(
+        (c) => !claimStatuses.includes(c.status),
+      ).length;
+      const lastMonthPendingCases = lastMonthCases.filter(
+        (c) => !claimStatuses.includes(c.status),
+      ).length;
+
       // Calculate changes
       const receivedCasesChangeCount = receivedCases - lastMonthReceivedCases;
-      const receivedCasesChange = lastMonthReceivedCases > 0 
-        ? ((receivedCasesChangeCount / lastMonthReceivedCases) * 100)
-        : 0;
-      
+      const receivedCasesChange =
+        lastMonthReceivedCases > 0
+          ? (receivedCasesChangeCount / lastMonthReceivedCases) * 100
+          : 0;
+
       const pendingCasesChangeCount = pendingCases - lastMonthPendingCases;
-      const pendingCasesChange = lastMonthPendingCases > 0
-        ? ((pendingCasesChangeCount / lastMonthPendingCases) * 100)
-        : 0;
-      
+      const pendingCasesChange =
+        lastMonthPendingCases > 0
+          ? (pendingCasesChangeCount / lastMonthPendingCases) * 100
+          : 0;
+
       // Helper function to calculate estimate total from laborCostData and materialCostData
-      const calculateEstimateTotal = (laborCostData: any, materialCostData: any): number => {
+      const calculateEstimateTotal = (
+        laborCostData: any,
+        materialCostData: any,
+      ): number => {
         let laborTotalWithExpense = 0;
         let laborTotalWithoutExpense = 0;
         let materialTotal = 0;
@@ -5784,12 +6949,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Calculate material costs
         if (Array.isArray(materialCostData)) {
           materialCostData.forEach((row: any) => {
-            materialTotal += (row.금액 || 0);
+            materialTotal += row.금액 || 0;
           });
         }
 
         // 소계 (전체)
-        const subtotal = laborTotalWithExpense + laborTotalWithoutExpense + materialTotal;
+        const subtotal =
+          laborTotalWithExpense + laborTotalWithoutExpense + materialTotal;
 
         // 일반관리비와 이윤 계산 대상 (경비 제외)
         const baseForFees = laborTotalWithoutExpense + materialTotal;
@@ -5813,17 +6979,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Get estimates for all cases to calculate unsettled amounts
-      const caseIds = filteredCases.map(c => c.id);
-      const allEstimates = caseIds.length > 0
-        ? await db
-            .select()
-            .from(estimates)
-            .where(inArray(estimates.caseId, caseIds))
-        : [];
+      const caseIds = filteredCases.map((c) => c.id);
+      const allEstimates =
+        caseIds.length > 0
+          ? await db
+              .select()
+              .from(estimates)
+              .where(inArray(estimates.caseId, caseIds))
+          : [];
 
       // Get latest estimate for each case
       const latestEstimatesByCaseId = new Map<string, any>();
-      allEstimates.forEach(est => {
+      allEstimates.forEach((est) => {
         const existing = latestEstimatesByCaseId.get(est.caseId);
         if (!existing || est.version > existing.version) {
           latestEstimatesByCaseId.set(est.caseId, est);
@@ -5831,51 +6998,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // 보험사 미정산: 입금완료 상태 이전인 건들 (청구했지만 아직 입금 안된 건)
-      const insuranceUnsettledCases = filteredCases.filter(c => c.status === "청구");
-      const insuranceUnsettledAmount = insuranceUnsettledCases.reduce((sum, c) => {
+      const insuranceUnsettledCases = filteredCases.filter(
+        (c) => c.status === "청구",
+      );
+      const insuranceUnsettledAmount = insuranceUnsettledCases.reduce(
+        (sum, c) => {
+          const estimate = latestEstimatesByCaseId.get(c.id);
+          if (estimate) {
+            const total = calculateEstimateTotal(
+              estimate.laborCostData,
+              estimate.materialCostData,
+            );
+            return sum + total;
+          }
+          return sum;
+        },
+        0,
+      );
+
+      // 협력사 미정산: 정산완료 이전 상태의 건들 (입금 됐지만 아직 정산 안된 건)
+      const partnerUnsettledCases = filteredCases.filter(
+        (c) => c.status === "입금완료" || c.status === "부분입금",
+      );
+      const partnerUnsettledAmount = partnerUnsettledCases.reduce((sum, c) => {
         const estimate = latestEstimatesByCaseId.get(c.id);
         if (estimate) {
-          const total = calculateEstimateTotal(estimate.laborCostData, estimate.materialCostData);
+          const total = calculateEstimateTotal(
+            estimate.laborCostData,
+            estimate.materialCostData,
+          );
           return sum + total;
         }
         return sum;
       }, 0);
 
-      // 협력사 미정산: 정산완료 이전 상태의 건들 (입금 됐지만 아직 정산 안된 건)
-      const partnerUnsettledCases = filteredCases.filter(c => 
-        c.status === "입금완료" || c.status === "부분입금"
-      );
-      const partnerUnsettledAmount = partnerUnsettledCases.reduce((sum, c) => {
-        const estimate = latestEstimatesByCaseId.get(c.id);
-        if (estimate) {
-          const total = calculateEstimateTotal(estimate.laborCostData, estimate.materialCostData);
-          return sum + total;
-        }
-        return sum;
-      }, 0);
-      
       const stats = {
         // 접수건: 이번달 케이스 수
         receivedCases,
         lastMonthReceivedCases,
         receivedCasesChange: Math.round(receivedCasesChange * 10) / 10, // 소수점 1자리
         receivedCasesChangeCount,
-        
+
         // 미결건: status가 "제출", "검토중", "1차승인"인 케이스
         pendingCases,
         lastMonthPendingCases,
         pendingCasesChange: Math.round(pendingCasesChange * 10) / 10, // 소수점 1자리
         pendingCasesChangeCount,
-        
+
         // 보험사 미정산: "청구" 상태인 케이스들의 견적 금액 합계
         insuranceUnsettledCases: insuranceUnsettledCases.length,
         insuranceUnsettledAmount: Math.round(insuranceUnsettledAmount),
-        
+
         // 협력사 미정산: "완료" 또는 "청구" 상태인 케이스들의 견적 금액 합계
         partnerUnsettledCases: partnerUnsettledCases.length,
         partnerUnsettledAmount: Math.round(partnerUnsettledAmount),
       };
-      
+
       res.json(stats);
     } catch (error) {
       console.error("Get dashboard stats error:", error);
@@ -5894,9 +7072,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endDateParam = req.query.endDate as string;
 
       // 손해정지비용 공종
-      const damagePreventionTypes = ['누수탐지비용', '배관공사', '방수공사', '코킹공사', '철거공사', '원인철거공사'];
+      const damagePreventionTypes = [
+        "누수탐지비용",
+        "배관공사",
+        "방수공사",
+        "코킹공사",
+        "철거공사",
+        "원인철거공사",
+      ];
       // 대물수리비용 공종
-      const propertyRepairTypes = ['가설공사', '목공사', '수장공사', '도장공사', '욕실공사', '타일공사', '가구공사', '전기공사', '피해철거공사', '기타공사'];
+      const propertyRepairTypes = [
+        "가설공사",
+        "목공사",
+        "수장공사",
+        "도장공사",
+        "욕실공사",
+        "타일공사",
+        "가구공사",
+        "전기공사",
+        "피해철거공사",
+        "기타공사",
+      ];
 
       // 기간 필터링
       let caseFilter = sql`1=1`;
@@ -5908,19 +7104,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const completedCases = await db
         .select()
         .from(cases)
-        .where(sql`(${cases.status} IN ('정산완료', '입금완료', '부분입금')) AND (${cases.recoveryType} = '직접복구' OR ${cases.status} = '직접복구')`);
+        .where(
+          sql`(${cases.status} IN ('정산완료', '입금완료', '부분입금')) AND (${cases.recoveryType} = '직접복구' OR ${cases.status} = '직접복구')`,
+        );
 
       if (!completedCases.length) {
         return res.json({
-          손해정지비용: { 누수탐지비: 0, 배관공사: 0, 방수공사: 0, 코킹공사: 0, 철거공사: 0, 계: 0 },
-          대물수리비용: { 가설공사: 0, 목공사: 0, 수장공사: 0, 도장공사: 0, 욕실공사: 0, 가구공사: 0, 전기공사: 0, 철거공사: 0, 기타공사: 0, 계: 0 },
+          손해정지비용: {
+            누수탐지비: 0,
+            배관공사: 0,
+            방수공사: 0,
+            코킹공사: 0,
+            철거공사: 0,
+            계: 0,
+          },
+          대물수리비용: {
+            가설공사: 0,
+            목공사: 0,
+            수장공사: 0,
+            도장공사: 0,
+            욕실공사: 0,
+            가구공사: 0,
+            전기공사: 0,
+            철거공사: 0,
+            기타공사: 0,
+            계: 0,
+          },
           총계: 0,
           건수: 0,
         });
       }
 
       // 케이스별 최신 견적 조회
-      const caseIds = completedCases.map(c => c.id);
+      const caseIds = completedCases.map((c) => c.id);
       const allEstimates = await db
         .select()
         .from(estimates)
@@ -5928,7 +7144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 케이스별 최신 견적만 추출
       const latestEstimatesByCaseId = new Map<string, any>();
-      allEstimates.forEach(est => {
+      allEstimates.forEach((est) => {
         const existing = latestEstimatesByCaseId.get(est.caseId);
         if (!existing || est.version > existing.version) {
           latestEstimatesByCaseId.set(est.caseId, est);
@@ -5937,54 +7153,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 공종별 합계 계산
       const damagePreventionTotals: Record<string, number> = {
-        누수탐지비: 0, 배관공사: 0, 방수공사: 0, 코킹공사: 0, 철거공사: 0
+        누수탐지비: 0,
+        배관공사: 0,
+        방수공사: 0,
+        코킹공사: 0,
+        철거공사: 0,
       };
       const propertyRepairTotals: Record<string, number> = {
-        가설공사: 0, 목공사: 0, 수장공사: 0, 도장공사: 0, 욕실공사: 0, 가구공사: 0, 전기공사: 0, 철거공사: 0, 기타공사: 0
+        가설공사: 0,
+        목공사: 0,
+        수장공사: 0,
+        도장공사: 0,
+        욕실공사: 0,
+        가구공사: 0,
+        전기공사: 0,
+        철거공사: 0,
+        기타공사: 0,
       };
 
       let validCaseCount = 0;
 
       latestEstimatesByCaseId.forEach((estimate) => {
-        if (!estimate.laborCostData || !Array.isArray(estimate.laborCostData)) return;
+        if (!estimate.laborCostData || !Array.isArray(estimate.laborCostData))
+          return;
         validCaseCount++;
 
         estimate.laborCostData.forEach((row: any) => {
-          const category = row.category || '';
+          const category = row.category || "";
           const amount = row.amount || 0;
 
           // 손해정지비용 분류
-          if (category === '누수탐지비용') {
-            damagePreventionTotals['누수탐지비'] += amount;
-          } else if (category === '배관공사') {
-            damagePreventionTotals['배관공사'] += amount;
-          } else if (category === '방수공사') {
-            damagePreventionTotals['방수공사'] += amount;
-          } else if (category === '코킹공사') {
-            damagePreventionTotals['코킹공사'] += amount;
-          } else if (category === '원인철거공사' || (category.includes('철거') && damagePreventionTypes.some(t => t.includes(category)))) {
-            damagePreventionTotals['철거공사'] += amount;
+          if (category === "누수탐지비용") {
+            damagePreventionTotals["누수탐지비"] += amount;
+          } else if (category === "배관공사") {
+            damagePreventionTotals["배관공사"] += amount;
+          } else if (category === "방수공사") {
+            damagePreventionTotals["방수공사"] += amount;
+          } else if (category === "코킹공사") {
+            damagePreventionTotals["코킹공사"] += amount;
+          } else if (
+            category === "원인철거공사" ||
+            (category.includes("철거") &&
+              damagePreventionTypes.some((t) => t.includes(category)))
+          ) {
+            damagePreventionTotals["철거공사"] += amount;
           }
 
           // 대물수리비용 분류
-          if (category === '가설공사') {
-            propertyRepairTotals['가설공사'] += amount;
-          } else if (category === '목공사') {
-            propertyRepairTotals['목공사'] += amount;
-          } else if (category === '수장공사') {
-            propertyRepairTotals['수장공사'] += amount;
-          } else if (category === '도장공사') {
-            propertyRepairTotals['도장공사'] += amount;
-          } else if (category === '욕실공사' || category === '타일공사') {
-            propertyRepairTotals['욕실공사'] += amount;
-          } else if (category === '가구공사') {
-            propertyRepairTotals['가구공사'] += amount;
-          } else if (category === '전기공사') {
-            propertyRepairTotals['전기공사'] += amount;
-          } else if (category === '피해철거공사') {
-            propertyRepairTotals['철거공사'] += amount;
-          } else if (category === '기타공사' && !damagePreventionTypes.includes(category)) {
-            propertyRepairTotals['기타공사'] += amount;
+          if (category === "가설공사") {
+            propertyRepairTotals["가설공사"] += amount;
+          } else if (category === "목공사") {
+            propertyRepairTotals["목공사"] += amount;
+          } else if (category === "수장공사") {
+            propertyRepairTotals["수장공사"] += amount;
+          } else if (category === "도장공사") {
+            propertyRepairTotals["도장공사"] += amount;
+          } else if (category === "욕실공사" || category === "타일공사") {
+            propertyRepairTotals["욕실공사"] += amount;
+          } else if (category === "가구공사") {
+            propertyRepairTotals["가구공사"] += amount;
+          } else if (category === "전기공사") {
+            propertyRepairTotals["전기공사"] += amount;
+          } else if (category === "피해철거공사") {
+            propertyRepairTotals["철거공사"] += amount;
+          } else if (
+            category === "기타공사" &&
+            !damagePreventionTypes.includes(category)
+          ) {
+            propertyRepairTotals["기타공사"] += amount;
           }
         });
       });
@@ -5992,26 +7228,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 평균 계산
       const avgDivisor = validCaseCount || 1;
       const avgDamagePrevention: Record<string, number> = {};
-      Object.keys(damagePreventionTotals).forEach(key => {
-        avgDamagePrevention[key] = Math.round(damagePreventionTotals[key] / avgDivisor);
+      Object.keys(damagePreventionTotals).forEach((key) => {
+        avgDamagePrevention[key] = Math.round(
+          damagePreventionTotals[key] / avgDivisor,
+        );
       });
-      avgDamagePrevention['계'] = Object.values(avgDamagePrevention).reduce((a, b) => a + b, 0);
+      avgDamagePrevention["계"] = Object.values(avgDamagePrevention).reduce(
+        (a, b) => a + b,
+        0,
+      );
 
       const avgPropertyRepair: Record<string, number> = {};
-      Object.keys(propertyRepairTotals).forEach(key => {
-        avgPropertyRepair[key] = Math.round(propertyRepairTotals[key] / avgDivisor);
+      Object.keys(propertyRepairTotals).forEach((key) => {
+        avgPropertyRepair[key] = Math.round(
+          propertyRepairTotals[key] / avgDivisor,
+        );
       });
-      avgPropertyRepair['계'] = Object.values(avgPropertyRepair).reduce((a, b) => a + b, 0);
+      avgPropertyRepair["계"] = Object.values(avgPropertyRepair).reduce(
+        (a, b) => a + b,
+        0,
+      );
 
       res.json({
         손해정지비용: avgDamagePrevention,
         대물수리비용: avgPropertyRepair,
-        총계: avgDamagePrevention['계'] + avgPropertyRepair['계'],
+        총계: avgDamagePrevention["계"] + avgPropertyRepair["계"],
         건수: validCaseCount,
       });
     } catch (error) {
       console.error("Get avg repair cost by category error:", error);
-      res.status(500).json({ error: "평균 수리비 항목별 통계를 조회하는 중 오류가 발생했습니다" });
+      res.status(500).json({
+        error: "평균 수리비 항목별 통계를 조회하는 중 오류가 발생했습니다",
+      });
     }
   });
 
@@ -6022,14 +7270,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const { caseId, relatedCaseIds, damagePreventionAmount, propertyRepairAmount, remarks } = req.body;
+      const {
+        caseId,
+        relatedCaseIds,
+        damagePreventionAmount,
+        propertyRepairAmount,
+        remarks,
+      } = req.body;
 
       if (!caseId) {
         return res.status(400).json({ error: "케이스 ID가 필요합니다" });
       }
 
       // 입력값 검증
-      const parsedDamagePreventionAmount = parseInt(damagePreventionAmount) || 0;
+      const parsedDamagePreventionAmount =
+        parseInt(damagePreventionAmount) || 0;
       const parsedPropertyRepairAmount = parseInt(propertyRepairAmount) || 0;
 
       // 케이스 정보 조회
@@ -6039,25 +7294,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 관련 케이스들의 상태를 "청구"로 변경하고 인보이스 데이터 저장
-      const caseIdsToUpdate = relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
-      
+      const caseIdsToUpdate =
+        relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
+
       // 청구일을 오늘 날짜로 설정 (KST)
       const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
-      const claimDateStr = kstNow.toISOString().split('T')[0];
-      
+      const claimDateStr = kstNow.toISOString().split("T")[0];
+
       for (const id of caseIdsToUpdate) {
-        await storage.updateCase(id, { 
+        await storage.updateCase(id, {
           status: "청구",
-          claimDate: claimDateStr,  // 청구일 설정
-          invoiceDamagePreventionAmount: parsedDamagePreventionAmount.toString(),
+          claimDate: claimDateStr, // 청구일 설정
+          invoiceDamagePreventionAmount:
+            parsedDamagePreventionAmount.toString(),
           invoicePropertyRepairAmount: parsedPropertyRepairAmount.toString(),
           invoiceRemarks: remarks || null,
         });
-        
+
         // 진행상황 기록 추가 (금액 정보 포함)
         await storage.createProgressUpdate({
           caseId: id,
-          content: `인보이스 발송 완료 - 청구 상태로 변경 (손해방지비용: ${parsedDamagePreventionAmount.toLocaleString()}원, 대물복구비용: ${parsedPropertyRepairAmount.toLocaleString()}원${remarks ? `, 비고: ${remarks}` : ''})`,
+          content: `인보이스 발송 완료 - 청구 상태로 변경 (손해방지비용: ${parsedDamagePreventionAmount.toLocaleString()}원, 대물복구비용: ${parsedPropertyRepairAmount.toLocaleString()}원${remarks ? `, 비고: ${remarks}` : ""})`,
           createdBy: req.session.userId,
         });
       }
@@ -6065,8 +7322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // TODO: 실제 이메일 발송 로직 (SendGrid 등 연동 필요)
       // 현재는 상태만 변경하고 성공 응답 반환
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "인보이스가 발송되었습니다.",
         updatedCases: caseIdsToUpdate.length,
       });
@@ -6094,22 +7351,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const timestamp = kstNow.toISOString();
 
       // 관련 케이스들에도 PDF 생성 기록 저장
-      const caseIdsToUpdate = relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
-      
+      const caseIdsToUpdate =
+        relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
+
       for (const id of caseIdsToUpdate) {
-        await storage.updateCase(id, { 
+        await storage.updateCase(id, {
           invoicePdfGenerated: timestamp,
         });
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "PDF 생성 기록이 저장되었습니다.",
         timestamp,
       });
     } catch (error) {
       console.error("Mark PDF generated error:", error);
-      res.status(500).json({ error: "PDF 생성 기록 저장 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "PDF 생성 기록 저장 중 오류가 발생했습니다" });
     }
   });
 
@@ -6136,38 +7396,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 관련 케이스들의 상태를 "청구"로 변경하고 금액 저장
-      const caseIdsToUpdate = relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
-      
+      const caseIdsToUpdate =
+        relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
+
       // 청구일을 오늘 날짜로 설정 (KST)
       const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
-      const claimDateStr = kstNow.toISOString().split('T')[0];
-      
+      const claimDateStr = kstNow.toISOString().split("T")[0];
+
       for (const id of caseIdsToUpdate) {
         // 상태 변경 및 인보이스 데이터 저장
-        await storage.updateCase(id, { 
+        await storage.updateCase(id, {
           status: "청구",
-          claimDate: claimDateStr,  // 청구일 설정
+          claimDate: claimDateStr, // 청구일 설정
           fieldDispatchInvoiceAmount: parsedFieldDispatchAmount.toString(),
           fieldDispatchInvoiceRemarks: remarks || null,
         });
-        
+
         // 진행상황 기록 추가 (금액 정보 포함)
         await storage.createProgressUpdate({
           caseId: id,
-          content: `현장출동비용 청구서 발송 완료 - 청구 상태로 변경 (현장출동비용: ${parsedFieldDispatchAmount.toLocaleString()}원${remarks ? `, 비고: ${remarks}` : ''})`,
+          content: `현장출동비용 청구서 발송 완료 - 청구 상태로 변경 (현장출동비용: ${parsedFieldDispatchAmount.toLocaleString()}원${remarks ? `, 비고: ${remarks}` : ""})`,
           createdBy: req.session.userId,
         });
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "현장출동비용 청구서가 발송되었습니다.",
         updatedCases: caseIdsToUpdate.length,
         savedAmount: parsedFieldDispatchAmount,
       });
     } catch (error) {
       console.error("Field dispatch invoice send error:", error);
-      res.status(500).json({ error: "현장출동비용 청구서 발송 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "현장출동비용 청구서 발송 중 오류가 발생했습니다" });
     }
   });
 
@@ -6183,7 +7446,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(favorites);
     } catch (error) {
       console.error("Get favorites error:", error);
-      res.status(500).json({ error: "즐겨찾기를 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "즐겨찾기를 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -6208,13 +7473,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(favorite);
     } catch (error) {
       console.error("Add favorite error:", error);
-      
+
       // Handle unique constraint violation (duplicate favorite)
       if (error instanceof Error && error.message.includes("unique")) {
-        return res.status(409).json({ error: "이미 즐겨찾기에 추가된 메뉴입니다" });
+        return res
+          .status(409)
+          .json({ error: "이미 즐겨찾기에 추가된 메뉴입니다" });
       }
-      
-      res.status(500).json({ error: "즐겨찾기를 추가하는 중 오류가 발생했습니다" });
+
+      res
+        .status(500)
+        .json({ error: "즐겨찾기를 추가하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -6231,7 +7500,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       console.error("Remove favorite error:", error);
-      res.status(500).json({ error: "즐겨찾기를 삭제하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "즐겨찾기를 삭제하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -6243,7 +7514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(allNotices);
     } catch (error) {
       console.error("Get notices error:", error);
-      res.status(500).json({ error: "공지사항을 조회하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "공지사항을 조회하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -6256,7 +7529,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check if user is admin
     const user = await storage.getUser(req.session.userId);
     if (!user || user.role !== "관리자") {
-      return res.status(403).json({ error: "관리자만 공지사항을 작성할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 공지사항을 작성할 수 있습니다" });
     }
 
     try {
@@ -6275,7 +7550,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(notice);
     } catch (error) {
       console.error("Create notice error:", error);
-      res.status(500).json({ error: "공지사항을 등록하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "공지사항을 등록하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -6288,7 +7565,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check if user is admin
     const user = await storage.getUser(req.session.userId);
     if (!user || user.role !== "관리자") {
-      return res.status(403).json({ error: "관리자만 공지사항을 수정할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 공지사항을 수정할 수 있습니다" });
     }
 
     try {
@@ -6308,7 +7587,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updated);
     } catch (error) {
       console.error("Update notice error:", error);
-      res.status(500).json({ error: "공지사항을 수정하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "공지사항을 수정하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -6321,7 +7602,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check if user is admin
     const user = await storage.getUser(req.session.userId);
     if (!user || user.role !== "관리자") {
-      return res.status(403).json({ error: "관리자만 공지사항을 삭제할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 공지사항을 삭제=�� 수 있습니다" });
     }
 
     try {
@@ -6330,7 +7613,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       console.error("Delete notice error:", error);
-      res.status(500).json({ error: "공지사항을 삭제하는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "공지사항을 삭제하는 중 오류가 발생했습니다" });
     }
   });
 
@@ -6346,7 +7631,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       console.error("Get case change logs error:", error);
-      res.status(500).json({ error: "변경 로그를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "변경 로그를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -6359,23 +7646,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check if user is admin
     const user = await storage.getUser(req.session.userId);
     if (!user || user.role !== "관리자") {
-      return res.status(403).json({ error: "관리자만 변경 로그를 조회할 수 있습니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 변경 로그를 조회할 수 있습니다" });
     }
 
     try {
       const { caseNumber, changedBy, dateFrom, dateTo } = req.query;
-      
+
       const logs = await storage.getAllCaseChangeLogs({
         caseNumber: caseNumber as string | undefined,
         changedBy: changedBy as string | undefined,
         dateFrom: dateFrom as string | undefined,
         dateTo: dateTo as string | undefined,
       });
-      
+
       res.json(logs);
     } catch (error) {
       console.error("Get all change logs error:", error);
-      res.status(500).json({ error: "변경 로그를 불러오는 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "변경 로그를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
@@ -6388,28 +7679,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check if user is admin
     const user = await storage.getUser(req.session.userId);
     if (!user || user.role !== "관리자") {
-      return res.status(403).json({ error: "관리자만 사용할 수 있는 기능입니다" });
+      return res
+        .status(403)
+        .json({ error: "관리자만 사용할 수 있는 기능입니다" });
     }
 
     try {
       const { email, pdfBase64, title } = req.body;
 
       if (!email || !pdfBase64) {
-        return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
+        return res
+          .status(400)
+          .json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
       }
 
-      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const dateStr = new Date().toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
       const timestamp = Date.now();
       const fileName = `dashboard_${timestamp}.pdf`;
-      
+
       // Convert base64 to buffer
-      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      const pdfBuffer = Buffer.from(pdfBase64, "base64");
 
       // Upload PDF to Object Storage
       const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
       if (!bucketId) {
-        console.error("[send-dashboard-pdf-email] Missing Object Storage bucket ID");
-        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+        console.error(
+          "[send-dashboard-pdf-email] Missing Object Storage bucket ID",
+        );
+        return res
+          .status(500)
+          .json({ error: "Object Storage 설정이 필요합니다" });
       }
 
       const bucket = objectStorageClient.bucket(bucketId);
@@ -6418,9 +7721,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Upload the PDF
       await file.save(pdfBuffer, {
-        contentType: 'application/pdf',
+        contentType: "application/pdf",
         metadata: {
-          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+          "custom:aclPolicy": JSON.stringify({
+            owner: user.id,
+            visibility: "public",
+          }),
         },
       });
 
@@ -6429,7 +7735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pdfUrl = await signObjectURL({
         bucketName: bucketId,
         objectName: objectName,
-        method: 'GET',
+        method: "GET",
         ttlSec: SIGNED_URL_TTL_SEC,
       });
 
@@ -6449,9 +7755,15 @@ ${pdfUrl}
 감사합니다.
 FLOXN 드림`;
 
-      await sendNotificationEmail(email, title || `FLOXN 대시보드 현황 - ${dateStr}`, emailContent);
+      await sendNotificationEmail(
+        email,
+        title || `FLOXN 대시보드 현황 - ${dateStr}`,
+        emailContent,
+      );
 
-      console.log(`[Email] Dashboard PDF link sent successfully to ${email} by ${user.username}`);
+      console.log(
+        `[Email] Dashboard PDF link sent successfully to ${email} by ${user.username}`,
+      );
       res.json({ success: true, message: "이메일이 전송되었습니다", pdfUrl });
     } catch (error) {
       console.error("Send dashboard PDF email error:", error);
@@ -6473,34 +7785,42 @@ FLOXN 드림`;
     }
 
     try {
-      const { 
-        email, 
-        pdfBase64, 
-        caseNumber, 
-        insuranceCompany, 
+      const {
+        email,
+        pdfBase64,
+        caseNumber,
+        insuranceCompany,
         accidentNo,
         damagePreventionAmount,
         propertyRepairAmount,
         totalAmount,
-        remarks
+        remarks,
       } = req.body;
 
       if (!email || !pdfBase64) {
-        return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
+        return res
+          .status(400)
+          .json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
       }
 
-      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const dateStr = new Date().toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
       const timestamp = Date.now();
       const fileName = `invoice_${caseNumber || timestamp}_${timestamp}.pdf`;
-      
+
       // Convert base64 to buffer
-      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      const pdfBuffer = Buffer.from(pdfBase64, "base64");
 
       // Upload PDF to Object Storage
       const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
       if (!bucketId) {
         console.error("[send-invoice-email] Missing Object Storage bucket ID");
-        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+        return res
+          .status(500)
+          .json({ error: "Object Storage 설정이 필요합니다" });
       }
 
       const bucket = objectStorageClient.bucket(bucketId);
@@ -6509,9 +7829,12 @@ FLOXN 드림`;
 
       // Upload the PDF
       await file.save(pdfBuffer, {
-        contentType: 'application/pdf',
+        contentType: "application/pdf",
         metadata: {
-          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+          "custom:aclPolicy": JSON.stringify({
+            owner: user.id,
+            visibility: "public",
+          }),
         },
       });
 
@@ -6520,18 +7843,18 @@ FLOXN 드림`;
       const pdfUrl = await signObjectURL({
         bucketName: bucketId,
         objectName: objectName,
-        method: 'GET',
+        method: "GET",
         ttlSec: SIGNED_URL_TTL_SEC,
       });
 
       console.log(`[PDF Upload] Invoice PDF uploaded with signed URL`);
 
       // Format amounts
-      const formatAmount = (amount: number) => amount.toLocaleString('ko-KR');
+      const formatAmount = (amount: number) => amount.toLocaleString("ko-KR");
 
       // Send email via Hiworks SMTP with PDF attachment
       const subject = `[FLOXN] INVOICE - ${accidentNo || caseNumber || dateStr}`;
-      
+
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">INVOICE 송부</h2>
@@ -6545,15 +7868,15 @@ FLOXN 드림`;
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 30%; font-weight: bold;">보험사</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${insuranceCompany || '-'}</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${insuranceCompany || "-"}</td>
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사고번호</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${accidentNo || '-'}</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${accidentNo || "-"}</td>
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사건번호</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseNumber || '-'}</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseNumber || "-"}</td>
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">손해방지비용</td>
@@ -6567,10 +7890,14 @@ FLOXN 드림`;
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">합계</td>
               <td style="padding: 10px 15px; border: 1px solid #ddd; font-weight: bold; color: #0066cc;">${formatAmount(totalAmount || 0)}원</td>
             </tr>
-            ${remarks ? `<tr>
+            ${
+              remarks
+                ? `<tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">비고</td>
               <td style="padding: 10px 15px; border: 1px solid #ddd;">${remarks}</td>
-            </tr>` : ''}
+            </tr>`
+                : ""
+            }
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
               <td style="padding: 10px 15px; border: 1px solid #ddd;">${dateStr}</td>
@@ -6600,13 +7927,13 @@ FLOXN 드림`;
 
 아래 청구건에 대한 INVOICE를 첨부하여 송부드립니다.
 
-- 보험사: ${insuranceCompany || '-'}
-- 사고번호: ${accidentNo || '-'}
-- 사건번호: ${caseNumber || '-'}
+- 보험사: ${insuranceCompany || "-"}
+- 사고번호: ${accidentNo || "-"}
+- 사건번호: ${caseNumber || "-"}
 - 손해방지비용: ${formatAmount(damagePreventionAmount || 0)}원
 - 대물복구비용: ${formatAmount(propertyRepairAmount || 0)}원
 - 합계: ${formatAmount(totalAmount || 0)}원
-${remarks ? `- 비고: ${remarks}` : ''}
+${remarks ? `- 비고: ${remarks}` : ""}
 - 발송일: ${dateStr}
 
 첨부된 INVOICE PDF 파일을 확인해 주시기 바랍니다.
@@ -6624,21 +7951,31 @@ FLOXN`;
           {
             filename: fileName,
             content: pdfBuffer,
-            contentType: 'application/pdf',
+            contentType: "application/pdf",
           },
         ],
       });
 
       if (!emailResult.success) {
         console.error(`[Email] Invoice email failed:`, emailResult.error);
-        return res.status(500).json({ error: `이메일 전송 실패: ${emailResult.error}` });
+        return res
+          .status(500)
+          .json({ error: `이메일 전송 실패: ${emailResult.error}` });
       }
 
-      console.log(`[Email] Invoice PDF sent successfully to ${email} by ${user.username} (MessageId: ${emailResult.messageId})`);
-      res.json({ success: true, message: "INVOICE 이메일이 전송되었습니다", pdfUrl });
+      console.log(
+        `[Email] Invoice PDF sent successfully to ${email} by ${user.username} (MessageId: ${emailResult.messageId})`,
+      );
+      res.json({
+        success: true,
+        message: "INVOICE 이메일이 전송되었습니다",
+        pdfUrl,
+      });
     } catch (error) {
       console.error("Send invoice email error:", error);
-      res.status(500).json({ error: "INVOICE 이메일 전송 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "INVOICE 이메일 전송 중 오류가 발생했습니다" });
     }
   });
 
@@ -6661,28 +7998,38 @@ FLOXN`;
 
     const allowedRoles = ["협력사", "관리자", "심사사"];
     if (!allowedRoles.includes(user.role)) {
-      return res.status(403).json({ error: "현장출동보고서 이메일 발송 권한이 없습니다" });
+      return res
+        .status(403)
+        .json({ error: "현장출동보고서 이메일 발송 권한이 없습니다" });
     }
 
     try {
       const { caseId } = req.params;
-      
-      const validationResult = sendFieldDispatchReportEmailSchema.safeParse(req.body);
+
+      const validationResult = sendFieldDispatchReportEmailSchema.safeParse(
+        req.body,
+      );
       if (!validationResult.success) {
-        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        const errorMessage = validationResult.error.errors
+          .map((e) => e.message)
+          .join(", ");
         return res.status(400).json({ error: errorMessage });
       }
 
       const { email } = validationResult.data;
 
-      console.log(`[Field Report Email] Starting for case ${caseId} to ${email}`);
+      console.log(
+        `[Field Report Email] Starting for case ${caseId} to ${email}`,
+      );
 
       const caseData = await storage.getCaseById(caseId);
       if (!caseData) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      console.log(`[Field Report Email] Generating PDF for case ${caseData.caseNumber}`);
+      console.log(
+        `[Field Report Email] Generating PDF for case ${caseData.caseNumber}`,
+      );
 
       // 10MB 제한을 적용한 PDF 생성 (이메일 첨부 용량 제한)
       const pdfBuffer = await generatePdfWithSizeLimitPdfLib({
@@ -6696,41 +8043,53 @@ FLOXN`;
           etc: false,
         },
         evidence: {
-          tab: 'all',
+          tab: "all",
           selectedFileIds: [],
         },
       });
 
-      console.log(`[Field Report Email] PDF generated, size: ${pdfBuffer.length} bytes`);
+      console.log(
+        `[Field Report Email] PDF generated, size: ${pdfBuffer.length} bytes`,
+      );
 
       const result = await sendFieldReportEmail(
         email,
         caseData.caseNumber || caseId,
-        caseData.insuredName || caseData.victimName || '',
+        caseData.insuredName || caseData.victimName || "",
         pdfBuffer,
         {
           insuranceAccidentNo: caseData.insuranceAccidentNo || undefined,
           policyNumber: caseData.policyNumber || undefined,
           assessorTeam: caseData.assessorTeam || undefined,
-          investigatorTeam: caseData.investigatorTeam || caseData.investigatorTeamName || undefined,
-        }
+          investigatorTeam:
+            caseData.investigatorTeam ||
+            caseData.investigatorTeamName ||
+            undefined,
+        },
       );
 
       if (!result.success) {
         console.error(`[Field Report Email] Failed: ${result.error}`);
-        return res.status(500).json({ error: `이메일 발송 실패: ${result.error}` });
+        return res
+          .status(500)
+          .json({ error: `이메일 발송 실패: ${result.error}` });
       }
 
-      console.log(`[Field Report Email] Sent successfully to ${email}, messageId: ${result.messageId}`);
+      console.log(
+        `[Field Report Email] Sent successfully to ${email}, messageId: ${result.messageId}`,
+      );
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: "현장출동보고서가 이메일로 발송되었습니다",
-        messageId: result.messageId 
+        messageId: result.messageId,
       });
     } catch (error) {
       console.error("Send field report email error:", error);
-      const errorMessage = error instanceof Error ? error.message : "이메일 발송 중 오류가 발생했습니다";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "이메일 발송 중 오류가 발생했습니다";
       res.status(500).json({ error: errorMessage });
     }
   });
@@ -6762,18 +8121,22 @@ FLOXN`;
 
     const allowedRoles = ["협력사", "관리자", "심사사"];
     if (!allowedRoles.includes(user.role)) {
-      return res.status(403).json({ error: "INVOICE PDF 생성 권한이 없습니다" });
+      return res
+        .status(403)
+        .json({ error: "INVOICE PDF 생성 권한이 없습니다" });
     }
 
     try {
       const validationResult = generateInvoicePdfSchema.safeParse(req.body);
       if (!validationResult.success) {
-        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        const errorMessage = validationResult.error.errors
+          .map((e) => e.message)
+          .join(", ");
         return res.status(400).json({ error: errorMessage });
       }
 
-      const { 
-        caseId, 
+      const {
+        caseId,
         recipientName,
         damagePreventionAmount,
         propertyRepairAmount,
@@ -6781,7 +8144,7 @@ FLOXN`;
         fieldDispatchPropertyAmount,
         totalAmount: clientTotalAmount,
         remarks,
-        selectedDocumentIds
+        selectedDocumentIds,
       } = validationResult.data;
 
       // Get case data
@@ -6791,56 +8154,86 @@ FLOXN`;
       }
 
       // Build particulars - 관련 케이스들을 조회해서 각각의 금액과 상세주소를 개별 항목으로 표시
-      const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
+      const particulars: Array<{
+        title: string;
+        detail?: string;
+        amount: number;
+      }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
-      
+
       // 관련 케이스들 조회 (동일한 insuranceAccidentNo)
       let allRelatedCases: any[] = [caseData];
       if (caseData.insuranceAccidentNo) {
-        const relatedCases = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
+        const relatedCases = await storage.getCasesByAccidentNo(
+          caseData.insuranceAccidentNo,
+          caseId,
+        );
         allRelatedCases = [caseData, ...relatedCases];
       }
-      
+
       // 케이스 번호 suffix로 정렬 (-0, -1, -2, ...)
       const getCaseSuffix = (caseNumber: string): number => {
         const match = caseNumber?.match(/-(\d+)$/);
         return match ? parseInt(match[1], 10) : 999;
       };
-      allRelatedCases.sort((a, b) => getCaseSuffix(a.caseNumber || '') - getCaseSuffix(b.caseNumber || ''));
-      
-      console.log(`[Invoice PDF] Building particulars for ${allRelatedCases.length} related cases`);
-      console.log(`[Invoice PDF] Client amounts - damagePreventionAmount: ${damagePreventionAmount}, propertyRepairAmount: ${propertyRepairAmount}`);
-      
+      allRelatedCases.sort(
+        (a, b) =>
+          getCaseSuffix(a.caseNumber || "") - getCaseSuffix(b.caseNumber || ""),
+      );
+
+      console.log(
+        `[Invoice PDF] Building particulars for ${allRelatedCases.length} related cases`,
+      );
+      console.log(
+        `[Invoice PDF] Client amounts - damagePreventionAmount: ${damagePreventionAmount}, propertyRepairAmount: ${propertyRepairAmount}`,
+      );
+
       // 선견적요청 건이 하나라도 있는지 확인 (있으면 출동비 청구 불가)
-      const hasPreEstimateRequest = allRelatedCases.some(c => c.recoveryType === '선견적요청');
-      console.log(`[Invoice PDF] hasPreEstimateRequest: ${hasPreEstimateRequest}`);
-      
+      const hasPreEstimateRequest = allRelatedCases.some(
+        (c) => c.recoveryType === "선견적요청",
+      );
+      console.log(
+        `[Invoice PDF] hasPreEstimateRequest: ${hasPreEstimateRequest}`,
+      );
+
       // 각 케이스별로 개별 항목 생성
       let calculatedTotal = 0;
-      
+
       for (let i = 0; i < allRelatedCases.length; i++) {
         const relatedCase = allRelatedCases[i];
         const isMainCase = relatedCase.id === caseId;
-        const caseSuffix = getCaseSuffix(relatedCase.caseNumber || '');
-        
+        const caseSuffix = getCaseSuffix(relatedCase.caseNumber || "");
+
         // 선견적요청 건은 인보이스에서 제외 (금액 합산 안됨)
-        if (relatedCase.recoveryType === '선견적요청') {
-          console.log(`[Invoice PDF] Skipping 선견적요청 case: ${relatedCase.caseNumber}`);
+        if (relatedCase.recoveryType === "선견적요청") {
+          console.log(
+            `[Invoice PDF] Skipping 선견적요청 case: ${relatedCase.caseNumber}`,
+          );
           continue;
         }
-        
+
         // 상세주소 가져오기 (상세주소 우선, 없으면 기본주소)
-        const addressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
-                            relatedCase.insuredAddressDetail || relatedCase.insuredAddress || '-';
-        
+        const addressLabel =
+          relatedCase.victimAddressDetail ||
+          relatedCase.victimAddress ||
+          relatedCase.insuredAddressDetail ||
+          relatedCase.insuredAddress ||
+          "-";
+
         // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 승인금액 > 견적금액 순서로 확인)
-        let caseDamagePreventionAmt = parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
-        let casePropertyRepairAmt = parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
-        const caseApprovedAmt = parseInt(relatedCase.approvedAmount || "0") || 0;
-        const caseEstimateAmt = parseInt(relatedCase.estimateAmount || "0") || 0;
-        
-        console.log(`[Invoice PDF] Case ${relatedCase.caseNumber}: suffix=${caseSuffix}, damageAmt=${caseDamagePreventionAmt}, propertyAmt=${casePropertyRepairAmt}, approvedAmt=${caseApprovedAmt}, estimateAmt=${caseEstimateAmt}, address=${addressLabel}`);
-        
+        let caseDamagePreventionAmt =
+          parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
+        let casePropertyRepairAmt =
+          parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        const caseApprovedAmt =
+          parseInt(relatedCase.approvedAmount || "0") || 0;
+        const caseEstimateAmt =
+          parseInt(relatedCase.estimateAmount || "0") || 0;
+
+        console.log(
+          `[Invoice PDF] Case ${relatedCase.caseNumber}: suffix=${caseSuffix}, damageAmt=${caseDamagePreventionAmt}, propertyAmt=${casePropertyRepairAmt}, approvedAmt=${caseApprovedAmt}, estimateAmt=${caseEstimateAmt}, address=${addressLabel}`,
+        );
+
         // 손방건(-0)인 경우: 손해방지비용
         if (caseSuffix === 0) {
           // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
@@ -6855,10 +8248,12 @@ FLOXN`;
               amount: caseDamagePreventionAmt,
             });
             calculatedTotal += caseDamagePreventionAmt;
-            console.log(`[Invoice PDF] Added 손해방지비용: ${addressLabel} = ${caseDamagePreventionAmt}`);
+            console.log(
+              `[Invoice PDF] Added 손해방지비용: ${addressLabel} = ${caseDamagePreventionAmt}`,
+            );
           }
         }
-        
+
         // 대물건(-1, -2, ...)인 경우: 대물복구비용
         if (caseSuffix > 0) {
           // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
@@ -6873,16 +8268,22 @@ FLOXN`;
               amount: casePropertyRepairAmt,
             });
             calculatedTotal += casePropertyRepairAmt;
-            console.log(`[Invoice PDF] Added 대물복구비용: ${addressLabel} = ${casePropertyRepairAmt}`);
+            console.log(
+              `[Invoice PDF] Added 대물복구비용: ${addressLabel} = ${casePropertyRepairAmt}`,
+            );
           }
         }
       }
-      
+
       // 아무 금액도 추가되지 않은 경우 - 클라이언트에서 전달한 금액 사용
       if (particulars.length === 0) {
-        const mainAddressLabel = caseData.victimAddressDetail || caseData.victimAddress || 
-                                caseData.insuredAddressDetail || caseData.insuredAddress || '-';
-        
+        const mainAddressLabel =
+          caseData.victimAddressDetail ||
+          caseData.victimAddress ||
+          caseData.insuredAddressDetail ||
+          caseData.insuredAddress ||
+          "-";
+
         if (damagePreventionAmount && damagePreventionAmount > 0) {
           particulars.push({
             title: `[${mainAddressLabel}] - 손해방지비용`,
@@ -6890,7 +8291,7 @@ FLOXN`;
           });
           calculatedTotal += damagePreventionAmount;
         }
-        
+
         if (propertyRepairAmount && propertyRepairAmount > 0) {
           particulars.push({
             title: `[${mainAddressLabel}] - 대물복구비용`,
@@ -6899,11 +8300,15 @@ FLOXN`;
           calculatedTotal += propertyRepairAmount;
         }
       }
-      
-      // 현장출동비용은 메인 케이스에서만 가져옴 (클라이언트에서 전달된 값 사용)
-      const mainAddressLabel = caseData.victimAddressDetail || caseData.victimAddress || 
-                              caseData.insuredAddressDetail || caseData.insuredAddress || '-';
-      
+
+      // 현장출동비용은 메인 케이스에서만 가져옴 (클라이언트에서 전달된 값 m��용)
+      const mainAddressLabel =
+        caseData.victimAddressDetail ||
+        caseData.victimAddress ||
+        caseData.insuredAddressDetail ||
+        caseData.insuredAddress ||
+        "-";
+
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
         particulars.push({
           title: `[${mainAddressLabel}] - 현장출동비용`,
@@ -6923,7 +8328,7 @@ FLOXN`;
       if (particulars.length === 0) {
         particulars.push({
           title: `[${mainAddressLabel}]`,
-          detail: '청구 내역 없음',
+          detail: "청구 내역 없음",
           amount: 0,
         });
       }
@@ -6937,8 +8342,8 @@ FLOXN`;
       }
 
       const invoiceData = {
-        recipientName: recipientName || caseData.insuranceCompany || '-',
-        caseNumber: caseData.caseNumber || '-',
+        recipientName: recipientName || caseData.insuranceCompany || "-",
+        caseNumber: caseData.caseNumber || "-",
         acceptanceDate: caseData.accidentDate || new Date().toISOString(),
         submissionDate: new Date().toISOString(),
         insuranceAccidentNo: accidentNo || undefined,
@@ -6951,103 +8356,140 @@ FLOXN`;
 
       let pdfBuffer = await generateInvoicePdf(invoiceData);
 
-      console.log(`[Invoice PDF] PDF generated for download, size: ${pdfBuffer.length} bytes`);
+      console.log(
+        `[Invoice PDF] PDF generated for download, size: ${pdfBuffer.length} bytes`,
+      );
 
       // Merge selected documents if any
       if (selectedDocumentIds && selectedDocumentIds.length > 0) {
-        console.log(`[Invoice PDF] Merging ${selectedDocumentIds.length} documents into PDF`);
-        
+        console.log(
+          `[Invoice PDF] Merging ${selectedDocumentIds.length} documents into PDF`,
+        );
+
         // Get documents from main case AND all related cases
         const mainDocs = await storage.getDocumentsByCaseId(caseId);
-        
+
         // Build caseId -> caseNumber and caseId -> address mappings
         const caseNumberMap: Record<string, string> = {
-          [caseId]: caseData.caseNumber || ''
+          [caseId]: caseData.caseNumber || "",
         };
         const caseAddressMap: Record<string, string> = {
           [caseId]: (() => {
-            const address = caseData.victimAddress || caseData.insuredAddress || '';
-            const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
+            const address =
+              caseData.victimAddress || caseData.insuredAddress || "";
+            const addressDetail =
+              caseData.victimAddressDetail ||
+              caseData.insuredAddressDetail ||
+              "";
             return addressDetail ? `${address} ${addressDetail}` : address;
-          })()
+          })(),
         };
-        
+
         // Get related cases (same insuranceAccidentNo)
         let allDocuments = [...mainDocs];
         if (caseData.insuranceAccidentNo) {
-          const relatedCases = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
-          
+          const relatedCases = await storage.getCasesByAccidentNo(
+            caseData.insuranceAccidentNo,
+            caseId,
+          );
+
           // Fetch documents from all related cases and build mapping
           for (const relatedCase of relatedCases) {
-            caseNumberMap[relatedCase.id] = relatedCase.caseNumber || '';
+            caseNumberMap[relatedCase.id] = relatedCase.caseNumber || "";
             // Build address for related case
-            const rcAddress = relatedCase.victimAddress || relatedCase.insuredAddress || '';
-            const rcAddressDetail = relatedCase.victimAddressDetail || relatedCase.insuredAddressDetail || '';
-            caseAddressMap[relatedCase.id] = rcAddressDetail ? `${rcAddress} ${rcAddressDetail}` : rcAddress;
-            
-            const relatedDocs = await storage.getDocumentsByCaseId(relatedCase.id);
+            const rcAddress =
+              relatedCase.victimAddress || relatedCase.insuredAddress || "";
+            const rcAddressDetail =
+              relatedCase.victimAddressDetail ||
+              relatedCase.insuredAddressDetail ||
+              "";
+            caseAddressMap[relatedCase.id] = rcAddressDetail
+              ? `${rcAddress} ${rcAddressDetail}`
+              : rcAddress;
+
+            const relatedDocs = await storage.getDocumentsByCaseId(
+              relatedCase.id,
+            );
             allDocuments = allDocuments.concat(relatedDocs);
           }
-          console.log(`[Invoice PDF] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`);
+          console.log(
+            `[Invoice PDF] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`,
+          );
         }
-        
-        let selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
-        
+
+        let selectedDocs = allDocuments.filter((doc: any) =>
+          selectedDocumentIds.includes(doc.id),
+        );
+
         // Sort documents by: 1) case suffix (-0, -1, -2), then 2) category order within each case
         const categoryOrder: Record<string, number> = {
           // 1. 사진 (현장사진, 수리중, 복구완료)
-          '현장출동사진': 0, '현장': 1, '현장사진': 2,
-          '수리중 사진': 3, '수리중': 4,
-          '복구완료 사진': 5, '복구완료': 6,
+          현장출동사진: 0,
+          현장: 1,
+          현장사진: 2,
+          "수리중 사진": 3,
+          수리중: 4,
+          "복구완료 사진": 5,
+          복구완료: 6,
           // 2. 기본자료 (보험금청구서, 개인정보동의서)
-          '보험금 청구서': 10, '보험금청구서': 11,
-          '개인정보 동의서(가족용)': 12, '개인정보동의서': 13,
+          "보험금 청구서": 10,
+          보험금청구서: 11,
+          "개인정보 동의서(가족용)": 12,
+          개인정보동의서: 13,
           // 3. 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
-          '주민등록등본': 20, '등기부등본': 21, '건축물대장': 22,
-          '기타증빙자료(민원일지 등)': 23, '기타증빙자료': 24,
+          주민등록등본: 20,
+          등기부등본: 21,
+          건축물대장: 22,
+          "기타증빙자료(민원일지 등)": 23,
+          기타증빙자료: 24,
           // 4. 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
-          '위임장': 30, '도급계약서': 31,
-          '복구완료확인서': 32, '복구완료 확인서': 33,
-          '부가세 청구자료': 34, '부가세청구자료': 35,
+          위임장: 30,
+          도급계약서: 31,
+          복구완료확인서: 32,
+          "복구완료 확인서": 33,
+          "부가세 청구자료": 34,
+          부가세청구자료: 35,
         };
-        
+
         // Helper: Extract case suffix number from case number (e.g., "260106005-0" -> 0, "260106005-1" -> 1)
         const getCaseSuffix = (caseId: string): number => {
-          const caseNumber = caseNumberMap[caseId] || '';
+          const caseNumber = caseNumberMap[caseId] || "";
           const match = caseNumber.match(/-(\d+)$/);
           return match ? parseInt(match[1], 10) : 999;
         };
-        
+
         // Sort by: 1) case suffix, 2) category order within each case
         selectedDocs = selectedDocs.sort((a: any, b: any) => {
           // First: sort by case suffix (-0, -1, -2, etc.)
           const suffixA = getCaseSuffix(a.caseId);
           const suffixB = getCaseSuffix(b.caseId);
           if (suffixA !== suffixB) return suffixA - suffixB;
-          
+
           // Second: sort by category order within same case
           const orderA = categoryOrder[a.category] ?? 99;
           const orderB = categoryOrder[b.category] ?? 99;
           return orderA - orderB;
         });
-        console.log(`[Invoice PDF] Selected documents found: ${selectedDocs.length}, sorted by case suffix then category`);
-        
+        console.log(
+          `[Invoice PDF] Selected documents found: ${selectedDocs.length}, sorted by case suffix then category`,
+        );
+
         if (selectedDocs.length > 0) {
-          const { PDFDocument, rgb } = await import('pdf-lib');
-          const fontkit = (await import('@pdf-lib/fontkit')).default;
-          const sharp = await import('sharp');
-          const fs = await import('fs');
-          const path = await import('path');
-          
+          const { PDFDocument, rgb } = await import("pdf-lib");
+          const fontkit = (await import("@pdf-lib/fontkit")).default;
+          const sharp = await import("sharp");
+          const fs = await import("fs");
+          const path = await import("path");
+
           const mergedPdf = await PDFDocument.load(pdfBuffer);
-          
+
           // 한글 폰트 로드 (Pretendard 사용 - 글자 간격 문제 해결)
           mergedPdf.registerFontkit(fontkit);
-          const fontsDir = path.join(process.cwd(), 'server/fonts');
-          const fontPath = path.join(fontsDir, 'Pretendard-Regular.ttf');
+          const fontsDir = path.join(process.cwd(), "server/fonts");
+          const fontPath = path.join(fontsDir, "Pretendard-Regular.ttf");
           const fontBytes = fs.readFileSync(fontPath);
           const font = await mergedPdf.embedFont(fontBytes, { subset: false });
-          
+
           // Helper function to get file buffer from Object Storage or DB
           const getFileBuffer = async (doc: any): Promise<Buffer | null> => {
             try {
@@ -7056,104 +8498,144 @@ FLOXN`;
                 const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
                 if (privateObjectDir) {
                   const fullPath = `${privateObjectDir}/${doc.storageKey}`;
-                  const { ObjectStorageService } = await import('./replit_integrations/object_storage');
+                  const { ObjectStorageService } = await import(
+                    "./replit_integrations/object_storage"
+                  );
                   const storageService = new ObjectStorageService();
                   return await storageService.downloadToBuffer(fullPath);
                 }
               }
               // 2. fileData에서 가져오기 (레거시)
               if (doc.fileData) {
-                if (doc.fileData.startsWith('data:')) {
-                  const base64Data = doc.fileData.split(',')[1];
-                  return Buffer.from(base64Data, 'base64');
+                if (doc.fileData.startsWith("data:")) {
+                  const base64Data = doc.fileData.split(",")[1];
+                  return Buffer.from(base64Data, "base64");
                 } else {
-                  return Buffer.from(doc.fileData, 'base64');
+                  return Buffer.from(doc.fileData, "base64");
                 }
               }
               // 3. DB에서 직접 가져오기 (레거시 파일)
               if (doc.id) {
                 const fileData = await storage.getDocumentFileData(doc.id);
                 if (fileData) {
-                  if (fileData.startsWith('data:')) {
-                    const base64Data = fileData.split(',')[1];
-                    return Buffer.from(base64Data, 'base64');
+                  if (fileData.startsWith("data:")) {
+                    const base64Data = fileData.split(",")[1];
+                    return Buffer.from(base64Data, "base64");
                   } else {
-                    return Buffer.from(fileData, 'base64');
+                    return Buffer.from(fileData, "base64");
                   }
                 }
               }
               return null;
             } catch (err) {
-              console.error(`[Invoice PDF] Failed to get file buffer for ${doc.fileName}:`, err);
+              console.error(
+                `[Invoice PDF] Failed to get file buffer for ${doc.fileName}:`,
+                err,
+              );
               return null;
             }
           };
-          
+
           // Helper functions
           const isPdfFile = (mimeType: string, fileName: string): boolean => {
-            if (mimeType === 'application/pdf') return true;
-            if (fileName?.toLowerCase().endsWith('.pdf')) return true;
+            if (mimeType === "application/pdf") return true;
+            if (fileName?.toLowerCase().endsWith(".pdf")) return true;
             return false;
           };
-          
+
           const isImageFile = (mimeType: string, fileName: string): boolean => {
-            if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) return true;
+            if (
+              mimeType.startsWith("image/") &&
+              !mimeType.includes("heic") &&
+              !mimeType.includes("webp")
+            )
+              return true;
             const ext = fileName?.toLowerCase();
-            if (ext?.endsWith('.jpg') || ext?.endsWith('.jpeg') || ext?.endsWith('.png') || ext?.endsWith('.gif')) return true;
+            if (
+              ext?.endsWith(".jpg") ||
+              ext?.endsWith(".jpeg") ||
+              ext?.endsWith(".png") ||
+              ext?.endsWith(".gif")
+            )
+              return true;
             return false;
           };
-          
+
           // Common constants and category mapping
           const categoryToTab: Record<string, string> = {
-            '현장출동사진': '현장사진', '현장': '현장사진',
-            '수리중 사진': '현장사진', '수리중': '현장사진',
-            '복구완료 사진': '현장사진', '복구완료': '현장사진',
-            '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
-            '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
-            '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
-            '위임장': '청구자료', '도급계약서': '청구자료',
-            '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+            현장출동사진: "현장사진",
+            현장: "현장사진",
+            "수리중 사진": "현장사진",
+            수리중: "현장사진",
+            "복구완료 사진": "현장사진",
+            복구완료: "현장사진",
+            "보험금 청구서": "기본자료",
+            "개인정보 동의서(가족용)": "기본자료",
+            주민등록등본: "증빙자료",
+            등기부등본: "증빙자료",
+            건축물대장: "증빙자료",
+            "기타증빙자료(민원일지 등)": "증빙자료",
+            위임장: "청구자료",
+            도급계약서: "청구자료",
+            복구완료확인서: "청구자료",
+            "부가세 청구자료": "청구자료",
+            청구: "청구자료",
           };
-          
+
           // Documents are already sorted by case suffix then category order
           // No need to re-sort, just use selectedDocs directly
           const sortedDocs = selectedDocs;
-          
-          console.log(`[Invoice PDF] 문서 ${sortedDocs.length}개 접수건별/카테고리 순서로 정렬 완료`);
-          
+
+          console.log(
+            `[Invoice PDF] 문서 ${sortedDocs.length}개 접수건별/카테고리 순서로 정렬 완료`,
+          );
+
           const A4_WIDTH = 595.28;
           const A4_HEIGHT = 841.89;
           const MARGIN = 30;
           const HEADER_HEIGHT = 20;
           const GAP = 8;
-          
+
           // 2장/페이지 카테고리 목록 (현장사진, 수리중, 복구완료)
-          const twoPerPageCategories = ['현장사진', '수리중', '복구완료', '현장출동사진', '수리중 사진', '복구완료 사진'];
+          const twoPerPageCategories = [
+            "현장사진",
+            "수리중",
+            "복구완료",
+            "현장출동사진",
+            "수리중 사진",
+            "복구완료 사진",
+          ];
           const isTwoPerPageCategory = (category: string): boolean => {
             if (!category) return false;
-            return twoPerPageCategories.some(c => category.includes(c) || c.includes(category));
+            return twoPerPageCategories.some(
+              (c) => category.includes(c) || c.includes(category),
+            );
           };
-          
+
           // Collect images for layout (2-per-page for some categories, 1-per-page for others)
-          const pendingImages: { doc: any; buffer: Buffer; headerText: string }[] = [];
-          
+          const pendingImages: {
+            doc: any;
+            buffer: Buffer;
+            headerText: string;
+          }[] = [];
+
           // Helper function to flush pending images with category-based layout
           const flushPendingImages = async () => {
             if (pendingImages.length === 0) return;
-            
+
             const PAGE_HEADER_HEIGHT = 30;
             const imgWidth = A4_WIDTH - MARGIN * 2;
-            
+
             let i = 0;
             while (i < pendingImages.length) {
               const currentImg = pendingImages[i];
-              const category = currentImg.doc.category || '';
+              const category = currentImg.doc.category || "";
               const isTwoPerPage = isTwoPerPageCategory(category);
-              
+
               if (isTwoPerPage) {
                 // 2장/페이지 레이아웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-                
+
                 // 헤더 그리기
                 page.drawRectangle({
                   x: MARGIN,
@@ -7169,43 +8651,65 @@ FLOXN`;
                   font,
                   color: rgb(1, 1, 1),
                 });
-                
+
                 // 이미지 영역 계산 (헤더 제외)
-                const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                const availableHeight =
+                  A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
                 const imgHeight = (availableHeight - GAP) / 2;
-                
+
                 // 최대 2장까지 배치
                 for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
                   const img = pendingImages[i + j];
                   // 다음 이미지가 다른 카테고리면 건너뛰기
-                  if (j > 0 && !isTwoPerPageCategory(img.doc.category || '')) break;
-                  
-                  const yPos = j === 0 
-                    ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
-                    : MARGIN;
-                  
+                  if (j > 0 && !isTwoPerPageCategory(img.doc.category || ""))
+                    break;
+
+                  const yPos =
+                    j === 0
+                      ? A4_HEIGHT -
+                        MARGIN -
+                        PAGE_HEADER_HEIGHT -
+                        GAP -
+                        imgHeight
+                      : MARGIN;
+
                   try {
                     const embeddedImage = await mergedPdf.embedJpg(img.buffer);
                     const dims = embeddedImage.scale(1);
-                    let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
+                    let scale = Math.min(
+                      imgWidth / dims.width,
+                      imgHeight / dims.height,
+                      1,
+                    );
                     const finalW = dims.width * scale;
                     const finalH = dims.height * scale;
                     const imgX = MARGIN + (imgWidth - finalW) / 2;
                     const imgY = yPos + (imgHeight - finalH) / 2;
-                    
-                    page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+
+                    page.drawImage(embeddedImage, {
+                      x: imgX,
+                      y: imgY,
+                      width: finalW,
+                      height: finalH,
+                    });
                   } catch (e) {
                     console.error(`[Invoice PDF] Failed to embed image:`, e);
                   }
                 }
-                
+
                 // 같은 카테고리 이미지 개수 확인하여 스킵
-                const nextIdx = i + 1 < pendingImages.length && isTwoPerPageCategory(pendingImages[i + 1]?.doc?.category || '') ? 2 : 1;
+                const nextIdx =
+                  i + 1 < pendingImages.length &&
+                  isTwoPerPageCategory(
+                    pendingImages[i + 1]?.doc?.category || "",
+                  )
+                    ? 2
+                    : 1;
                 i += nextIdx;
               } else {
                 // 1장/페이지 레이아웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-                
+
                 // 헤더 그리기
                 page.drawRectangle({
                   x: MARGIN,
@@ -7221,62 +8725,83 @@ FLOXN`;
                   font,
                   color: rgb(1, 1, 1),
                 });
-                
+
                 // 전체 페이지 이미지 영역
-                const imgHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                const imgHeight =
+                  A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
                 const yPos = MARGIN;
-                
+
                 try {
-                  const embeddedImage = await mergedPdf.embedJpg(currentImg.buffer);
+                  const embeddedImage = await mergedPdf.embedJpg(
+                    currentImg.buffer,
+                  );
                   const dims = embeddedImage.scale(1);
-                  let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
+                  let scale = Math.min(
+                    imgWidth / dims.width,
+                    imgHeight / dims.height,
+                    1,
+                  );
                   const finalW = dims.width * scale;
                   const finalH = dims.height * scale;
                   const imgX = MARGIN + (imgWidth - finalW) / 2;
                   const imgY = yPos + (imgHeight - finalH) / 2;
-                  
-                  page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+
+                  page.drawImage(embeddedImage, {
+                    x: imgX,
+                    y: imgY,
+                    width: finalW,
+                    height: finalH,
+                  });
                 } catch (e) {
                   console.error(`[Invoice PDF] Failed to embed image:`, e);
                 }
-                
+
                 i += 1;
               }
             }
-            
-            console.log(`[Invoice PDF] Added ${pendingImages.length} images (category-based layout)`);
+
+            console.log(
+              `[Invoice PDF] Added ${pendingImages.length} images (category-based layout)`,
+            );
             pendingImages.length = 0;
           };
-          
+
           // Process all documents in case suffix / category order
           for (const doc of sortedDocs) {
-            const mimeType = doc.fileType || '';
-            const fileName = doc.fileName || '';
-            
+            const mimeType = doc.fileType || "";
+            const fileName = doc.fileName || "";
+
             // Get header text for this document (보험사사고번호 + 해당 케이스의 주소)
-            const accidentNo = caseData.insuranceAccidentNo || '';
+            const accidentNo = caseData.insuranceAccidentNo || "";
             // Use the address from the case this document belongs to
-            const fullAddress = caseAddressMap[doc.caseId] || '';
-            const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || '기타'}`;
-            
+            const fullAddress = caseAddressMap[doc.caseId] || "";
+            const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || "기타"}`;
+
             if (isPdfFile(mimeType, fileName)) {
               // First, flush any pending images before adding PDF
               await flushPendingImages();
-              
+
               // PDF document
               try {
                 const fileBuffer = await getFileBuffer(doc);
                 if (!fileBuffer) {
-                  console.warn(`[Invoice PDF] No data for PDF: ${doc.fileName}`);
+                  console.warn(
+                    `[Invoice PDF] No data for PDF: ${doc.fileName}`,
+                  );
                   continue;
                 }
-                const attachedPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
-                const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
-                
+                const attachedPdf = await PDFDocument.load(fileBuffer, {
+                  ignoreEncryption: true,
+                });
+                const pages = await mergedPdf.copyPages(
+                  attachedPdf,
+                  attachedPdf.getPageIndices(),
+                );
+
                 for (const page of pages) {
                   mergedPdf.addPage(page);
                   const { width, height } = page.getSize();
-                  
+
                   page.drawRectangle({
                     x: 0,
                     y: height - MARGIN - HEADER_HEIGHT,
@@ -7287,7 +8812,7 @@ FLOXN`;
                   page.drawRectangle({
                     x: MARGIN,
                     y: height - MARGIN - HEADER_HEIGHT,
-                    width: width - (MARGIN * 2),
+                    width: width - MARGIN * 2,
                     height: HEADER_HEIGHT,
                     color: rgb(0.95, 0.95, 0.95),
                     borderColor: rgb(0.8, 0.8, 0.8),
@@ -7301,58 +8826,85 @@ FLOXN`;
                     color: rgb(0.2, 0.2, 0.2),
                   });
                 }
-                console.log(`[Invoice PDF] Added PDF: ${doc.fileName} (${pages.length} pages) - ${doc.category}`);
+                console.log(
+                  `[Invoice PDF] Added PDF: ${doc.fileName} (${pages.length} pages) - ${doc.category}`,
+                );
               } catch (docError) {
-                console.error(`[Invoice PDF] Failed to add PDF ${doc.fileName}:`, docError);
+                console.error(
+                  `[Invoice PDF] Failed to add PDF ${doc.fileName}:`,
+                  docError,
+                );
               }
             } else if (isImageFile(mimeType, fileName)) {
               // Collect image for 2-per-page layout
               try {
                 const fileBuffer = await getFileBuffer(doc);
                 if (!fileBuffer) {
-                  console.warn(`[Invoice PDF] No data for image: ${doc.fileName}`);
+                  console.warn(
+                    `[Invoice PDF] No data for image: ${doc.fileName}`,
+                  );
                   continue;
                 }
-                const imageBuffer = await sharp.default(fileBuffer)
-                  .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
+                const imageBuffer = await sharp
+                  .default(fileBuffer)
+                  .resize(800, 600, { fit: "inside", withoutEnlargement: true })
                   .jpeg({ quality: 60, mozjpeg: true })
                   .toBuffer();
-                
+
                 pendingImages.push({ doc, buffer: imageBuffer, headerText });
-                console.log(`[Invoice PDF] Queued image: ${doc.fileName} - ${doc.category}`);
+                console.log(
+                  `[Invoice PDF] Queued image: ${doc.fileName} - ${doc.category}`,
+                );
               } catch (err) {
-                console.error(`[Invoice PDF] Failed to process image ${doc.fileName}:`, err);
+                console.error(
+                  `[Invoice PDF] Failed to process image ${doc.fileName}:`,
+                  err,
+                );
               }
             }
           }
-          
+
           // Flush remaining pending images
           await flushPendingImages();
-          
-          console.log(`[Invoice PDF] Processed ${sortedDocs.length} documents in category order`);
-          
+
+          console.log(
+            `[Invoice PDF] Processed ${sortedDocs.length} documents in category order`,
+          );
+
           pdfBuffer = Buffer.from(await mergedPdf.save());
-          console.log(`[Invoice PDF] Final PDF with documents, size: ${pdfBuffer.length} bytes`);
+          console.log(
+            `[Invoice PDF] Final PDF with documents, size: ${pdfBuffer.length} bytes`,
+          );
         }
       }
 
       // 10MB 이하로 압축 (이메일 첨부 및 다운로드 공통)
       const originalSize = pdfBuffer.length;
       if (originalSize > 7 * 1024 * 1024) {
-        console.log(`[Invoice PDF] Compressing PDF: ${(originalSize / 1024 / 1024).toFixed(2)}MB...`);
+        console.log(
+          `[Invoice PDF] Compressing PDF: ${(originalSize / 1024 / 1024).toFixed(2)}MB...`,
+        );
         pdfBuffer = await compressPdfForEmail(pdfBuffer);
-        console.log(`[Invoice PDF] Compressed: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB`);
+        console.log(
+          `[Invoice PDF] Compressed: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB`,
+        );
       }
 
       const fileName = `INVOICE_${caseData.insuranceAccidentNo || caseData.caseNumber || caseId}_${Date.now()}.pdf`;
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${fileName}"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
       res.send(pdfBuffer);
     } catch (error) {
       console.error("Generate invoice PDF error:", error);
-      const errorMessage = error instanceof Error ? error.message : "PDF 생성 중 오류가 발생했습니다";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "PDF 생성 중 오류가 발생했습니다";
       res.status(500).json({ error: errorMessage });
     }
   });
@@ -7385,19 +8937,23 @@ FLOXN`;
 
     const allowedRoles = ["협력사", "관리자", "심사사"];
     if (!allowedRoles.includes(user.role)) {
-      return res.status(403).json({ error: "INVOICE 이메일 전송 권한이 없습니다" });
+      return res
+        .status(403)
+        .json({ error: "INVOICE 이메일 전송 권한이 없습니다" });
     }
 
     try {
       const validationResult = sendInvoiceEmailV2Schema.safeParse(req.body);
       if (!validationResult.success) {
-        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        const errorMessage = validationResult.error.errors
+          .map((e) => e.message)
+          .join(", ");
         return res.status(400).json({ error: errorMessage });
       }
 
-      const { 
-        email, 
-        caseId, 
+      const {
+        email,
+        caseId,
         recipientName,
         damagePreventionAmount,
         propertyRepairAmount,
@@ -7405,7 +8961,7 @@ FLOXN`;
         fieldDispatchPropertyAmount,
         totalAmount: clientTotalAmount,
         remarks,
-        selectedDocumentIds
+        selectedDocumentIds,
       } = validationResult.data;
 
       // Get case data
@@ -7417,62 +8973,95 @@ FLOXN`;
       // 로고 파일 읽기 (CID 첨부용)
       let logoBuffer: Buffer | null = null;
       try {
-        const logoPath = path.join(process.cwd(), 'server', 'assets', 'floxn-logo.png');
+        const logoPath = path.join(
+          process.cwd(),
+          "server",
+          "assets",
+          "floxn-logo.png",
+        );
         if (fs.existsSync(logoPath)) {
           logoBuffer = fs.readFileSync(logoPath);
-          console.log(`[send-invoice-email-v2] Logo loaded: ${logoBuffer.length} bytes`);
+          console.log(
+            `[send-invoice-email-v2] Logo loaded: ${logoBuffer.length} bytes`,
+          );
         } else {
-          console.warn(`[send-invoice-email-v2] Logo file not found: ${logoPath}`);
+          console.warn(
+            `[send-invoice-email-v2] Logo file not found: ${logoPath}`,
+          );
         }
       } catch (logoErr) {
-        console.error('[send-invoice-email-v2] Failed to load logo:', logoErr);
+        console.error("[send-invoice-email-v2] Failed to load logo:", logoErr);
       }
 
       // Build particulars based on amounts - 관련 케이스들 조회하여 각 케이스별 주소 사용
-      const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
+      const particulars: Array<{
+        title: string;
+        detail?: string;
+        amount: number;
+      }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
-      
+
       // 관련 케이스들 조회하여 각 케이스별 금액/주소 사용 (다운로드 로직과 동일)
       const allCases = [caseData];
       if (caseData.insuranceAccidentNo) {
-        const relatedCasesForParticulars = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
+        const relatedCasesForParticulars = await storage.getCasesByAccidentNo(
+          caseData.insuranceAccidentNo,
+          caseId,
+        );
         allCases.push(...relatedCasesForParticulars);
       }
-      
+
       // 케이스 suffix 추출 함수
       const getCaseSuffix = (caseNumber: string): number => {
         const match = caseNumber.match(/-(\d+)$/);
         return match ? parseInt(match[1], 10) : 999;
       };
-      
+
       // 케이스 suffix 순으로 정렬
-      allCases.sort((a, b) => getCaseSuffix(a.caseNumber || '') - getCaseSuffix(b.caseNumber || ''));
-      
+      allCases.sort(
+        (a, b) =>
+          getCaseSuffix(a.caseNumber || "") - getCaseSuffix(b.caseNumber || ""),
+      );
+
       // 선견적요청 건이 하나라도 있는지 확인 (있으면 출동비 청구 불가)
-      const hasPreEstimateRequest = allCases.some(c => c.recoveryType === '선견적요청');
-      console.log(`[send-invoice-email-v2] hasPreEstimateRequest: ${hasPreEstimateRequest}`);
-      
+      const hasPreEstimateRequest = allCases.some(
+        (c) => c.recoveryType === "선견적요청",
+      );
+      console.log(
+        `[send-invoice-email-v2] hasPreEstimateRequest: ${hasPreEstimateRequest}`,
+      );
+
       let calculatedTotal = 0;
-      
+
       for (const relatedCase of allCases) {
-        const caseSuffix = getCaseSuffix(relatedCase.caseNumber || '');
-        
+        const caseSuffix = getCaseSuffix(relatedCase.caseNumber || "");
+
         // 선견적요청 건은 인보이스에서 제외 (금액 합산 안됨)
-        if (relatedCase.recoveryType === '선견적요청') {
-          console.log(`[send-invoice-email-v2] Skipping 선견적요청 case: ${relatedCase.caseNumber}`);
+        if (relatedCase.recoveryType === "선견적요청") {
+          console.log(
+            `[send-invoice-email-v2] Skipping 선견적요청 case: ${relatedCase.caseNumber}`,
+          );
           continue;
         }
-        
+
         // 상세주소 가져오기 (상세주소 우선, 없으면 기본주소)
-        const caseAddressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
-                            relatedCase.insuredAddressDetail || relatedCase.insuredAddress || '-';
-        
+        const caseAddressLabel =
+          relatedCase.victimAddressDetail ||
+          relatedCase.victimAddress ||
+          relatedCase.insuredAddressDetail ||
+          relatedCase.insuredAddress ||
+          "-";
+
         // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 승인금액 > 견적금액 순서로 확인)
-        let caseDamagePreventionAmt = parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
-        let casePropertyRepairAmt = parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
-        const caseApprovedAmt = parseInt(relatedCase.approvedAmount || "0") || 0;
-        const caseEstimateAmt = parseInt(relatedCase.estimateAmount || "0") || 0;
-        
+        let caseDamagePreventionAmt =
+          parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
+        let casePropertyRepairAmt =
+          parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        const caseApprovedAmt =
+          parseInt(relatedCase.approvedAmount || "0") || 0;
+        const caseEstimateAmt =
+          parseInt(relatedCase.estimateAmount || "0") || 0;
+
         // 손방건(-0)인 경우: 손해방지비용
         if (caseSuffix === 0) {
           // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
@@ -7489,7 +9078,7 @@ FLOXN`;
             calculatedTotal += caseDamagePreventionAmt;
           }
         }
-        
+
         // 대물건(-1, -2, ...)인 경우: 대물복구비용
         if (caseSuffix > 0) {
           // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
@@ -7507,11 +9096,15 @@ FLOXN`;
           }
         }
       }
-      
+
       // 아무 금액도 추가되지 않은 경우 - 클라이언트에서 전달한 금액 사용
-      const mainAddressLabel = caseData.victimAddressDetail || caseData.victimAddress || 
-                              caseData.insuredAddressDetail || caseData.insuredAddress || '-';
-      
+      const mainAddressLabel =
+        caseData.victimAddressDetail ||
+        caseData.victimAddress ||
+        caseData.insuredAddressDetail ||
+        caseData.insuredAddress ||
+        "-";
+
       if (particulars.length === 0) {
         if (damagePreventionAmount && damagePreventionAmount > 0) {
           particulars.push({
@@ -7519,7 +9112,7 @@ FLOXN`;
             amount: damagePreventionAmount,
           });
         }
-        
+
         if (propertyRepairAmount && propertyRepairAmount > 0) {
           particulars.push({
             title: `[${mainAddressLabel}] - 대물복구비용`,
@@ -7527,7 +9120,10 @@ FLOXN`;
           });
         }
 
-        if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
+        if (
+          fieldDispatchPreventionAmount &&
+          fieldDispatchPreventionAmount > 0
+        ) {
           particulars.push({
             title: `[${mainAddressLabel}] - 현장출동비용`,
             amount: fieldDispatchPreventionAmount,
@@ -7546,7 +9142,7 @@ FLOXN`;
       if (particulars.length === 0) {
         particulars.push({
           title: `[${mainAddressLabel}]`,
-          detail: '청구 내역 없음',
+          detail: "청구 내역 없음",
           amount: 0,
         });
       }
@@ -7557,16 +9153,17 @@ FLOXN`;
         totalAmount = clientTotalAmount;
       } else {
         // 절사 없이 합계 계산
-        totalAmount = (damagePreventionAmount || 0) + 
-          (propertyRepairAmount || 0) + 
-          (fieldDispatchPreventionAmount || 0) + 
+        totalAmount =
+          (damagePreventionAmount || 0) +
+          (propertyRepairAmount || 0) +
+          (fieldDispatchPreventionAmount || 0) +
           (fieldDispatchPropertyAmount || 0);
       }
 
       // Build invoice data
       const invoiceData = {
-        recipientName: recipientName || caseData.insuranceCompany || '-',
-        caseNumber: caseData.caseNumber || '-',
+        recipientName: recipientName || caseData.insuranceCompany || "-",
+        caseNumber: caseData.caseNumber || "-",
         acceptanceDate: caseData.accidentDate || new Date().toISOString(),
         submissionDate: new Date().toISOString(),
         insuranceAccidentNo: accidentNo || undefined,
@@ -7580,103 +9177,140 @@ FLOXN`;
       // Generate PDF from template
       let pdfBuffer = await generateInvoicePdf(invoiceData);
 
-      console.log(`[Invoice PDF] PDF generated, size: ${pdfBuffer.length} bytes`);
+      console.log(
+        `[Invoice PDF] PDF generated, size: ${pdfBuffer.length} bytes`,
+      );
 
       // Merge selected documents into Invoice PDF (same as download logic)
       if (selectedDocumentIds && selectedDocumentIds.length > 0) {
-        console.log(`[Invoice Email] Merging ${selectedDocumentIds.length} documents into Invoice PDF`);
-        
+        console.log(
+          `[Invoice Email] Merging ${selectedDocumentIds.length} documents into Invoice PDF`,
+        );
+
         // Get documents from main case AND all related cases
         const mainDocs = await storage.getDocumentsByCaseId(caseId);
-        
+
         // Build caseId -> caseNumber and caseId -> address mappings
         const caseNumberMap: Record<string, string> = {
-          [caseId]: caseData.caseNumber || ''
+          [caseId]: caseData.caseNumber || "",
         };
         const caseAddressMap: Record<string, string> = {
           [caseId]: (() => {
-            const address = caseData.victimAddress || caseData.insuredAddress || '';
-            const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
+            const address =
+              caseData.victimAddress || caseData.insuredAddress || "";
+            const addressDetail =
+              caseData.victimAddressDetail ||
+              caseData.insuredAddressDetail ||
+              "";
             return addressDetail ? `${address} ${addressDetail}` : address;
-          })()
+          })(),
         };
-        
+
         // Get related cases (same insuranceAccidentNo)
         let allDocuments = [...mainDocs];
         if (caseData.insuranceAccidentNo) {
-          const relatedCases = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
-          
+          const relatedCases = await storage.getCasesByAccidentNo(
+            caseData.insuranceAccidentNo,
+            caseId,
+          );
+
           // Fetch documents from all related cases and build mapping
           for (const relatedCase of relatedCases) {
-            caseNumberMap[relatedCase.id] = relatedCase.caseNumber || '';
+            caseNumberMap[relatedCase.id] = relatedCase.caseNumber || "";
             // Build address for related case
-            const rcAddress = relatedCase.victimAddress || relatedCase.insuredAddress || '';
-            const rcAddressDetail = relatedCase.victimAddressDetail || relatedCase.insuredAddressDetail || '';
-            caseAddressMap[relatedCase.id] = rcAddressDetail ? `${rcAddress} ${rcAddressDetail}` : rcAddress;
-            
-            const relatedDocs = await storage.getDocumentsByCaseId(relatedCase.id);
+            const rcAddress =
+              relatedCase.victimAddress || relatedCase.insuredAddress || "";
+            const rcAddressDetail =
+              relatedCase.victimAddressDetail ||
+              relatedCase.insuredAddressDetail ||
+              "";
+            caseAddressMap[relatedCase.id] = rcAddressDetail
+              ? `${rcAddress} ${rcAddressDetail}`
+              : rcAddress;
+
+            const relatedDocs = await storage.getDocumentsByCaseId(
+              relatedCase.id,
+            );
             allDocuments = allDocuments.concat(relatedDocs);
           }
-          console.log(`[Invoice Email] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`);
+          console.log(
+            `[Invoice Email] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`,
+          );
         }
-        
-        let selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
-        
+
+        let selectedDocs = allDocuments.filter((doc: any) =>
+          selectedDocumentIds.includes(doc.id),
+        );
+
         // Sort documents by: 1) case suffix (-0, -1, -2), then 2) category order within each case
         const categoryOrder: Record<string, number> = {
           // 1. 사진 (현장사진, 수리중, 복구완료)
-          '현장출동사진': 0, '현장': 1, '현장사진': 2,
-          '수리중 사진': 3, '수리중': 4,
-          '복구완료 사진': 5, '복구완료': 6,
+          현장출동사진: 0,
+          현장: 1,
+          현장사진: 2,
+          "수리중 사진": 3,
+          수리중: 4,
+          "복구완료 사진": 5,
+          복구완료: 6,
           // 2. 기본자료 (보험금청구서, 개인정보동의서)
-          '보험금 청구서': 10, '보험금청구서': 11,
-          '개인정보 동의서(가족용)': 12, '개인정보동의서': 13,
+          "보험금 청구서": 10,
+          보험금청구서: 11,
+          "개인정보 동의서(가족용)": 12,
+          개인정보동의서: 13,
           // 3. 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
-          '주민등록등본': 20, '등기부등본': 21, '건축물대장': 22,
-          '기타증빙자료(민원일지 등)': 23, '기타증빙자료': 24,
+          주민등록등본: 20,
+          등기부등본: 21,
+          건축물대장: 22,
+          "기타증빙자료(민원일지 등)": 23,
+          기타증빙자료: 24,
           // 4. 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
-          '위임장': 30, '도급계약서': 31,
-          '복구완료확인서': 32, '복구완료 확인서': 33,
-          '부가세 청구자료': 34, '부가세청구자료': 35,
+          위임장: 30,
+          도급계약서: 31,
+          복구완료확인서: 32,
+          "복구완료 확인서": 33,
+          "부가세 청구자료": 34,
+          부가세청구자료: 35,
         };
-        
+
         // Helper: Extract case suffix number from case number (e.g., "260106005-0" -> 0, "260106005-1" -> 1)
         const getCaseSuffix = (docCaseId: string): number => {
-          const caseNumber = caseNumberMap[docCaseId] || '';
+          const caseNumber = caseNumberMap[docCaseId] || "";
           const match = caseNumber.match(/-(\d+)$/);
           return match ? parseInt(match[1], 10) : 999;
         };
-        
+
         // Sort by: 1) case suffix, 2) category order within each case
         selectedDocs = selectedDocs.sort((a: any, b: any) => {
           // First: sort by case suffix (-0, -1, -2, etc.)
           const suffixA = getCaseSuffix(a.caseId);
           const suffixB = getCaseSuffix(b.caseId);
           if (suffixA !== suffixB) return suffixA - suffixB;
-          
+
           // Second: sort by category order within same case
           const orderA = categoryOrder[a.category] ?? 99;
           const orderB = categoryOrder[b.category] ?? 99;
           return orderA - orderB;
         });
-        console.log(`[Invoice Email] Selected documents found: ${selectedDocs.length}, sorted by case suffix then category`);
-        
+        console.log(
+          `[Invoice Email] Selected documents found: ${selectedDocs.length}, sorted by case suffix then category`,
+        );
+
         if (selectedDocs.length > 0) {
-          const { PDFDocument, rgb } = await import('pdf-lib');
-          const fontkit = (await import('@pdf-lib/fontkit')).default;
-          const sharp = await import('sharp');
-          const fs = await import('fs');
-          const path = await import('path');
-          
+          const { PDFDocument, rgb } = await import("pdf-lib");
+          const fontkit = (await import("@pdf-lib/fontkit")).default;
+          const sharp = await import("sharp");
+          const fs = await import("fs");
+          const path = await import("path");
+
           const mergedPdf = await PDFDocument.load(pdfBuffer);
-          
+
           // 한글 폰트 로드 (Pretendard 사용 - 글자 간격 문제 해결)
           mergedPdf.registerFontkit(fontkit);
-          const fontsDir = path.join(process.cwd(), 'server/fonts');
-          const fontPath = path.join(fontsDir, 'Pretendard-Regular.ttf');
+          const fontsDir = path.join(process.cwd(), "server/fonts");
+          const fontPath = path.join(fontsDir, "Pretendard-Regular.ttf");
           const fontBytes = fs.readFileSync(fontPath);
           const font = await mergedPdf.embedFont(fontBytes, { subset: false });
-          
+
           // Helper function to get file buffer from Object Storage or DB
           const getFileBuffer = async (doc: any): Promise<Buffer | null> => {
             try {
@@ -7685,92 +9319,123 @@ FLOXN`;
                 const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
                 if (privateObjectDir) {
                   const fullPath = `${privateObjectDir}/${doc.storageKey}`;
-                  const { ObjectStorageService } = await import('./replit_integrations/object_storage');
+                  const { ObjectStorageService } = await import(
+                    "./replit_integrations/object_storage"
+                  );
                   const storageService = new ObjectStorageService();
                   return await storageService.downloadToBuffer(fullPath);
                 }
               }
               // 2. fileData에서 가져오기 (레거시)
               if (doc.fileData) {
-                if (doc.fileData.startsWith('data:')) {
-                  const base64Data = doc.fileData.split(',')[1];
-                  return Buffer.from(base64Data, 'base64');
+                if (doc.fileData.startsWith("data:")) {
+                  const base64Data = doc.fileData.split(",")[1];
+                  return Buffer.from(base64Data, "base64");
                 } else {
-                  return Buffer.from(doc.fileData, 'base64');
+                  return Buffer.from(doc.fileData, "base64");
                 }
               }
               // 3. DB에서 직접 가져오기 (레거시 파일)
               if (doc.id) {
                 const fileData = await storage.getDocumentFileData(doc.id);
                 if (fileData) {
-                  if (fileData.startsWith('data:')) {
-                    const base64Data = fileData.split(',')[1];
-                    return Buffer.from(base64Data, 'base64');
+                  if (fileData.startsWith("data:")) {
+                    const base64Data = fileData.split(",")[1];
+                    return Buffer.from(base64Data, "base64");
                   } else {
-                    return Buffer.from(fileData, 'base64');
+                    return Buffer.from(fileData, "base64");
                   }
                 }
               }
               return null;
             } catch (err) {
-              console.error(`[Invoice Email] Failed to get buffer for ${doc.fileName}:`, err);
+              console.error(
+                `[Invoice Email] Failed to get buffer for ${doc.fileName}:`,
+                err,
+              );
               return null;
             }
           };
-          
+
           // Helper functions
           const isPdfFile = (mimeType: string, fileName: string): boolean => {
-            if (mimeType === 'application/pdf') return true;
-            if (fileName?.toLowerCase().endsWith('.pdf')) return true;
+            if (mimeType === "application/pdf") return true;
+            if (fileName?.toLowerCase().endsWith(".pdf")) return true;
             return false;
           };
-          
+
           const isImageFile = (mimeType: string, fileName: string): boolean => {
-            if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) return true;
+            if (
+              mimeType.startsWith("image/") &&
+              !mimeType.includes("heic") &&
+              !mimeType.includes("webp")
+            )
+              return true;
             const ext = fileName?.toLowerCase();
-            if (ext?.endsWith('.jpg') || ext?.endsWith('.jpeg') || ext?.endsWith('.png') || ext?.endsWith('.gif')) return true;
+            if (
+              ext?.endsWith(".jpg") ||
+              ext?.endsWith(".jpeg") ||
+              ext?.endsWith(".png") ||
+              ext?.endsWith(".gif")
+            )
+              return true;
             return false;
           };
-          
+
           // Common constants
           const A4_WIDTH = 595.28;
           const A4_HEIGHT = 841.89;
           const MARGIN = 30;
           const HEADER_HEIGHT = 20;
           const GAP = 8;
-          
+
           // selectedDocs is already sorted by case suffix then category, use directly
           const sortedDocs = selectedDocs;
-          
-          console.log(`[Invoice Email] 문서 ${sortedDocs.length}개 케이스별/카테고리 순서로 정렬됨`);
-          
+
+          console.log(
+            `[Invoice Email] 문서 ${sortedDocs.length}개 케이스별/카테고리 순서로 정렬됨`,
+          );
+
           // 2장/페이지 카테고리 목록 (현장사진, 수리중, 복구완료)
-          const twoPerPageCategories = ['현장사진', '수리중', '복구완료', '현장출동사진', '수리중 사진', '복구완료 사진'];
+          const twoPerPageCategories = [
+            "현장사진",
+            "수리중",
+            "복구완료",
+            "현장출동사진",
+            "수리중 사진",
+            "복구완료 사진",
+          ];
           const isTwoPerPageCategory = (category: string): boolean => {
             if (!category) return false;
-            return twoPerPageCategories.some(c => category.includes(c) || c.includes(category));
+            return twoPerPageCategories.some(
+              (c) => category.includes(c) || c.includes(category),
+            );
           };
-          
+
           // Collect images for layout (2-per-page for some categories, 1-per-page for others)
-          const pendingImages: { doc: any; buffer: Buffer; headerText: string }[] = [];
-          
+          const pendingImages: {
+            doc: any;
+            buffer: Buffer;
+            headerText: string;
+          }[] = [];
+
           // Helper function to flush pending images with category-based layout
           const flushPendingImages = async () => {
             if (pendingImages.length === 0) return;
-            
+
             const PAGE_HEADER_HEIGHT = 30;
             const imgWidth = A4_WIDTH - MARGIN * 2;
-            
+
             let i = 0;
             while (i < pendingImages.length) {
               const currentImg = pendingImages[i];
-              const category = currentImg.doc.category || '';
+              const category = currentImg.doc.category || "";
               const isTwoPerPage = isTwoPerPageCategory(category);
-              
+
               if (isTwoPerPage) {
                 // 2장/페이지 레이아웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-                
+
                 // 헤더 그리기
                 page.drawRectangle({
                   x: MARGIN,
@@ -7786,43 +9451,65 @@ FLOXN`;
                   font,
                   color: rgb(1, 1, 1),
                 });
-                
+
                 // 이미지 영역 계산 (헤더 제외)
-                const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                const availableHeight =
+                  A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
                 const imgHeight = (availableHeight - GAP) / 2;
-                
+
                 // 최대 2장까지 배치
                 for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
                   const img = pendingImages[i + j];
                   // 다음 이미지가 다른 카테고리면 건너뛰기
-                  if (j > 0 && !isTwoPerPageCategory(img.doc.category || '')) break;
-                  
-                  const yPos = j === 0 
-                    ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
-                    : MARGIN;
-                  
+                  if (j > 0 && !isTwoPerPageCategory(img.doc.category || ""))
+                    break;
+
+                  const yPos =
+                    j === 0
+                      ? A4_HEIGHT -
+                        MARGIN -
+                        PAGE_HEADER_HEIGHT -
+                        GAP -
+                        imgHeight
+                      : MARGIN;
+
                   try {
                     const embeddedImage = await mergedPdf.embedJpg(img.buffer);
                     const dims = embeddedImage.scale(1);
-                    let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
+                    let scale = Math.min(
+                      imgWidth / dims.width,
+                      imgHeight / dims.height,
+                      1,
+                    );
                     const finalW = dims.width * scale;
                     const finalH = dims.height * scale;
                     const imgX = MARGIN + (imgWidth - finalW) / 2;
                     const imgY = yPos + (imgHeight - finalH) / 2;
-                    
-                    page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+
+                    page.drawImage(embeddedImage, {
+                      x: imgX,
+                      y: imgY,
+                      width: finalW,
+                      height: finalH,
+                    });
                   } catch (e) {
                     console.error(`[Invoice Email] Failed to embed image:`, e);
                   }
                 }
-                
+
                 // 같은 카테고리 이미지 개수 확인하여 스킵
-                const nextIdx = i + 1 < pendingImages.length && isTwoPerPageCategory(pendingImages[i + 1]?.doc?.category || '') ? 2 : 1;
+                const nextIdx =
+                  i + 1 < pendingImages.length &&
+                  isTwoPerPageCategory(
+                    pendingImages[i + 1]?.doc?.category || "",
+                  )
+                    ? 2
+                    : 1;
                 i += nextIdx;
               } else {
                 // 1장/페이지 레이아웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-                
+
                 // 헤더 그리기
                 page.drawRectangle({
                   x: MARGIN,
@@ -7838,64 +9525,83 @@ FLOXN`;
                   font,
                   color: rgb(1, 1, 1),
                 });
-                
+
                 // 전체 페이지 이미지 영역
-                const imgHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                const imgHeight =
+                  A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
                 const yPos = MARGIN;
-                
+
                 try {
-                  const embeddedImage = await mergedPdf.embedJpg(currentImg.buffer);
+                  const embeddedImage = await mergedPdf.embedJpg(
+                    currentImg.buffer,
+                  );
                   const dims = embeddedImage.scale(1);
-                  let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
+                  let scale = Math.min(
+                    imgWidth / dims.width,
+                    imgHeight / dims.height,
+                    1,
+                  );
                   const finalW = dims.width * scale;
                   const finalH = dims.height * scale;
                   const imgX = MARGIN + (imgWidth - finalW) / 2;
                   const imgY = yPos + (imgHeight - finalH) / 2;
-                  
-                  page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+
+                  page.drawImage(embeddedImage, {
+                    x: imgX,
+                    y: imgY,
+                    width: finalW,
+                    height: finalH,
+                  });
                 } catch (e) {
                   console.error(`[Invoice Email] Failed to embed image:`, e);
                 }
-                
+
                 i += 1;
               }
             }
-            
-            console.log(`[Invoice Email] Added ${pendingImages.length} images (category-based layout)`);
+
+            console.log(
+              `[Invoice Email] Added ${pendingImages.length} images (category-based layout)`,
+            );
             pendingImages.length = 0;
           };
-          
+
           // Process all documents in case suffix / category order
           for (const doc of sortedDocs) {
-            const mimeType = doc.fileType || '';
-            const fileName = doc.fileName || '';
-            
+            const mimeType = doc.fileType || "";
+            const fileName = doc.fileName || "";
+
             // Get header text for this document (보험사사고번호 + 해당 케이스의 주소)
-            const accidentNo = caseData.insuranceAccidentNo || '';
+            const accidentNo = caseData.insuranceAccidentNo || "";
             // Use the address from the case this document belongs to
-            const fullAddress = caseAddressMap[doc.caseId] || '';
-            const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || '기타'}`;
-            
+            const fullAddress = caseAddressMap[doc.caseId] || "";
+            const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || "기타"}`;
+
             if (isPdfFile(mimeType, fileName)) {
               // First, flush any pending images before adding PDF
               await flushPendingImages();
-              
+
               // PDF document
               try {
                 const fileBuffer = await getFileBuffer(doc);
                 if (!fileBuffer || fileBuffer.length === 0) {
-                  console.warn(`[Invoice Email] No data for PDF: ${doc.fileName}`);
+                  console.warn(
+                    `[Invoice Email] No data for PDF: ${doc.fileName}`,
+                  );
                   continue;
                 }
-                
+
                 const sourcePdf = await PDFDocument.load(fileBuffer);
                 const pageIndices = sourcePdf.getPageIndices();
-                const copiedPages = await mergedPdf.copyPages(sourcePdf, pageIndices);
-                
+                const copiedPages = await mergedPdf.copyPages(
+                  sourcePdf,
+                  pageIndices,
+                );
+
                 for (const page of copiedPages) {
                   mergedPdf.addPage(page);
                   const { width, height } = page.getSize();
-                  
+
                   page.drawRectangle({
                     x: 0,
                     y: height - MARGIN - HEADER_HEIGHT,
@@ -7906,7 +9612,7 @@ FLOXN`;
                   page.drawRectangle({
                     x: MARGIN,
                     y: height - MARGIN - HEADER_HEIGHT,
-                    width: width - (MARGIN * 2),
+                    width: width - MARGIN * 2,
                     height: HEADER_HEIGHT,
                     color: rgb(0.95, 0.95, 0.95),
                     borderColor: rgb(0.8, 0.8, 0.8),
@@ -7920,85 +9626,126 @@ FLOXN`;
                     color: rgb(0.2, 0.2, 0.2),
                   });
                 }
-                console.log(`[Invoice Email] Added PDF: ${doc.fileName} (${copiedPages.length} pages) - ${doc.category}`);
+                console.log(
+                  `[Invoice Email] Added PDF: ${doc.fileName} (${copiedPages.length} pages) - ${doc.category}`,
+                );
               } catch (pdfError) {
-                console.error(`[Invoice Email] Failed to add PDF ${doc.fileName}:`, pdfError);
+                console.error(
+                  `[Invoice Email] Failed to add PDF ${doc.fileName}:`,
+                  pdfError,
+                );
               }
             } else if (isImageFile(mimeType, fileName)) {
               // Collect image for 2-per-page layout
               try {
                 const fileBuffer = await getFileBuffer(doc);
                 if (!fileBuffer || fileBuffer.length === 0) {
-                  console.warn(`[Invoice Email] No data for image: ${doc.fileName}`);
+                  console.warn(
+                    `[Invoice Email] No data for image: ${doc.fileName}`,
+                  );
                   continue;
                 }
-                
-                const imageBuffer = await sharp.default(fileBuffer)
-                  .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
+
+                const imageBuffer = await sharp
+                  .default(fileBuffer)
+                  .resize(800, 600, { fit: "inside", withoutEnlargement: true })
                   .jpeg({ quality: 60, mozjpeg: true })
                   .toBuffer();
-                
+
                 pendingImages.push({ doc, buffer: imageBuffer, headerText });
-                console.log(`[Invoice Email] Queued image: ${doc.fileName} - ${doc.category}`);
+                console.log(
+                  `[Invoice Email] Queued image: ${doc.fileName} - ${doc.category}`,
+                );
               } catch (err) {
-                console.error(`[Invoice Email] Failed to process image ${doc.fileName}:`, err);
+                console.error(
+                  `[Invoice Email] Failed to process image ${doc.fileName}:`,
+                  err,
+                );
               }
             }
           }
-          
+
           // Flush remaining pending images
           await flushPendingImages();
-          
-          console.log(`[Invoice Email] Processed ${sortedDocs.length} documents in category order`);
-          
+
+          console.log(
+            `[Invoice Email] Processed ${sortedDocs.length} documents in category order`,
+          );
+
           pdfBuffer = Buffer.from(await mergedPdf.save());
-          console.log(`[Invoice Email] Final merged PDF size: ${pdfBuffer.length} bytes`);
-          
+          console.log(
+            `[Invoice Email] Final merged PDF size: ${pdfBuffer.length} bytes`,
+          );
+
           // Compress if too large (> 9MB)
           if (pdfBuffer.length > 9 * 1024 * 1024) {
-            console.log(`[Invoice Email] Compressing PDF: ${Math.round(pdfBuffer.length / 1024 / 1024 * 100) / 100}MB...`);
-            const { compressPdfForEmail } = await import('./pdf-compression');
+            console.log(
+              `[Invoice Email] Compressing PDF: ${Math.round((pdfBuffer.length / 1024 / 1024) * 100) / 100}MB...`,
+            );
+            const { compressPdfForEmail } = await import("./pdf-compression");
             pdfBuffer = await compressPdfForEmail(pdfBuffer);
-            console.log(`[Invoice Email] Compressed to: ${Math.round(pdfBuffer.length / 1024 / 1024 * 100) / 100}MB`);
+            console.log(
+              `[Invoice Email] Compressed to: ${Math.round((pdfBuffer.length / 1024 / 1024) * 100) / 100}MB`,
+            );
           }
         }
       }
 
       // Format amounts
-      const formatAmount = (amt: number) => amt.toLocaleString('ko-KR');
-      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const formatAmount = (amt: number) => amt.toLocaleString("ko-KR");
+      const dateStr = new Date().toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
 
       // Build amount lines for email
       const amountLines: string[] = [];
       if (damagePreventionAmount && damagePreventionAmount > 0) {
-        amountLines.push(`- 손해방지비용: ${formatAmount(damagePreventionAmount)}원`);
+        amountLines.push(
+          `- 손해방지비용: ${formatAmount(damagePreventionAmount)}원`,
+        );
       }
       if (propertyRepairAmount && propertyRepairAmount > 0) {
-        amountLines.push(`- 대물복구비용: ${formatAmount(propertyRepairAmount)}원`);
+        amountLines.push(
+          `- 대물복구비용: ${formatAmount(propertyRepairAmount)}원`,
+        );
       }
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
-        amountLines.push(`- 현장출동비용: ${formatAmount(fieldDispatchPreventionAmount)}원`);
+        amountLines.push(
+          `- 현장출동비용: ${formatAmount(fieldDispatchPreventionAmount)}원`,
+        );
       }
       if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
-        amountLines.push(`- 현장출동비용: ${formatAmount(fieldDispatchPropertyAmount)}원`);
+        amountLines.push(
+          `- 현장출동비용: ${formatAmount(fieldDispatchPropertyAmount)}원`,
+        );
       }
       amountLines.push(`- 합계: ${formatAmount(totalAmount)}원`);
 
       // Build email content (NO links, PDF is attached directly)
-      const emailSubjectId = invoiceData.insuranceAccidentNo || caseData.insurancePolicyNo || invoiceData.caseNumber || dateStr;
+      const emailSubjectId =
+        invoiceData.insuranceAccidentNo ||
+        caseData.insurancePolicyNo ||
+        invoiceData.caseNumber ||
+        dateStr;
       const emailSubject = `[FLOXN] INVOICE - ${emailSubjectId}`;
-      
+
       // 파일명을 이메일 제목과 동일하게 (특수문자 제거)
-      const safeFilenameId = emailSubjectId.replace(/[<>:"/\\|?*]/g, '_');
+      const safeFilenameId = emailSubjectId.replace(/[<>:"/\\|?*]/g, "_");
       const invoiceFilename = `FLOXN INVOICE - ${safeFilenameId}.pdf`;
-      
+
       // Get assessor and investigator names from case data fields
-      const assessorName = caseData.assessorTeam || '-';
-      const investigatorName = caseData.investigatorTeamName || '-';
-      
+      const assessorName = caseData.assessorTeam || "-";
+      const investigatorName = caseData.investigatorTeamName || "-";
+
       // 동일 사고번호의 모든 접수번호 수집
-      const allCaseNumbers = allCases.map(c => c.caseNumber).filter(Boolean).join(', ') || '-';
-      
+      const allCaseNumbers =
+        allCases
+          .map((c) => c.caseNumber)
+          .filter(Boolean)
+          .join(", ") || "-";
+
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">INVOICE 전달드립니다</h2>
@@ -8012,7 +9759,7 @@ FLOXN`;
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 140px; font-weight: bold;">사고번호</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${invoiceData.insuranceAccidentNo || '-'}</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${invoiceData.insuranceAccidentNo || "-"}</td>
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">담당자</td>
@@ -8024,7 +9771,7 @@ FLOXN`;
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">청구금액</td>
               <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">
-                ${amountLines.map(line => `<div>${line}</div>`).join('')}
+                ${amountLines.map((line) => `<div>${line}</div>`).join("")}
               </td>
             </tr>
             <tr>
@@ -8058,11 +9805,11 @@ FLOXN`;
 
 INVOICE를 첨부하여 전달드립니다.
 
-- 사고번호: ${invoiceData.insuranceAccidentNo || '-'}
+- 사고번호: ${invoiceData.insuranceAccidentNo || "-"}
 - 담당자: 심사자 ${assessorName} / 조사자 ${investigatorName}
 
 청구금액:
-${amountLines.join('\n')}
+${amountLines.join("\n")}
 
 - 접수번호: ${allCaseNumbers}
 - 발송일: ${dateStr}
@@ -8078,32 +9825,41 @@ Front·Line·Ops·Xpert·Net
 서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호`;
 
       // Build attachments array: Invoice PDF (with merged documents) + Logo
-      const attachments: Array<{ filename: string; content: Buffer; contentType: string; cid?: string }> = [
+      const attachments: Array<{
+        filename: string;
+        content: Buffer;
+        contentType: string;
+        cid?: string;
+      }> = [
         {
           filename: invoiceFilename,
           content: pdfBuffer,
-          contentType: 'application/pdf',
+          contentType: "application/pdf",
         },
       ];
 
       // 로고가 있으면 CID 첨부파일로 추가
       if (logoBuffer) {
         attachments.push({
-          filename: 'floxn-logo.png',
+          filename: "floxn-logo.png",
           content: logoBuffer,
-          contentType: 'image/png',
-          cid: 'floxn-logo',
+          contentType: "image/png",
+          cid: "floxn-logo",
         });
       }
 
       // Log attachment summary before sending
       console.log(`\n========== SMTP 첨부 파일 요약 ==========`);
-      console.log(`${invoiceFilename}: ${Math.round(pdfBuffer.length / 1024 / 1024 * 1000) / 1000}MB`);
+      console.log(
+        `${invoiceFilename}: ${Math.round((pdfBuffer.length / 1024 / 1024) * 1000) / 1000}MB`,
+      );
       console.log(`총 첨부 파일 개수: ${attachments.length}`);
       console.log(`==========================================\n`);
 
       // Send email with all PDF attachments
-      console.log(`[Invoice Email] Sending ${attachments.length} PDF attachments to ${email}`);
+      console.log(
+        `[Invoice Email] Sending ${attachments.length} PDF attachments to ${email}`,
+      );
       const emailResult = await sendEmailWithAttachment({
         to: email,
         subject: emailSubject,
@@ -8114,18 +9870,25 @@ Front·Line·Ops·Xpert·Net
 
       if (!emailResult.success) {
         console.error(`[Invoice Email] Failed to send: ${emailResult.error}`);
-        return res.status(500).json({ error: `이메일 전송 실패: ${emailResult.error}` });
+        return res
+          .status(500)
+          .json({ error: `이메일 전송 실패: ${emailResult.error}` });
       }
 
-      console.log(`[Invoice Email] ${attachments.length} PDF attachments sent successfully to ${email} by ${user.username}`);
-      res.json({ 
-        success: true, 
+      console.log(
+        `[Invoice Email] ${attachments.length} PDF attachments sent successfully to ${email} by ${user.username}`,
+      );
+      res.json({
+        success: true,
         message: `INVOICE PDF가 이메일 첨부파일로 전송되었습니다 (총 ${attachments.length}개 파일)`,
-        attachmentCount: attachments.length
+        attachmentCount: attachments.length,
       });
     } catch (error) {
       console.error("Send invoice email v2 error:", error);
-      const errorMessage = error instanceof Error ? error.message : "INVOICE 이메일 전송 중 오류가 발생했습니다";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "INVOICE 이메일 전송 중 오류가 발생했습니다";
       res.status(500).json({ error: errorMessage });
     }
   });
@@ -8144,132 +9907,169 @@ Front·Line·Ops·Xpert·Net
     }
 
     try {
-      const { 
-        email, 
-        pdfBase64, 
-        caseNumber, 
+      const {
+        email,
+        pdfBase64,
+        caseNumber,
         caseId,
-        insuranceCompany, 
+        insuranceCompany,
         accidentNo,
         fieldDispatchAmount,
         totalAmount,
         remarks,
-        selectedDocumentIds = []
+        selectedDocumentIds = [],
       } = req.body;
 
       if (!email || !pdfBase64) {
-        return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
+        return res
+          .status(400)
+          .json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
       }
 
-      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const dateStr = new Date().toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
       const timestamp = Date.now();
-      const fileName = `field_dispatch_invoice_${caseNumber || 'unknown'}_${timestamp}.pdf`;
-      
+      const fileName = `field_dispatch_invoice_${caseNumber || "unknown"}_${timestamp}.pdf`;
+
       // Convert base64 to buffer
-      let pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      let pdfBuffer = Buffer.from(pdfBase64, "base64");
 
       // If documents are selected and caseId provided, merge them into the PDF
       if (caseId && selectedDocumentIds && selectedDocumentIds.length > 0) {
-        console.log(`[Field Dispatch PDF] Merging ${selectedDocumentIds.length} documents into PDF`);
-        
-        const { PDFDocument } = await import('pdf-lib');
+        console.log(
+          `[Field Dispatch PDF] Merging ${selectedDocumentIds.length} documents into PDF`,
+        );
+
+        const { PDFDocument } = await import("pdf-lib");
         const mainPdf = await PDFDocument.load(pdfBuffer);
-        
+
         // Fetch selected documents
         const allDocuments = await storage.getDocumentsByCaseId(caseId);
-        let selectedDocs = allDocuments.filter((doc: { id: string }) => selectedDocumentIds.includes(doc.id));
-        
+        let selectedDocs = allDocuments.filter((doc: { id: string }) =>
+          selectedDocumentIds.includes(doc.id),
+        );
+
         // Sort documents by category order: 사진 > 기본자료 > 증빙자료 > 청구자료
         const categoryOrder: Record<string, number> = {
           // 1. 사진 (현장사진, 수리중, 복구완료)
-          '현장출동사진': 0, '현장': 1, '현장사진': 2,
-          '수리중 사진': 3, '수리중': 4,
-          '복구완료 사진': 5, '복구완료': 6,
+          현장출동사진: 0,
+          현장: 1,
+          현장사진: 2,
+          "수리중 사진": 3,
+          수리중: 4,
+          "복구완료 사진": 5,
+          복구완료: 6,
           // 2. 기본자료 (보험금청구서, 개인정보동의서)
-          '보험금 청구서': 10, '보험금청구서': 11,
-          '개인정보 동의서(가족용)': 12, '개인정보동의서': 13,
+          "보험금 청구서": 10,
+          보험금청구서: 11,
+          "개인정보 동의서(가족용)": 12,
+          개인정보동의서: 13,
           // 3. 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
-          '주민등록등본': 20, '등기부등본': 21, '건축물대장': 22,
-          '기타증빙자료(민원일지 등)': 23, '기타증빙자료': 24,
+          주민등록등본: 20,
+          등기부등본: 21,
+          건축물대장: 22,
+          "기타증빙자료(민원일지 등)": 23,
+          기타증빙자료: 24,
           // 4. 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
-          '위임장': 30, '도급계약서': 31,
-          '복구완료확인서': 32, '복구완료 확인서': 33,
-          '부가세 청구자료': 34, '부가세청구자료': 35,
+          위임장: 30,
+          도급계약서: 31,
+          복구완료확인서: 32,
+          "복구완료 확인서": 33,
+          "부가세 청구자료": 34,
+          부가세청구자료: 35,
         };
         selectedDocs = selectedDocs.sort((a: any, b: any) => {
           const orderA = categoryOrder[a.category] ?? 99;
           const orderB = categoryOrder[b.category] ?? 99;
           return orderA - orderB;
         });
-        console.log(`[Field Dispatch PDF] Selected documents: ${selectedDocs.length}, sorted by category`);
-        
+        console.log(
+          `[Field Dispatch PDF] Selected documents: ${selectedDocs.length}, sorted by category`,
+        );
+
         for (const doc of selectedDocs) {
           try {
             if (!doc.fileData) continue;
-            
+
             // Extract base64 data from data URL
-            const base64Match = doc.fileData.match(/^data:([^;]+);base64,(.+)$/);
+            const base64Match = doc.fileData.match(
+              /^data:([^;]+);base64,(.+)$/,
+            );
             if (!base64Match) continue;
-            
+
             const mimeType = base64Match[1];
             const base64Data = base64Match[2];
-            const imageBytes = Buffer.from(base64Data, 'base64');
-            
+            const imageBytes = Buffer.from(base64Data, "base64");
+
             // Create a new page for each image
             const A4_WIDTH = 595.28;
             const A4_HEIGHT = 841.89;
-            
+
             let embeddedImage;
-            if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
+            if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
               embeddedImage = await mainPdf.embedJpg(imageBytes);
-            } else if (mimeType === 'image/png') {
+            } else if (mimeType === "image/png") {
               embeddedImage = await mainPdf.embedPng(imageBytes);
             } else {
-              console.log(`[Field Dispatch PDF] Skipping unsupported file type: ${mimeType}`);
+              console.log(
+                `[Field Dispatch PDF] Skipping unsupported file type: ${mimeType}`,
+              );
               continue;
             }
-            
+
             // Calculate dimensions to fit image on A4 page with margins
             const margin = 40;
-            const maxWidth = A4_WIDTH - (margin * 2);
-            const maxHeight = A4_HEIGHT - (margin * 2);
-            
+            const maxWidth = A4_WIDTH - margin * 2;
+            const maxHeight = A4_HEIGHT - margin * 2;
+
             let width = embeddedImage.width;
             let height = embeddedImage.height;
-            
+
             const widthRatio = maxWidth / width;
             const heightRatio = maxHeight / height;
             const scale = Math.min(widthRatio, heightRatio, 1);
-            
+
             width *= scale;
             height *= scale;
-            
+
             const page = mainPdf.addPage([A4_WIDTH, A4_HEIGHT]);
             const x = (A4_WIDTH - width) / 2;
             const y = (A4_HEIGHT - height) / 2;
-            
+
             page.drawImage(embeddedImage, {
               x,
               y,
               width,
               height,
             });
-            
+
             console.log(`[Field Dispatch PDF] Added document: ${doc.fileName}`);
           } catch (docError) {
-            console.error(`[Field Dispatch PDF] Failed to add document ${doc.fileName}:`, docError);
+            console.error(
+              `[Field Dispatch PDF] Failed to add document ${doc.fileName}:`,
+              docError,
+            );
           }
         }
-        
+
         pdfBuffer = Buffer.from(await mainPdf.save());
-        console.log(`[Field Dispatch PDF] Final PDF with documents, size: ${pdfBuffer.length} bytes`);
+        console.log(
+          `[Field Dispatch PDF] Final PDF with documents, size: ${pdfBuffer.length} bytes`,
+        );
       }
 
       // Upload PDF to Object Storage
       const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
       if (!bucketId) {
-        console.error("[send-field-dispatch-invoice-email] Missing Object Storage bucket ID");
-        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+        console.error(
+          "[send-field-dispatch-invoice-email] Missing Object Storage bucket ID",
+        );
+        return res
+          .status(500)
+          .json({ error: "Object Storage 설정이 필요합니다" });
       }
 
       const bucket = objectStorageClient.bucket(bucketId);
@@ -8278,9 +10078,12 @@ Front·Line·Ops·Xpert·Net
 
       // Upload the PDF
       await file.save(pdfBuffer, {
-        contentType: 'application/pdf',
+        contentType: "application/pdf",
         metadata: {
-          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+          "custom:aclPolicy": JSON.stringify({
+            owner: user.id,
+            visibility: "public",
+          }),
         },
       });
 
@@ -8289,18 +10092,20 @@ Front·Line·Ops·Xpert·Net
       const pdfUrl = await signObjectURL({
         bucketName: bucketId,
         objectName: objectName,
-        method: 'GET',
+        method: "GET",
         ttlSec: SIGNED_URL_TTL_SEC,
       });
 
-      console.log(`[PDF Upload] Field dispatch invoice PDF uploaded with signed URL`);
+      console.log(
+        `[PDF Upload] Field dispatch invoice PDF uploaded with signed URL`,
+      );
 
       // Format amounts
-      const formatAmount = (amount: number) => amount.toLocaleString('ko-KR');
+      const formatAmount = (amount: number) => amount.toLocaleString("ko-KR");
 
       // Send email via Hiworks SMTP with PDF attachment
       const subject = `[FLOXN] 현장출동비용 청구서 - ${accidentNo || caseNumber || dateStr}`;
-      
+
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">현장출동비용 청구서</h2>
@@ -8314,24 +10119,28 @@ Front·Line·Ops·Xpert·Net
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 30%; font-weight: bold;">보험사</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${insuranceCompany || '-'}</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${insuranceCompany || "-"}</td>
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사고번호</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${accidentNo || '-'}</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${accidentNo || "-"}</td>
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사건번호</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseNumber || '-'}</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseNumber || "-"}</td>
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">현장출동비용</td>
               <td style="padding: 10px 15px; border: 1px solid #ddd; font-weight: bold; color: #0066cc;">${formatAmount(fieldDispatchAmount || 0)}원</td>
             </tr>
-            ${remarks ? `<tr>
+            ${
+              remarks
+                ? `<tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">비고</td>
               <td style="padding: 10px 15px; border: 1px solid #ddd;">${remarks}</td>
-            </tr>` : ''}
+            </tr>`
+                : ""
+            }
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
               <td style="padding: 10px 15px; border: 1px solid #ddd;">${dateStr}</td>
@@ -8362,11 +10171,11 @@ Front·Line·Ops·Xpert·Net
 
 아래 청구건에 대한 현장출동비용 청구서를 첨부하여 송부드립니다.
 
-- 보험사: ${insuranceCompany || '-'}
-- 사고번호: ${accidentNo || '-'}
-- 사건번호: ${caseNumber || '-'}
+- 보험사: ${insuranceCompany || "-"}
+- 사고번호: ${accidentNo || "-"}
+- 사건번호: ${caseNumber || "-"}
 - 현장출동비용: ${formatAmount(fieldDispatchAmount || 0)}원
-${remarks ? `- 비고: ${remarks}` : ''}
+${remarks ? `- 비고: ${remarks}` : ""}
 - 발송일: ${dateStr}
 
 첨부된 현장출동비용 청구서 PDF 파일을 확인해 주시기 바랍니다.
@@ -8385,21 +10194,34 @@ FLOXN
           {
             filename: fileName,
             content: pdfBuffer,
-            contentType: 'application/pdf',
+            contentType: "application/pdf",
           },
         ],
       });
 
       if (!emailResult.success) {
-        console.error(`[Email] Field dispatch invoice email failed:`, emailResult.error);
-        return res.status(500).json({ error: `이메일 전송 실패: ${emailResult.error}` });
+        console.error(
+          `[Email] Field dispatch invoice email failed:`,
+          emailResult.error,
+        );
+        return res
+          .status(500)
+          .json({ error: `이메일 전송 실패: ${emailResult.error}` });
       }
 
-      console.log(`[Email] Field dispatch invoice PDF sent successfully to ${email} by ${user.username} (MessageId: ${emailResult.messageId})`);
-      res.json({ success: true, message: "현장출동비용 청구서 이메일이 전송되었습니다", pdfUrl });
+      console.log(
+        `[Email] Field dispatch invoice PDF sent successfully to ${email} by ${user.username} (MessageId: ${emailResult.messageId})`,
+      );
+      res.json({
+        success: true,
+        message: "현장출동비용 청구서 이메일이 전송되었습니다",
+        pdfUrl,
+      });
     } catch (error) {
       console.error("Send field dispatch invoice email error:", error);
-      res.status(500).json({ error: "현장출동비용 청구서 이메일 전송 중 오류가 발생했습니다" });
+      res.status(500).json({
+        error: "현장출동비용 청구서 이메일 전송 중 오류가 발생했습니다",
+      });
     }
   });
 
@@ -8419,7 +10241,9 @@ FLOXN
     // 역할 기반 접근 제어 - 협력사, 관리자, 심사사만 허용
     const allowedRoles = ["협력사", "관리자", "심사사"];
     if (!allowedRoles.includes(user.role)) {
-      return res.status(403).json({ error: "증빙자료 URL 생성 권한이 없습니다" });
+      return res
+        .status(403)
+        .json({ error: "증빙자료 URL 생성 권한이 없습니다" });
     }
 
     try {
@@ -8436,11 +10260,15 @@ FLOXN
 
       // 관리자가 아닌 경우, 사건에 배정된 협력사인지 확인
       if (user.role !== "관리자") {
-        const isAssignedPartner = user.role === "협력사" && caseData.assignedPartner === user.company;
-        const isAssignedAssessor = user.role === "심사사" && caseData.assessorId === user.id;
-        
+        const isAssignedPartner =
+          user.role === "협력사" && caseData.assignedPartner === user.company;
+        const isAssignedAssessor =
+          user.role === "심사사" && caseData.assessorId === user.id;
+
         if (!isAssignedPartner && !isAssignedAssessor) {
-          return res.status(403).json({ error: "해당 사건에 대한 접근 권한이 없습니다" });
+          return res
+            .status(403)
+            .json({ error: "해당 사건에 대한 접근 권한이 없습니다" });
         }
       }
 
@@ -8449,7 +10277,9 @@ FLOXN
         return res.json({ documentLinks: [] });
       }
 
-      console.log(`[generate-document-urls] Found ${documents.length} documents for case ${caseId}`);
+      console.log(
+        `[generate-document-urls] Found ${documents.length} documents for case ${caseId}`,
+      );
 
       // Get private object directory
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
@@ -8459,21 +10289,28 @@ FLOXN
       }
 
       // Parse bucket name from private object dir
-      const privateDirParts = privateObjectDir.startsWith('/') 
-        ? privateObjectDir.slice(1).split('/') 
-        : privateObjectDir.split('/');
+      const privateDirParts = privateObjectDir.startsWith("/")
+        ? privateObjectDir.slice(1).split("/")
+        : privateObjectDir.split("/");
       const privateBucketName = privateDirParts[0];
-      const privatePrefix = privateDirParts.slice(1).join('/');
+      const privatePrefix = privateDirParts.slice(1).join("/");
       const privateBucket = objectStorageClient.bucket(privateBucketName);
 
       const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
       const timestamp = Date.now();
-      const documentLinks: Array<{ category: string; fileName: string; url: string }> = [];
+      const documentLinks: Array<{
+        category: string;
+        fileName: string;
+        url: string;
+      }> = [];
 
       for (const doc of documents) {
         try {
-          const fileBuffer = Buffer.from(doc.fileData, 'base64');
-          const sanitizedFileName = doc.fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
+          const fileBuffer = Buffer.from(doc.fileData, "base64");
+          const sanitizedFileName = doc.fileName.replace(
+            /[^a-zA-Z0-9가-힣._-]/g,
+            "_",
+          );
           const docObjectName = `${privatePrefix}/case-documents/${caseId}/${timestamp}_${sanitizedFileName}`;
           const docFile = privateBucket.file(docObjectName);
 
@@ -8481,7 +10318,10 @@ FLOXN
           await docFile.save(fileBuffer, {
             contentType: doc.fileType,
             metadata: {
-              'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'private' }),
+              "custom:aclPolicy": JSON.stringify({
+                owner: user.id,
+                visibility: "private",
+              }),
             },
           });
 
@@ -8489,7 +10329,7 @@ FLOXN
           const docUrl = await signObjectURL({
             bucketName: privateBucketName,
             objectName: docObjectName,
-            method: 'GET',
+            method: "GET",
             ttlSec: SIGNED_URL_TTL_SEC,
           });
 
@@ -8499,16 +10339,23 @@ FLOXN
             url: docUrl,
           });
 
-          console.log(`[generate-document-urls] Generated signed URL for: ${doc.fileName}`);
+          console.log(
+            `[generate-document-urls] Generated signed URL for: ${doc.fileName}`,
+          );
         } catch (docError) {
-          console.error(`[generate-document-urls] Failed for ${doc.fileName}:`, docError);
+          console.error(
+            `[generate-document-urls] Failed for ${doc.fileName}:`,
+            docError,
+          );
         }
       }
 
       res.json({ documentLinks });
     } catch (error) {
       console.error("Generate document URLs error:", error);
-      res.status(500).json({ error: "증빙자료 URL 생성 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "증빙자료 URL 생성 중 오류가 발생했습니다" });
     }
   });
 
@@ -8517,7 +10364,9 @@ FLOXN
   // ==========================================
   const sendFieldReportEmailSchema = z.object({
     email: z.string().email("올바른 이메일 형식이 아닙니다").optional(), // 하위 호환성
-    emails: z.array(z.string().email("올바른 이메일 형식이 아닙니다")).optional(), // 여러 수신자 지원
+    emails: z
+      .array(z.string().email("올바른 이메일 형식이 아닙니다"))
+      .optional(), // 여러 수신자 지원
     pdfBase64: z.string().min(1, "PDF 데이터가 필요합니다"),
     caseId: z.string().optional(),
     caseNumber: z.string().optional(),
@@ -8544,54 +10393,65 @@ FLOXN
     // 역할 기반 접근 제어 - 협력사, 관리자, 심사사만 허용
     const allowedRoles = ["협력사", "관리자", "심사사"];
     if (!allowedRoles.includes(user.role)) {
-      return res.status(403).json({ error: "현장조사 리포트 이메일 전송 권한이 없습니다" });
+      return res
+        .status(403)
+        .json({ error: "현장조사 리포트 이메일 전송 권한이 없습니다" });
     }
 
     try {
       // Zod 검증
       const validationResult = sendFieldReportEmailSchema.safeParse(req.body);
       if (!validationResult.success) {
-        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        const errorMessage = validationResult.error.errors
+          .map((e) => e.message)
+          .join(", ");
         return res.status(400).json({ error: errorMessage });
       }
 
-      const { 
-        email, 
+      const {
+        email,
         emails: emailsList,
-        pdfBase64, 
+        pdfBase64,
         caseId,
-        caseNumber, 
-        insuranceCompany, 
+        caseNumber,
+        insuranceCompany,
         accidentNo,
         clientName,
         insuredName,
         visitDate,
         accidentCategory,
         accidentCause,
-        recoveryMethodType
+        recoveryMethodType,
       } = validationResult.data;
 
       // 이메일 수신자 결정 (emails 배열 우선, 없으면 단일 email 사용)
-      const recipients = emailsList && emailsList.length > 0 
-        ? emailsList 
-        : (email ? [email] : []);
-      
+      const recipients =
+        emailsList && emailsList.length > 0 ? emailsList : email ? [email] : [];
+
       if (recipients.length === 0) {
         return res.status(400).json({ error: "수신자 이메일이 필요합니다" });
       }
 
-      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const dateStr = new Date().toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
       const timestamp = Date.now();
       const fileName = `field-report_${caseNumber || timestamp}_${timestamp}.pdf`;
-      
+
       // Convert base64 to buffer
-      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      const pdfBuffer = Buffer.from(pdfBase64, "base64");
 
       // Upload PDF to Object Storage
       const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
       if (!bucketId) {
-        console.error("[send-field-report-email] Missing Object Storage bucket ID");
-        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+        console.error(
+          "[send-field-report-email] Missing Object Storage bucket ID",
+        );
+        return res
+          .status(500)
+          .json({ error: "Object Storage 설정이 필요합니다" });
       }
 
       const bucket = objectStorageClient.bucket(bucketId);
@@ -8600,9 +10460,12 @@ FLOXN
 
       // Upload the PDF
       await file.save(pdfBuffer, {
-        contentType: 'application/pdf',
+        contentType: "application/pdf",
         metadata: {
-          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+          "custom:aclPolicy": JSON.stringify({
+            owner: user.id,
+            visibility: "public",
+          }),
         },
       });
 
@@ -8611,100 +10474,135 @@ FLOXN
       const pdfUrl = await signObjectURL({
         bucketName: bucketId,
         objectName: objectName,
-        method: 'GET',
+        method: "GET",
         ttlSec: SIGNED_URL_TTL_SEC,
       });
 
       console.log(`[PDF Upload] Field Report PDF uploaded with signed URL`);
 
       // 증빙자료 다운로드 링크 생성
-      let documentLinksSection = '';
+      let documentLinksSection = "";
       if (caseId) {
         try {
           const documents = await storage.getDocumentsByCaseId(caseId);
           if (documents && documents.length > 0) {
             const categoryOrder = [
-              "현장출동사진", "수리중 사진", "복구완료 사진",
-              "보험금 청구서", "개인정보 동의서(가족용)",
-              "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
-              "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
+              "현장출동사진",
+              "수리중 사진",
+              "복구완료 사진",
+              "보험금 청구서",
+              "개인정보 동의서(가족용)",
+              "주민등록등본",
+              "등기부등본",
+              "건축물대장",
+              "기타증빙자료(민원일지 등)",
+              "위임장",
+              "도급계약서",
+              "복구완료확인서",
+              "부가세 청구자료",
             ];
-            
+
             // Private object directory 설정
             const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
             if (privateObjectDir) {
-              const privateDirParts = privateObjectDir.startsWith('/') 
-                ? privateObjectDir.slice(1).split('/') 
-                : privateObjectDir.split('/');
+              const privateDirParts = privateObjectDir.startsWith("/")
+                ? privateObjectDir.slice(1).split("/")
+                : privateObjectDir.split("/");
               const privateBucketName = privateDirParts[0];
-              const privatePrefix = privateDirParts.slice(1).join('/');
-              const privateBucket = objectStorageClient.bucket(privateBucketName);
-              
+              const privatePrefix = privateDirParts.slice(1).join("/");
+              const privateBucket =
+                objectStorageClient.bucket(privateBucketName);
+
               const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
               const emailTimestamp = Date.now();
-              
+
               // 카테고리별 그룹화
-              const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
-              
+              const categoryGroups: Record<
+                string,
+                Array<{ fileName: string; url: string }>
+              > = {};
+
               for (const doc of documents) {
                 if (!doc.fileData || !doc.category) continue;
-                
+
                 try {
-                  const fileBuffer = Buffer.from(doc.fileData, 'base64');
-                  const sanitizedFileName = doc.fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
+                  const fileBuffer = Buffer.from(doc.fileData, "base64");
+                  const sanitizedFileName = doc.fileName.replace(
+                    /[^a-zA-Z0-9가-힣._-]/g,
+                    "_",
+                  );
                   const docObjectName = `${privatePrefix}/email-documents/${caseId}/${emailTimestamp}_${sanitizedFileName}`;
                   const docFile = privateBucket.file(docObjectName);
-                  
+
                   // Upload to private storage
                   await docFile.save(fileBuffer, {
                     contentType: doc.fileType,
                     metadata: {
-                      'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'private' }),
+                      "custom:aclPolicy": JSON.stringify({
+                        owner: user.id,
+                        visibility: "private",
+                      }),
                     },
                   });
-                  
+
                   // Generate signed URL
                   const docUrl = await signObjectURL({
                     bucketName: privateBucketName,
                     objectName: docObjectName,
-                    method: 'GET',
+                    method: "GET",
                     ttlSec: SIGNED_URL_TTL_SEC,
                   });
-                  
+
                   if (!categoryGroups[doc.category]) {
                     categoryGroups[doc.category] = [];
                   }
-                  categoryGroups[doc.category].push({ 
-                    fileName: doc.fileName || 'unknown', 
-                    url: docUrl 
+                  categoryGroups[doc.category].push({
+                    fileName: doc.fileName || "unknown",
+                    url: docUrl,
                   });
                 } catch (docUploadErr) {
-                  console.error(`[Email] Failed to generate signed URL for ${doc.fileName}:`, docUploadErr);
+                  console.error(
+                    `[Email] Failed to generate signed URL for ${doc.fileName}:`,
+                    docUploadErr,
+                  );
                 }
               }
-              
+
               // 카테고리 순서대로 정렬
-              const allCategories = [...categoryOrder, ...Object.keys(categoryGroups).filter(c => !categoryOrder.includes(c))];
-              
-              let linksText = '\n\n■ 증빙자료 다운로드 (링크는 7일간 유효합니다)\n';
+              const allCategories = [
+                ...categoryOrder,
+                ...Object.keys(categoryGroups).filter(
+                  (c) => !categoryOrder.includes(c),
+                ),
+              ];
+
+              let linksText =
+                "\n\n■ 증빙자료 다운로드 (링크는 7일간 유효합니다)\n";
               let hasLinks = false;
-              
+
               for (const category of allCategories) {
-                if (!categoryGroups[category] || categoryGroups[category].length === 0) continue;
+                if (
+                  !categoryGroups[category] ||
+                  categoryGroups[category].length === 0
+                )
+                  continue;
                 hasLinks = true;
                 linksText += `\n[${category}]\n`;
                 for (const docLink of categoryGroups[category]) {
                   linksText += `  - ${docLink.fileName}\n    ${docLink.url}\n`;
                 }
               }
-              
+
               if (hasLinks) {
                 documentLinksSection = linksText;
               }
             }
           }
         } catch (docError) {
-          console.error('[Email] Error fetching documents for email:', docError);
+          console.error(
+            "[Email] Error fetching documents for email:",
+            docError,
+          );
         }
       }
 
@@ -8714,19 +10612,19 @@ FLOXN
 현장조사 리포트를 전송해드립니다.
 
 ■ 사건 정보
-- 보험사: ${insuranceCompany || '-'}
-- 사고번호: ${accidentNo || '-'}
-- 사건번호: ${caseNumber || '-'}
-- 의뢰사: ${clientName || '-'}
+- 보험사: ${insuranceCompany || "-"}
+- 사고번호: ${accidentNo || "-"}
+- 사건번호: ${caseNumber || "-"}
+- 의뢰사: ${clientName || "-"}
 
 ■ 피보험자 정보
-- 피보험자: ${insuredName || '-'}
+- 피보험자: ${insuredName || "-"}
 
 ■ 현장조사 정보
-- 방문일: ${visitDate || '-'}
-- 사고분류: ${accidentCategory || '-'}
-- 사고원인: ${accidentCause || '-'}
-- 처리유형: ${recoveryMethodType || '-'}
+- 방문일: ${visitDate || "-"}
+- 사고분류: ${accidentCategory || "-"}
+- 사고원인: ${accidentCause || "-"}
+- 처리유형: ${recoveryMethodType || "-"}
 
 ■ 현장조사 리포트 PDF
 아래 링크를 클릭하시면 다운로드하실 수 있습니다:
@@ -8740,41 +10638,54 @@ ${documentLinksSection}
 FLOXN 드림`;
 
       // 모든 수신자에게 이메일 전송
-      const sendResults: { email: string; success: boolean; error?: string }[] = [];
-      
+      const sendResults: { email: string; success: boolean; error?: string }[] =
+        [];
+
       for (const recipientEmail of recipients) {
         try {
-          await sendNotificationEmail(recipientEmail, `FLOXN 현장조사 리포트 - ${caseNumber || dateStr}`, emailContent);
+          await sendNotificationEmail(
+            recipientEmail,
+            `FLOXN 현장조사 리포트 - ${caseNumber || dateStr}`,
+            emailContent,
+          );
           sendResults.push({ email: recipientEmail, success: true });
-          console.log(`[Email] Field Report PDF link sent successfully to ${recipientEmail} by ${user.username}`);
+          console.log(
+            `[Email] Field Report PDF link sent successfully to ${recipientEmail} by ${user.username}`,
+          );
         } catch (sendError) {
-          console.error(`[Email] Failed to send to ${recipientEmail}:`, sendError);
-          sendResults.push({ 
-            email: recipientEmail, 
-            success: false, 
-            error: sendError instanceof Error ? sendError.message : '전송 실패'
+          console.error(
+            `[Email] Failed to send to ${recipientEmail}:`,
+            sendError,
+          );
+          sendResults.push({
+            email: recipientEmail,
+            success: false,
+            error: sendError instanceof Error ? sendError.message : "전송 실패",
           });
         }
       }
 
-      const successCount = sendResults.filter(r => r.success).length;
-      const failedCount = sendResults.filter(r => !r.success).length;
+      const successCount = sendResults.filter((r) => r.success).length;
+      const failedCount = sendResults.filter((r) => !r.success).length;
 
       if (successCount === 0) {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "모든 이메일 전송에 실패했습니다",
-          details: sendResults.filter(r => !r.success)
+          details: sendResults.filter((r) => !r.success),
         });
       }
 
-      const message = failedCount > 0
-        ? `${successCount}명에게 전송 완료, ${failedCount}명 전송 실패`
-        : `${successCount}명에게 현장조사 리포트 이메일이 전송되었습니다`;
+      const message =
+        failedCount > 0
+          ? `${successCount}명에게 전송 완료, ${failedCount}명 전송 실패`
+          : `${successCount}명에게 현장조사 리포트 이메일이 전송되었습니다`;
 
       res.json({ success: true, message, pdfUrl, results: sendResults });
     } catch (error) {
       console.error("Send field report email error:", error);
-      res.status(500).json({ error: "현장조사 리포트 이메일 전송 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "현장조사 리포트 이메일 전송 중 오류가 발생했습니다" });
     }
   });
 
@@ -8782,7 +10693,9 @@ FLOXN 드림`;
   // POST /api/send-field-report-email-v2 - 서버 측 PDF 생성 후 이메일 전송
   // ==========================================
   const sendFieldReportEmailV2Schema = z.object({
-    emails: z.array(z.string().email("올바른 이메일 형식이 아닙니다")).min(1, "수신자 이메일이 필요합니다"),
+    emails: z
+      .array(z.string().email("올바른 이메일 형식이 아닙니다"))
+      .min(1, "수신자 이메일이 필요합니다"),
     caseId: z.string().min(1, "케이스 ID가 필요합니다"),
     sections: z.object({
       cover: z.boolean().default(true),
@@ -8792,10 +10705,12 @@ FLOXN 드림`;
       estimate: z.boolean().default(true),
       etc: z.boolean().default(false),
     }),
-    evidence: z.object({
-      tab: z.string().default("전체"),
-      selectedFileIds: z.array(z.string()).default([]),
-    }).default({ tab: "전체", selectedFileIds: [] }),
+    evidence: z
+      .object({
+        tab: z.string().default("전체"),
+        selectedFileIds: z.array(z.string()).default([]),
+      })
+      .default({ tab: "전체", selectedFileIds: [] }),
   });
 
   app.post("/api/send-field-report-email-v2", async (req, res) => {
@@ -8810,13 +10725,17 @@ FLOXN 드림`;
 
     const allowedRoles = ["협력사", "관리자", "심사사"];
     if (!allowedRoles.includes(user.role)) {
-      return res.status(403).json({ error: "현장조사 리포트 이메일 전송 권한이 없습니다" });
+      return res
+        .status(403)
+        .json({ error: "현장조사 리포트 이메일 전송 권한이 없습니다" });
     }
 
     try {
       const validationResult = sendFieldReportEmailV2Schema.safeParse(req.body);
       if (!validationResult.success) {
-        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        const errorMessage = validationResult.error.errors
+          .map((e) => e.message)
+          .join(", ");
         return res.status(400).json({ error: errorMessage });
       }
 
@@ -8829,7 +10748,9 @@ FLOXN 드림`;
       }
 
       // ========== 현장출동보고서 PDF 생성 (증빙자료 이미지 및 PDF 모두 포함) ==========
-      console.log(`[send-field-report-email-v2] Generating PDF for case ${caseId} (with all evidence including PDFs)`);
+      console.log(
+        `[send-field-report-email-v2] Generating PDF for case ${caseId} (with all evidence including PDFs)`,
+      );
       const mainPdfBuffer = await generatePdfWithSizeLimitPdfLib({
         caseId,
         sections,
@@ -8837,23 +10758,34 @@ FLOXN 드림`;
         skipEvidence: false, // 증빙자료 이미지 포함
         skipPdfAttachments: false, // 업로드된 PDF 파일도 포함
       });
-      console.log(`[send-field-report-email-v2] PDF generated: ${Math.round(mainPdfBuffer.length / 1024)}KB (${(mainPdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
+      console.log(
+        `[send-field-report-email-v2] PDF generated: ${Math.round(mainPdfBuffer.length / 1024)}KB (${(mainPdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`,
+      );
 
       // ========== 첨부파일 준비 (단일 PDF) ==========
-      const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || 'UNKNOWN';
-      const detailAddress = caseData.victimAddressDetail || caseData.victimAddress || 
-                            caseData.insuredAddressDetail || caseData.insuredAddress || '';
+      const accidentNo =
+        caseData.insuranceAccidentNo || caseData.caseNumber || "UNKNOWN";
+      const detailAddress =
+        caseData.victimAddressDetail ||
+        caseData.victimAddress ||
+        caseData.insuredAddressDetail ||
+        caseData.insuredAddress ||
+        "";
       // 파일명에 사용할 수 없는 특수문자 제거
-      const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, '_');
-      const mainFileName = safeDetailAddress 
+      const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, "_");
+      const mainFileName = safeDetailAddress
         ? `현장출동보고서 _${accidentNo} (${safeDetailAddress}).pdf`
         : `현장출동보고서 _${accidentNo}.pdf`;
-      
-      const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
+
+      const attachments: Array<{
+        filename: string;
+        content: Buffer;
+        contentType: string;
+      }> = [
         {
           filename: mainFileName,
           content: mainPdfBuffer,
-          contentType: 'application/pdf',
+          contentType: "application/pdf",
         },
       ];
 
@@ -8863,31 +10795,57 @@ FLOXN 드림`;
       for (const att of attachments) {
         const sizeKB = Math.round(att.content.length / 1024);
         const sizeMB = (att.content.length / (1024 * 1024)).toFixed(2);
-        console.log(`[send-field-report-email-v2]   - ${att.filename}: ${sizeKB}KB (${sizeMB}MB)`);
+        console.log(
+          `[send-field-report-email-v2]   - ${att.filename}: ${sizeKB}KB (${sizeMB}MB)`,
+        );
         totalBytes += att.content.length;
       }
       const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
-      console.log(`[send-field-report-email-v2] ===== 총 첨부파일: ${attachments.length}개, ${totalMB}MB =====`);
+      console.log(
+        `[send-field-report-email-v2] ===== 총 첨부파일: ${attachments.length}개, ${totalMB}MB =====`,
+      );
 
       // 25MB 초과 시 경고 (Hiworks SMTP 제한)
       if (totalBytes > 25 * 1024 * 1024) {
-        console.warn(`[send-field-report-email-v2] 경고: 총 첨부파일 용량 ${totalMB}MB가 25MB를 초과합니다. SMTP 552 오류 가능성`);
+        console.warn(
+          `[send-field-report-email-v2] 경고: 총 첨부파일 용량 ${totalMB}MB가 25MB를 초과합니다. SMTP 552 오류 가능성`,
+        );
       }
 
-      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '-').replace(/ /g, '').replace(/-$/, '');
+      const dateStr = new Date()
+        .toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        })
+        .replace(/\./g, "-")
+        .replace(/ /g, "")
+        .replace(/-$/, "");
 
       // 로고 파일 읽기 (CID 첨부용)
       let logoBuffer: Buffer | null = null;
       try {
-        const logoPath = path.join(process.cwd(), 'server', 'assets', 'floxn-logo.png');
+        const logoPath = path.join(
+          process.cwd(),
+          "server",
+          "assets",
+          "floxn-logo.png",
+        );
         if (fs.existsSync(logoPath)) {
           logoBuffer = fs.readFileSync(logoPath);
-          console.log(`[send-field-report-email-v2] Logo loaded: ${logoBuffer.length} bytes`);
+          console.log(
+            `[send-field-report-email-v2] Logo loaded: ${logoBuffer.length} bytes`,
+          );
         } else {
-          console.warn(`[send-field-report-email-v2] Logo file not found: ${logoPath}`);
+          console.warn(
+            `[send-field-report-email-v2] Logo file not found: ${logoPath}`,
+          );
         }
       } catch (logoError) {
-        console.warn(`[send-field-report-email-v2] Failed to load logo:`, logoError);
+        console.warn(
+          `[send-field-report-email-v2] Failed to load logo:`,
+          logoError,
+        );
       }
 
       // HTML 이메일 본문 생성 (표 형식, 링크 없음)
@@ -8907,26 +10865,26 @@ FLOXN 드림`;
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px;">
       <tr>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 120px;">사고번호</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.insuranceAccidentNo || '-'}</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.insuranceAccidentNo || "-"}</td>
       </tr>
       <tr>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">담당자</td>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 80px;">심사자</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.assessorTeam || '-'}</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.assessorTeam || "-"}</td>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 80px;">조사자</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.investigatorTeam || '-'}</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.investigatorTeam || "-"}</td>
       </tr>
       <tr>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">피보험자</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.insuredName || '-'}</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.insuredName || "-"}</td>
       </tr>
       <tr>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">접수번호</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.caseNumber || '-'}</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.caseNumber || "-"}</td>
       </tr>
       <tr>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">발송일</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${new Date().toISOString().split('T')[0]}</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${new Date().toISOString().split("T")[0]}</td>
       </tr>
     </table>
     
@@ -8950,12 +10908,12 @@ FLOXN 드림`;
 안녕하세요.
 아래 접수건에 대한 현장출동보고서를 첨부하여 송부드립니다.
 
-사고번호: ${caseData.insuranceAccidentNo || '-'}
-심사자: ${caseData.assessorTeam || '-'}
-조사자: ${caseData.investigatorTeam || '-'}
-피보험자: ${caseData.insuredName || '-'}
-접수번호: ${caseData.caseNumber || '-'}
-발송일: ${new Date().toISOString().split('T')[0]}
+사고번호: ${caseData.insuranceAccidentNo || "-"}
+심사자: ${caseData.assessorTeam || "-"}
+조사자: ${caseData.investigatorTeam || "-"}
+피보험자: ${caseData.insuredName || "-"}
+접수번호: ${caseData.caseNumber || "-"}
+발송일: ${new Date().toISOString().split("T")[0]}
 
 첨부된 PDF 파일을 확인해 주시기 바랍니다.
 
@@ -8969,31 +10927,37 @@ Front·Line·Ops·Xpert·Net
 
       // ========== 이메일 전송 (PDF 직접 첨부) ==========
       // 최종 첨부파일 배열 생성 (로고 포함)
-      const finalAttachments: Array<{ filename: string; content: Buffer; contentType: string; cid?: string }> = [
-        ...attachments,
-      ];
-      
+      const finalAttachments: Array<{
+        filename: string;
+        content: Buffer;
+        contentType: string;
+        cid?: string;
+      }> = [...attachments];
+
       // 로고가 있으면 CID 첨부파일로 추가
       if (logoBuffer) {
         finalAttachments.push({
-          filename: 'floxn-logo.png',
+          filename: "floxn-logo.png",
           content: logoBuffer,
-          contentType: 'image/png',
-          cid: 'floxn-logo',
+          contentType: "image/png",
+          cid: "floxn-logo",
         });
       }
-      
-      const sendResults: { email: string; success: boolean; error?: string }[] = [];
-      
+
+      const sendResults: { email: string; success: boolean; error?: string }[] =
+        [];
+
       for (const recipientEmail of emails) {
         try {
-          console.log(`[send-field-report-email-v2] Sending email to ${recipientEmail} with ${finalAttachments.length} attachments`);
-          
+          console.log(
+            `[send-field-report-email-v2] Sending email to ${recipientEmail} with ${finalAttachments.length} attachments`,
+          );
+
           // 이메일 제목도 파일명과 동일한 형식으로
-          const emailSubject = safeDetailAddress 
+          const emailSubject = safeDetailAddress
             ? `현장출동보고서 _${accidentNo} (${safeDetailAddress})`
             : `현장출동보고서 _${accidentNo}`;
-          
+
           const result = await sendEmailWithAttachment({
             to: recipientEmail,
             subject: emailSubject,
@@ -9001,52 +10965,66 @@ Front·Line·Ops·Xpert·Net
             html: emailHtml,
             attachments: finalAttachments,
           });
-          
+
           if (result.success) {
             sendResults.push({ email: recipientEmail, success: true });
-            console.log(`[Email] Field Report with attachments sent to ${recipientEmail} by ${user.username}`);
+            console.log(
+              `[Email] Field Report with attachments sent to ${recipientEmail} by ${user.username}`,
+            );
           } else {
-            sendResults.push({ 
-              email: recipientEmail, 
-              success: false, 
-              error: result.error || '전송 실패'
+            sendResults.push({
+              email: recipientEmail,
+              success: false,
+              error: result.error || "전송 실패",
             });
-            console.error(`[Email] Failed to send to ${recipientEmail}:`, result.error);
+            console.error(
+              `[Email] Failed to send to ${recipientEmail}:`,
+              result.error,
+            );
           }
         } catch (sendError: any) {
-          console.error(`[Email] Failed to send to ${recipientEmail}:`, sendError);
-          const errorMsg = sendError?.message || sendError?.toString() || '전송 실패';
-          sendResults.push({ 
-            email: recipientEmail, 
-            success: false, 
-            error: errorMsg
+          console.error(
+            `[Email] Failed to send to ${recipientEmail}:`,
+            sendError,
+          );
+          const errorMsg =
+            sendError?.message || sendError?.toString() || "전송 실패";
+          sendResults.push({
+            email: recipientEmail,
+            success: false,
+            error: errorMsg,
           });
-          
+
           // SMTP 552 오류 감지
-          if (errorMsg.includes('552') || errorMsg.includes('size')) {
-            console.error(`[send-field-report-email-v2] SMTP 552 오류 감지 - 총 첨부파일 크기: ${totalMB}MB`);
+          if (errorMsg.includes("552") || errorMsg.includes("size")) {
+            console.error(
+              `[send-field-report-email-v2] SMTP 552 오류 감지 - 총 첨부파일 크기: ${totalMB}MB`,
+            );
           }
         }
       }
 
-      const successCount = sendResults.filter(r => r.success).length;
-      const failedCount = sendResults.filter(r => !r.success).length;
+      const successCount = sendResults.filter((r) => r.success).length;
+      const failedCount = sendResults.filter((r) => !r.success).length;
 
       if (successCount === 0) {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "이메일 전송에 실패했습니다. SMTP 설정을 확인해주세요.",
-          details: sendResults.filter(r => !r.success)
+          details: sendResults.filter((r) => !r.success),
         });
       }
 
-      const message = failedCount > 0
-        ? `${successCount}명에게 전송 완료, ${failedCount}명 전송 실패`
-        : `${successCount}명에게 현장출동보고서가 PDF 첨부파일로 전송되었습니다`;
+      const message =
+        failedCount > 0
+          ? `${successCount}명에게 전송 완료, ${failedCount}명 전송 실패`
+          : `${successCount}명에게 현장출동보고서가 PDF 첨부파일로 전송되었습니다`;
 
       res.json({ success: true, message, results: sendResults });
     } catch (error) {
       console.error("Send field report email v2 error:", error);
-      res.status(500).json({ error: "현장조사 리포트 이메일 전송 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "현장조사 리포트 이메일 전송 중 오류가 발생했습니다" });
     }
   });
 
@@ -9058,11 +11036,15 @@ Front·Line·Ops·Xpert·Net
       const { to, pdfUrl } = req.body;
 
       // Validate request body
-      if (!to || typeof to !== 'string') {
-        return res.status(400).json({ ok: false, message: "수신자 이메일(to)이 필요합니다" });
+      if (!to || typeof to !== "string") {
+        return res
+          .status(400)
+          .json({ ok: false, message: "수신자 이메일(to)이 필요합니다" });
       }
-      if (!pdfUrl || typeof pdfUrl !== 'string') {
-        return res.status(400).json({ ok: false, message: "PDF URL(pdfUrl)이 필요합니다" });
+      if (!pdfUrl || typeof pdfUrl !== "string") {
+        return res
+          .status(400)
+          .json({ ok: false, message: "PDF URL(pdfUrl)이 필요합니다" });
       }
 
       // Check SMTP environment variables
@@ -9073,7 +11055,11 @@ Front·Line·Ops·Xpert·Net
 
       if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
         console.error("[send-pdf] Missing SMTP configuration");
-        return res.status(500).json({ ok: false, message: "SMTP 설정이 필요합니다 (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)" });
+        return res.status(500).json({
+          ok: false,
+          message:
+            "SMTP 설정이 필요합니다 (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)",
+        });
       }
 
       // Download PDF from URL
@@ -9082,15 +11068,24 @@ Front·Line·Ops·Xpert·Net
       try {
         const pdfResponse = await fetch(pdfUrl);
         if (!pdfResponse.ok) {
-          console.error(`[send-pdf] PDF download failed: ${pdfResponse.status} ${pdfResponse.statusText}`);
-          return res.status(500).json({ ok: false, message: `PDF 다운로드 실패: ${pdfResponse.status}` });
+          console.error(
+            `[send-pdf] PDF download failed: ${pdfResponse.status} ${pdfResponse.statusText}`,
+          );
+          return res.status(500).json({
+            ok: false,
+            message: `PDF 다운로드 실패: ${pdfResponse.status}`,
+          });
         }
         const arrayBuffer = await pdfResponse.arrayBuffer();
         pdfBuffer = Buffer.from(arrayBuffer);
-        console.log(`[send-pdf] PDF downloaded successfully, size: ${pdfBuffer.length} bytes`);
+        console.log(
+          `[send-pdf] PDF downloaded successfully, size: ${pdfBuffer.length} bytes`,
+        );
       } catch (downloadError) {
         console.error("[send-pdf] PDF download error:", downloadError);
-        return res.status(500).json({ ok: false, message: "PDF 파일을 다운로드할 수 없습니다" });
+        return res
+          .status(500)
+          .json({ ok: false, message: "PDF 파일을 다운로드할 수 없습니다" });
       }
 
       // Setup Nodemailer transporter
@@ -9125,11 +11120,16 @@ Front·Line·Ops·Xpert·Net
         return res.json({ ok: true });
       } catch (sendError) {
         console.error("[send-pdf] Email send error:", sendError);
-        return res.status(500).json({ ok: false, message: `이메일 전송 실패: ${(sendError as Error).message}` });
+        return res.status(500).json({
+          ok: false,
+          message: `이메일 전송 실패: ${(sendError as Error).message}`,
+        });
       }
     } catch (error) {
       console.error("[send-pdf] Unexpected error:", error);
-      return res.status(500).json({ ok: false, message: `서버 오류: ${(error as Error).message}` });
+      return res
+        .status(500)
+        .json({ ok: false, message: `서버 오류: ${(error as Error).message}` });
     }
   });
 
@@ -9167,15 +11167,17 @@ Front·Line·Ops·Xpert·Net
 
     // 관리자 또는 보험사만 SMS 발송 가능
     if (!["관리자", "보험사"].includes(currentUser.role)) {
-      console.log(`[send-sms] Unauthorized role: ${currentUser.role} (user: ${currentUser.username})`);
+      console.log(
+        `[send-sms] Unauthorized role: ${currentUser.role} (user: ${currentUser.username})`,
+      );
       return res.status(403).json({ error: "SMS 발송 권한이 없습니다" });
     }
 
     try {
       // Zod 스키마로 요청 검증
       const validatedData = sendSmsSchema.parse(req.body);
-      
-      const { 
+
+      const {
         to,
         caseNumber,
         insuranceCompany,
@@ -9190,7 +11192,7 @@ Front·Line·Ops·Xpert·Net
         investigatorContact,
         accidentLocation,
         accidentLocationDetail,
-        requestScope
+        requestScope,
       } = validatedData;
 
       // 솔라피 API 키 확인
@@ -9200,8 +11202,8 @@ Front·Line·Ops·Xpert·Net
 
       if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
         console.error("[send-sms] Missing Solapi configuration");
-        return res.status(500).json({ 
-          error: "SMS 서비스가 설정되지 않았습니다" 
+        return res.status(500).json({
+          error: "SMS 서비스가 설정되지 않았습니다",
         });
       }
 
@@ -9211,18 +11213,22 @@ Front·Line·Ops·Xpert·Net
 
       // 전화번호 유효성 검사
       if (normalizedTo.length < 10 || normalizedTo.length > 11) {
-        return res.status(400).json({ error: "유효하지 않은 전화번호 형식입니다" });
+        return res
+          .status(400)
+          .json({ error: "유효하지 않은 전화번호 형식입니다" });
       }
 
       // SMS 메시지 내용 생성 (값이 없는 항목은 표시하지 않음)
       const messageLines: string[] = ["<접수완료 알림>", ""];
-      
+
       if (caseNumber) messageLines.push(`접수번호 : ${caseNumber}`);
       if (insuranceCompany) messageLines.push(`보험사 : ${insuranceCompany}`);
       if (managerName) messageLines.push(`담당자 : ${managerName}`);
-      if (insurancePolicyNo) messageLines.push(`증권번호 : ${insurancePolicyNo}`);
-      if (insuranceAccidentNo) messageLines.push(`사고번호 : ${insuranceAccidentNo}`);
-      
+      if (insurancePolicyNo)
+        messageLines.push(`증권번호 : ${insurancePolicyNo}`);
+      if (insuranceAccidentNo)
+        messageLines.push(`사고번호 : ${insuranceAccidentNo}`);
+
       // 피보험자: 이름 또는 연락처가 있을 때만 표시
       if (insuredName || insuredContact) {
         const insuredParts = [];
@@ -9230,7 +11236,7 @@ Front·Line·Ops·Xpert·Net
         if (insuredContact) insuredParts.push(`연락처 ${insuredContact}`);
         messageLines.push(`피보험자 : ${insuredParts.join("  ")}`);
       }
-      
+
       // 피해자: 이름 또는 연락처가 있을 때만 표시
       if (victimName || victimContact) {
         const victimParts = [];
@@ -9238,18 +11244,30 @@ Front·Line·Ops·Xpert·Net
         if (victimContact) victimParts.push(`연락처 ${victimContact}`);
         messageLines.push(`피해자 : ${victimParts.join("  ")}`);
       }
-      
+
       // 심사자: 이름과 연락처 모두 있을 때만 표시
-      if (investigatorTeamName && investigatorContact) {
-        messageLines.push(`심사자 : ${investigatorTeamName}  연락처 ${investigatorContact}`);
+      if (
+        investigatorTeamName !== "-" &&
+        typeof investigatorContact === "string" &&
+        /^[0-9]+$/.test(investigatorContact)
+      ) {
+        messageLines.push(
+          `심사자 : ${investigatorTeamName}  연락처 ${investigatorContact}`,
+        );
+      } else {
+        messageLines.push(``);
       }
-      
-      const fullAddress = [accidentLocation, accidentLocationDetail].filter(Boolean).join(" ");
+
+      const fullAddress = [accidentLocation, accidentLocationDetail]
+        .filter(Boolean)
+        .join(" ");
       if (fullAddress) messageLines.push(`사고장소 : ${fullAddress}`);
       if (requestScope) messageLines.push(`의뢰범위 : ${requestScope}`);
-      
+
       const messageText = messageLines.join("\n");
-      console.log(`[send-sms] Sending LMS to: ${normalizedTo} (user: ${req.session.userId})`);
+      console.log(
+        `[send-sms] Sending LMS to: ${normalizedTo} (user: ${req.session.userId})`,
+      );
 
       // Solapi LMS 발송 (순수 HTTPS + HMAC-SHA256 인증)
       const payload = {
@@ -9257,8 +11275,8 @@ Front·Line·Ops·Xpert·Net
           to: normalizedTo,
           from: normalizedSender,
           text: messageText,
-          subject: '접수완료 알림',
-          type: 'LMS',
+          subject: "접수완료 알림",
+          type: "LMS",
         },
       };
       const body = JSON.stringify(payload);
@@ -9267,39 +11285,50 @@ Front·Line·Ops·Xpert·Net
         method: "POST",
         path: "/messages/v4/send",
         headers: {
-          Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+          Authorization: createSolapiAuthHeader(
+            SOLAPI_API_KEY,
+            SOLAPI_API_SECRET,
+          ),
           "Content-Type": "application/json",
           "Content-Length": Buffer.byteLength(body),
         },
         body,
       });
 
-      console.log(`[send-sms] LMS sent successfully to ${normalizedTo}`, solapiResponse);
-      res.json({ 
-        success: true, 
-        message: "문자가 전송되었습니다"
+      console.log(
+        `[send-sms] LMS sent successfully to ${normalizedTo}`,
+        solapiResponse,
+      );
+      res.json({
+        success: true,
+        message: "문자가 전송되었습니다",
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
         console.error("[send-sms] Validation error:", error.errors);
-        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다", details: error.errors });
+        return res.status(400).json({
+          error: "요청 데이터가 올바르지 않습니다",
+          details: error.errors,
+        });
       }
       // Solapi API 에러 처리 (statusCode, body 형식)
       console.error("[send-sms] SMS send error:", error);
       if (error?.statusCode && error?.body) {
-        return res.status(error.statusCode).json({ 
-          error: "문자 전송에 실패했습니다", 
+        return res.status(error.statusCode).json({
+          error: "문자 전송에 실패했습니다",
           statusCode: error.statusCode,
-          details: error.body
+          details: error.body,
         });
       }
       // 일반 에러 처리
-      const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
-      const errorDetails = error instanceof Error ? error.stack : JSON.stringify(error);
-      res.status(500).json({ 
-        error: "문자 전송에 실패했습니다", 
+      const errorMessage =
+        error instanceof Error ? error.message : "알 수 없는 오류";
+      const errorDetails =
+        error instanceof Error ? error.stack : JSON.stringify(error);
+      res.status(500).json({
+        error: "문자 전송에 실패했습니다",
         details: errorMessage,
-        stack: errorDetails
+        stack: errorDetails,
       });
     }
   });
@@ -9331,12 +11360,24 @@ Front·Line·Ops·Xpert·Net
 
     // 관리자만 계정 생성 안내 발송 가능
     if (currentUser.role !== "관리자") {
-      return res.status(403).json({ error: "계정 생성 안내 발송 권한이 없습니다" });
+      return res
+        .status(403)
+        .json({ error: "계정 생성 안내 발송 권한이 없습니다" });
     }
 
     try {
       const validatedData = accountNotificationSchema.parse(req.body);
-      const { sendEmail, sendSms, email, phone, name, username, password, role, company } = validatedData;
+      const {
+        sendEmail,
+        sendSms,
+        email,
+        phone,
+        name,
+        username,
+        password,
+        role,
+        company,
+      } = validatedData;
 
       const results = {
         emailSent: false,
@@ -9346,18 +11387,18 @@ Front·Line·Ops·Xpert·Net
 
       // 역할명 변환
       const roleNames: Record<string, string> = {
-        admin: '관리자',
-        insurer: '보험사',
-        partner: '협력사',
-        assessor: '심사사',
-        investigator: '조사사',
-        client: '의뢰사',
-        관리자: '관리자',
-        보험사: '보험사',
-        협력사: '협력사',
-        심사사: '심사사',
-        조사사: '조사사',
-        의뢰사: '의뢰사',
+        admin: "관리자",
+        insurer: "보험사",
+        partner: "협력사",
+        assessor: "심사사",
+        investigator: "조사사",
+        client: "의뢰사",
+        관리자: "관리자",
+        보험사: "보험사",
+        협력사: "협력사",
+        심사사: "심사사",
+        조사사: "조사사",
+        의뢰사: "의뢰사",
       };
       const roleName = roleNames[role] || role;
 
@@ -9401,7 +11442,7 @@ FLOXN 플랫폼 계정이 생성되었습니다.
 
 ▶ 계정 정보
 - 이름: ${name}
-- 소속: ${company || '-'}
+- 소속: ${company || "-"}
 - 역할: ${roleName}
 - 아이디: ${username}
 - 비밀번호: ${password}
@@ -9417,8 +11458,8 @@ https://peulrogseun-aqaqaq4561.replit.app
                   to: normalizedPhone,
                   from: normalizedSender,
                   text: messageText,
-                  subject: 'FLOXN 계정 생성 안내',
-                  type: 'LMS',
+                  subject: "FLOXN 계정 생성 안내",
+                  type: "LMS",
                 },
               };
               const body = JSON.stringify(payload);
@@ -9427,7 +11468,10 @@ https://peulrogseun-aqaqaq4561.replit.app
                 method: "POST",
                 path: "/messages/v4/send",
                 headers: {
-                  Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                  Authorization: createSolapiAuthHeader(
+                    SOLAPI_API_KEY,
+                    SOLAPI_API_SECRET,
+                  ),
                   "Content-Type": "application/json",
                   "Content-Length": Buffer.byteLength(body),
                 },
@@ -9435,7 +11479,9 @@ https://peulrogseun-aqaqaq4561.replit.app
               });
 
               results.smsSent = true;
-              console.log(`[send-account-notification] SMS sent to ${normalizedPhone}`);
+              console.log(
+                `[send-account-notification] SMS sent to ${normalizedPhone}`,
+              );
             } catch (smsError) {
               console.error("[send-account-notification] SMS error:", smsError);
               results.errors.push("SMS 전송 실패");
@@ -9456,13 +11502,24 @@ https://peulrogseun-aqaqaq4561.replit.app
         }
         res.json({ success: true, message, ...results });
       } else if (results.errors.length > 0) {
-        res.status(500).json({ success: false, error: results.errors.join(", "), ...results });
+        res.status(500).json({
+          success: false,
+          error: results.errors.join(", "),
+          ...results,
+        });
       } else {
-        res.json({ success: true, message: "발송 대상이 없습니다", ...results });
+        res.json({
+          success: true,
+          message: "발송 대상이 없습니다",
+          ...results,
+        });
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다", details: error.errors });
+        return res.status(400).json({
+          error: "요청 데이터가 올바르지 않습니다",
+          details: error.errors,
+        });
       }
       console.error("[send-account-notification] Error:", error);
       res.status(500).json({ error: "알림 발송에 실패했습니다" });
@@ -9476,7 +11533,7 @@ https://peulrogseun-aqaqaq4561.replit.app
     caseId: z.string(),
     stage: z.enum([
       "접수완료",
-      "현장정보입력", 
+      "현장정보입력",
       "반려",
       "승인반려",
       "현장정보제출",
@@ -9490,7 +11547,7 @@ https://peulrogseun-aqaqaq4561.replit.app
       "입금완료",
       "부분입금",
       "정산완료",
-      "선견적요청"
+      "선견적요청",
     ]),
     recipients: z.object({
       partner: z.boolean().default(false),
@@ -9515,18 +11572,30 @@ https://peulrogseun-aqaqaq4561.replit.app
 
     const currentUser = await storage.getUser(req.session.userId);
     if (!currentUser) {
-      return res.status(401).json({ error: "사용자를 찾을 수 없습니다" });
+      return res.status(401).json({ error: "사용자를 찾을 수 없습니실" });
     }
 
     // 관리자 또는 협력사만 SMS 발송 가능
     if (!["관리자", "협력사"].includes(currentUser.role)) {
-      console.log(`[send-stage-notification] Unauthorized role: ${currentUser.role} (user: ${currentUser.username})`);
+      console.log(
+        `[send-stage-notification] Unauthorized role: ${currentUser.role} (user: ${currentUser.username})`,
+      );
       return res.status(403).json({ error: "SMS 발송 권한이 없습니다" });
     }
 
     try {
       const validatedData = stageNotificationSchema.parse(req.body);
-      const { caseId, stage, recipients, additionalMessage, cancelReason, recoveryAmount, feeRate, paymentAmount, previousStatus } = validatedData;
+      const {
+        caseId,
+        stage,
+        recipients,
+        additionalMessage,
+        cancelReason,
+        recoveryAmount,
+        feeRate,
+        paymentAmount,
+        previousStatus,
+      } = validatedData;
 
       // 솔라피 API 키 확인
       const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
@@ -9535,7 +11604,9 @@ https://peulrogseun-aqaqaq4561.replit.app
 
       if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
         console.error("[send-stage-notification] Missing Solapi configuration");
-        return res.status(500).json({ error: "SMS 서비스가 설정되지 않았습니다" });
+        return res
+          .status(500)
+          .json({ error: "SMS 서비스가 설정되지 않았습니다" });
       }
 
       // 케이스 정보 조회
@@ -9557,7 +11628,10 @@ https://peulrogseun-aqaqaq4561.replit.app
 
       // 협력업체 연락처
       if (recipients.partner && caseData.assignedPartnerContact) {
-        const normalizedPhone = caseData.assignedPartnerContact.replace(/[^0-9]/g, "");
+        const normalizedPhone = caseData.assignedPartnerContact.replace(
+          /[^0-9]/g,
+          "",
+        );
         if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
           phoneNumbers.push({
             type: "협력업체",
@@ -9583,7 +11657,10 @@ https://peulrogseun-aqaqaq4561.replit.app
       if (recipients.assessorInvestigator) {
         // 심사자 연락처
         if (caseData.assessorContact) {
-          const normalizedPhone = caseData.assessorContact.replace(/[^0-9]/g, "");
+          const normalizedPhone = caseData.assessorContact.replace(
+            /[^0-9]/g,
+            "",
+          );
           if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
             phoneNumbers.push({
               type: "심사자",
@@ -9594,7 +11671,10 @@ https://peulrogseun-aqaqaq4561.replit.app
         }
         // 조사자 연락처
         if (caseData.investigatorContact) {
-          const normalizedPhone = caseData.investigatorContact.replace(/[^0-9]/g, "");
+          const normalizedPhone = caseData.investigatorContact.replace(
+            /[^0-9]/g,
+            "",
+          );
           if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
             phoneNumbers.push({
               type: "조사자",
@@ -9607,13 +11687,15 @@ https://peulrogseun-aqaqaq4561.replit.app
 
       if (phoneNumbers.length === 0) {
         // 연락처가 없는 경우 에러 대신 성공으로 처리 (SMS는 발송되지 않음)
-        console.log(`[send-stage-notification] No phone numbers available for stage: ${stage}, caseId: ${caseId}`);
-        return res.json({ 
-          success: true, 
+        console.log(
+          `[send-stage-notification] No phone numbers available for stage: ${stage}, caseId: ${caseId}`,
+        );
+        return res.json({
+          success: true,
           message: "발송할 연락처가 없어 SMS가 발송되지 않았습니다.",
           sentCount: 0,
           failedCount: 0,
-          results: []
+          results: [],
         });
       }
 
@@ -9625,40 +11707,58 @@ https://peulrogseun-aqaqaq4561.replit.app
         subject = "접수완료 알림";
         // 값이 없는 항목은 표시하지 않음
         const msgLines: string[] = ["<접수완료 알림>", ""];
-        
-        if (caseData.caseNumber) msgLines.push(`접수번호 : ${caseData.caseNumber}`);
-        if (caseData.insuranceCompany) msgLines.push(`보험사 : ${caseData.insuranceCompany}`);
+
+        if (caseData.caseNumber)
+          msgLines.push(`접수번호 : ${caseData.caseNumber}`);
+        if (caseData.insuranceCompany)
+          msgLines.push(`보험사 : ${caseData.insuranceCompany}`);
         if (managerData?.name) msgLines.push(`담당자 : ${managerData.name}`);
-        if (caseData.insurancePolicyNo) msgLines.push(`증권번호 : ${caseData.insurancePolicyNo}`);
-        if (caseData.insuranceAccidentNo) msgLines.push(`사고번호 : ${caseData.insuranceAccidentNo}`);
-        
+        if (caseData.insurancePolicyNo)
+          msgLines.push(`증권번호 : ${caseData.insurancePolicyNo}`);
+        if (caseData.insuranceAccidentNo)
+          msgLines.push(`사고번호 : ${caseData.insuranceAccidentNo}`);
+
         // 피보험자: 이름 또는 연락처가 있을 때만 표시
         if (caseData.insuredName || caseData.insuredContact) {
           const insuredParts = [];
           if (caseData.insuredName) insuredParts.push(caseData.insuredName);
-          if (caseData.insuredContact) insuredParts.push(`연락처 ${caseData.insuredContact}`);
+          if (caseData.insuredContact)
+            insuredParts.push(`연락처 ${caseData.insuredContact}`);
           msgLines.push(`피보험자 : ${insuredParts.join("  ")}`);
         }
-        
+
         // 피해자: 이름 또는 연락처가 있을 때만 표시
         if (caseData.victimName || caseData.victimContact) {
           const victimParts = [];
           if (caseData.victimName) victimParts.push(caseData.victimName);
-          if (caseData.victimContact) victimParts.push(`연락처 ${caseData.victimContact}`);
+          if (caseData.victimContact)
+            victimParts.push(`연락처 ${caseData.victimContact}`);
           msgLines.push(`피해자 : ${victimParts.join("  ")}`);
         }
-        
+
         // 심사자: 이름과 연락처 모두 있을 때만 표시
         if (caseData.investigatorTeamName && caseData.investigatorContact) {
-          msgLines.push(`심사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`);
+          msgLines.push(
+            `심사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`,
+          );
         }
-        
-        const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+
+        const fullAddress = [
+          caseData.insuredAddress,
+          caseData.insuredAddressDetail,
+        ]
+          .filter(Boolean)
+          .join(" ");
         if (fullAddress) msgLines.push(`사고장소 : ${fullAddress}`);
-        
-        const requestScope = [caseData.damagePreventionCost === "true" ? "손방" : null, caseData.victimIncidentAssistance === "true" ? "대물" : null].filter(Boolean).join(", ");
+
+        const requestScope = [
+          caseData.damagePreventionCost === "true" ? "손방" : null,
+          caseData.victimIncidentAssistance === "true" ? "대물" : null,
+        ]
+          .filter(Boolean)
+          .join(", ");
         if (requestScope) msgLines.push(`의뢰범위 : ${requestScope}`);
-        
+
         messageText = msgLines.join("\n");
       } else if (stage === "접수취소") {
         subject = "접수취소 알림";
@@ -9687,13 +11787,16 @@ https://peulrogseun-aqaqaq4561.replit.app
 수수료 : 최종금액의 ${feeRate || "-"}%
 지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
       } else if (stage === "반려" || stage === "승인반려") {
-        // 심사반려 또는 승인반려 모두 동일한 형식으로 처리
+        // 심사반려 또는 승인반려 모두 동 ��한 형식으로 처리
         const rejectionType = stage === "승인반려" ? "승인반려" : "심사반려";
         subject = `${rejectionType} 알림`;
         const addressMain = caseData.victimAddress || caseData.insuredAddress;
-        const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail;
+        const addressDetail =
+          caseData.victimAddressDetail || caseData.insuredAddressDetail;
         // 반려 직전 상태 표시 (예: "검토중에서 반려", "현장정보제출에서 반려")
-        const rejectionStatus = previousStatus ? `${previousStatus}에서 반려` : "반려";
+        const rejectionStatus = previousStatus
+          ? `${previousStatus}에서 반려`
+          : "반려";
         messageText = `<${rejectionType} 알림>
 
 접수번호 : ${caseData.caseNumber || "-"}
@@ -9705,13 +11808,13 @@ https://peulrogseun-aqaqaq4561.replit.app
 진행상태 : ${rejectionStatus}`;
       } else {
         // 현장정보입력~청구 등 단계별 항목 알림
-        const stageDisplayName = stage === "직접복구" || stage === "미복구" 
-          ? `${stage}` 
-          : stage;
+        const stageDisplayName =
+          stage === "직접복구" || stage === "미복구" ? `${stage}` : stage;
         subject = `${stageDisplayName} 알림`;
         // 피해자 주소가 있으면 피해자 주소 사용, 없으면 피보험자 주소 사용
         const addressMain = caseData.victimAddress || caseData.insuredAddress;
-        const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail;
+        const addressDetail =
+          caseData.victimAddressDetail || caseData.insuredAddressDetail;
         messageText = `<${stageDisplayName} 알림>
 
 접수번호 : ${caseData.caseNumber || "-"}
@@ -9728,11 +11831,22 @@ https://peulrogseun-aqaqaq4561.replit.app
         messageText += `\n\n추가사항 : ${additionalMessage}`;
       }
 
-      console.log(`[send-stage-notification] Stage: ${stage}, Recipients request:`, JSON.stringify(recipients));
-      console.log(`[send-stage-notification] Phone numbers collected: ${phoneNumbers.length}`, phoneNumbers.map(p => `${p.type}:${p.phone}`).join(", "));
+      console.log(
+        `[send-stage-notification] Stage: ${stage}, Recipients request:`,
+        JSON.stringify(recipients),
+      );
+      console.log(
+        `[send-stage-notification] Phone numbers collected: ${phoneNumbers.length}`,
+        phoneNumbers.map((p) => `${p.type}:${p.phone}`).join(", "),
+      );
 
       // 각 수신자에게 SMS 발송
-      const results: { type: string; name: string; success: boolean; error?: string }[] = [];
+      const results: {
+        type: string;
+        name: string;
+        success: boolean;
+        error?: string;
+      }[] = [];
 
       for (const recipient of phoneNumbers) {
         try {
@@ -9742,7 +11856,7 @@ https://peulrogseun-aqaqaq4561.replit.app
               from: normalizedSender,
               text: messageText,
               subject: subject,
-              type: 'LMS',
+              type: "LMS",
             },
           };
           const body = JSON.stringify(payload);
@@ -9751,28 +11865,41 @@ https://peulrogseun-aqaqaq4561.replit.app
             method: "POST",
             path: "/messages/v4/send",
             headers: {
-              Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+              Authorization: createSolapiAuthHeader(
+                SOLAPI_API_KEY,
+                SOLAPI_API_SECRET,
+              ),
               "Content-Type": "application/json",
               "Content-Length": Buffer.byteLength(body),
             },
             body,
           });
 
-          console.log(`[send-stage-notification] LMS sent to ${recipient.type}: ${recipient.phone}`);
-          results.push({ type: recipient.type, name: recipient.name, success: true });
+          console.log(
+            `[send-stage-notification] LMS sent to ${recipient.type}: ${recipient.phone}`,
+          );
+          results.push({
+            type: recipient.type,
+            name: recipient.name,
+            success: true,
+          });
         } catch (sendError: any) {
-          console.error(`[send-stage-notification] Failed to send to ${recipient.type}:`, sendError);
+          console.error(
+            `[send-stage-notification] Failed to send to ${recipient.type}:`,
+            sendError,
+          );
           results.push({
             type: recipient.type,
             name: recipient.name,
             success: false,
-            error: sendError?.body?.message || sendError?.message || "발송 실패",
+            error:
+              sendError?.body?.message || sendError?.message || "발송 실패",
           });
         }
       }
 
-      const successCount = results.filter(r => r.success).length;
-      const failCount = results.filter(r => !r.success).length;
+      const successCount = results.filter((r) => r.success).length;
+      const failCount = results.filter((r) => !r.success).length;
 
       res.json({
         success: successCount > 0,
@@ -9781,8 +11908,14 @@ https://peulrogseun-aqaqaq4561.replit.app
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        console.error("[send-stage-notification] Validation error:", error.errors);
-        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다", details: error.errors });
+        console.error(
+          "[send-stage-notification] Validation error:",
+          error.errors,
+        );
+        return res.status(400).json({
+          error: "요청 데이터가 올바르지 않습니다",
+          details: error.errors,
+        });
       }
       console.error("[send-stage-notification] Error:", error);
       res.status(500).json({
@@ -9812,7 +11945,9 @@ https://peulrogseun-aqaqaq4561.replit.app
 
       // 현재 케이스가 직접복구 상태인지 확인
       if (currentCase.status !== "직접복구") {
-        return res.status(400).json({ error: "직접복구 상태인 케이스만 청구자료를 제출할 수 있습니다" });
+        return res.status(400).json({
+          error: "직접복구 상태인 케이스만 청구자료를 제출할 수 있습니다",
+        });
       }
 
       const accidentNo = currentCase.insuranceAccidentNo;
@@ -9826,25 +11961,35 @@ https://peulrogseun-aqaqaq4561.replit.app
       });
 
       if (!updatedCase) {
-        return res.status(500).json({ error: "케이스 상태 변경에 실패했습니다" });
+        return res
+          .status(500)
+          .json({ error: "케이스 상태 변경에 실패했습니다" });
       }
 
-      console.log(`[submit-claim-documents] Updated case ${caseId} to 청구자료제출`);
+      console.log(
+        `[submit-claim-documents] Updated case ${caseId} to 청구자료제출`,
+      );
 
       // 2. 동일 사고번호의 모든 직접복구/청구자료제출 케이스 조회
       const allCases = await storage.getAllCases();
       const relatedCases = allCases.filter(
-        (c) => c.insuranceAccidentNo === accidentNo && 
-               (c.status === "직접복구" || c.status === "(직접복구인 경우) 청구자료제출")
+        (c) =>
+          c.insuranceAccidentNo === accidentNo &&
+          (c.status === "직접복구" ||
+            c.status === "(직접복구인 경우) 청구자료제출"),
       );
 
       // 3. 모든 관련 케이스가 청구자료제출 상태인지 확인
-      const allSubmitted = relatedCases.every(c => c.status === "(직접복구인 경우) 청구자료제출");
+      const allSubmitted = relatedCases.every(
+        (c) => c.status === "(직접복구인 경우) 청구자료제출",
+      );
       let smsSent = false;
 
       if (allSubmitted && relatedCases.length > 0) {
-        console.log(`[submit-claim-documents] All ${relatedCases.length} cases submitted, sending SMS`);
-        
+        console.log(
+          `[submit-claim-documents] All ${relatedCases.length} cases submitted, sending SMS`,
+        );
+
         // 플록슨 담당자에게 SMS 발송
         const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
         const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
@@ -9853,9 +11998,15 @@ https://peulrogseun-aqaqaq4561.replit.app
         if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER_NUMBER) {
           // 대표 케이스 정보 (첫 번째 케이스 사용)
           const representativeCase = relatedCases[0];
-          const addressMain = representativeCase.victimAddress || representativeCase.insuredAddress;
-          const addressDetail = representativeCase.victimAddressDetail || representativeCase.insuredAddressDetail;
-          const fullAddress = [addressMain, addressDetail].filter(Boolean).join(" ");
+          const addressMain =
+            representativeCase.victimAddress ||
+            representativeCase.insuredAddress;
+          const addressDetail =
+            representativeCase.victimAddressDetail ||
+            representativeCase.insuredAddressDetail;
+          const fullAddress = [addressMain, addressDetail]
+            .filter(Boolean)
+            .join(" ");
 
           const messageText = `<청구자료제출 알림>
 
@@ -9873,10 +12024,13 @@ https://peulrogseun-aqaqaq4561.replit.app
             const manager = await storage.getUser(representativeCase.managerId);
             floxnManagerPhone = manager?.phone || null;
           }
-          
+
           if (floxnManagerPhone) {
             try {
-              const authHeader = createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET);
+              const authHeader = createSolapiAuthHeader(
+                SOLAPI_API_KEY,
+                SOLAPI_API_SECRET,
+              );
               const smsBody = JSON.stringify({
                 message: {
                   to: floxnManagerPhone.replace(/-/g, ""),
@@ -9896,25 +12050,36 @@ https://peulrogseun-aqaqaq4561.replit.app
                 },
                 body: smsBody,
               });
-              console.log(`[submit-claim-documents] SMS sent to Floxn manager: ${floxnManagerPhone}`);
+              console.log(
+                `[submit-claim-documents] SMS sent to Floxn manager: ${floxnManagerPhone}`,
+              );
               smsSent = true;
             } catch (smsError) {
-              console.error("[submit-claim-documents] SMS send error:", smsError);
+              console.error(
+                "[submit-claim-documents] SMS send error:",
+                smsError,
+              );
             }
           } else {
-            console.log("[submit-claim-documents] No Floxn manager phone number found");
+            console.log(
+              "[submit-claim-documents] No Floxn manager phone number found",
+            );
           }
         }
       } else {
-        const remaining = relatedCases.filter(c => c.status === "직접복구").length;
-        console.log(`[submit-claim-documents] ${remaining} cases remaining to submit`);
+        const remaining = relatedCases.filter(
+          (c) => c.status === "직접복구",
+        ).length;
+        console.log(
+          `[submit-claim-documents] ${remaining} cases remaining to submit`,
+        );
       }
 
       res.json({
         success: true,
-        message: allSubmitted 
-          ? `청구자료가 제출되었습니다. (${relatedCases.length}건 모두 완료${smsSent ? ", SMS 발송 완료" : ""})` 
-          : `청구자료가 제출되었습니다. (${relatedCases.filter(c => c.status === "직접복구").length}건 남음)`,
+        message: allSubmitted
+          ? `청구자료가 제출되었습니다. (${relatedCases.length}건 모두 완료${smsSent ? ", SMS 발송 완료" : ""})`
+          : `청구자료가 제출되었습니다. (${relatedCases.filter((c) => c.status === "직접복구").length}건 남음)`,
         updatedCount: 1,
         allSubmitted,
         smsSent,
@@ -9942,7 +12107,7 @@ https://peulrogseun-aqaqaq4561.replit.app
       const validatedData = insertSettlementSchema.parse(req.body);
       const settlement = await storage.createSettlement(
         validatedData,
-        req.session.userId
+        req.session.userId,
       );
 
       res.status(201).json(settlement);
@@ -9974,7 +12139,9 @@ https://peulrogseun-aqaqaq4561.replit.app
       res.json(settlements);
     } catch (error) {
       console.error("Get settlements by case error:", error);
-      res.status(500).json({ error: "케이스별 정산 조회 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "케이스별 정산 조회 중 오류가 발생했습니다" });
     }
   });
 
@@ -10020,7 +12187,9 @@ https://peulrogseun-aqaqaq4561.replit.app
       res.json(tiers);
     } catch (error) {
       console.error("Get labor rate tiers error:", error);
-      res.status(500).json({ error: "노임단가 적용률 조회 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "노임단가 적용률 조회 중 오류가 발생했습니다" });
     }
   });
 
@@ -10040,7 +12209,9 @@ https://peulrogseun-aqaqaq4561.replit.app
       res.json(updatedTiers);
     } catch (error) {
       console.error("Update labor rate tiers error:", error);
-      res.status(500).json({ error: "노임단가 적용률 수정 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "노임단가 적용률 수정 중 오류가 발생했습니다" });
     }
   });
 
@@ -10089,7 +12260,9 @@ https://peulrogseun-aqaqaq4561.replit.app
       res.json(invoices);
     } catch (error) {
       console.error("Get all invoices error:", error);
-      res.status(500).json({ error: "인보이스 목록 조회 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "인보이스 목록 조회 중 오류가 발생했습니다" });
     }
   });
 
@@ -10100,7 +12273,9 @@ https://peulrogseun-aqaqaq4561.replit.app
       res.json(invoices);
     } catch (error) {
       console.error("Get approved invoices error:", error);
-      res.status(500).json({ error: "승인된 인보이스 조회 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "승인된 인보이스 조회 중 오류가 발생했습니다" });
     }
   });
 
@@ -10127,7 +12302,9 @@ https://peulrogseun-aqaqaq4561.replit.app
       res.json(invoice);
     } catch (error) {
       console.error("Get invoice by case error:", error);
-      res.status(500).json({ error: "케이스별 인보이스 조회 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "케이스별 인보이스 조회 중 오류가 발생했습니다" });
     }
   });
 
@@ -10139,7 +12316,9 @@ https://peulrogseun-aqaqaq4561.replit.app
       res.json(invoice);
     } catch (error) {
       console.error("Get invoice by group prefix error:", error);
-      res.status(500).json({ error: "그룹별 인보이스 조회 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "그룹별 인보이스 조회 중 오류가 발생했습니다" });
     }
   });
 
@@ -10149,14 +12328,16 @@ https://peulrogseun-aqaqaq4561.replit.app
     try {
       const { prefix } = req.params;
       const allCases = await storage.getAllCases();
-      
+
       // Filter cases by prefix
-      const groupCases = allCases.filter((c: { caseNumber?: string | null }) => {
-        if (!c.caseNumber) return false;
-        const casePrefix = c.caseNumber.split("-")[0];
-        return casePrefix === prefix;
-      });
-      
+      const groupCases = allCases.filter(
+        (c: { caseNumber?: string | null }) => {
+          if (!c.caseNumber) return false;
+          const casePrefix = c.caseNumber.split("-")[0];
+          return casePrefix === prefix;
+        },
+      );
+
       // Approved statuses (1차승인 or later in the workflow)
       const approvedStatuses = [
         "1차승인",
@@ -10169,25 +12350,29 @@ https://peulrogseun-aqaqaq4561.replit.app
         "청구",
         "입금완료",
         "부분입금",
-        "정산완료"
+        "정산완료",
       ];
-      
+
       let damagePreventionAmount = 0;
       let propertyRepairAmount = 0;
-      
+
       for (const c of groupCases) {
-        if (!c.caseNumber || !approvedStatuses.includes(c.status || "")) continue;
-        
+        if (!c.caseNumber || !approvedStatuses.includes(c.status || ""))
+          continue;
+
         // 선견적요청 건은 인보이스 금액에서 제외 (현장출동비용으로 별도 청구)
         if (c.recoveryType === "선견적요청") {
           console.log(`[invoice-amounts] 선견적요청 건 제외: ${c.caseNumber}`);
           continue;
         }
-        
+
         const suffix = c.caseNumber.split("-")[1];
         // 인보이스에는 invoiceAmount > approvedAmount > estimateAmount 순으로 사용
-        const amount = parseInt(c.invoiceAmount || c.approvedAmount || c.estimateAmount || "0") || 0;
-        
+        const amount =
+          parseInt(
+            c.invoiceAmount || c.approvedAmount || c.estimateAmount || "0",
+          ) || 0;
+
         if (suffix === "0") {
           // Damage prevention case (-0)
           damagePreventionAmount += amount;
@@ -10196,7 +12381,7 @@ https://peulrogseun-aqaqaq4561.replit.app
           propertyRepairAmount += amount;
         }
       }
-      
+
       res.json({
         damagePreventionAmount,
         propertyRepairAmount,
@@ -10204,7 +12389,9 @@ https://peulrogseun-aqaqaq4561.replit.app
       });
     } catch (error) {
       console.error("Get invoice amounts error:", error);
-      res.status(500).json({ error: "인보이스 금액 조회 중 오류가 발생했습니다" });
+      res
+        .status(500)
+        .json({ error: "인보이스 금액 조회 중 오류가 발생했습니다" });
     }
   });
 
@@ -10219,36 +12406,50 @@ https://peulrogseun-aqaqaq4561.replit.app
       estimate: z.boolean().default(false),
       etc: z.boolean().default(false),
     }),
-    evidence: z.object({
-      tab: z.string().default("전체"),
-      selectedFileIds: z.array(z.string()).default([]),
-    }).default({ tab: "전체", selectedFileIds: [] }),
+    evidence: z
+      .object({
+        tab: z.string().default("전체"),
+        selectedFileIds: z.array(z.string()).default([]),
+      })
+      .default({ tab: "전체", selectedFileIds: [] }),
   });
 
   app.post("/api/pdf/download", async (req, res) => {
     try {
       const payload = pdfDownloadSchema.parse(req.body);
-      
+
       // 용량 제한 PDF 생성 사용 (대용량 첨부파일 케이스 대응)
-      console.log(`[pdf-download] Starting PDF generation for case ${payload.caseId}`);
+      console.log(
+        `[pdf-download] Starting PDF generation for case ${payload.caseId}`,
+      );
       const pdfBuffer = await generatePdfWithSizeLimitPdfLib({
         ...payload,
         skipPdfAttachments: false, // PDF 첨부 파일도 포함
       });
-      console.log(`[pdf-download] PDF generated: ${Math.round(pdfBuffer.length / 1024)}KB (${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
-      
+      console.log(
+        `[pdf-download] PDF generated: ${Math.round(pdfBuffer.length / 1024)}KB (${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`,
+      );
+
       const caseData = await storage.getCaseById(payload.caseId);
-      const accidentNo = caseData?.insuranceAccidentNo || caseData?.caseNumber || payload.caseId;
-      const detailAddress = caseData?.victimAddressDetail || caseData?.victimAddress || 
-                            caseData?.insuredAddressDetail || caseData?.insuredAddress || '';
-      const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, '_');
-      const filename = safeDetailAddress 
+      const accidentNo =
+        caseData?.insuranceAccidentNo || caseData?.caseNumber || payload.caseId;
+      const detailAddress =
+        caseData?.victimAddressDetail ||
+        caseData?.victimAddress ||
+        caseData?.insuredAddressDetail ||
+        caseData?.insuredAddress ||
+        "";
+      const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, "_");
+      const filename = safeDetailAddress
         ? `현장출동보고서 _${accidentNo} (${safeDetailAddress}).pdf`
         : `현장출동보고서 _${accidentNo}.pdf`;
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${encodeURIComponent(filename)}"`,
+      );
+      res.setHeader("Content-Length", pdfBuffer.length);
       res.send(pdfBuffer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -10264,9 +12465,11 @@ https://peulrogseun-aqaqaq4561.replit.app
     try {
       // 관리자 권한 확인
       if (!req.session?.userId) {
-        return res.status(401).json({ error: "인증이 필요합니다. 로그인 후 이 URL을 방문하세요." });
+        return res
+          .status(401)
+          .json({ error: "인증이 필요합니다. 로그인 후 이 URL을 방문하세요." });
       }
-      
+
       const user = await storage.getUser(req.session.userId);
       if (!user || user.role !== "관리자") {
         return res.status(403).json({ error: "관리자 권한이 필요합니다" });
@@ -10306,18 +12509,27 @@ https://peulrogseun-aqaqaq4561.replit.app
         RETURNING id, case_number, estimate_amount
       `);
 
-      console.log("[Backfill] Updated initial_estimate_amount:", result1.rows.length);
-      console.log("[Backfill] Updated initial_prevention_estimate_amount:", result2.rows.length);
-      console.log("[Backfill] Updated initial_property_estimate_amount:", result3.rows.length);
-      
-      res.json({ 
-        success: true, 
+      console.log(
+        "[Backfill] Updated initial_estimate_amount:",
+        result1.rows.length,
+      );
+      console.log(
+        "[Backfill] Updated initial_prevention_estimate_amount:",
+        result2.rows.length,
+      );
+      console.log(
+        "[Backfill] Updated initial_property_estimate_amount:",
+        result3.rows.length,
+      );
+
+      res.json({
+        success: true,
         message: `백필 완료: initial_estimate_amount=${result1.rows.length}건, 손해방지비용=${result2.rows.length}건, 대물비용=${result3.rows.length}건`,
         details: {
           initialEstimate: result1.rows.length,
           prevention: result2.rows,
-          property: result3.rows
-        }
+          property: result3.rows,
+        },
       });
     } catch (error) {
       console.error("Backfill error:", error);
