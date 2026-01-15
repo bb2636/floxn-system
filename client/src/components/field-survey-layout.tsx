@@ -42,16 +42,11 @@ export function FieldSurveyLayout({ children }: FieldSurveyLayoutProps) {
 
   return (
     <div 
-      className="bg-gradient-to-b from-[#E7EDFE] to-white relative overflow-x-hidden"
+      className="bg-white relative overflow-x-hidden"
       style={{
         minHeight: 'calc(var(--vh, 1vh) * 100)', // 모바일 대응, fallback은 CSS에서
       }}
     >
-      {/* Background blur effects */}
-      <div className="absolute w-[1095px] h-[776.83px] left-[97.61px] bottom-[1169.19px] bg-[rgba(254,240,230,0.4)] blur-[212px] rotate-[-35.25deg] pointer-events-none" />
-      <div className="absolute w-[1334.83px] h-[1322.98px] left-[811.58px] bottom-0 bg-[rgba(234,230,254,0.5)] blur-[212px] pointer-events-none" />
-      <div className="absolute w-[348px] h-[1322.98px] left-0 bottom-[188.99px] bg-[rgba(234,230,254,0.5)] blur-[212px] pointer-events-none" />
-
       <GlobalHeader />
 
       {/* Main Content - 모바일에서 스크롤 안정성 개선 */}
@@ -62,7 +57,7 @@ export function FieldSurveyLayout({ children }: FieldSurveyLayoutProps) {
         }}
       >
         <AppSidebarFieldSurvey />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto ml-0">
           {children}
         </main>
       </div>

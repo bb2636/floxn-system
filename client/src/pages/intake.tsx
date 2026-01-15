@@ -2004,7 +2004,11 @@ export default function Intake({
                     ref={insuredAddressWrapperRef}
                   >
                     <input
-                      className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""} bg-white border border-slate-300`}
+                      className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""} 
+                      bg-white
+                      !border
+                      !border-slate-300
+                      `}
                       value={formData.insuredAddress}
                       onClick={() => !readOnly && openInsuredAddressDropdown()}
                       readOnly
