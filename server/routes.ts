@@ -5193,10 +5193,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return simplified case summary for picker
       const caseSummaries = cases.map((c) => {
-        // 기본주소 + 상세주소 결합
-        const baseAddr = c.insuredAddress || c.victimAddress || "";
-        const detailAddr = c.insuredAddressDetail || c.victimAddressDetail || "";
-        const fullAddress = [baseAddr, detailAddr].filter(Boolean).join(" ") || "-";
+        // 케이스 접미사에 따라 주소 결정: -0은 피보험자 주소, -1 이상은 피해자 주소
+        const suffixMatch = (c.caseNumber || "").match(/-(\d+)$/);
+        const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
+        
+        let fullAddress: string;
+        if (suffix === 0) {
+          // 손해방지(-0): 피보험자 주소 + 상세주소
+          fullAddress = [c.insuredAddress, c.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+        } else {
+          // 피해세대(-1, -2, ...): 피해자 주소 + 상세주소
+          fullAddress = [c.victimAddress, c.victimAddressDetail].filter(Boolean).join(" ") || "-";
+        }
         
         return {
           id: c.id,

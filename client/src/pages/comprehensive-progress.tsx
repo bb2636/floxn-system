@@ -1596,25 +1596,18 @@ export default function ComprehensiveProgress() {
                       
                       let addressText: string;
                       if (isInsuredCase) {
+                        // -0 케이스 (손해방지): 피보험자 주소 + 피보험자 상세주소
                         addressText = [
                           caseItem.insuredAddress,
                           caseItem.insuredAddressDetail,
                         ]
                           .filter(Boolean)
                           .join(" ") || "-";
-                      } else if (isAdditionalVictim) {
-                        // -2/-3 케이스는 피해자 주소 + 피해자 상세주소
+                      } else {
+                        // -1, -2, -3 등 피해세대 케이스: 피해자 주소 + 피해자 상세주소
                         addressText = [
                           caseItem.victimAddress,
                           caseItem.victimAddressDetail,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || "-";
-                      } else {
-                        // -1 케이스는 피보험자 주소 + 피해자 상세주소 (victimAddress에 저장됨)
-                        addressText = [
-                          caseItem.insuredAddress,
-                          caseItem.victimAddressDetail || caseItem.victimAddress,
                         ]
                           .filter(Boolean)
                           .join(" ") || "-";
