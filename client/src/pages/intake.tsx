@@ -116,18 +116,21 @@ export default function Intake({
   const [tempSelectedInvestigator, setTempSelectedInvestigator] =
     useState<any>(null);
 
-  const [addressDropdownOpen, setAddressDropdownOpen] = useState<'main' | 'detail' | null>(null);
+  const [addressDropdownOpen, setAddressDropdownOpen] = useState<
+    "main" | "detail" | null
+  >(null);
   const addressContainerRef = useRef<HTMLDivElement>(null);
   const detailAddressContainerRef = useRef<HTMLDivElement>(null);
-  
-  const [insuredAddressDropdownOpen, setInsuredAddressDropdownOpen] = useState(false);
+
+  const [insuredAddressDropdownOpen, setInsuredAddressDropdownOpen] =
+    useState(false);
   const insuredAddressContainerRef = useRef<HTMLDivElement>(null);
   const insuredAddressWrapperRef = useRef<HTMLDivElement>(null);
 
   // ESC 키로 모달 및 드롭다운 닫기
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         if (addressDropdownOpen) {
           setAddressDropdownOpen(null);
         }
@@ -152,22 +155,32 @@ export default function Intake({
       }
     };
 
-    document.addEventListener('keydown', handleEscKey);
-    return () => document.removeEventListener('keydown', handleEscKey);
-  }, [addressDropdownOpen, insuredAddressDropdownOpen, isPartnerSearchOpen, isClientSearchOpen, isAssessorSearchOpen, isInvestigatorSearchOpen, datePickerOpen]);
+    document.addEventListener("keydown", handleEscKey);
+    return () => document.removeEventListener("keydown", handleEscKey);
+  }, [
+    addressDropdownOpen,
+    insuredAddressDropdownOpen,
+    isPartnerSearchOpen,
+    isClientSearchOpen,
+    isAssessorSearchOpen,
+    isInvestigatorSearchOpen,
+    datePickerOpen,
+  ]);
 
   // 외부 클릭 시 피보험자 주소 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (insuredAddressDropdownOpen && 
-          insuredAddressWrapperRef.current && 
-          !insuredAddressWrapperRef.current.contains(e.target as Node)) {
+      if (
+        insuredAddressDropdownOpen &&
+        insuredAddressWrapperRef.current &&
+        !insuredAddressWrapperRef.current.contains(e.target as Node)
+      ) {
         setInsuredAddressDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [insuredAddressDropdownOpen]);
 
   const { data: partnerStats } = useQuery<
@@ -392,7 +405,9 @@ export default function Intake({
     if (!formData.assessorId || !assessors) return [];
     if (formData.assessorDepartment) {
       return assessors.filter(
-        (emp) => emp.company === formData.assessorId && emp.department === formData.assessorDepartment
+        (emp) =>
+          emp.company === formData.assessorId &&
+          emp.department === formData.assessorDepartment,
       );
     }
     return assessors.filter((emp) => emp.company === formData.assessorId);
@@ -411,13 +426,19 @@ export default function Intake({
     if (!formData.investigatorTeam || !investigators) return [];
     if (formData.investigatorDepartment) {
       return investigators.filter(
-        (emp) => emp.company === formData.investigatorTeam && emp.department === formData.investigatorDepartment
+        (emp) =>
+          emp.company === formData.investigatorTeam &&
+          emp.department === formData.investigatorDepartment,
       );
     }
     return investigators.filter(
       (emp) => emp.company === formData.investigatorTeam,
     );
-  }, [formData.investigatorTeam, formData.investigatorDepartment, investigators]);
+  }, [
+    formData.investigatorTeam,
+    formData.investigatorDepartment,
+    investigators,
+  ]);
 
   const filteredInvestigatorDepartments = useMemo(() => {
     if (!formData.investigatorTeam || !investigators) return [];
@@ -891,7 +912,7 @@ export default function Intake({
       toast({
         description:
           count > 1
-            ? `접수가 완료되었습니다. (${count}건 생성: ${caseNumbers})`
+            ? `접수t�� 완료되었습니다. (${count}건 생성: ${caseNumbers})`
             : `접수가 완료되었습니다. (${caseNumbers})`,
         duration: 3000,
       });
@@ -1051,7 +1072,9 @@ export default function Intake({
       }
 
       if (field === "clientName" && value && typeof value === "string") {
-        const selectedEmployee = filteredClientEmployees.find((emp) => emp.name === value);
+        const selectedEmployee = filteredClientEmployees.find(
+          (emp) => emp.name === value,
+        );
         if (selectedEmployee) {
           updated.clientContact = selectedEmployee.phone || "";
         }
@@ -1188,35 +1211,25 @@ export default function Intake({
   const isFormValid = useMemo(() => {
     const missingFields: string[] = [];
     if (!formData.accidentDate) missingFields.push("accidentDate (접수일자)");
-    if (!formData.insuranceCompany) missingFields.push("insuranceCompany (보험사명)");
-    if (!formData.clientResidence) missingFields.push("clientResidence (의뢰사)");
+    if (!formData.insuranceCompany)
+      missingFields.push("insuranceCompany (보험사명)");
+    if (!formData.clientResidence)
+      missingFields.push("clientResidence (의뢰사)");
     if (!formData.clientName) missingFields.push("clientName (의뢰자)");
-    if (!formData.insuredName) missingFields.push("insuredName (피보험자 성명)");
-    if (!formData.insuredContact) missingFields.push("insuredContact (피보험자 연락처)");
-    if (!formData.insuredAddress) missingFields.push("insuredAddress (사고장소)");
+    if (!formData.insuredName)
+      missingFields.push("insuredName (피보험자 성명)");
+    if (!formData.insuredContact)
+      missingFields.push("insuredContact (피보험자 연락처)");
+    if (!formData.insuredAddress)
+      missingFields.push("insuredAddress (사고장소)");
     if (!formData.accidentType) missingFields.push("accidentType (사고유형)");
-    if (!formData.restorationMethod) missingFields.push("restorationMethod (복구/대체)");
-    if (!formData.assignedPartner) missingFields.push("assignedPartner (협력사)");
-    if (!formData.assignedPartnerManager) missingFields.push("assignedPartnerManager (협력사 담당자)");
-    
-    if (missingFields.length > 0) {
-      console.log("❌ 누락된 필수 필드:", missingFields);
-      console.log("현재 formData 값:", {
-        accidentDate: formData.accidentDate,
-        insuranceCompany: formData.insuranceCompany,
-        clientResidence: formData.clientResidence,
-        clientName: formData.clientName,
-        insuredName: formData.insuredName,
-        insuredContact: formData.insuredContact,
-        insuredAddress: formData.insuredAddress,
-        accidentType: formData.accidentType,
-        restorationMethod: formData.restorationMethod,
-        assignedPartner: formData.assignedPartner,
-        assignedPartnerManager: formData.assignedPartnerManager,
-      });
-      return false;
-    }
-    console.log("✅ 모든 필수 필드 입력 완료");
+    if (!formData.restorationMethod)
+      missingFields.push("restorationMethod (복구/대체)");
+    if (!formData.assignedPartner)
+      missingFields.push("assignedPartner (협력사)");
+    if (!formData.assignedPartnerManager)
+      missingFields.push("assignedPartnerManager (협력사 담당자)");
+
     return true;
   }, [formData]);
 
@@ -1298,14 +1311,18 @@ export default function Intake({
   const [addressSearchQuery, setAddressSearchQuery] = useState("");
   const [detailAddressSearchQuery, setDetailAddressSearchQuery] = useState("");
 
-  const handleAddressSearch = (type: 'main' | 'detail') => {
+  const handleAddressSearch = (type: "main" | "detail") => {
     if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
-      const query = type === 'main' ? addressSearchQuery : detailAddressSearchQuery;
+      const query =
+        type === "main" ? addressSearchQuery : detailAddressSearchQuery;
       setAddressDropdownOpen(type);
       setTimeout(() => {
-        const container = type === 'main' ? addressContainerRef.current : detailAddressContainerRef.current;
+        const container =
+          type === "main"
+            ? addressContainerRef.current
+            : detailAddressContainerRef.current;
         if (container) {
-          container.innerHTML = '';
+          container.innerHTML = "";
           new (window as any).daum.Postcode({
             oncomplete: function (data: any) {
               handleInputChange("insuredAddress", data.address);
@@ -1316,8 +1333,8 @@ export default function Intake({
             onclose: function () {
               setAddressDropdownOpen(null);
             },
-            width: '100%',
-            height: '100%',
+            width: "100%",
+            height: "100%",
           }).embed(container, { q: query });
         }
       }, 100);
@@ -1337,14 +1354,14 @@ export default function Intake({
         if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
           const container = insuredAddressContainerRef.current;
           if (container) {
-            container.innerHTML = '';
+            container.innerHTML = "";
             new (window as any).daum.Postcode({
               oncomplete: function (data: any) {
                 handleInputChange("insuredAddress", data.address);
                 setInsuredAddressDropdownOpen(false);
               },
-              width: '100%',
-              height: '100%',
+              width: "100%",
+              height: "100%",
             }).embed(container);
           }
         }
@@ -1357,7 +1374,8 @@ export default function Intake({
       setInsuredAddressDropdownOpen(true);
     } else {
       toast({
-        description: "주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.",
+        description:
+          "주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.",
         variant: "destructive",
       });
     }
@@ -1668,10 +1686,7 @@ export default function Intake({
                     </SelectTrigger>
                     <SelectContent>
                       {filteredClientEmployees.map((emp) => (
-                        <SelectItem
-                          key={emp.id}
-                          value={emp.name}
-                        >
+                        <SelectItem key={emp.id} value={emp.name}>
                           {emp.name}
                         </SelectItem>
                       ))}
@@ -1980,7 +1995,10 @@ export default function Intake({
                     피보험자 주소
                     <RequiredMark />
                   </label>
-                  <div className="relative flex-1" ref={insuredAddressWrapperRef}>
+                  <div
+                    className="relative flex-1"
+                    ref={insuredAddressWrapperRef}
+                  >
                     <input
                       className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""}`}
                       value={formData.insuredAddress}
@@ -1993,7 +2011,10 @@ export default function Intake({
                     />
                     {insuredAddressDropdownOpen && (
                       <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
-                        <div ref={insuredAddressContainerRef} style={{ height: '400px', width: '100%' }} />
+                        <div
+                          ref={insuredAddressContainerRef}
+                          style={{ height: "400px", width: "100%" }}
+                        />
                       </div>
                     )}
                   </div>
@@ -2192,7 +2213,7 @@ export default function Intake({
                         <>
                           <SelectItem value="없음">없음</SelectItem>
                           <SelectItem value="직접복구">직접복구</SelectItem>
-                          <SelectItem value="선견적요청">선견적요청</SelectItem>
+                          <SelectItem value="선ol�적요청">선견적요청</SelectItem>
                         </>
                       )}
                     </SelectContent>
@@ -2344,7 +2365,9 @@ export default function Intake({
 
               <div className="col-span-12">
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-medium text-slate-500">특이사항 및 요청사항</label>
+                  <label className="text-xs font-medium text-slate-500">
+                    특이사항 및 요청사항
+                  </label>
                   <div className="relative">
                     <textarea
                       className="min-h-[100px] w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
@@ -3019,7 +3042,6 @@ export default function Intake({
           </div>,
           document.body,
         )}
-
     </div>
   );
 }
