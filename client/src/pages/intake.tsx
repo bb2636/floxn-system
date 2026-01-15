@@ -2416,6 +2416,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>담당자</label>
                   <Select
+                    key={`partner-manager-${initialCaseId || editCaseId || 'new'}-${loadedCaseNumber}-${selectedPartner?.name || ''}`}
                     value={formData.assignedPartnerManager}
                     onValueChange={(value) =>
                       handleInputChange("assignedPartnerManager", value)
@@ -2434,6 +2435,13 @@ export default function Intake({
                           {mgr.name}
                         </SelectItem>
                       ))}
+                      {/* Fallback for saved value not in current list */}
+                      {formData.assignedPartnerManager && 
+                        !partnerManagers.some(m => m.name === formData.assignedPartnerManager) && (
+                        <SelectItem value={formData.assignedPartnerManager}>
+                          {formData.assignedPartnerManager}
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
