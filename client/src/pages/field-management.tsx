@@ -71,6 +71,7 @@ export default function FieldManagement() {
   const [recoveryMethodType, setRecoveryMethodType] = useState("부분수리");
   
   const [leakTypes, setLeakTypes] = useState<Set<string>>(new Set());
+  const [leakTypeOther, setLeakTypeOther] = useState("");
 
   const isUserTypingRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
@@ -1014,7 +1015,7 @@ export default function FieldManagement() {
                   <div className="w-[120px] text-[12px] text-[#6B7280]">누수유형</div>
 
                   <div className="flex flex-wrap items-center gap-6 text-[13px] text-[#374151]">
-                    {["누수", "결로", "방수", "기타"].map((type) => (
+                    {["배관", "방수", "코킹", "기타"].map((type) => (
                       <label key={type} className="inline-flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
@@ -1029,6 +1030,18 @@ export default function FieldManagement() {
                         </span>
                       </label>
                     ))}
+                    
+                    {leakTypes.has("기타") && (
+                      <input
+                        type="text"
+                        className="h-8 w-[180px] rounded-md border border-[#E5E7EB] px-3 text-[13px] outline-none placeholder:text-[#9CA3AF]"
+                        placeholder="기타 누수유형 입력"
+                        value={leakTypeOther}
+                        onChange={(e) => { handleUserInput(); setLeakTypeOther(e.target.value); }}
+                        disabled={isReadOnly}
+                        data-testid="input-leak-type-other"
+                      />
+                    )}
                   </div>
                 </div>
 
