@@ -1836,45 +1836,17 @@ export default function Intake({
                     피보험자 주소
                     <RequiredMark />
                   </label>
-                  <div className="relative flex-1">
-                    <div className="flex gap-1">
-                      <input
-                        className={`${inputClasses} flex-1`}
-                        value={formData.insuredAddress || addressSearchQuery}
-                        onChange={(e) => {
-                          if (!formData.insuredAddress) {
-                            setAddressSearchQuery(e.target.value);
-                          }
-                        }}
-                        onFocus={() => {
-                          if (formData.insuredAddress) {
-                            handleInputChange("insuredAddress", "");
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            !readOnly && handleAddressSearch('main');
-                          }
-                        }}
-                        disabled={readOnly}
-                        placeholder="도로명 주소, 동/호 포함"
-                        type="text"
-                        data-testid="input-insured-address"
-                      />
-                      <div
-                        onClick={() => !readOnly && handleAddressSearch('main')}
-                        className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                      >
-                        <Search size={16} />
-                      </div>
-                    </div>
-                    {addressDropdownOpen === 'main' && (
-                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
-                        <div ref={addressContainerRef} style={{ height: '400px', width: '100%' }} />
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    className={inputClasses}
+                    value={formData.insuredAddress}
+                    onChange={(e) =>
+                      handleInputChange("insuredAddress", e.target.value)
+                    }
+                    disabled={readOnly}
+                    placeholder="피보험자 주소"
+                    type="text"
+                    data-testid="input-insured-address"
+                  />
                 </div>
               </div>
 
