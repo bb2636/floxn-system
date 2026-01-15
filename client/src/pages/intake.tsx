@@ -1638,7 +1638,7 @@ export default function Intake({
                     >
                       <SelectValue placeholder="의뢰사 선택" />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[160px] overflow-y-auto">
+                    <SelectContent className="max-h-[160px] overflow-y-scroll">
                       {clientCompanies.map((company) => (
                         <SelectItem key={company} value={company}>
                           {company}
