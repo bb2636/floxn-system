@@ -1284,8 +1284,8 @@ export default function FieldReport() {
           return parseInt(suffixA) - parseInt(suffixB);
         });
         
-        // 2개 이상의 케이스가 있을 때만 버튼 표시
-        if (!isUserLoading && isAdmin && allSuffixCases.length > 1) {
+        // 2개 이상의 케이스가 있을 때만 버튼 표시 (관리자 및 협력사 모두 가능)
+        if (!isUserLoading && (isAdmin || isPartner) && allSuffixCases.length > 1) {
           return (
             <div className="flex justify-end mb-4">
               <Popover open={isRelatedCasesPopoverOpen} onOpenChange={setIsRelatedCasesPopoverOpen}>
