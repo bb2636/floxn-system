@@ -1866,24 +1866,17 @@ export default function Intake({
                     피보험자 주소
                     <RequiredMark />
                   </label>
-                  <div className="flex gap-1 flex-1">
-                    <input
-                      className={`${inputClasses} flex-1 ${!readOnly ? "cursor-pointer" : ""}`}
-                      value={formData.insuredAddress}
-                      onClick={openAddressModal}
-                      readOnly
-                      disabled={readOnly}
-                      placeholder="클릭하여 주소 검색"
-                      type="text"
-                      data-testid="input-insured-address"
-                    />
-                    <div
-                      onClick={openAddressModal}
-                      className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                    >
-                      <Search size={16} />
-                    </div>
-                  </div>
+                  <input
+                    className={inputClasses}
+                    value={formData.insuredAddress}
+                    onChange={(e) =>
+                      handleInputChange("insuredAddress", e.target.value)
+                    }
+                    disabled={readOnly}
+                    placeholder="피보험자 주소"
+                    type="text"
+                    data-testid="input-insured-address"
+                  />
                 </div>
               </div>
 
