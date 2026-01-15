@@ -8220,6 +8220,14 @@ FLOXN`;
         `[Invoice PDF] hasPreEstimateRequest: ${hasPreEstimateRequest}`,
       );
 
+      // 모든 케이스가 선견적요청인지 확인 (모두 선견적요청이면 주소 표시 안함)
+      const allPreEstimateRequest = allRelatedCases.length > 0 && allRelatedCases.every(
+        (c) => c.recoveryType === "선견적요청",
+      );
+      console.log(
+        `[Invoice PDF] allPreEstimateRequest: ${allPreEstimateRequest}`,
+      );
+
       // 각 케이스별로 개별 항목 생성
       let calculatedTotal = 0;
 
@@ -8325,7 +8333,7 @@ FLOXN`;
         }
       }
 
-      // 현장출동비용은 메인 케이스에서만 가져옴 (클라이언트에서 전달된 값 m��용)
+      // 현장출동비용은 메인 케이스에서만 가져옴 (클라이언트에서 전달된 값 사용)
       const mainAddressLabel =
         caseData.victimAddressDetail ||
         caseData.victimAddress ||
@@ -8333,9 +8341,14 @@ FLOXN`;
         caseData.insuredAddress ||
         "-";
 
+      // 모든 케이스가 선견적요청이면 주소 없이 "◾현장출동비용"으로 표시
+      const fieldDispatchTitle = allPreEstimateRequest
+        ? "◾현장출동비용"
+        : `[${mainAddressLabel}] - 현장출동비용`;
+
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
         particulars.push({
-          title: `[${mainAddressLabel}] - 현장출동비용`,
+          title: fieldDispatchTitle,
           amount: fieldDispatchPreventionAmount,
         });
         calculatedTotal += fieldDispatchPreventionAmount;
@@ -8343,7 +8356,7 @@ FLOXN`;
 
       if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
         particulars.push({
-          title: `[${mainAddressLabel}] - 현장출동비용`,
+          title: fieldDispatchTitle,
           amount: fieldDispatchPropertyAmount,
         });
         calculatedTotal += fieldDispatchPropertyAmount;
