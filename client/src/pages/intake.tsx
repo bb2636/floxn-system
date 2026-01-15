@@ -2684,10 +2684,7 @@ export default function Intake({
                   </div>
                 </div>
               </div>
-              <div
-                className="flex flex-col items-start w-full px-5 overflow-y-auto flex-1"
-                style={{ maxHeight: "300px" }}
-              >
+              <div className="flex flex-col items-start w-full px-5 flex-1">
                 {filteredClients.length === 0 ? (
                   <div className="flex items-center justify-center w-full py-10">
                     <span className="text-sm text-slate-500">
@@ -2698,33 +2695,38 @@ export default function Intake({
                   </div>
                 ) : (
                   <div className="flex flex-col items-start w-full">
-                    <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600">
+                    <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600 sticky top-0">
                       <div className="px-3 flex-1">의뢰사명</div>
                       <div className="px-3 w-[60px]">선택</div>
                     </div>
-                    {filteredClients.map((client) => (
-                      <div
-                        key={client.name}
-                        className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedClient?.name === client.name ? "bg-sky-50" : "hover:bg-slate-50"}`}
-                        onClick={() => setTempSelectedClient(client)}
-                        data-testid={`row-client-${client.name}`}
-                      >
+                    <div
+                      className="flex flex-col items-start w-full overflow-y-auto"
+                      style={{ maxHeight: "300px" }}
+                    >
+                      {filteredClients.map((client) => (
                         <div
-                          className={`px-3 flex-1 text-sm ${tempSelectedClient?.name === client.name ? "text-sky-600 font-medium" : "text-slate-600"}`}
+                          key={client.name}
+                          className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedClient?.name === client.name ? "bg-sky-50" : "hover:bg-slate-50"}`}
+                          onClick={() => setTempSelectedClient(client)}
+                          data-testid={`row-client-${client.name}`}
                         >
-                          {client.name}
-                        </div>
-                        <div className="px-3 w-[60px] flex justify-center">
                           <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedClient?.name === client.name ? "bg-sky-500 border-sky-500" : "border-slate-300"}`}
+                            className={`px-3 flex-1 text-sm ${tempSelectedClient?.name === client.name ? "text-sky-600 font-medium" : "text-slate-600"}`}
                           >
-                            {tempSelectedClient?.name === client.name && (
-                              <div className="w-2 h-2 bg-white rounded-full" />
-                            )}
+                            {client.name}
+                          </div>
+                          <div className="px-3 w-[60px] flex justify-center">
+                            <div
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedClient?.name === client.name ? "bg-sky-500 border-sky-500" : "border-slate-300"}`}
+                            >
+                              {tempSelectedClient?.name === client.name && (
+                                <div className="w-2 h-2 bg-white rounded-full" />
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
