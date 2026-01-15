@@ -12061,32 +12061,38 @@ https://peulrogseun-aqaqaq4561.replit.app
         const SOLAPI_SENDER_NUMBER = process.env.SOLAPI_SENDER_NUMBER;
 
         if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER_NUMBER) {
-          // 대표 케이스 정보 (첫 번째 케이스 사용)
-          const representativeCase = relatedCases[0];
+          // 현재 제출한 케이스 정보 사용 (updatedCase)
+          const submittedCase = updatedCase;
           const addressMain =
-            representativeCase.victimAddress ||
-            representativeCase.insuredAddress;
+            submittedCase.victimAddress ||
+            submittedCase.insuredAddress;
           const addressDetail =
-            representativeCase.victimAddressDetail ||
-            representativeCase.insuredAddressDetail;
+            submittedCase.victimAddressDetail ||
+            submittedCase.insuredAddressDetail;
           const fullAddress = [addressMain, addressDetail]
             .filter(Boolean)
             .join(" ");
 
+          // 모든 관련 케이스의 접수번호 목록 생성
+          const allCaseNumbers = relatedCases
+            .map((c) => c.caseNumber)
+            .filter(Boolean)
+            .join(", ");
+
           const messageText = `<청구자료제출 알림>
 
-접수번호 : ${representativeCase.caseNumber || "-"}
-보험사 : ${representativeCase.insuranceCompany || "-"}
-증권번호 : ${representativeCase.insurancePolicyNo || "-"}
-사고번호 : ${representativeCase.insuranceAccidentNo || "-"}
-피보험자 : ${representativeCase.insuredName || "-"}
+접수번호 : ${allCaseNumbers || submittedCase.caseNumber || "-"}
+보험사 : ${submittedCase.insuranceCompany || "-"}
+증권번호 : ${submittedCase.insurancePolicyNo || "-"}
+사고번호 : ${submittedCase.insuranceAccidentNo || "-"}
+피보험자 : ${submittedCase.insuredName || "-"}
 사고장소 : ${fullAddress || "-"}
 진행사항 : 청구자료제출 (${relatedCases.length}건 완료)`;
 
           // 플록슨 담당자 번호 조회 (managerId를 통해 사용자 정보에서 조회)
           let floxnManagerPhone: string | null = null;
-          if (representativeCase.managerId) {
-            const manager = await storage.getUser(representativeCase.managerId);
+          if (submittedCase.managerId) {
+            const manager = await storage.getUser(submittedCase.managerId);
             floxnManagerPhone = manager?.phone || null;
           }
 
