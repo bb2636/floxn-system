@@ -1963,11 +1963,11 @@ async function renderRecoveryAreaPage(
   // 표 전체 너비 계산: 55 + 70 + 70 + 130 + 130 + 60 = 515
   const tableWidth = 515;
   const rightPadding = 4;
-  const unitTextWidth = fonts.regular.widthOfTextAtSize("단위: ㎡", 9);
+  const unitTextWidth = fonts.regular.widthOfTextAtSize("단위 : m, m²", 9);
   drawText(page, {
     x: MARGIN + tableWidth - unitTextWidth - rightPadding,
     y,
-    text: "단위: ㎡",
+    text: "단위 : m, m²",
     font: fonts.regular,
     size: 9,
   });
