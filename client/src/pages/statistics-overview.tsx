@@ -1153,7 +1153,7 @@ export default function StatisticsOverview() {
   };
 
   return (
-    <div className="p-8">
+    <div className="min-h-screen bg-white p-8">
       <div className="flex items-center gap-2 mb-6">
         <h1
           style={{

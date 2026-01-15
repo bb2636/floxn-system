@@ -989,52 +989,7 @@ export default function ComprehensiveProgress() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(0deg, #E7EDFE, #E7EDFE)",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Background blur effects */}
-      <div
-        style={{
-          position: "absolute",
-          width: "1095px",
-          height: "776.83px",
-          left: "97.61px",
-          bottom: "1169.19px",
-          background: "rgba(254, 240, 230, 0.4)",
-          filter: "blur(212px)",
-          transform: "rotate(-35.25deg)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          width: "1334.83px",
-          height: "1322.98px",
-          right: "0",
-          bottom: "0",
-          background: "rgba(234, 230, 254, 0.5)",
-          filter: "blur(212px)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          width: "348px",
-          height: "1322.98px",
-          left: "0",
-          bottom: "188.99px",
-          background: "rgba(234, 230, 254, 0.5)",
-          filter: "blur(212px)",
-          pointerEvents: "none",
-        }}
-      />
+    <div className="min-h-screen bg-white">
       <GlobalHeader />
       {/* Main Content */}
       <div

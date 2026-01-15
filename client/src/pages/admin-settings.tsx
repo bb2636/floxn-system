@@ -1055,51 +1055,7 @@ export default function AdminSettings() {
   }
 
   return (
-    <div
-      className="relative flex flex-col h-screen overflow-hidden"
-      style={{ background: "#E7EDFE" }}
-    >
-      {/* Blur Background Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute"
-          style={{
-            width: "1095px",
-            height: "777px",
-            left: "97px",
-            bottom: "-200px",
-            background: "rgba(254, 240, 230, 0.4)",
-            borderRadius: "9999px",
-            filter: "blur(212px)",
-            transform: "rotate(-35.25deg)",
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            width: "1335px",
-            height: "1323px",
-            left: "811px",
-            bottom: "0px",
-            background: "rgba(234, 230, 254, 0.5)",
-            borderRadius: "9999px",
-            filter: "blur(212px)",
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            width: "348px",
-            height: "1323px",
-            left: "0px",
-            bottom: "189px",
-            background: "rgba(234, 230, 254, 0.5)",
-            borderRadius: "9999px",
-            filter: "blur(212px)",
-          }}
-        />
-      </div>
-
+    <div className="relative flex flex-col h-screen overflow-hidden bg-white">
       <GlobalHeader />
 
       {/* Main Content */}

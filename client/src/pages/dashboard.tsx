@@ -581,9 +581,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#CAD6FF] text-slate-900">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[220px] bg-gradient-to-b from-[#DCE7FF] to-transparent" />
-
+    <div className="min-h-screen bg-white text-slate-900">
       <GlobalHeader />
 
       <main className="relative z-10 mx-auto max-w-[1400px] px-4 md:px-8 pb-14 pt-8" ref={pdfContentRef}>
