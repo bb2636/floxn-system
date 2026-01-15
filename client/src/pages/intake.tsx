@@ -918,7 +918,7 @@ export default function Intake({
       toast({
         description:
           count > 1
-            ? `접수t�� 완료되었습니다. (${count}건 생성: ${caseNumbers})`
+            ? `접수가 완료되었습니다. (${count}건 생성: ${caseNumbers})`
             : `접수가 완료되었습니다. (${caseNumbers})`,
         duration: 3000,
       });
