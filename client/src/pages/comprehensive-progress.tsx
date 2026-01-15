@@ -1277,8 +1277,8 @@ export default function ComprehensiveProgress() {
                 display: "grid",
                 gridTemplateColumns:
                   user?.role === "협력사"
-                    ? "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 1fr 50px 90px 160px"
-                    : "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 1fr 50px 160px",
+                    ? "40px 100px 110px 100px 80px 1fr 90px 90px 90px 60px 130px 50px 90px 160px"
+                    : "40px 100px 110px 100px 80px 1fr 90px 90px 90px 60px 130px 50px 160px",
                 padding: "14px 20px",
                 background: "rgba(12, 12, 12, 0.04)",
                 borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
@@ -1358,6 +1358,16 @@ export default function ComprehensiveProgress() {
                   color: "rgba(12, 12, 12, 0.6)",
                 }}
               >
+                주소
+              </div>
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  color: "rgba(12, 12, 12, 0.6)",
+                }}
+              >
                 담당자
               </div>
               <div
@@ -1399,16 +1409,6 @@ export default function ComprehensiveProgress() {
                 }}
               >
                 진행상태
-              </div>
-              <div
-                style={{
-                  fontFamily: "Pretendard",
-                  fontWeight: 600,
-                  fontSize: "13px",
-                  color: "rgba(12, 12, 12, 0.6)",
-                }}
-              >
-                주소
               </div>
               <div
                 style={{
@@ -1547,8 +1547,8 @@ export default function ComprehensiveProgress() {
                       display: "grid",
                       gridTemplateColumns:
                         user?.role === "협력사"
-                          ? "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 1fr 50px 90px 160px"
-                          : "40px 100px 110px 100px 80px 90px 90px 90px 60px 130px 1fr 50px 160px",
+                          ? "40px 100px 110px 100px 80px 1fr 90px 90px 90px 60px 130px 50px 90px 160px"
+                          : "40px 100px 110px 100px 80px 1fr 90px 90px 90px 60px 130px 50px 160px",
                       padding: "14px 20px",
                       borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                       gap: "8px",
@@ -1623,6 +1623,47 @@ export default function ComprehensiveProgress() {
                     >
                       {caseItem.insuredName || "-"}
                     </div>
+                    {(() => {
+                      const caseNumberSuffix = caseItem.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
+                      const isInsuredCase = caseNumberSuffix === "0";
+                      
+                      let addressText: string;
+                      if (isInsuredCase) {
+                        addressText = [
+                          caseItem.insuredAddress,
+                          caseItem.insuredAddressDetail,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || "-";
+                      } else {
+                        addressText = [
+                          caseItem.insuredAddress,
+                          caseItem.victimAddressDetail,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || "-";
+                      }
+                      const fontSize = addressText.length > 40 ? "11px" : "13px";
+                      return (
+                        <div
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: fontSize,
+                            color: "rgba(12, 12, 12, 0.8)",
+                            lineHeight: "1.4",
+                            wordBreak: "keep-all",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                          title={addressText}
+                          data-testid={`text-address-${caseItem.id}`}
+                        >
+                          {addressText}
+                        </div>
+                      );
+                    })()}
                     <div
                       style={{
                         fontFamily: "Pretendard",
@@ -1758,51 +1799,6 @@ export default function ComprehensiveProgress() {
                         </div>
                       )}
                     </div>
-                    {(() => {
-                      // 케이스 번호에서 suffix 추출 (-0, -1, -2, etc.)
-                      const caseNumberSuffix = caseItem.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
-                      const isInsuredCase = caseNumberSuffix === "0"; // -0은 피보험자 케이스
-                      
-                      let addressText: string;
-                      if (isInsuredCase) {
-                        // -0 케이스: 피보험자 주소 + 피보험자 상세주소
-                        addressText = [
-                          caseItem.insuredAddress,
-                          caseItem.insuredAddressDetail,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || "-";
-                      } else {
-                        // -1, -2, -3 등 피해세대 케이스: 피보험자 주소 + 피해자 상세주소
-                        addressText = [
-                          caseItem.insuredAddress,
-                          caseItem.victimAddressDetail,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || "-";
-                      }
-                      const fontSize =
-                        addressText.length > 40 ? "11px" : "13px";
-                      return (
-                        <div
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: fontSize,
-                            color: "rgba(12, 12, 12, 0.8)",
-                            lineHeight: "1.4",
-                            wordBreak: "keep-all",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                          }}
-                          title={addressText}
-                          data-testid={`text-address-${caseItem.id}`}
-                        >
-                          {addressText}
-                        </div>
-                      );
-                    })()}
                     <div
                       style={{
                         display: "flex",
