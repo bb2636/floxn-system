@@ -1643,7 +1643,9 @@ async function renderEvidencePages(
         } else if (caseData.insuredAddress) {
           pdfFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
         }
-        const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
+        // 사고번호에서 특수기호 뒤 공백 제거 (예: "S25- 1044" → "S25-1044")
+        const rawAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "";
+        const pdfAccidentNo = normalizeText(rawAccidentNo.replace(/-\s+/g, "-").replace(/:\s+/g, ":"));
         const pdfCategoryDisplay = normalizeText(
           current.doc.category ? `${current.tab}-${current.doc.category}` : current.tab,
         );
@@ -3152,7 +3154,9 @@ export async function generatePdfWithPdfLib(
           } else if (caseData.insuredAddress) {
             pdfFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
           }
-          const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
+          // 사고번호에서 특수기호 뒤 공백 제거 (예: "S25- 1044" → "S25-1044")
+          const rawAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "";
+          const pdfAccidentNo = normalizeText(rawAccidentNo.replace(/-\s+/g, "-").replace(/:\s+/g, ":"));
           const pdfCategory = pdfDocData.category || "증빙자료";
           const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategory}`;
           const pdfFontSize = normalizedHeaderText.length > 60 ? 8 : normalizedHeaderText.length > 45 ? 9 : 10;
