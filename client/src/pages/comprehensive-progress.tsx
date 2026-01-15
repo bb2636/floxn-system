@@ -1311,6 +1311,7 @@ export default function ComprehensiveProgress() {
                   fontWeight: 600,
                   fontSize: "13px",
                   color: "rgba(12, 12, 12, 0.6)",
+                  textAlign: "center",
                 }}
               >
                 주소
