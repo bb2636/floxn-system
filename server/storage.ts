@@ -4527,6 +4527,11 @@ export class DbStorage implements IStorage {
 
     // caseNumber도 업데이트 대상에 포함
     const updateData: any = { ...caseData, ...additionalUpdates, updatedAt: currentDate };
+    
+    // managerId가 빈 문자열이면 null로 변환 (외래 키 제약 조건 방지)
+    if (updateData.managerId === '') {
+      updateData.managerId = null;
+    }
 
     const result = await db
       .update(cases)
