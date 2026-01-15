@@ -1119,7 +1119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   `[Case Draft] Updated existing prevention case ${existingPreventionCase.caseNumber} and victim case ${newCaseNumber}`,
                 );
               } else {
-                // -0 케이스가 없음 → 기존 케이스를 -0으로, 새 피해세대 케이스 생성
+                // -0 케이스가 없거나 현재 케이스가 -0 → 기존 케이스를 -0으로 유지/업데이트
                 newCaseNumber = `${existingPrefix}-0`;
 
                 // 기존 케이스를 손해방지 케이스로 업데이트
@@ -1130,18 +1130,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
                 createdCases.push(updatedCase);
 
-                // 피해세대 케이스 새로 생성
-                const nextSuffix =
-                  await storage.getNextVictimSuffix(existingPrefix);
-                const recoveryData = JSON.parse(JSON.stringify(validatedData));
-                const recoveryCase = await storage.createCase({
-                  ...recoveryData,
-                  caseNumber: `${existingPrefix}-${nextSuffix}`,
-                  caseGroupId,
-                  status: "배당대기",
-                  createdBy: req.session.userId,
-                });
-                createdCases.push(recoveryCase);
+                // 피해세대 케이스가 이미 존재하는지 확인
+                const existingVictimCases = await storage.getRelatedCases(existingPrefix);
+                const hasExistingVictimCase = existingVictimCases.some(
+                  (c) => c.caseNumber && c.caseNumber !== newCaseNumber && !c.caseNumber.endsWith('-0')
+                );
+
+                if (!hasExistingVictimCase) {
+                  // 피해세대 케이스가 없으면 새로 생성
+                  const nextSuffix =
+                    await storage.getNextVictimSuffix(existingPrefix);
+                  const recoveryData = JSON.parse(JSON.stringify(validatedData));
+                  const recoveryCase = await storage.createCase({
+                    ...recoveryData,
+                    caseNumber: `${existingPrefix}-${nextSuffix}`,
+                    caseGroupId,
+                    status: "배당대기",
+                    createdBy: req.session.userId,
+                  });
+                  createdCases.push(recoveryCase);
+                } else {
+                  console.log(
+                    `[Case Draft] Victim case already exists for prefix ${existingPrefix}, skipping creation`,
+                  );
+                }
               }
 
               // 임시저장 시에도 관련 케이스에 동기화
