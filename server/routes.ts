@@ -8811,7 +8811,8 @@ FLOXN`;
               // First, flush any pending images before adding PDF
               await flushPendingImages();
 
-              // PDF document
+              // PDF document - 헤더와 PDF 내용 간격 40px 추가
+              const PDF_HEADER_GAP = 40;
               try {
                 const fileBuffer = await getFileBuffer(doc);
                 if (!fileBuffer) {
@@ -8823,41 +8824,49 @@ FLOXN`;
                 const attachedPdf = await PDFDocument.load(fileBuffer, {
                   ignoreEncryption: true,
                 });
-                const pages = await mergedPdf.copyPages(
-                  attachedPdf,
-                  attachedPdf.getPageIndices(),
-                );
+                const pageCount = attachedPdf.getPageCount();
 
-                for (const page of pages) {
-                  mergedPdf.addPage(page);
-                  const { width, height } = page.getSize();
+                for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
+                  const srcPage = attachedPdf.getPage(pageIdx);
+                  const { width, height } = srcPage.getSize();
+                  
+                  // 새 페이지 생성 (헤더 + 간격 공간 추가)
+                  const totalHeaderSpace = MARGIN + HEADER_HEIGHT + PDF_HEADER_GAP;
+                  const newPage = mergedPdf.addPage([width, height + totalHeaderSpace]);
+                  
+                  // 원본 PDF 페이지를 embed하여 아래쪽에 배치
+                  const embeddedPage = await mergedPdf.embedPage(srcPage);
+                  newPage.drawPage(embeddedPage, { x: 0, y: 0, width, height });
 
-                  page.drawRectangle({
+                  // 헤더 배경 (흰색)
+                  newPage.drawRectangle({
                     x: 0,
-                    y: height - MARGIN - HEADER_HEIGHT,
+                    y: height,
                     width: width,
-                    height: MARGIN + HEADER_HEIGHT,
+                    height: totalHeaderSpace,
                     color: rgb(1, 1, 1),
                   });
-                  page.drawRectangle({
+                  // 헤더 박스
+                  newPage.drawRectangle({
                     x: MARGIN,
-                    y: height - MARGIN - HEADER_HEIGHT,
+                    y: height + PDF_HEADER_GAP,
                     width: width - MARGIN * 2,
                     height: HEADER_HEIGHT,
                     color: rgb(0.95, 0.95, 0.95),
                     borderColor: rgb(0.8, 0.8, 0.8),
                     borderWidth: 0.5,
                   });
-                  page.drawText(headerText, {
+                  // 헤더 텍스트
+                  newPage.drawText(headerText, {
                     x: MARGIN + 8,
-                    y: height - MARGIN - HEADER_HEIGHT + 6,
+                    y: height + PDF_HEADER_GAP + 6,
                     size: 9,
                     font,
                     color: rgb(0.2, 0.2, 0.2),
                   });
                 }
                 console.log(
-                  `[Invoice PDF] Added PDF: ${doc.fileName} (${pages.length} pages) - ${doc.category}`,
+                  `[Invoice PDF] Added PDF: ${doc.fileName} (${pageCount} pages) - ${doc.category}`,
                 );
               } catch (docError) {
                 console.error(
@@ -9606,7 +9615,8 @@ FLOXN`;
               // First, flush any pending images before adding PDF
               await flushPendingImages();
 
-              // PDF document
+              // PDF document - 헤더와 PDF 내용 간격 40px 추가
+              const PDF_HEADER_GAP = 40;
               try {
                 const fileBuffer = await getFileBuffer(doc);
                 if (!fileBuffer || fileBuffer.length === 0) {
@@ -9617,42 +9627,49 @@ FLOXN`;
                 }
 
                 const sourcePdf = await PDFDocument.load(fileBuffer);
-                const pageIndices = sourcePdf.getPageIndices();
-                const copiedPages = await mergedPdf.copyPages(
-                  sourcePdf,
-                  pageIndices,
-                );
+                const pageCount = sourcePdf.getPageCount();
 
-                for (const page of copiedPages) {
-                  mergedPdf.addPage(page);
-                  const { width, height } = page.getSize();
+                for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
+                  const srcPage = sourcePdf.getPage(pageIdx);
+                  const { width, height } = srcPage.getSize();
+                  
+                  // 새 페이지 생성 (헤더 + 간격 공간 추가)
+                  const totalHeaderSpace = MARGIN + HEADER_HEIGHT + PDF_HEADER_GAP;
+                  const newPage = mergedPdf.addPage([width, height + totalHeaderSpace]);
+                  
+                  // 원본 PDF 페이지를 embed하여 아래쪽에 배치
+                  const embeddedPage = await mergedPdf.embedPage(srcPage);
+                  newPage.drawPage(embeddedPage, { x: 0, y: 0, width, height });
 
-                  page.drawRectangle({
+                  // 헤더 배경 (흰색)
+                  newPage.drawRectangle({
                     x: 0,
-                    y: height - MARGIN - HEADER_HEIGHT,
+                    y: height,
                     width: width,
-                    height: MARGIN + HEADER_HEIGHT,
+                    height: totalHeaderSpace,
                     color: rgb(1, 1, 1),
                   });
-                  page.drawRectangle({
+                  // 헤더 박스
+                  newPage.drawRectangle({
                     x: MARGIN,
-                    y: height - MARGIN - HEADER_HEIGHT,
+                    y: height + PDF_HEADER_GAP,
                     width: width - MARGIN * 2,
                     height: HEADER_HEIGHT,
                     color: rgb(0.95, 0.95, 0.95),
                     borderColor: rgb(0.8, 0.8, 0.8),
                     borderWidth: 0.5,
                   });
-                  page.drawText(headerText, {
+                  // 헤더 텍스트
+                  newPage.drawText(headerText, {
                     x: MARGIN + 8,
-                    y: height - MARGIN - HEADER_HEIGHT + 6,
+                    y: height + PDF_HEADER_GAP + 6,
                     size: 9,
                     font,
                     color: rgb(0.2, 0.2, 0.2),
                   });
                 }
                 console.log(
-                  `[Invoice Email] Added PDF: ${doc.fileName} (${copiedPages.length} pages) - ${doc.category}`,
+                  `[Invoice Email] Added PDF: ${doc.fileName} (${pageCount} pages) - ${doc.category}`,
                 );
               } catch (pdfError) {
                 console.error(
