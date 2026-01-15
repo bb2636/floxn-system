@@ -2394,6 +2394,75 @@ export default function ComprehensiveProgress() {
                                   : selectedCase.assessorId || "-"}
                               </div>
                             </div>
+
+                            {/* 조사사 */}
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "center",
+                                padding: "10px 0px",
+                                gap: "16px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: "100px",
+                                  fontFamily: "Pretendard",
+                                  fontWeight: 500,
+                                  fontSize: "14px",
+                                  color: "rgba(12, 12, 12, 0.6)",
+                                }}
+                              >
+                                조사사
+                              </div>
+                              <div
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontWeight: 400,
+                                  fontSize: "14px",
+                                  color: "rgba(12, 12, 12, 0.9)",
+                                }}
+                              >
+                                {selectedCase.investigatorTeam || "-"}
+                              </div>
+                            </div>
+
+                            {/* 조사 담당자 */}
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "center",
+                                padding: "10px 0px",
+                                gap: "16px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: "100px",
+                                  fontFamily: "Pretendard",
+                                  fontWeight: 500,
+                                  fontSize: "14px",
+                                  color: "rgba(12, 12, 12, 0.6)",
+                                }}
+                              >
+                                조사 담당자
+                              </div>
+                              <div
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontWeight: 400,
+                                  fontSize: "14px",
+                                  color: "rgba(12, 12, 12, 0.9)",
+                                }}
+                              >
+                                {selectedCase.investigatorDepartment &&
+                                selectedCase.investigatorTeamName
+                                  ? `${selectedCase.investigatorDepartment} ${selectedCase.investigatorTeamName}`
+                                  : selectedCase.investigatorTeamName || "-"}
+                              </div>
+                            </div>
                           </div>
 
                           {/* 보고서 열람 버튼 - 항상 표시 */}
