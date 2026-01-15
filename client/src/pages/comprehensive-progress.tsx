@@ -1604,13 +1604,21 @@ export default function ComprehensiveProgress() {
                           .filter(Boolean)
                           .join(" ") || "-";
                       } else {
-                        // -1, -2, -3 등 피해세대 케이스: 피해자 주소 + 피해자 상세주소
-                        addressText = [
+                        // -1, -2, -3 등 피해세대 케이스: 피해자 주소 + 피해자 상세주소 (없으면 피보험자 주소로 대체)
+                        const victimAddr = [
                           caseItem.victimAddress,
                           caseItem.victimAddressDetail,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || "-";
+                        ].filter(Boolean).join(" ");
+                        
+                        if (victimAddr) {
+                          addressText = victimAddr;
+                        } else {
+                          // 피해자 주소가 없으면 피보험자 주소로 대체
+                          addressText = [
+                            caseItem.insuredAddress,
+                            caseItem.insuredAddressDetail,
+                          ].filter(Boolean).join(" ") || "-";
+                        }
                       }
                       const fontSize = addressText.length > 40 ? "11px" : "13px";
                       return (

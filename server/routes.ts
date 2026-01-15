@@ -5202,8 +5202,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 손해방지(-0): 피보험자 주소 + 상세주소
           fullAddress = [c.insuredAddress, c.insuredAddressDetail].filter(Boolean).join(" ") || "-";
         } else {
-          // 피해세대(-1, -2, ...): 피해자 주소 + 상세주소
-          fullAddress = [c.victimAddress, c.victimAddressDetail].filter(Boolean).join(" ") || "-";
+          // 피해세대(-1, -2, ...): 피해자 주소 + 상세주소 (없으면 피보험자 주소로 대체)
+          const victimAddr = [c.victimAddress, c.victimAddressDetail].filter(Boolean).join(" ");
+          if (victimAddr) {
+            fullAddress = victimAddr;
+          } else {
+            // 피해자 주소가 없으면 피보험자 주소로 대체
+            fullAddress = [c.insuredAddress, c.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+          }
         }
         
         return {
