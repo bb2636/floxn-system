@@ -1231,12 +1231,14 @@ async function renderDrawingPage(
   // Info line: 보험사, 피보험자, 주소 (해당건의 주소 사용)
   const insuranceCompany = caseData.insuranceCompany || "-";
   const insuredName = caseData.insuredName || caseData.victimName || "-";
-  // 해당건의 주소 사용 (victimAddress + victimAddressDetail 우선, 없으면 insured 주소)
-  const victimAddr = caseData.victimAddress || caseData.insuredAddress || "";
-  const victimAddrDetail =
-    caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
-  const fullAddress =
-    [victimAddr, victimAddrDetail].filter(Boolean).join(" ") || "-";
+  // 해당건의 주소 사용 - 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
+  // victimAddress가 있으면 victim 주소 세트 사용, 없으면 insured 주소 세트 사용
+  let fullAddress = "-";
+  if (caseData.victimAddress) {
+    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") || "-";
+  } else if (caseData.insuredAddress) {
+    fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+  }
 
   drawText(page, {
     x: MARGIN,
@@ -1634,9 +1636,13 @@ async function renderEvidencePages(
         });
         const pageCount = externalPdf.getPageCount();
 
-        const pdfAddress = caseData.victimAddress || caseData.insuredAddress || "";
-        const pdfAddressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
-        const pdfFullAddress = pdfAddressDetail ? `${pdfAddress} ${pdfAddressDetail}` : pdfAddress;
+        // 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
+        let pdfFullAddress = "";
+        if (caseData.victimAddress) {
+          pdfFullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
+        } else if (caseData.insuredAddress) {
+          pdfFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+        }
         const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
         const pdfCategoryDisplay = normalizeText(
           current.doc.category ? `${current.tab}-${current.doc.category}` : current.tab,
@@ -1706,9 +1712,13 @@ async function renderPhotoPage(
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   const firstImage = images[0];
 
-  const address = caseData.victimAddress || caseData.insuredAddress || "";
-  const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
-  const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
+  // 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
+  let fullAddress = "";
+  if (caseData.victimAddress) {
+    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
+  } else if (caseData.insuredAddress) {
+    fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+  }
 
   const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
   const leftText = `사고번호 ${accidentNo}`;
@@ -1823,9 +1833,13 @@ async function renderSingleImagePage(
 ) {
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
 
-  const address = caseData.victimAddress || caseData.insuredAddress || "";
-  const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
-  const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
+  // 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
+  let fullAddress = "";
+  if (caseData.victimAddress) {
+    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
+  } else if (caseData.insuredAddress) {
+    fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+  }
 
   const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
   const leftText = `사고번호 ${accidentNo}`;
@@ -3131,10 +3145,13 @@ export async function generatePdfWithPdfLib(
           });
           const pageCount = attachedPdf.getPageCount();
           
-          // 헤더 정보 생성
-          const pdfAddress = caseData.victimAddress || caseData.insuredAddress || "";
-          const pdfAddressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
-          const pdfFullAddress = pdfAddressDetail ? `${pdfAddress} ${pdfAddressDetail}` : pdfAddress;
+          // 헤더 정보 생성 - 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
+          let pdfFullAddress = "";
+          if (caseData.victimAddress) {
+            pdfFullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
+          } else if (caseData.insuredAddress) {
+            pdfFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+          }
           const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
           const pdfCategory = pdfDocData.category || "증빙자료";
           const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategory}`;
