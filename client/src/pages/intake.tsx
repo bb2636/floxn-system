@@ -1853,45 +1853,17 @@ export default function Intake({
               <div className="col-span-12 md:col-span-6">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>상세주소</label>
-                  <div className="relative flex-1">
-                    <div className="flex gap-1">
-                      <input
-                        className={`${inputClasses} flex-1`}
-                        value={formData.insuredAddressDetail || detailAddressSearchQuery}
-                        onChange={(e) => {
-                          if (!formData.insuredAddressDetail) {
-                            setDetailAddressSearchQuery(e.target.value);
-                          }
-                        }}
-                        onFocus={() => {
-                          if (formData.insuredAddressDetail) {
-                            handleInputChange("insuredAddressDetail", "");
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            !readOnly && handleAddressSearch('detail');
-                          }
-                        }}
-                        disabled={readOnly}
-                        placeholder="상세주소"
-                        type="text"
-                        data-testid="input-insured-address-detail"
-                      />
-                      <div
-                        onClick={() => !readOnly && handleAddressSearch('detail')}
-                        className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                      >
-                        <Search size={16} />
-                      </div>
-                    </div>
-                    {addressDropdownOpen === 'detail' && (
-                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
-                        <div ref={detailAddressContainerRef} style={{ height: '400px', width: '100%' }} />
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    className={inputClasses}
+                    value={formData.insuredAddressDetail}
+                    onChange={(e) =>
+                      handleInputChange("insuredAddressDetail", e.target.value)
+                    }
+                    disabled={readOnly}
+                    placeholder="상세주소"
+                    type="text"
+                    data-testid="input-insured-address-detail"
+                  />
                 </div>
               </div>
             </div>
