@@ -525,7 +525,7 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
                   letterSpacing: "-0.01em",
                   color: "rgba(12, 12, 12, 0.7)",
                 }}>
-                  현장출동비용
+                  ◾현장출동비용
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                   <span
