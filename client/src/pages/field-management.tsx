@@ -424,6 +424,7 @@ export default function FieldManagement() {
       }
       
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/cases/${editingVictimCase.id}`] });
       
       toast({
         title: "저장 완료",
