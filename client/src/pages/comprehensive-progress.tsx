@@ -3334,46 +3334,48 @@ export default function ComprehensiveProgress() {
           onInteractOutside={(e) => e.preventDefault()}
           data-testid="dialog-reception-detail"
         >
-          {/* 수정 버튼 - 다이얼로그 상단 우측 */}
-          <div
-            style={{
-              position: "absolute",
-              top: "16px",
-              right: "56px",
-              zIndex: 10,
-              display: "flex",
-              gap: "8px",
-            }}
-          >
-            {!isReceptionEditMode ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsReceptionEditMode(true)}
-                style={{
-                  fontFamily: "Pretendard",
-                  fontWeight: 500,
-                }}
-                data-testid="button-enable-edit-mode"
-              >
-                수정
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsReceptionEditMode(false)}
-                style={{
-                  fontFamily: "Pretendard",
-                  fontWeight: 500,
-                  color: "rgba(12, 12, 12, 0.5)",
-                }}
-                data-testid="button-cancel-edit-mode"
-              >
-                수정 취소
-              </Button>
-            )}
-          </div>
+          {/* 수정 버튼 - 다이얼로그 상단 우측 (협력사 계정에서는 숨김) */}
+          {user?.role !== "협력사" && (
+            <div
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "56px",
+                zIndex: 10,
+                display: "flex",
+                gap: "8px",
+              }}
+            >
+              {!isReceptionEditMode ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsReceptionEditMode(true)}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                  }}
+                  data-testid="button-enable-edit-mode"
+                >
+                  수정
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsReceptionEditMode(false)}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                  data-testid="button-cancel-edit-mode"
+                >
+                  수정 취소
+                </Button>
+              )}
+            </div>
+          )}
           {selectedCaseId && (
             <div
               style={{
