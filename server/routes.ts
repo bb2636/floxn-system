@@ -8341,9 +8341,9 @@ FLOXN`;
         caseData.insuredAddress ||
         "-";
 
-      // 모든 케이스가 선견적요청이면 주소 없이 "◾현장출동비용"으로 표시
+      // 모든 케이스가 선견적요청이면 주소 없이 "현장출동비용"으로 표시
       const fieldDispatchTitle = allPreEstimateRequest
-        ? "◾현장출동비용"
+        ? "현장출동비용"
         : `[${mainAddressLabel}] - 현장출동비용`;
 
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
