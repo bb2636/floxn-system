@@ -1328,6 +1328,8 @@ export default function FieldManagement() {
               </div>
             </section>
 
+            {/* 피해자 추가 섹션 - 관리자만 접근 가능 */}
+            {isAdmin && (
             <section className="mt-8">
               <div className="flex items-center justify-between">
                 <div className="text-[14px] font-bold">피해자 추가</div>
@@ -1444,6 +1446,7 @@ export default function FieldManagement() {
                 </div>
               )}
             </section>
+            )}
 
             <section className="mt-8">
               <div className="text-[14px] font-bold">VOC(고객의 소리)</div>
