@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User, Case, type UserFavorite, type Notice } from "@shared/schema";
+import { User, Case, type UserFavorite, type Notice, type Inquiry } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -77,6 +77,11 @@ export default function Dashboard() {
 
   const { data: notices = [] } = useQuery<Notice[]>({
     queryKey: ["/api/notices"],
+    enabled: !!user,
+  });
+
+  const { data: userInquiries = [] } = useQuery<Inquiry[]>({
+    queryKey: ["/api/inquiries"],
     enabled: !!user,
   });
 
@@ -340,8 +345,6 @@ export default function Dashboard() {
     { name: "통계 및 정산", active: false },
     { name: "관리자 설정", active: false },
   ];
-
-  const inquiries: { title: string; status: string }[] = [];
 
   const handleRemoveFavorite = (menuName: string) => {
     removeFavoriteMutation.mutate(menuName);
@@ -1015,15 +1018,21 @@ export default function Dashboard() {
               </div>
 
               <div className="mt-4 space-y-3 text-sm text-slate-700">
-                {inquiries.length === 0 ? (
+                {userInquiries.length === 0 ? (
                   <div className="text-center text-slate-500 py-4">
                     문의 내역이 없습니다
                   </div>
                 ) : (
-                  inquiries.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span>{item.title}</span>
-                      <span className="text-slate-500">{item.status}</span>
+                  userInquiries.slice(0, 5).map((inquiry) => (
+                    <div key={inquiry.id} className="flex items-center justify-between py-1">
+                      <span className="truncate max-w-[180px]">{inquiry.title}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        inquiry.status === "답변완료" 
+                          ? "bg-green-100 text-green-700" 
+                          : "bg-yellow-100 text-yellow-700"
+                      }`}>
+                        {inquiry.status}
+                      </span>
                     </div>
                   ))
                 )}
