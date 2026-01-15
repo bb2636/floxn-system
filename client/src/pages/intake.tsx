@@ -385,7 +385,21 @@ export default function Intake({
 
   const filteredClientEmployees = useMemo(() => {
     if (!formData.clientResidence || !allUsers) return [];
+    if (formData.clientDepartment) {
+      return allUsers.filter(
+        (emp) => emp.company === formData.clientResidence && emp.department === formData.clientDepartment
+      );
+    }
     return allUsers.filter((emp) => emp.company === formData.clientResidence);
+  }, [formData.clientResidence, formData.clientDepartment, allUsers]);
+
+  const filteredClientDepartments = useMemo(() => {
+    if (!formData.clientResidence || !allUsers) return [];
+    const departments = allUsers
+      .filter((emp) => emp.company === formData.clientResidence)
+      .map((emp) => emp.department)
+      .filter((dept): dept is string => !!dept);
+    return Array.from(new Set(departments));
   }, [formData.clientResidence, allUsers]);
 
   const filteredAssessorEmployees = useMemo(() => {
@@ -1043,9 +1057,13 @@ export default function Intake({
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
 
-      if (field === "clientResidence" && value && allUsers) {
-        const companyUser = allUsers.find((u) => u.company === value);
-        updated.clientDepartment = companyUser?.department || "";
+      if (field === "clientResidence") {
+        updated.clientDepartment = "";
+        updated.clientName = "";
+        updated.clientContact = "";
+      }
+
+      if (field === "clientDepartment") {
         updated.clientName = "";
         updated.clientContact = "";
       }
@@ -1619,14 +1637,27 @@ export default function Intake({
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
-                  <input
-                    className={disabledInputClasses}
+                  <Select
                     value={formData.clientDepartment}
-                    readOnly
-                    placeholder="소속부서명"
-                    type="text"
-                    data-testid="input-client-department"
-                  />
+                    onValueChange={(value) =>
+                      handleInputChange("clientDepartment", value)
+                    }
+                    disabled={readOnly || !formData.clientResidence}
+                  >
+                    <SelectTrigger
+                      className={selectTriggerClasses}
+                      data-testid="select-client-department"
+                    >
+                      <SelectValue placeholder="부서 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredClientDepartments.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
