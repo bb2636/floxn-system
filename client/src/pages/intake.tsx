@@ -459,8 +459,9 @@ export default function Intake({
 
   const clientCompanies = useMemo(() => {
     if (!allUsers) return [];
+    const allowedRoles = ["보험사", "심사사", "조사사"];
     const companies = allUsers
-      .filter((u) => u.role !== "관리자" && u.role !== "협력사")
+      .filter((u) => u.role && allowedRoles.includes(u.role))
       .map((u) => u.company)
       .filter((company): company is string => !!company);
     return Array.from(new Set(companies));
