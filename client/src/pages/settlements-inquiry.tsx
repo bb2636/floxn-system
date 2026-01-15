@@ -1250,9 +1250,8 @@ export default function SettlementsInquiry() {
                     textAlign: "center",
                     minWidth: "120px",
                   }}
-                >
-                  사용료
-                </th>
+                >현장
+                출동비</th>
                 <th
                   rowSpan={2}
                   style={{
