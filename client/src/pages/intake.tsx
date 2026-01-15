@@ -1051,13 +1051,10 @@ export default function Intake({
       }
 
       if (field === "clientName" && value && typeof value === "string") {
-        const [employeeName, employeeId] = value.split("::");
-        updated.clientName = employeeName;
-        const selectedEmployee = employeeId
-          ? filteredClientEmployees.find((emp) => emp.id === employeeId)
-          : filteredClientEmployees.find((emp) => emp.name === employeeName);
-        if (selectedEmployee)
+        const selectedEmployee = filteredClientEmployees.find((emp) => emp.name === value);
+        if (selectedEmployee) {
           updated.clientContact = selectedEmployee.phone || "";
+        }
       }
 
       if (field === "assessorId") {
@@ -1673,7 +1670,7 @@ export default function Intake({
                       {filteredClientEmployees.map((emp) => (
                         <SelectItem
                           key={emp.id}
-                          value={`${emp.name}::${emp.id}`}
+                          value={emp.name}
                         >
                           {emp.name}
                         </SelectItem>
