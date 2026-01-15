@@ -419,8 +419,8 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   let itemY = y - cellPadding - 12;
   
   for (const item of data.particulars) {
-    // 항목 제목
-    const itemTitle = '\u25A0 ' + item.title;
+    // 항목 제목 (현장출동비용만 단독인 경우 ■ 기호 생략)
+    const itemTitle = item.title === "현장출동비용" ? item.title : '\u25A0 ' + item.title;
     drawTextLine(page, itemTitle, tableX + cellPadding, itemY, fonts.regular, 10);
     
     // 금액 (오른쪽 정렬, 빨간색)
