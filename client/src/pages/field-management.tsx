@@ -216,8 +216,14 @@ export default function FieldManagement() {
   }, [availableCases]);
 
   useEffect(() => {
+    // selectedCaseDetail이 있으면 (직접 API로 조회 성공) 리셋하지 않음
+    // 이는 "관련접수건 전환"으로 선택한 케이스가 availableCases에 없어도 유지되게 함
+    if (selectedCase && selectedCaseDetail) {
+      return;
+    }
+    
     if (availableCases.length === 0) {
-      if (selectedCase) {
+      if (selectedCase && !selectedCaseDetail) {
         setSelectedCase("");
         localStorage.removeItem('selectedFieldSurveyCaseId');
       }
@@ -226,12 +232,12 @@ export default function FieldManagement() {
 
     const isCurrentCaseAvailable = selectedCase && availableCases.some(c => c.id === selectedCase);
     
-    if (!isCurrentCaseAvailable) {
+    if (!isCurrentCaseAvailable && !selectedCaseDetail) {
       const newCaseId = availableCases[0].id;
       setSelectedCase(newCaseId);
       localStorage.setItem('selectedFieldSurveyCaseId', newCaseId);
     }
-  }, [availableCaseIds, selectedCase]);
+  }, [availableCaseIds, selectedCase, selectedCaseDetail]);
 
   const handleCaseChange = (caseId: string) => {
     setSelectedCase(caseId);
