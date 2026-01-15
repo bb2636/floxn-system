@@ -967,7 +967,7 @@ export default function FieldManagement() {
 
   return (
     <>
-      <div className="flex-1 py-6">
+      <div className="flex-1 py-6 pl-6">
         <div className="text-[18px] font-bold" data-testid="page-title">현장입력</div>
 
         {casesLoading ? (
