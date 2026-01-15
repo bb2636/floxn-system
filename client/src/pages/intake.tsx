@@ -1394,7 +1394,6 @@ export default function Intake({
       className={`relative ${isModal ? "bg-white" : "bg-white min-h-screen"}`}
     >
       {!isModal && <GlobalHeader />}
-
       <main
         className={`mx-auto max-w-[1400px] ${isModal ? "px-4 pb-24 pt-4" : "px-6 pb-24 pt-6"}`}
       >
@@ -1823,7 +1822,7 @@ export default function Intake({
               {/* 손사/조사사 Row */}
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>손el�명</label>
+                  <label className={labelClasses}>조사사</label>
                   <Select
                     value={formData.investigatorTeam}
                     onValueChange={(value) =>
@@ -2456,7 +2455,6 @@ export default function Intake({
           </div>
         )}
       </main>
-
       {/* 협력사 검색 팝업 */}
       {isPartnerSearchOpen &&
         (() => {
@@ -2631,7 +2629,6 @@ export default function Intake({
             ? modalContent
             : createPortal(modalContent, document.body);
         })()}
-
       {/* 의뢰사 검색 팝업 */}
       {isClientSearchOpen &&
         createPortal(
@@ -2772,7 +2769,6 @@ export default function Intake({
           </div>,
           document.body,
         )}
-
       {/* 심사사 검색 팝업 */}
       {isAssessorSearchOpen &&
         createPortal(
@@ -2911,7 +2907,6 @@ export default function Intake({
           </div>,
           document.body,
         )}
-
       {/* 조사사 검색 팝업 */}
       {isInvestigatorSearchOpen &&
         createPortal(
