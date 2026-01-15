@@ -970,7 +970,7 @@ export default function SettlementsInquiry() {
           {filteredRows.length}
         </span>
       </div>
-      {/* Wide Table with Horizontal Scroll */}
+      {/* Wide Table with Horizontal Scroll and Sticky Header/Columns */}
       <div
         style={{
           background: "rgba(255, 255, 255, 0.7)",
@@ -979,12 +979,12 @@ export default function SettlementsInquiry() {
           overflow: "hidden",
         }}
       >
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "max-content", minWidth: "100%", borderCollapse: "collapse" }}>
-            <thead>
+        <div style={{ overflow: "auto", maxHeight: "calc(100vh - 280px)" }}>
+          <table style={{ width: "max-content", minWidth: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
+            <thead style={{ position: "sticky", top: 0, zIndex: 20 }}>
               {/* FIX: 2단 헤더 구조 수정 - 첫 번째 행 */}
-              <tr style={{ background: "rgba(12, 12, 12, 0.06)" }}>
-                {/* 기본 컬럼들 - rowSpan=2로 두 줄 차지 */}
+              <tr style={{ background: "rgba(240, 240, 240, 1)" }}>
+                {/* 기본 컬럼들 - rowSpan=2로 두 줄 차지, 왼쪽 고정 */}
                 <th
                   rowSpan={2}
                   style={{
@@ -997,6 +997,10 @@ export default function SettlementsInquiry() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                     width: "60px",
+                    position: "sticky",
+                    left: 0,
+                    zIndex: 30,
+                    background: "rgba(240, 240, 240, 1)",
                   }}
                 >
                   <Checkbox data-testid="checkbox-select-all" />
@@ -1013,6 +1017,10 @@ export default function SettlementsInquiry() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                     minWidth: "120px",
+                    position: "sticky",
+                    left: "60px",
+                    zIndex: 30,
+                    background: "rgba(240, 240, 240, 1)",
                   }}
                 >
                   증권번호
@@ -1029,6 +1037,10 @@ export default function SettlementsInquiry() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                     minWidth: "120px",
+                    position: "sticky",
+                    left: "180px",
+                    zIndex: 30,
+                    background: "rgba(240, 240, 240, 1)",
                   }}
                 >
                   사고번호
@@ -1045,6 +1057,10 @@ export default function SettlementsInquiry() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                     minWidth: "100px",
+                    position: "sticky",
+                    left: "300px",
+                    zIndex: 30,
+                    background: "rgba(240, 240, 240, 1)",
                   }}
                 >
                   보험사
@@ -1061,6 +1077,10 @@ export default function SettlementsInquiry() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                     minWidth: "100px",
+                    position: "sticky",
+                    left: "400px",
+                    zIndex: 30,
+                    background: "rgba(240, 240, 240, 1)",
                   }}
                 >
                   담당자
@@ -1077,6 +1097,10 @@ export default function SettlementsInquiry() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                     minWidth: "150px",
+                    position: "sticky",
+                    left: "500px",
+                    zIndex: 30,
+                    background: "rgba(240, 240, 240, 1)",
                   }}
                 >
                   접수번호
@@ -1093,6 +1117,10 @@ export default function SettlementsInquiry() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                     minWidth: "100px",
+                    position: "sticky",
+                    left: "650px",
+                    zIndex: 30,
+                    background: "rgba(240, 240, 240, 1)",
                   }}
                 >협력사</th>
                 <th
@@ -1310,7 +1338,7 @@ export default function SettlementsInquiry() {
               </tr>
               
               {/* FIX: 2단 헤더 구조 수정 - 두 번째 행 (하위 헤더만) */}
-              <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+              <tr style={{ background: "rgba(240, 240, 240, 1)" }}>
                 {/* 손해방지비용 하위 컬럼 (견적금액, 승인금액, 차액, 수정률) */}
                 <th
                   style={{
@@ -1505,6 +1533,7 @@ export default function SettlementsInquiry() {
                       index < filteredRows.length - 1
                         ? "1px solid rgba(12, 12, 12, 0.05)"
                         : "none",
+                    background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                   }}
                 >
                   <td
@@ -1512,6 +1541,10 @@ export default function SettlementsInquiry() {
                       padding: "14px 16px",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
+                      position: "sticky",
+                      left: 0,
+                      zIndex: 10,
+                      background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                     }}
                   >
                     <Checkbox data-testid={`checkbox-row-${index}`} />
@@ -1524,6 +1557,10 @@ export default function SettlementsInquiry() {
                       color: "rgba(12, 12, 12, 0.8)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
+                      position: "sticky",
+                      left: "60px",
+                      zIndex: 10,
+                      background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                     }}
                   >
                     {row.withdrawalNumber}
@@ -1536,6 +1573,10 @@ export default function SettlementsInquiry() {
                       color: "rgba(12, 12, 12, 0.8)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
+                      position: "sticky",
+                      left: "180px",
+                      zIndex: 10,
+                      background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                     }}
                   >
                     {row.accidentNumber}
@@ -1548,6 +1589,10 @@ export default function SettlementsInquiry() {
                       color: "rgba(12, 12, 12, 0.8)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
+                      position: "sticky",
+                      left: "300px",
+                      zIndex: 10,
+                      background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                     }}
                   >
                     {row.insuranceCompany}
@@ -1560,6 +1605,10 @@ export default function SettlementsInquiry() {
                       color: "rgba(12, 12, 12, 0.8)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
+                      position: "sticky",
+                      left: "400px",
+                      zIndex: 10,
+                      background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                     }}
                   >
                     {row.managerId ? (usersByIdMap.get(row.managerId)?.name || "-") : "-"}
@@ -1573,6 +1622,10 @@ export default function SettlementsInquiry() {
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
                       minWidth: "150px",
+                      position: "sticky",
+                      left: "500px",
+                      zIndex: 10,
+                      background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                     }}
                   >
                     <div
@@ -1595,6 +1648,10 @@ export default function SettlementsInquiry() {
                       color: "rgba(12, 12, 12, 0.8)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
+                      position: "sticky",
+                      left: "650px",
+                      zIndex: 10,
+                      background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                     }}
                   >
                     {row.admin}
