@@ -625,6 +625,8 @@ export default function FieldManagement() {
     console.log("=== 제출 조건 체크 (임시저장) ===");
     console.log("현장입력 완료:", isFieldInputComplete);
     console.log("제출 가능:", canSubmit);
+    console.log("누수유형 선택:", Array.from(leakTypes));
+    console.log("누수유형 기타 입력값:", leakTypeOther);
     console.log("================================");
     
     if (!selectedCaseData?.id) {
@@ -688,6 +690,11 @@ export default function FieldManagement() {
         fieldSurveyStatus: "draft",
         status,
       };
+
+      console.log("=== 저장 페이로드 ===");
+      console.log("accidentCategory 저장값:", categoryToSave);
+      console.log("payload:", JSON.stringify(payload, null, 2));
+      console.log("=====================");
 
       const data = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
 
