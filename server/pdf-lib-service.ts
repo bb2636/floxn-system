@@ -1308,20 +1308,27 @@ async function renderDrawingPage(
       );
 
       // 도면 이미지를 자동 크롭(trim)하여 실제 내용만 추출
-      // 흰색/투명 배경을 제거하고 실제 도면 내용만 크게 표시
+      // 흰색 배경을 제거하고 실제 도면 내용만 크게 표시
       let processedImageData = imageData;
       try {
-        const trimmedBuffer = await sharp(imageData)
+        // 먼저 이미지를 불투명 흰색 배경으로 평탄화
+        const flattenedBuffer = await sharp(imageData)
+          .flatten({ background: { r: 255, g: 255, b: 255 } })
+          .png()
+          .toBuffer();
+        
+        // 흰색 배경 트림 (높은 threshold로 약간의 회색/그림자도 포함)
+        const trimmedBuffer = await sharp(flattenedBuffer)
           .trim({ 
-            background: { r: 255, g: 255, b: 255, alpha: 0 },
-            threshold: 10  // 약간의 여유를 두고 트림
+            background: '#ffffff',
+            threshold: 50  // 높은 threshold로 더 공격적인 트림
           })
           .extend({
-            top: 20,
-            bottom: 20,
-            left: 20,
-            right: 20,
-            background: { r: 255, g: 255, b: 255, alpha: 1 }
+            top: 30,
+            bottom: 30,
+            left: 30,
+            right: 30,
+            background: { r: 255, g: 255, b: 255 }
           })
           .png()
           .toBuffer();
@@ -1331,11 +1338,11 @@ async function renderDrawingPage(
         
         // 크롭된 이미지가 너무 작지 않은 경우에만 사용
         if (trimmedMeta.width && trimmedMeta.height && 
-            trimmedMeta.width > 50 && trimmedMeta.height > 50) {
+            trimmedMeta.width > 100 && trimmedMeta.height > 100) {
           processedImageData = trimmedBuffer;
           console.log(`[pdf-lib] 자동 크롭 적용됨`);
         } else {
-          console.log(`[pdf-lib] 크롭 결과가 너무 작아 원본 사용`);
+          console.log(`[pdf-lib] 크롭 결과가 너무 작아 원본 사용: ${trimmedMeta.width}x${trimmedMeta.height}`);
         }
       } catch (trimErr) {
         console.log(`[pdf-lib] 자동 크롭 실패, 원본 사용:`, trimErr);
