@@ -1217,6 +1217,7 @@ export default function Intake({
   const isFormValid = useMemo(() => {
     const missingFields: string[] = [];
     if (!formData.accidentDate) missingFields.push("accidentDate (접수일자)");
+    if (!formData.managerId) missingFields.push("managerId (담당자명)");
     if (!formData.insuranceCompany)
       missingFields.push("insuranceCompany (보험사명)");
     if (!formData.clientResidence)
@@ -1243,6 +1244,13 @@ export default function Intake({
     if (!formData.accidentDate) {
       toast({
         description: "접수일자를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!formData.managerId) {
+      toast({
+        description: "담당자를 선택해주세요.",
         variant: "destructive",
       });
       return;
