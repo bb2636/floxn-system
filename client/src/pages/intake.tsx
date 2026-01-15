@@ -465,9 +465,20 @@ export default function Intake({
     return Array.from(new Set(companies));
   }, [assessors]);
 
-  const { data: clientCompanies = [] } = useQuery<string[]>({
-    queryKey: ["/api/client-companies"],
-  });
+  const clientCompanies = useMemo(() => {
+    const allCompanies = new Set<string>();
+
+    // Add insurance companies (보험사)
+    insuranceCompanies.forEach((company) => allCompanies.add(company));
+
+    // Add assessor companies (심사사)
+    assessorCompanies.forEach((company) => allCompanies.add(company));
+
+    // Add investigator companies (조사사/손사명)
+    investigatorCompanies.forEach((company) => allCompanies.add(company));
+
+    return Array.from(allCompanies).sort();
+  }, [insuranceCompanies, assessorCompanies, investigatorCompanies]);
 
   const filteredClients = useMemo(() => {
     if (!clientCompanies) return [];
@@ -1498,7 +1509,7 @@ export default function Intake({
                     }}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={selectTriggerClasses} 
                       data-testid="select-manager"
                     >
                       <SelectValue placeholder="담당자명" />
@@ -1520,7 +1531,6 @@ export default function Intake({
                   <input
                     className={disabledInputClasses}
                     value={formData.managerContact}
-                    readOnly
                     placeholder="연락처"
                     type="text"
                     data-testid="input-manager-contact"
