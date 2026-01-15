@@ -830,7 +830,7 @@ export default function FieldReport() {
     },
   });
 
-  // 보고서 승인 mutation (2차 승인) - 현재 케이스만 승인 가능 (-0 케이스에서만 표시)
+  // 보고서 승인 mutation (2차 승인) - 각 케이스 개별적으로 승인 가능
   const approvalMutation = useMutation({
     mutationFn: async () => {
       return apiRequest(
@@ -1213,15 +1213,15 @@ export default function FieldReport() {
               </Button>
             )}
 
-          {/* 승인 버튼: 손해방지(-0) 케이스에서만 표시 (피해세대 -1, -2 등에서는 숨김) */}
+          {/* 승인 버튼: 모든 케이스에서 개별적으로 2차 승인 가능 (-0, -1, -2, -3 등) */}
           {!isUserLoading &&
             canApproveReport &&
-            caseData?.caseNumber && /-0$/.test(caseData.caseNumber) &&
+            caseData?.caseNumber &&
             caseData.status === "현장정보제출" && (
               <Button
                 data-testid="button-approve-report"
                 onClick={() => {
-                  // -0 케이스에서만 승인 가능 (현재 케이스만 영향)
+                  // 각 케이스 개별적으로 승인 가능 (현재 케이스만 영향)
                   if (!caseData.reportApprovalDecision) {
                     setShowApprovalDialog(true);
                   }
