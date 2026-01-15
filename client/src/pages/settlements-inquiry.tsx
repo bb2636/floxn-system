@@ -614,7 +614,7 @@ export default function SettlementsInquiry() {
       <div
         className="mb-6"
         style={{
-          background: "#FFFFFF",
+          background: "rgba(255, 255, 255, 0.7)",
           borderRadius: "12px",
           padding: "24px",
           border: "1px solid rgba(12, 12, 12, 0.08)",
@@ -973,6 +973,7 @@ export default function SettlementsInquiry() {
       {/* Wide Table with Horizontal Scroll */}
       <div
         style={{
+          background: "rgba(255, 255, 255, 0.7)",
           borderRadius: "12px",
           border: "1px solid rgba(12, 12, 12, 0.08)",
           overflow: "hidden",
