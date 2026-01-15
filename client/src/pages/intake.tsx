@@ -2535,7 +2535,7 @@ export default function Intake({
                           {filteredPartners.map((partner) => (
                             <div
                               key={partner.name}
-                              className={`flex flex-row items-stretch w-full min-h-14 cursor-pointer border-b border-slate-100 ${tempSelectedPartner?.name === partner.name ? "bg-sky-50" : "hover:bg-slate-50"}`}
+                              className={`flex flex-row items-stretch w-full min-h-20 cursor-pointer border-b border-slate-100 ${tempSelectedPartner?.name === partner.name ? "bg-sky-50" : "hover:bg-slate-50"}`}
                               onClick={() => setTempSelectedPartner(partner)}
                               data-testid={`row-partner-${partner.name}`}
                             >
