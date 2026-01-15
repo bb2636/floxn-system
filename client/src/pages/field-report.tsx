@@ -1284,8 +1284,8 @@ export default function FieldReport() {
           return parseInt(suffixA) - parseInt(suffixB);
         });
         
-        // 2개 이상의 케이스가 있을 때만 버튼 표시 (관리자 및 협력사 모두 가능)
-        if (!isUserLoading && (isAdmin || isPartner) && allSuffixCases.length > 1) {
+        // 항상 버튼 표시 (관리자 및 협력사 모두 가능) - 관련 케이스가 1개만 있어도 표시
+        if (!isUserLoading && (isAdmin || isPartner)) {
           return (
             <div className="flex justify-end mb-4">
               <Popover open={isRelatedCasesPopoverOpen} onOpenChange={setIsRelatedCasesPopoverOpen}>
@@ -1336,49 +1336,63 @@ export default function FieldReport() {
                     </p>
                   </div>
                   <div className="p-2 max-h-48 overflow-y-auto">
-                    {allSuffixCases.map((suffixCase) => {
-                      const isCurrentCase = suffixCase.caseId === selectedCaseId;
-                      const suffix = suffixCase.caseNumber.match(/-(\d+)$/)?.[1] || "0";
-                      const label = suffix === "0" ? "손해방지" : `피해세대 ${suffix}`;
-                      
-                      return (
-                        <button
-                          key={suffixCase.caseId}
-                          onClick={() => {
-                            if (!isCurrentCase) {
-                              localStorage.setItem("selectedFieldSurveyCaseId", suffixCase.caseId);
-                              setIsRelatedCasesPopoverOpen(false);
-                              window.location.reload();
-                            }
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
-                            isCurrentCase 
-                              ? "bg-yellow-100 cursor-default" 
-                              : "hover-elevate active-elevate-2"
-                          }`}
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "13px",
-                            color: isCurrentCase ? "#B45309" : "#0C0C0C",
-                          }}
-                          disabled={isCurrentCase}
-                          data-testid={`button-switch-${suffixCase.caseNumber}`}
-                        >
-                          <span style={{ fontWeight: isCurrentCase ? 600 : 500 }}>
-                            {formatCaseNumber(suffixCase.caseNumber)}
-                          </span>
-                          <span 
-                            style={{ 
-                              marginLeft: "8px", 
-                              fontSize: "11px",
-                              color: isCurrentCase ? "#B45309" : "rgba(12, 12, 12, 0.5)"
+                    {allSuffixCases.length <= 1 ? (
+                      <p
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          color: "rgba(12, 12, 12, 0.5)",
+                          padding: "8px",
+                          textAlign: "center",
+                        }}
+                      >
+                        전환 가능한 다른 접수건이 없습니다
+                      </p>
+                    ) : (
+                      allSuffixCases.map((suffixCase) => {
+                        const isCurrentCase = suffixCase.caseId === selectedCaseId;
+                        const suffix = suffixCase.caseNumber.match(/-(\d+)$/)?.[1] || "0";
+                        const label = suffix === "0" ? "손해방지" : `피해세대 ${suffix}`;
+                        
+                        return (
+                          <button
+                            key={suffixCase.caseId}
+                            onClick={() => {
+                              if (!isCurrentCase) {
+                                localStorage.setItem("selectedFieldSurveyCaseId", suffixCase.caseId);
+                                setIsRelatedCasesPopoverOpen(false);
+                                window.location.reload();
+                              }
                             }}
+                            className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
+                              isCurrentCase 
+                                ? "bg-yellow-100 cursor-default" 
+                                : "hover-elevate active-elevate-2"
+                            }`}
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "13px",
+                              color: isCurrentCase ? "#B45309" : "#0C0C0C",
+                            }}
+                            disabled={isCurrentCase}
+                            data-testid={`button-switch-${suffixCase.caseNumber}`}
                           >
-                            ({label}){isCurrentCase ? " - 현재" : ""}
-                          </span>
-                        </button>
-                      );
-                    })}
+                            <span style={{ fontWeight: isCurrentCase ? 600 : 500 }}>
+                              {formatCaseNumber(suffixCase.caseNumber)}
+                            </span>
+                            <span 
+                              style={{ 
+                                marginLeft: "8px", 
+                                fontSize: "11px",
+                                color: isCurrentCase ? "#B45309" : "rgba(12, 12, 12, 0.5)"
+                              }}
+                            >
+                              ({label}){isCurrentCase ? " - 현재" : ""}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
                   </div>
                 </PopoverContent>
               </Popover>
