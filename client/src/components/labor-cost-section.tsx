@@ -706,6 +706,14 @@ export function LaborCostSection({
     const targetRow = rows.find((r) => r.id === rowId);
     if (targetRow?.isLinkedFromRecovery) return;
 
+    // 수량(quantity)은 음수가 될 수 없음 - 0 미만이면 0으로 설정
+    if (field === "quantity") {
+      const numValue = Number(value) || 0;
+      if (numValue < 0) {
+        value = 0;
+      }
+    }
+
     let demolitionRowToAdd: LaborCostRow | null = null;
     const currentRow = rows.find((r) => r.id === rowId);
 
@@ -2274,7 +2282,7 @@ export function LaborCostSection({
                     />
                   </td>
 
-                  {/* 수량(인) - I÷E (합계÷노임단가) 표시, 소수점 둘째 자리 */}
+                  {/* 수량(인) - 연동행: I÷E (합계÷노임단가), 직접추가행: 수기입력 가능 (소수점 1자리, 음수 불가) */}
                   <td
                     style={{
                       padding: "0 8px",
@@ -2284,26 +2292,59 @@ export function LaborCostSection({
                     }}
                   >
                     {(() => {
-                      // 수량 = I ÷ E (합계 ÷ 노임단가), 소수점 둘째 자리
+                      // 연동행: 수량 = I ÷ E (합계 ÷ 노임단가)
+                      // 직접추가행: 수기입력 가능
                       const I =
                         (row as MergedLaborCostRow).mergedAmount ??
                         row.amount ??
                         0;
                       const E = row.standardPrice || 0;
-                      const displayQuantity =
-                        E > 0 ? Math.round((I / E) * 100) / 100 : 0;
+                      
+                      // 연동행은 자동계산된 값 표시, 직접추가행은 row.quantity 사용
+                      const displayQuantity = isLinkedRow
+                        ? (E > 0 ? Math.round((I / E) * 100) / 100 : 0)
+                        : (row.quantity || 0);
+                      
                       return (
                         <Input
-                          type="number"
-                          step="0.01"
-                          value={displayQuantity.toFixed(2)}
-                          onChange={(e) =>
-                            updateRow(
-                              row.id,
-                              "quantity",
-                              Number(e.target.value) || 0,
-                            )
-                          }
+                          type="text"
+                          inputMode="decimal"
+                          value={isLinkedRow ? displayQuantity.toFixed(2) : (displayQuantity === 0 ? "" : String(Math.round(displayQuantity * 10) / 10))}
+                          onChange={(e) => {
+                            // 직접추가행만 수정 가능
+                            if (isLinkedRow) return;
+                            
+                            const inputValue = e.target.value;
+                            // 빈 값 허용 (0으로 처리)
+                            if (inputValue === "" || inputValue === ".") {
+                              updateRow(row.id, "quantity", 0);
+                              return;
+                            }
+                            
+                            // 숫자와 소수점만 허용
+                            const cleanValue = inputValue.replace(/[^\d.]/g, "");
+                            // 소수점 1자리까지만 허용
+                            const parts = cleanValue.split(".");
+                            let finalValue = parts[0];
+                            if (parts.length > 1) {
+                              finalValue += "." + parts[1].slice(0, 1);
+                            }
+                            
+                            const numValue = parseFloat(finalValue) || 0;
+                            // 음수 방지: 0 미만이면 0으로 설정
+                            const safeValue = Math.max(0, numValue);
+                            // 소수점 1자리까지 반올림
+                            const roundedValue = Math.round(safeValue * 10) / 10;
+                            updateRow(row.id, "quantity", roundedValue);
+                          }}
+                          onBlur={(e) => {
+                            // blur 시 값 정리 (소수점 1자리, 음수 방지)
+                            if (isLinkedRow) return;
+                            const numValue = parseFloat(e.target.value) || 0;
+                            const safeValue = Math.max(0, numValue);
+                            const roundedValue = Math.round(safeValue * 10) / 10;
+                            updateRow(row.id, "quantity", roundedValue);
+                          }}
                           className="h-9 border text-center"
                           style={{
                             fontFamily: "Pretendard",
@@ -2315,8 +2356,10 @@ export function LaborCostSection({
                           disabled={
                             isLinkedRow ||
                             ((row as MergedLaborCostRow).mergedSourceIds
-                              ?.length ?? 0) > 1
+                              ?.length ?? 0) > 1 ||
+                            isReadOnly
                           }
+                          placeholder="0"
                           data-testid={`input-quantity-labor-${globalIndex}`}
                         />
                       );
