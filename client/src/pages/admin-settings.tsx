@@ -581,6 +581,91 @@ export default function AdminSettings() {
     },
   });
 
+  // 드래그 앤 드롭 정렬용 상태
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
+
+  // 마스터 데이터 순서 변경 mutation
+  const reorderMasterDataMutation = useMutation({
+    mutationFn: async (updates: Array<{ id: string; displayOrder: number }>) => {
+      await Promise.all(
+        updates.map(update => 
+          apiRequest("PATCH", `/api/master-data/${update.id}`, { displayOrder: update.displayOrder })
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master-data"] });
+      toast({
+        title: "순서 변경 완료",
+        description: "항목 순서가 변경되었습니다.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "순서 변경 실패",
+        description: error.message || "순서를 변경하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 드래그 앤 드롭 핸들러
+  const handleDragStart = (e: React.DragEvent, itemId: string) => {
+    setDraggedItemId(itemId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent, itemId: string) => {
+    e.preventDefault();
+    if (draggedItemId && draggedItemId !== itemId) {
+      setDragOverItemId(itemId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverItemId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetItemId: string) => {
+    e.preventDefault();
+    if (!draggedItemId || draggedItemId === targetItemId) {
+      setDraggedItemId(null);
+      setDragOverItemId(null);
+      return;
+    }
+
+    const items = getCategoryItems(selectedCategory);
+    const isMasterCategory = isMasterDataCategory(selectedCategory);
+    
+    if (isMasterCategory) {
+      const masterItems = items as MasterData[];
+      const draggedIdx = masterItems.findIndex(item => item.id === draggedItemId);
+      const targetIdx = masterItems.findIndex(item => item.id === targetItemId);
+      
+      if (draggedIdx !== -1 && targetIdx !== -1) {
+        const newItems = [...masterItems];
+        const [removed] = newItems.splice(draggedIdx, 1);
+        newItems.splice(targetIdx, 0, removed);
+        
+        const updates = newItems.map((item, idx) => ({
+          id: item.id,
+          displayOrder: idx,
+        }));
+        
+        reorderMasterDataMutation.mutate(updates);
+      }
+    }
+
+    setDraggedItemId(null);
+    setDragOverItemId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItemId(null);
+    setDragOverItemId(null);
+  };
+
   // 선택된 마스터 데이터 일괄 삭제
   const deleteSelectedMasterData = () => {
     if (selectedMasterDataIds.size === 0) {
@@ -3318,12 +3403,23 @@ export default function AdminSettings() {
                             const itemNote = isMasterCategory ? (item as MasterData).note || "" : "";
                             const itemId = isMasterCategory ? (item as MasterData).id : `mem-${idx}`;
                             const isEditing = editingMasterData[itemId];
+                            const isDragging = draggedItemId === itemId;
+                            const isDragOver = dragOverItemId === itemId;
                             
                             return (
                               <tr
                                 key={itemId}
+                                draggable={isMasterCategory}
+                                onDragStart={(e) => isMasterCategory && handleDragStart(e, itemId)}
+                                onDragOver={(e) => isMasterCategory && handleDragOver(e, itemId)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => isMasterCategory && handleDrop(e, itemId)}
+                                onDragEnd={handleDragEnd}
                                 style={{
                                   borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                                  opacity: isDragging ? 0.5 : 1,
+                                  background: isDragOver ? "rgba(0, 143, 237, 0.1)" : "transparent",
+                                  transition: "background 0.2s ease",
                                 }}
                               >
                                 <td
@@ -3332,7 +3428,7 @@ export default function AdminSettings() {
                                     fontFamily: "Pretendard",
                                     fontSize: "16px",
                                     color: "#686A6E",
-                                    cursor: "grab",
+                                    cursor: isMasterCategory ? "grab" : "default",
                                   }}
                                 >
                                   ≡
