@@ -1834,7 +1834,7 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-team"
                     >
-                      <SelectValue placeholder="손사명" />
+                      <SelectValue placeholder="조사사 명" />
                     </SelectTrigger>
                     <SelectContent>
                       {Array.from(
