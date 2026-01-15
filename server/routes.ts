@@ -8341,10 +8341,8 @@ FLOXN`;
         caseData.insuredAddress ||
         "-";
 
-      // 모든 케이스가 선견적요청이면 주소 없이 "현장출동비용"으로 표시
-      const fieldDispatchTitle = allPreEstimateRequest
-        ? "현장출동비용"
-        : `[${mainAddressLabel}] - 현장출동비용`;
+      // 현장출동비용은 항상 주소 없이 표시
+      const fieldDispatchTitle = "현장출동비용";
 
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
         particulars.push({
@@ -9157,14 +9155,14 @@ FLOXN`;
           fieldDispatchPreventionAmount > 0
         ) {
           particulars.push({
-            title: `[${mainAddressLabel}] - 현장출동비용`,
+            title: "현장출동비용",
             amount: fieldDispatchPreventionAmount,
           });
         }
 
         if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
           particulars.push({
-            title: `[${mainAddressLabel}] - 현장출동비용`,
+            title: "현장출동비용",
             amount: fieldDispatchPropertyAmount,
           });
         }
