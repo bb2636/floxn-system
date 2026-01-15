@@ -390,42 +390,14 @@ export default function Intake({
 
   const filteredAssessorEmployees = useMemo(() => {
     if (!formData.assessorId || !assessors) return [];
-    if (formData.assessorDepartment) {
-      return assessors.filter(
-        (emp) => emp.company === formData.assessorId && emp.department === formData.assessorDepartment
-      );
-    }
     return assessors.filter((emp) => emp.company === formData.assessorId);
-  }, [formData.assessorId, formData.assessorDepartment, assessors]);
-
-  const filteredAssessorDepartments = useMemo(() => {
-    if (!formData.assessorId || !assessors) return [];
-    const departments = assessors
-      .filter((emp) => emp.company === formData.assessorId)
-      .map((emp) => emp.department)
-      .filter((dept): dept is string => !!dept);
-    return Array.from(new Set(departments));
   }, [formData.assessorId, assessors]);
 
   const filteredInvestigatorEmployees = useMemo(() => {
     if (!formData.investigatorTeam || !investigators) return [];
-    if (formData.investigatorDepartment) {
-      return investigators.filter(
-        (emp) => emp.company === formData.investigatorTeam && emp.department === formData.investigatorDepartment
-      );
-    }
     return investigators.filter(
       (emp) => emp.company === formData.investigatorTeam,
     );
-  }, [formData.investigatorTeam, formData.investigatorDepartment, investigators]);
-
-  const filteredInvestigatorDepartments = useMemo(() => {
-    if (!formData.investigatorTeam || !investigators) return [];
-    const departments = investigators
-      .filter((emp) => emp.company === formData.investigatorTeam)
-      .map((emp) => emp.department)
-      .filter((dept): dept is string => !!dept);
-    return Array.from(new Set(departments));
   }, [formData.investigatorTeam, investigators]);
 
   const investigatorCompanies = useMemo(() => {
@@ -1060,14 +1032,11 @@ export default function Intake({
           updated.clientContact = selectedEmployee.phone || "";
       }
 
-      if (field === "assessorId") {
-        updated.assessorDepartment = "";
-        updated.assessorTeam = "";
-        updated.assessorContact = "";
-        updated.assessorEmail = "";
-      }
-
-      if (field === "assessorDepartment") {
+      if (field === "assessorId" && value && allUsers) {
+        const companyUser = allUsers.find(
+          (u) => u.company === value && u.role === "심사사",
+        );
+        updated.assessorDepartment = companyUser?.department || "";
         updated.assessorTeam = "";
         updated.assessorContact = "";
         updated.assessorEmail = "";
@@ -1083,14 +1052,11 @@ export default function Intake({
         }
       }
 
-      if (field === "investigatorTeam") {
-        updated.investigatorDepartment = "";
-        updated.investigatorTeamName = "";
-        updated.investigatorContact = "";
-        updated.investigatorEmail = "";
-      }
-
-      if (field === "investigatorDepartment") {
+      if (field === "investigatorTeam" && value && allUsers) {
+        const companyUser = allUsers.find(
+          (u) => u.company === value && u.role === "조사사",
+        );
+        updated.investigatorDepartment = companyUser?.department || "";
         updated.investigatorTeamName = "";
         updated.investigatorContact = "";
         updated.investigatorEmail = "";
@@ -1716,27 +1682,14 @@ export default function Intake({
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
-                  <Select
+                  <input
+                    className={disabledInputClasses}
                     value={formData.assessorDepartment}
-                    onValueChange={(value) =>
-                      handleInputChange("assessorDepartment", value)
-                    }
-                    disabled={readOnly || !formData.assessorId}
-                  >
-                    <SelectTrigger
-                      className={selectTriggerClasses}
-                      data-testid="select-assessor-department"
-                    >
-                      <SelectValue placeholder="부서 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredAssessorDepartments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    readOnly
+                    placeholder="소속부서명"
+                    type="text"
+                    data-testid="input-assessor-department"
+                  />
                 </div>
               </div>
 
@@ -1821,27 +1774,14 @@ export default function Intake({
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
-                  <Select
+                  <input
+                    className={disabledInputClasses}
                     value={formData.investigatorDepartment}
-                    onValueChange={(value) =>
-                      handleInputChange("investigatorDepartment", value)
-                    }
-                    disabled={readOnly || !formData.investigatorTeam}
-                  >
-                    <SelectTrigger
-                      className={selectTriggerClasses}
-                      data-testid="select-investigator-department"
-                    >
-                      <SelectValue placeholder="부서 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredInvestigatorDepartments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    readOnly
+                    placeholder="소속부서명"
+                    type="text"
+                    data-testid="input-investigator-department"
+                  />
                 </div>
               </div>
 
