@@ -1572,7 +1572,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>증권번호</label>
                   <input
-                    className={inputClasses}
+                    className={`${inputClasses} bg-white`}
                     value={formData.insurancePolicyNo}
                     onChange={(e) =>
                       handleInputChange("insurancePolicyNo", e.target.value)
@@ -1929,7 +1929,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>보험계약자</label>
                   <input
-                    className={inputClasses}
+                    className={`${inputClasses} bg-white`}
                     value={formData.policyHolderName}
                     onChange={(e) =>
                       handleInputChange("policyHolderName", e.target.value)
@@ -1949,7 +1949,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <input
-                    className={inputClasses}
+                    className={`${inputClasses} bg-white`}
                     value={formData.insuredName}
                     onChange={(e) =>
                       handleInputChange("insuredName", e.target.value)
@@ -1969,7 +1969,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <input
-                    className={inputClasses}
+                    className={`${inputClasses} bg-white`}
                     value={formData.insuredContact}
                     onChange={(e) =>
                       handleInputChange("insuredContact", e.target.value)
@@ -1993,7 +1993,7 @@ export default function Intake({
                     ref={insuredAddressWrapperRef}
                   >
                     <input
-                      className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""}`}
+                      className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""} bg-white`}
                       value={formData.insuredAddress}
                       onClick={() => !readOnly && openInsuredAddressDropdown()}
                       readOnly
@@ -2018,7 +2018,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>상세주소</label>
                   <input
-                    className={inputClasses}
+                    className={`${inputClasses} bg-white`}
                     value={formData.insuredAddressDetail}
                     onChange={(e) =>
                       handleInputChange("insuredAddressDetail", e.target.value)
@@ -2044,7 +2044,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>피해자</label>
                   <input
-                    className={inputClasses}
+                    className={`${inputClasses} bg-white`}
                     value={formData.victimName}
                     onChange={(e) =>
                       handleInputChange("victimName", e.target.value)
@@ -2061,7 +2061,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>피해자 연락처</label>
                   <input
-                    className={inputClasses}
+                    className={`${inputClasses} bg-white`}
                     value={formData.victimContact}
                     onChange={(e) =>
                       handleInputChange("victimContact", e.target.value)
@@ -2078,7 +2078,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>상세주소</label>
                   <input
-                    className={inputClasses}
+                    className={`${inputClasses} bg-white`}
                     value={formData.victimAddress}
                     onChange={(e) =>
                       handleInputChange("victimAddress", e.target.value)
