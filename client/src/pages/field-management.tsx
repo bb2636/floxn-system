@@ -325,7 +325,10 @@ export default function FieldManagement() {
   const handleOpenEditVictimDialog = async (caseItem: Case) => {
     setEditingVictimCase(caseItem);
     
-    console.log(`[피해자 수정] 다이얼로그 열기: caseItem.id=${caseItem.id}, selectedCase=${selectedCase}`);
+    const caseSuffix = parseInt((caseItem.caseNumber || "").split("-")[1] || "0");
+    const isAdditionalVictim = caseSuffix >= 2;
+    
+    console.log(`[피해자 수정] 다이얼로그 열기: caseItem.id=${caseItem.id}, suffix=${caseSuffix}, isAdditionalVictim=${isAdditionalVictim}`);
     console.log(`[피해자 수정] caseItem 데이터:`, {
       victimName: caseItem.victimName,
       victimContact: caseItem.victimContact,
@@ -344,11 +347,20 @@ export default function FieldManagement() {
       });
       const name = selectedCaseDetail.victimName || "";
       const contact = selectedCaseDetail.victimContact || "";
-      const hasVictimInfo = !!selectedCaseDetail.victimAddress;
-      const address = selectedCaseDetail.insuredAddress || "";
-      const addressDetail = hasVictimInfo 
-        ? (selectedCaseDetail.victimAddress || "") 
-        : (selectedCaseDetail.insuredAddressDetail || "");
+      
+      let address: string;
+      let addressDetail: string;
+      
+      if (isAdditionalVictim) {
+        address = selectedCaseDetail.victimAddress || "";
+        addressDetail = selectedCaseDetail.victimAddressDetail || "";
+      } else {
+        const hasVictimInfo = !!selectedCaseDetail.victimAddress;
+        address = selectedCaseDetail.insuredAddress || "";
+        addressDetail = hasVictimInfo 
+          ? (selectedCaseDetail.victimAddress || "") 
+          : (selectedCaseDetail.insuredAddressDetail || "");
+      }
       
       setEditVictimName(name);
       setEditVictimContact(contact);
@@ -374,32 +386,68 @@ export default function FieldManagement() {
             insuredAddress: caseData.insuredAddress,
             insuredAddressDetail: caseData.insuredAddressDetail,
           });
-          const hasVictimInfoApi = !!caseData.victimAddress;
+          
+          let address: string;
+          let addressDetail: string;
+          
+          if (isAdditionalVictim) {
+            address = caseData.victimAddress || "";
+            addressDetail = caseData.victimAddressDetail || "";
+          } else {
+            const hasVictimInfoApi = !!caseData.victimAddress;
+            address = caseData.insuredAddress || "";
+            addressDetail = hasVictimInfoApi 
+              ? (caseData.victimAddress || "") 
+              : (caseData.insuredAddressDetail || "");
+          }
+          
           setEditVictimName(caseData.victimName || "");
           setEditVictimContact(caseData.victimContact || "");
-          setEditVictimAddress(caseData.insuredAddress || "");
-          setEditVictimAddressDetail(hasVictimInfoApi 
-            ? (caseData.victimAddress || "") 
-            : (caseData.insuredAddressDetail || ""));
+          setEditVictimAddress(address);
+          setEditVictimAddressDetail(addressDetail);
         } else {
           console.log(`[피해자 수정] API 실패, caseItem 데이터 사용`);
-          const hasVictimInfoItem = !!caseItem.victimAddress;
+          
+          let address: string;
+          let addressDetail: string;
+          
+          if (isAdditionalVictim) {
+            address = caseItem.victimAddress || "";
+            addressDetail = caseItem.victimAddressDetail || "";
+          } else {
+            const hasVictimInfoItem = !!caseItem.victimAddress;
+            address = caseItem.insuredAddress || "";
+            addressDetail = hasVictimInfoItem 
+              ? (caseItem.victimAddress || "") 
+              : (caseItem.insuredAddressDetail || "");
+          }
+          
           setEditVictimName(caseItem.victimName || "");
           setEditVictimContact(caseItem.victimContact || "");
-          setEditVictimAddress(caseItem.insuredAddress || "");
-          setEditVictimAddressDetail(hasVictimInfoItem 
-            ? (caseItem.victimAddress || "") 
-            : (caseItem.insuredAddressDetail || ""));
+          setEditVictimAddress(address);
+          setEditVictimAddressDetail(addressDetail);
         }
       } catch (error) {
         console.error("케이스 조회 실패:", error);
-        const hasVictimInfoCatch = !!caseItem.victimAddress;
+        
+        let address: string;
+        let addressDetail: string;
+        
+        if (isAdditionalVictim) {
+          address = caseItem.victimAddress || "";
+          addressDetail = caseItem.victimAddressDetail || "";
+        } else {
+          const hasVictimInfoCatch = !!caseItem.victimAddress;
+          address = caseItem.insuredAddress || "";
+          addressDetail = hasVictimInfoCatch 
+            ? (caseItem.victimAddress || "") 
+            : (caseItem.insuredAddressDetail || "");
+        }
+        
         setEditVictimName(caseItem.victimName || "");
         setEditVictimContact(caseItem.victimContact || "");
-        setEditVictimAddress(caseItem.insuredAddress || "");
-        setEditVictimAddressDetail(hasVictimInfoCatch 
-          ? (caseItem.victimAddress || "") 
-          : (caseItem.insuredAddressDetail || ""));
+        setEditVictimAddress(address);
+        setEditVictimAddressDetail(addressDetail);
       }
       setEditVictimDialogOpen(true);
     }
@@ -408,19 +456,40 @@ export default function FieldManagement() {
   const handleSaveEditVictim = async () => {
     if (!editingVictimCase) return;
     
+    const caseSuffix = parseInt((editingVictimCase.caseNumber || "").split("-")[1] || "0");
+    const isAdditionalVictim = caseSuffix >= 2;
+    
     setIsEditingVictim(true);
     try {
-      await apiRequest("PATCH", `/api/cases/${editingVictimCase.id}`, {
-        victimName: editVictimName,
-        victimContact: editVictimContact,
-        insuredAddress: editVictimAddress,
-        victimAddress: editVictimAddressDetail,
-      });
+      let patchData: Record<string, string>;
+      
+      if (isAdditionalVictim) {
+        patchData = {
+          victimName: editVictimName,
+          victimContact: editVictimContact,
+          victimAddress: editVictimAddress,
+          victimAddressDetail: editVictimAddressDetail,
+        };
+      } else {
+        patchData = {
+          victimName: editVictimName,
+          victimContact: editVictimContact,
+          insuredAddress: editVictimAddress,
+          victimAddress: editVictimAddressDetail,
+        };
+      }
+      
+      await apiRequest("PATCH", `/api/cases/${editingVictimCase.id}`, patchData);
       
       if (editingVictimCase.id === selectedCase) {
         setVictimName(editVictimName);
         setVictimContact(editVictimContact);
-        setVictimAddress(editVictimAddressDetail);
+        if (isAdditionalVictim) {
+          setVictimAddress(editVictimAddress);
+          setVictimAddressDetail(editVictimAddressDetail);
+        } else {
+          setVictimAddress(editVictimAddressDetail);
+        }
       }
       
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
