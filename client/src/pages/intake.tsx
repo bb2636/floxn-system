@@ -465,20 +465,9 @@ export default function Intake({
     return Array.from(new Set(companies));
   }, [assessors]);
 
-  const clientCompanies = useMemo(() => {
-    const allCompanies = new Set<string>();
-    
-    // Add insurance companies (보험사)
-    insuranceCompanies.forEach((company) => allCompanies.add(company));
-    
-    // Add assessor companies (심사사)
-    assessorCompanies.forEach((company) => allCompanies.add(company));
-    
-    // Add investigator companies (조사사/손사명)
-    investigatorCompanies.forEach((company) => allCompanies.add(company));
-    
-    return Array.from(allCompanies).sort();
-  }, [insuranceCompanies, assessorCompanies, investigatorCompanies]);
+  const { data: clientCompanies = [] } = useQuery<string[]>({
+    queryKey: ["/api/client-companies"],
+  });
 
   const filteredClients = useMemo(() => {
     if (!clientCompanies) return [];
@@ -1507,7 +1496,6 @@ export default function Intake({
                       if (mgr)
                         handleInputChange("managerContact", mgr.phone || "");
                     }}
-                    disabled={readOnly}
                   >
                     <SelectTrigger
                       className={selectTriggerClasses}
@@ -1551,7 +1539,6 @@ export default function Intake({
             </div>
 
             <div className="grid grid-cols-12 gap-x-4 gap-y-3">
-              
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>
@@ -2220,7 +2207,9 @@ export default function Intake({
                         <>
                           <SelectItem value="없음">없음</SelectItem>
                           <SelectItem value="직접복구">직접복구</SelectItem>
-                          <SelectItem value="선ol�적요청">선견적요청</SelectItem>
+                          <SelectItem value="선ol�적요청">
+                            선견적요청
+                          </SelectItem>
                         </>
                       )}
                     </SelectContent>
@@ -2563,7 +2552,10 @@ export default function Intake({
                               <div className="px-3 py-3 w-[93px] text-sm text-slate-600 flex items-center">
                                 {partner.pendingCount}
                               </div>
-                              <div className="px-3 py-3 flex-1 min-w-0 text-sm text-slate-600 items-start" style={{ wordBreak: 'break-word' }}>
+                              <div
+                                className="px-3 py-3 flex-1 min-w-0 text-sm text-slate-600 items-start"
+                                style={{ wordBreak: "break-word" }}
+                              >
                                 {partner.region}
                               </div>
                               <div className="px-3 py-3 w-[49px] flex justify-center items-center">

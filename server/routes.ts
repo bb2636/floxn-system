@@ -530,6 +530,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all client companies (unique company names from users with role '보험사', '심사사', '조사사')
+  app.get("/api/client-companies", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const users = await storage.getAllUsers();
+      const allowedRoles = ["보험사", "심사사", "조사사"];
+      const companySet = new Set<string>();
+      users
+        .filter((u) => u.role && allowedRoles.includes(u.role) && u.company)
+        .forEach((u) => companySet.add(u.company!));
+      const clientCompanies = Array.from(companySet).sort();
+      res.json(clientCompanies);
+    } catch (error) {
+      console.error("Get client companies error:", error);
+      res
+        .status(500)
+        .json({ error: "의뢰사 목록을 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Get all users endpoint (admin only)
   app.get("/api/users", async (req, res) => {
     // Check authentication
