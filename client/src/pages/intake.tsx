@@ -1498,7 +1498,7 @@ export default function Intake({
                     }}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses} 
+                      className={selectTriggerClasses}
                       data-testid="select-manager"
                     >
                       <SelectValue placeholder="담당자명" />
@@ -1589,7 +1589,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>사고번호</label>
                   <input
-                    className={inputClasses}
+                    className={`${inputClasses} bg-white`}
                     value={formData.insuranceAccidentNo}
                     onChange={(e) =>
                       handleInputChange("insuranceAccidentNo", e.target.value)
@@ -1812,7 +1812,7 @@ export default function Intake({
               {/* 손사/조사사 Row */}
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>손사명</label>
+                  <label className={labelClasses}>손el�명</label>
                   <Select
                     value={formData.investigatorTeam}
                     onValueChange={(value) =>
