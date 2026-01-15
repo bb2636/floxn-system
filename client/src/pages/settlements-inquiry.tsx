@@ -418,6 +418,14 @@ export default function SettlementsInquiry() {
 
       // Use first case for common data (typically -0 case has main info)
       const primaryCase = casesInGroup[0];
+      
+      // 관리자 정보는 -0 케이스(손해방지)에서 우선 가져옴
+      // -0 케이스가 정산 상태가 아닐 경우, 전체 cases에서 같은 prefix의 -0 케이스를 찾음
+      const preventionCaseInGroup = casesInGroup.find(c => c.isPrevention);
+      const zeroCase = preventionCaseInGroup 
+        || cases.find(c => getCaseNumberPrefix(c.caseNumber) === prefix && getCaseSuffix(c.caseNumber) === 0);
+      // 관리자 ID: -0 케이스의 managerId 우선, 없으면 primaryCase의 managerId
+      const groupManagerId = zeroCase?.managerId || preventionCaseInGroup?.managerId || primaryCase.managerId;
 
       // 그룹 내 직접복구 건이 있는지 확인
       // 직접복구 건이 하나라도 있으면 해당 건들의 금액만 표시, 사용료 없음
@@ -477,7 +485,7 @@ export default function SettlementsInquiry() {
         caseNumberPrefix: prefix,
         insuranceCompany: primaryCase.insuranceCompany,
         manager: primaryCase.manager,
-        managerId: primaryCase.managerId,
+        managerId: groupManagerId,
         withdrawalNumber: primaryCase.withdrawalNumber,
         accidentNumber: primaryCase.accidentNumber,
         admin: primaryCase.admin,
