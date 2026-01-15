@@ -1353,8 +1353,8 @@ export default function FieldDrawing() {
 
           {/* 저장 버튼 (우측 상단) */}
           <div className="absolute top-4 right-4 z-10 flex gap-2" data-ui="save-buttons">
-            {/* 관련접수건 도면 가져오기 버튼 */}
-            {relatedCasesWithDrawings?.relatedCases && relatedCasesWithDrawings.relatedCases.length > 0 && !isReadOnly && (
+            {/* 관련접수건 도면 가져오기 버튼 - 항상 표시 */}
+            {!isReadOnly && (
               <Popover open={isImportPopoverOpen} onOpenChange={setIsImportPopoverOpen}>
                 <PopoverTrigger asChild>
                   <button
@@ -1404,36 +1404,50 @@ export default function FieldDrawing() {
                     </p>
                   </div>
                   <div className="p-2 max-h-48 overflow-y-auto">
-                    {relatedCasesWithDrawings.relatedCases.map((relatedCase) => (
-                      <button
-                        key={relatedCase.caseId}
-                        onClick={() => cloneDrawingMutation.mutate(relatedCase.caseId)}
-                        disabled={cloneDrawingMutation.isPending}
-                        className="w-full text-left px-3 py-2 rounded-lg hover-elevate active-elevate-2 transition-all"
+                    {(!relatedCasesWithDrawings?.relatedCases || relatedCasesWithDrawings.relatedCases.length === 0) ? (
+                      <p
                         style={{
                           fontFamily: "Pretendard",
-                          fontSize: "13px",
-                          color: "#0C0C0C",
-                          opacity: cloneDrawingMutation.isPending ? 0.6 : 1,
+                          fontSize: "12px",
+                          color: "rgba(12, 12, 12, 0.5)",
+                          padding: "8px",
+                          textAlign: "center",
                         }}
-                        data-testid={`button-import-from-${relatedCase.caseNumber}`}
                       >
-                        <span style={{ fontWeight: 500 }}>
-                          {formatCaseNumber(relatedCase.caseNumber)}
-                        </span>
-                        {cloneDrawingMutation.isPending && (
-                          <span 
-                            className="ml-2"
-                            style={{ 
-                              fontSize: "11px", 
-                              color: "#F59E0B" 
-                            }}
-                          >
-                            복사 중...
+                        가져올 수 있는 관련 접수건 도면이 없습니다
+                      </p>
+                    ) : (
+                      relatedCasesWithDrawings.relatedCases.map((relatedCase) => (
+                        <button
+                          key={relatedCase.caseId}
+                          onClick={() => cloneDrawingMutation.mutate(relatedCase.caseId)}
+                          disabled={cloneDrawingMutation.isPending}
+                          className="w-full text-left px-3 py-2 rounded-lg hover-elevate active-elevate-2 transition-all"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "13px",
+                            color: "#0C0C0C",
+                            opacity: cloneDrawingMutation.isPending ? 0.6 : 1,
+                          }}
+                          data-testid={`button-import-from-${relatedCase.caseNumber}`}
+                        >
+                          <span style={{ fontWeight: 500 }}>
+                            {formatCaseNumber(relatedCase.caseNumber)}
                           </span>
-                        )}
-                      </button>
-                    ))}
+                          {cloneDrawingMutation.isPending && (
+                            <span 
+                              className="ml-2"
+                              style={{ 
+                                fontSize: "11px", 
+                                color: "#F59E0B" 
+                              }}
+                            >
+                              복사 중...
+                            </span>
+                          )}
+                        </button>
+                      ))
+                    )}
                   </div>
                 </PopoverContent>
               </Popover>
