@@ -1131,7 +1131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 createdCases.push(updatedCase);
 
                 // 피해세대 케이스가 이미 존재하는지 확인
-                const existingVictimCases = await storage.getRelatedCases(existingPrefix);
+                const existingVictimCases = await storage.getCasesByPrefix(existingPrefix, validatedData.id);
                 const hasExistingVictimCase = existingVictimCases.some(
                   (c) => c.caseNumber && c.caseNumber !== newCaseNumber && !c.caseNumber.endsWith('-0')
                 );
