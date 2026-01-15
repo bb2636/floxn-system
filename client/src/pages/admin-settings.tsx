@@ -1062,11 +1062,10 @@ export default function AdminSettings() {
       <div className="relative flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
         <div
-          className="flex flex-col"
+          className="flex flex-col bg-white"
           style={{
             width: "260px",
-            background: "rgba(255, 255, 255, 0.06)",
-            borderRight: "1px solid rgba(0, 143, 237, 0.2)",
+            borderRight: "1px solid #E5E7EB",
           }}
         >
           {/* Section Header */}
