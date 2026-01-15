@@ -1189,17 +1189,37 @@ export default function Intake({
   };
 
   const isFormValid = useMemo(() => {
-    if (!formData.accidentDate) return false;
-    if (!formData.insuranceCompany) return false;
-    if (!formData.clientResidence) return false;
-    if (!formData.clientName) return false;
-    if (!formData.insuredName) return false;
-    if (!formData.insuredContact) return false;
-    if (!formData.insuredAddress) return false;
-    if (!formData.accidentType) return false;
-    if (!formData.restorationMethod) return false;
-    if (!formData.assignedPartner) return false;
-    if (!formData.assignedPartnerManager) return false;
+    const missingFields: string[] = [];
+    if (!formData.accidentDate) missingFields.push("accidentDate (접수일자)");
+    if (!formData.insuranceCompany) missingFields.push("insuranceCompany (보험사명)");
+    if (!formData.clientResidence) missingFields.push("clientResidence (의뢰사)");
+    if (!formData.clientName) missingFields.push("clientName (의뢰자)");
+    if (!formData.insuredName) missingFields.push("insuredName (피보험자 성명)");
+    if (!formData.insuredContact) missingFields.push("insuredContact (피보험자 연락처)");
+    if (!formData.insuredAddress) missingFields.push("insuredAddress (사고장소)");
+    if (!formData.accidentType) missingFields.push("accidentType (사고유형)");
+    if (!formData.restorationMethod) missingFields.push("restorationMethod (복구/대체)");
+    if (!formData.assignedPartner) missingFields.push("assignedPartner (협력사)");
+    if (!formData.assignedPartnerManager) missingFields.push("assignedPartnerManager (협력사 담당자)");
+    
+    if (missingFields.length > 0) {
+      console.log("❌ 누락된 필수 필드:", missingFields);
+      console.log("현재 formData 값:", {
+        accidentDate: formData.accidentDate,
+        insuranceCompany: formData.insuranceCompany,
+        clientResidence: formData.clientResidence,
+        clientName: formData.clientName,
+        insuredName: formData.insuredName,
+        insuredContact: formData.insuredContact,
+        insuredAddress: formData.insuredAddress,
+        accidentType: formData.accidentType,
+        restorationMethod: formData.restorationMethod,
+        assignedPartner: formData.assignedPartner,
+        assignedPartnerManager: formData.assignedPartnerManager,
+      });
+      return false;
+    }
+    console.log("✅ 모든 필수 필드 입력 완료");
     return true;
   }, [formData]);
 
