@@ -119,9 +119,6 @@ export default function Intake({
   const [addressDropdownOpen, setAddressDropdownOpen] = useState<'main' | 'detail' | null>(null);
   const addressContainerRef = useRef<HTMLDivElement>(null);
   const detailAddressContainerRef = useRef<HTMLDivElement>(null);
-  
-  const [addressModalOpen, setAddressModalOpen] = useState(false);
-  const addressModalContainerRef = useRef<HTMLDivElement>(null);
 
   // ESC 키로 모달 및 드롭다운 닫기
   useEffect(() => {
@@ -1247,29 +1244,22 @@ export default function Intake({
     }
   };
 
-  useEffect(() => {
-    if (addressModalOpen) {
-      setTimeout(() => {
-        if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
-          const container = addressModalContainerRef.current;
-          if (container) {
-            container.innerHTML = '';
-            new (window as any).daum.Postcode({
-              oncomplete: function (data: any) {
-                handleInputChange("insuredAddress", data.address);
-                setAddressModalOpen(false);
-              },
-              onclose: function () {
-                setAddressModalOpen(false);
-              },
-              width: '100%',
-              height: '100%',
-            }).embed(container);
-          }
-        }
-      }, 100);
+  const openAddressPopup = () => {
+    if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+      new (window as any).daum.Postcode({
+        oncomplete: function (data: any) {
+          handleInputChange("insuredAddress", data.address);
+        },
+        width: '100%',
+        height: '100%',
+      }).open();
+    } else {
+      toast({
+        description: "주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     }
-  }, [addressModalOpen]);
+  };
 
   if (userLoading || !user) return null;
 
@@ -1869,23 +1859,16 @@ export default function Intake({
                     피보험자 주소
                     <RequiredMark />
                   </label>
-                  <div className="relative flex-1">
-                    <input
-                      className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""}`}
-                      value={formData.insuredAddress}
-                      onClick={() => !readOnly && setAddressModalOpen(true)}
-                      readOnly
-                      disabled={readOnly}
-                      placeholder="클릭하여 주소 검색"
-                      type="text"
-                      data-testid="input-insured-address"
-                    />
-                    {addressModalOpen && (
-                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
-                        <div ref={addressModalContainerRef} style={{ height: '400px', width: '100%' }} />
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""}`}
+                    value={formData.insuredAddress}
+                    onClick={() => !readOnly && openAddressPopup()}
+                    readOnly
+                    disabled={readOnly}
+                    placeholder="클릭하여 주소 검색"
+                    type="text"
+                    data-testid="input-insured-address"
+                  />
                 </div>
               </div>
 
