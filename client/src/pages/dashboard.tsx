@@ -254,8 +254,17 @@ export default function Dashboard() {
   const myTasks = useMemo(() => {
     if (!allCases || !user) return [];
     
-    // 모든 사용자 (협력사 포함): 본인이 담당자로 지정된 건만 표시
-    const filteredCases = allCases.filter(c => c.assignedTo === user.id);
+    const isPartner = user.role === "협력사";
+    
+    const filteredCases = allCases.filter(c => {
+      // 담당자로 직접 지정된 경우
+      if (c.assignedTo === user.id) return true;
+      
+      // 협력사 사용자: 협력사 담당자명이 본인 이름과 일치하는 경우
+      if (isPartner && c.assignedPartnerManager === user.name) return true;
+      
+      return false;
+    });
     
     return filteredCases
       .sort((a, b) => {
