@@ -1723,10 +1723,7 @@ export default function Intake({
               {/* 심사사 Row */}
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>
-                    심사사
-                    <RequiredMark />
-                  </label>
+                  <label className={labelClasses}>심사사</label>
                   <Select
                     value={formData.assessorId}
                     onValueChange={(value) =>
@@ -1797,10 +1794,7 @@ export default function Intake({
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>
-                    심사자
-                    <RequiredMark />
-                  </label>
+                  <label className={labelClasses}>심사자</label>
                   <Select
                     value={formData.assessorTeam}
                     onValueChange={(value) =>
