@@ -907,7 +907,7 @@ export default function Intake({
       toast({
         description:
           count > 1
-            ? `접수t�� 완료되었습니다. (${count}건 생성: ${caseNumbers})`
+            ? `접수가 완료되었습니다. (${count}건 생성: ${caseNumbers})`
             : `접수가 완료되었습니다. (${caseNumbers})`,
         duration: 3000,
       });
@@ -2206,7 +2206,7 @@ export default function Intake({
                         <>
                           <SelectItem value="없음">없음</SelectItem>
                           <SelectItem value="직접복구">직접복구</SelectItem>
-                          <SelectItem value="선ol�적요청">
+                          <SelectItem value="선ol�-c�요청">
                             선견적요청
                           </SelectItem>
                         </>
