@@ -428,6 +428,7 @@ export default function AdminSettings() {
   const [showNoticeCancelConfirmModal, setShowNoticeCancelConfirmModal] = useState(false);
   const [noticeTitle, setNoticeTitle] = useState("");
   const [noticeContent, setNoticeContent] = useState("");
+  const [viewingNotice, setViewingNotice] = useState<Notice | null>(null);
   const [createAccountForm, setCreateAccountForm] = useState({
     role: "보험사",
     name: "",
@@ -2260,6 +2261,7 @@ export default function AdminSettings() {
                                   letterSpacing: "-0.01em",
                                   color: "#008FED",
                                 }}
+                                onClick={() => setViewingNotice(notice)}
                                 data-testid={`button-notice-view-${index}`}
                               >
                                 보기
@@ -8965,6 +8967,159 @@ export default function AdminSettings() {
                 data-testid="button-leave-writing"
               >
                 나가기
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+      {/* View Notice Modal */}
+      {viewingNotice && (
+        <>
+          {/* Modal Overlay */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setViewingNotice(null)}
+            data-testid="modal-overlay-view-notice"
+          />
+
+          {/* Modal Panel */}
+          <div
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
+            style={{
+              width: "520px",
+              maxHeight: "80vh",
+              background: "#FDFDFD",
+              borderRadius: "12px",
+              padding: "24px",
+              overflow: "auto",
+            }}
+            data-testid="modal-view-notice"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
+                공지사항
+              </h2>
+              <button
+                onClick={() => setViewingNotice(null)}
+                className="p-1 hover:bg-gray-100 rounded"
+                data-testid="button-close-view-notice"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Title */}
+            <div className="mb-4">
+              <label
+                className="block mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
+                제목
+              </label>
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                }}
+              >
+                {viewingNotice.title}
+              </div>
+            </div>
+
+            {/* Date */}
+            <div className="mb-4">
+              <label
+                className="block mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
+                게시일
+              </label>
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 400,
+                  color: "#0C0C0C",
+                }}
+              >
+                {viewingNotice.createdAt
+                  ? new Date(viewingNotice.createdAt).toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                    })
+                  : "-"}
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="mb-6">
+              <label
+                className="block mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
+                내용
+              </label>
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 400,
+                  lineHeight: "1.8",
+                  color: "#0C0C0C",
+                  whiteSpace: "pre-wrap",
+                  padding: "16px",
+                  background: "#F9FAFB",
+                  borderRadius: "8px",
+                  minHeight: "120px",
+                }}
+              >
+                {viewingNotice.content}
+              </div>
+            </div>
+
+            {/* Close Button */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => setViewingNotice(null)}
+                className="px-8 py-3"
+                style={{
+                  background: "#008FED",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#FDFDFD",
+                }}
+                data-testid="button-close-view-notice-bottom"
+              >
+                닫기
               </button>
             </div>
           </div>
