@@ -77,8 +77,10 @@ export default function Dashboard() {
 
   const { data: notices = [] } = useQuery<Notice[]>({
     queryKey: ["/api/notices"],
-    enabled: !!user && user.role === "협력사",
+    enabled: !!user,
   });
+
+  const [isNoticesSheetOpen, setIsNoticesSheetOpen] = useState(false);
 
   const { data: allUsers = [] } = useQuery<Omit<User, "password">[]>({
     queryKey: ["/api/users"],
@@ -971,55 +973,35 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {user.role === "협력사" ? (
-              <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold">
-                    공지사항 <span className="ml-1 text-xs font-bold text-[#EF4444]">필독</span>
-                  </h3>
-                  <button
-                    className="rounded-lg bg-[#EAF2FF] px-3 py-2 text-sm font-semibold text-[#0B6BFF] hover:bg-[#DDEBFF]"
-                    type="button"
-                  >
-                    더보기
-                  </button>
-                </div>
-
-                <ul className="mt-4 space-y-3 text-sm text-slate-700">
-                  {notices.length === 0 ? (
-                    <>
-                      <li className="leading-6">사고·개인정보 외부 전송 금지 (메일/메신저 포함)</li>
-                      <li className="leading-6">승인 전 임의 공사 지시 금지</li>
-                      <li className="leading-6">정산 데이터 수기 가공 금지 (검증 절차 필수)</li>
-                    </>
-                  ) : (
-                    notices.slice(0, 3).map((notice) => (
-                      <li key={notice.id} className="leading-6">{notice.title}</li>
-                    ))
-                  )}
-                </ul>
+            <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold">
+                  공지사항 <span className="ml-1 text-xs font-bold text-[#EF4444]">필독</span>
+                </h3>
+                <button
+                  className="rounded-lg bg-[#EAF2FF] px-3 py-2 text-sm font-semibold text-[#0B6BFF] hover:bg-[#DDEBFF]"
+                  type="button"
+                  onClick={() => setIsNoticesSheetOpen(true)}
+                  data-testid="button-notices-more"
+                >
+                  더보기
+                </button>
               </div>
-            ) : (
-              <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold">
-                    공지사항 <span className="ml-1 text-xs font-bold text-[#EF4444]">필독</span>
-                  </h3>
-                  <button
-                    className="rounded-lg bg-[#EAF2FF] px-3 py-2 text-sm font-semibold text-[#0B6BFF] hover:bg-[#DDEBFF]"
-                    type="button"
-                  >
-                    더보기
-                  </button>
-                </div>
 
-                <ul className="mt-4 space-y-3 text-sm text-slate-700">
-                  <li className="leading-6">사고·개인정보 외부 전송 금지 (메일/메신저 포함)</li>
-                  <li className="leading-6">승인 전 임의 공사 지시 금지</li>
-                  <li className="leading-6">정산 데이터 수기 가공 금지 (검증 절차 필수)</li>
-                </ul>
-              </div>
-            )}
+              <ul className="mt-4 space-y-3 text-sm text-slate-700">
+                {notices.length === 0 ? (
+                  <>
+                    <li className="leading-6">사고·개인정보 외부 전송 금지 (메일/메신저 포함)</li>
+                    <li className="leading-6">승인 전 임의 공사 지시 금지</li>
+                    <li className="leading-6">정산 데이터 수기 가공 금지 (검증 절차 필수)</li>
+                  </>
+                ) : (
+                  notices.slice(0, 3).map((notice) => (
+                    <li key={notice.id} className="leading-6">{notice.title}</li>
+                  ))
+                )}
+              </ul>
+            </div>
 
             <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
               <div className="flex items-center justify-between">
@@ -1136,6 +1118,45 @@ export default function Dashboard() {
         dateRange={dateRange}
         onApply={handleDateRangeApply}
       />
+
+      <Sheet open={isNoticesSheetOpen} onOpenChange={setIsNoticesSheetOpen}>
+        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              공지사항 <span className="text-xs font-bold text-[#EF4444]">필독</span>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4 max-h-[calc(100vh-120px)] overflow-y-auto">
+            {notices.length === 0 ? (
+              <div className="text-center text-slate-500 py-8">
+                등록된 공지사항이 없습니다
+              </div>
+            ) : (
+              notices.map((notice) => (
+                <div 
+                  key={notice.id} 
+                  className="p-4 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition-colors"
+                  data-testid={`notice-item-${notice.id}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h4 className="font-semibold text-slate-900">{notice.title}</h4>
+                    <span className="text-xs text-slate-500 whitespace-nowrap">
+                      {new Date(notice.createdAt).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  {notice.content && (
+                    <p className="mt-2 text-sm text-slate-600 whitespace-pre-wrap">{notice.content}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
