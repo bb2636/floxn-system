@@ -465,12 +465,18 @@ export default function Intake({
     return Array.from(new Set(companies));
   }, [assessors]);
 
-  // 의뢰사 = 보험사 + 심사사 + 조사사 회사 모두 포함
+  // 의뢰사 = 보험사 + 심사사 + 조사사 회사 모두 포함 (중복 제거)
   const clientCompanies = useMemo(() => {
     const allCompanies = new Set<string>();
-    insuranceCompanies.forEach((c) => allCompanies.add(c));
-    assessorCompanies.forEach((c) => allCompanies.add(c));
-    investigatorCompanies.forEach((c) => allCompanies.add(c));
+    insuranceCompanies.forEach((c) => {
+      if (c && c.trim()) allCompanies.add(c.trim());
+    });
+    assessorCompanies.forEach((c) => {
+      if (c && c.trim()) allCompanies.add(c.trim());
+    });
+    investigatorCompanies.forEach((c) => {
+      if (c && c.trim()) allCompanies.add(c.trim());
+    });
     return Array.from(allCompanies).sort();
   }, [insuranceCompanies, assessorCompanies, investigatorCompanies]);
 
