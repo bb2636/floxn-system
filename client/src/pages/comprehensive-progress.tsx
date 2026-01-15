@@ -100,6 +100,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   접수완료: { partner: true, manager: true, assessorInvestigator: true },
   현장정보입력: { partner: false, manager: true, assessorInvestigator: false },
   반려: { partner: true, manager: false, assessorInvestigator: false },
+  승인반려: { partner: true, manager: false, assessorInvestigator: false },
   현장정보제출: { partner: false, manager: false, assessorInvestigator: true },
   복구요청: { partner: true, manager: false, assessorInvestigator: false },
   직접복구: { partner: true, manager: true, assessorInvestigator: false },
@@ -140,8 +141,16 @@ const CASE_STATUSES = [
   "접수취소",
 ] as const;
 
+// 상태값을 화면 표시용 텍스트로 변환하는 함수
+const getStatusDisplayText = (status: string | null | undefined): string => {
+  if (!status) return "배당대기";
+  if (status === "청구자료제출(복구)") return "(직접복구인 경우) 청구자료제출";
+  if (status === "출동비청구(선견적)") return "(선견적요청인 경우) 출동비 청구";
+  return status;
+};
+
 // 상태별 색상
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: string | null | undefined) => {
   if (status === "1차승인") return "#008FED"; // 파란색
   if (status === "복구요청(2차승인)") return "#00C853"; // 초록색
   if (status === "접수취소" || status === "반려") return "#ED1C00"; // 빨간색
@@ -739,7 +748,7 @@ export default function ComprehensiveProgress() {
   // 진행상태 옵션 - CASE_STATUSES와 동일하게 + 전체 옵션
   const statusOptions = [
     { name: "전체", key: "all" },
-    ...CASE_STATUSES.map((status) => ({ name: status, key: status })),
+    ...CASE_STATUSES.map((status) => ({ name: getStatusDisplayText(status), key: status })),
   ];
 
   // 진행상태 필터링 + 협력사 필터링 (모든 케이스 표시)
@@ -1705,7 +1714,7 @@ export default function ComprehensiveProgress() {
                               }}
                               data-testid={`button-status-${caseItem.id}`}
                             >
-                              {caseItem.status || "배당대기"}
+                              {getStatusDisplayText(caseItem.status)}
                             </div>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
@@ -1744,7 +1753,7 @@ export default function ComprehensiveProgress() {
                                 }}
                                 data-testid={`button-status-option-${status}`}
                               >
-                                {status}
+                                {getStatusDisplayText(status)}
                               </DropdownMenuItem>
                             ))}
                           </DropdownMenuContent>
@@ -1766,7 +1775,7 @@ export default function ComprehensiveProgress() {
                           }}
                           data-testid={`text-status-${caseItem.id}`}
                         >
-                          {caseItem.status || "배당대기"}
+                          {getStatusDisplayText(caseItem.status)}
                         </div>
                       )}
                     </div>
