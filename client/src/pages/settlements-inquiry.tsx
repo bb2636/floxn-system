@@ -335,6 +335,11 @@ export default function SettlementsInquiry() {
         || usersByUsernameMap.get(assignedPartnerValue)
         || usersByCompanyMap.get(assignedPartnerValue);
       const depositBank = partnerUser?.bankName || "-";
+      
+      // 당사 관리자 (플록슨 관리자) - assignedTo 필드에서 가져옴
+      const assignedAdminId = caseItem.assignedTo;
+      const assignedAdminUser = assignedAdminId ? usersByIdMap.get(assignedAdminId) : null;
+      const adminName = assignedAdminUser?.name || "-";
 
       // 정산 데이터 파싱
       const settlement = settlementsByCaseIdMap.get(caseItem.id);
@@ -363,7 +368,7 @@ export default function SettlementsInquiry() {
         managerId: caseItem.managerId || null,
         withdrawalNumber: caseItem.insurancePolicyNo || "-",
         accidentNumber: caseItem.insuranceAccidentNo || "-",
-        admin: assignedPartnerValue,
+        admin: adminName,
         depositBank,
         withdrawalDate: settlement?.closingDate || caseItem.completionDate || "-",
         constructionStatus: caseItem.recoveryType === "직접복구" ? "수리" : (caseItem.recoveryType === "선견적요청" ? "미수리" : "-"),
@@ -1122,7 +1127,7 @@ export default function SettlementsInquiry() {
                     zIndex: 30,
                     background: "rgba(240, 240, 240, 1)",
                   }}
-                >협력사</th>
+                >관리자</th>
                 <th
                   rowSpan={2}
                   style={{
