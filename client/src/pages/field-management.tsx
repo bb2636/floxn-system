@@ -344,8 +344,11 @@ export default function FieldManagement() {
       });
       const name = selectedCaseDetail.victimName || "";
       const contact = selectedCaseDetail.victimContact || "";
-      const address = selectedCaseDetail.victimAddress || selectedCaseDetail.insuredAddress || "";
-      const addressDetail = selectedCaseDetail.victimAddressDetail || selectedCaseDetail.insuredAddressDetail || "";
+      const hasVictimInfo = !!selectedCaseDetail.victimAddress;
+      const address = selectedCaseDetail.insuredAddress || "";
+      const addressDetail = hasVictimInfo 
+        ? (selectedCaseDetail.victimAddress || "") 
+        : (selectedCaseDetail.insuredAddressDetail || "");
       
       setEditVictimName(name);
       setEditVictimContact(contact);
@@ -371,23 +374,32 @@ export default function FieldManagement() {
             insuredAddress: caseData.insuredAddress,
             insuredAddressDetail: caseData.insuredAddressDetail,
           });
+          const hasVictimInfoApi = !!caseData.victimAddress;
           setEditVictimName(caseData.victimName || "");
           setEditVictimContact(caseData.victimContact || "");
-          setEditVictimAddress(caseData.victimAddress || caseData.insuredAddress || "");
-          setEditVictimAddressDetail(caseData.victimAddressDetail || caseData.insuredAddressDetail || "");
+          setEditVictimAddress(caseData.insuredAddress || "");
+          setEditVictimAddressDetail(hasVictimInfoApi 
+            ? (caseData.victimAddress || "") 
+            : (caseData.insuredAddressDetail || ""));
         } else {
           console.log(`[피해자 수정] API 실패, caseItem 데이터 사용`);
+          const hasVictimInfoItem = !!caseItem.victimAddress;
           setEditVictimName(caseItem.victimName || "");
           setEditVictimContact(caseItem.victimContact || "");
-          setEditVictimAddress(caseItem.victimAddress || caseItem.insuredAddress || "");
-          setEditVictimAddressDetail(caseItem.victimAddressDetail || caseItem.insuredAddressDetail || "");
+          setEditVictimAddress(caseItem.insuredAddress || "");
+          setEditVictimAddressDetail(hasVictimInfoItem 
+            ? (caseItem.victimAddress || "") 
+            : (caseItem.insuredAddressDetail || ""));
         }
       } catch (error) {
         console.error("케이스 조회 실패:", error);
+        const hasVictimInfoCatch = !!caseItem.victimAddress;
         setEditVictimName(caseItem.victimName || "");
         setEditVictimContact(caseItem.victimContact || "");
-        setEditVictimAddress(caseItem.victimAddress || caseItem.insuredAddress || "");
-        setEditVictimAddressDetail(caseItem.victimAddressDetail || caseItem.insuredAddressDetail || "");
+        setEditVictimAddress(caseItem.insuredAddress || "");
+        setEditVictimAddressDetail(hasVictimInfoCatch 
+          ? (caseItem.victimAddress || "") 
+          : (caseItem.insuredAddressDetail || ""));
       }
       setEditVictimDialogOpen(true);
     }
