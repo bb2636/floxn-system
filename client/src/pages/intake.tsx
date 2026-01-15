@@ -1157,11 +1157,13 @@ export default function Intake({
   const isFormValid = useMemo(() => {
     if (!formData.accidentDate) return false;
     if (!formData.insuranceCompany) return false;
-    if (!formData.insuranceAccidentNo && !formData.insurancePolicyNo)
-      return false;
     if (!formData.clientResidence) return false;
     if (!formData.clientName) return false;
-    if (!formData.policyHolderName && !formData.insuredName) return false;
+    if (!formData.insuredName) return false;
+    if (!formData.insuredContact) return false;
+    if (!formData.insuredAddress) return false;
+    if (!formData.accidentType) return false;
+    if (!formData.restorationMethod) return false;
     if (!formData.assignedPartner) return false;
     if (!formData.assignedPartnerManager) return false;
     return true;
@@ -1182,14 +1184,6 @@ export default function Intake({
       });
       return;
     }
-    if (!formData.insuranceAccidentNo && !formData.insurancePolicyNo) {
-      toast({
-        description:
-          "보험사 증권번호 또는 보험사 사고번호 중 하나는 반드시 입력해야 합니다.",
-        variant: "destructive",
-      });
-      return;
-    }
     if (!formData.clientResidence) {
       toast({ description: "의뢰사를 선택해주세요.", variant: "destructive" });
       return;
@@ -1198,17 +1192,37 @@ export default function Intake({
       toast({ description: "의뢰자를 선택해주세요.", variant: "destructive" });
       return;
     }
-    if (!formData.policyHolderName && !formData.insuredName) {
+    if (!formData.insuredName) {
       toast({
-        description:
-          "보험계약m � 성명 또는 피보험자 성명 중 하나는 반드시 입력해야 합니다.",
+        description: "피보험자 성명을 입력해주세요.",
         variant: "destructive",
       });
       return;
     }
-    if (!formData.managerId) {
+    if (!formData.insuredContact) {
       toast({
-        description: "당사 담당자를 선택해주세요.",
+        description: "피보험자 연락처를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!formData.insuredAddress) {
+      toast({
+        description: "피보험자 주소를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!formData.accidentType) {
+      toast({
+        description: "사고 유형을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!formData.restorationMethod) {
+      toast({
+        description: "복구 유형을 선택해주세요.",
         variant: "destructive",
       });
       return;
