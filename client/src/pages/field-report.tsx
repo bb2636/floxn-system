@@ -1033,50 +1033,11 @@ export default function FieldReport() {
 
   return (
     <div
-      className="relative min-h-screen"
+      className="relative min-h-screen bg-white"
       style={{
-        background: "linear-gradient(0deg, #E7EDFE, #E7EDFE), #FFFFFF",
         padding: "32px",
       }}
     >
-      {/* 배경 블러 원형 효과 */}
-      <div
-        style={{
-          position: "absolute",
-          width: "1095px",
-          height: "776px",
-          left: "100px",
-          top: "-200px",
-          background: "rgba(254, 240, 230, 0.4)",
-          filter: "blur(212px)",
-          transform: "rotate(-35.25deg)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          width: "1334px",
-          height: "1322px",
-          right: "-200px",
-          bottom: "-400px",
-          background: "rgba(234, 230, 254, 0.5)",
-          filter: "blur(212px)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          width: "348px",
-          height: "1322px",
-          left: "0px",
-          bottom: "189px",
-          background: "rgba(234, 230, 254, 0.5)",
-          filter: "blur(212px)",
-          pointerEvents: "none",
-        }}
-      />
       {/* 페이지 타이틀 및 버튼 */}
       <div
         className="relative flex items-center justify-between mb-4"
