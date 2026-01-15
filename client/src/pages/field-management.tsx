@@ -523,10 +523,27 @@ export default function FieldManagement() {
     
     setRecoveryMethodType(selectedCaseData.recoveryMethodType || "부분수리");
     
+    // 누수유형 로드: 콤마로 구분된 값을 파싱하고 기타(값) 형태에서 값 추출
     if (selectedCaseData.accidentCategory) {
-      setLeakTypes(new Set([selectedCaseData.accidentCategory]));
+      const types = selectedCaseData.accidentCategory.split(",").map(t => t.trim());
+      const parsedTypes: string[] = [];
+      let otherValue = "";
+      
+      types.forEach(type => {
+        const otherMatch = type.match(/^기타\((.+)\)$/);
+        if (otherMatch) {
+          parsedTypes.push("기타");
+          otherValue = otherMatch[1];
+        } else {
+          parsedTypes.push(type);
+        }
+      });
+      
+      setLeakTypes(new Set(parsedTypes));
+      setLeakTypeOther(otherValue);
     } else {
       setLeakTypes(new Set());
+      setLeakTypeOther("");
     }
 
   }, [selectedCase]);
@@ -575,10 +592,27 @@ export default function FieldManagement() {
     setNewVictimAddressDetail("");
     setSameAsInsured(false);
     
+    // 누수유형 로드: 콤마로 구분된 값을 파싱하고 기타(값) 형태에서 값 추출
     if (selectedCaseData.accidentCategory) {
-      setLeakTypes(new Set([selectedCaseData.accidentCategory]));
+      const types = selectedCaseData.accidentCategory.split(",").map(t => t.trim());
+      const parsedTypes: string[] = [];
+      let otherValue = "";
+      
+      types.forEach(type => {
+        const otherMatch = type.match(/^기타\((.+)\)$/);
+        if (otherMatch) {
+          parsedTypes.push("기타");
+          otherValue = otherMatch[1];
+        } else {
+          parsedTypes.push(type);
+        }
+      });
+      
+      setLeakTypes(new Set(parsedTypes));
+      setLeakTypeOther(otherValue);
     } else {
       setLeakTypes(new Set());
+      setLeakTypeOther("");
     }
     
     toast({
@@ -617,7 +651,18 @@ export default function FieldManagement() {
       let status = "현장방문";
       
       const hasVictimName = victimName || selectedCaseData?.victimName;
-      const categoryToSave = leakTypes.size > 0 ? Array.from(leakTypes)[0] : accidentCategory;
+      // 누수유형: 모든 선택된 타입을 저장하고, 기타인 경우 입력값도 포함
+      let categoryToSave = "";
+      if (leakTypes.size > 0) {
+        const selectedTypes = Array.from(leakTypes);
+        // "기타"가 선택되었고 입력값이 있으면 "기타(입력값)" 형태로 저장
+        const typesWithOther = selectedTypes.map(type => 
+          type === "기타" && leakTypeOther ? `기타(${leakTypeOther})` : type
+        );
+        categoryToSave = typesWithOther.join(",");
+      } else if (accidentCategory) {
+        categoryToSave = accidentCategory;
+      }
       if (visitDate && visitTime && categoryToSave && hasVictimName) {
         status = "현장정보 입력";
       }
