@@ -8670,45 +8670,47 @@ FLOXN`;
               const isTwoPerPage = isTwoPerPageCategory(category);
 
               if (isTwoPerPage) {
-                // 2장/페이지 레이아웃
+                // 2장/페이지 레이아웃 - 각 이미지 위에 개별 헤더 표시
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
 
-                // 헤더 그리기
-                page.drawRectangle({
-                  x: MARGIN,
-                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
-                  width: imgWidth,
-                  height: PAGE_HEADER_HEIGHT,
-                  color: rgb(0.2, 0.2, 0.2),
-                });
-                page.drawText(currentImg.headerText, {
-                  x: MARGIN + 10,
-                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
-                  size: 9,
-                  font,
-                  color: rgb(1, 1, 1),
-                });
-
-                // 이미지 영역 계산 (헤더 제외)
-                const availableHeight =
-                  A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
-                const imgHeight = (availableHeight - GAP) / 2;
+                // 이미지 영역 계산 (각 이미지마다 개별 헤더 포함)
+                const INDIVIDUAL_HEADER_HEIGHT = 24;
+                const availableHeight = A4_HEIGHT - MARGIN * 2;
+                // 각 슬롯: 헤더(24px) + 이미지영역 + GAP
+                const slotHeight = (availableHeight - GAP) / 2;
+                const imgHeight = slotHeight - INDIVIDUAL_HEADER_HEIGHT - GAP;
 
                 // 최대 2장까지 배치
+                let actualCount = 0;
                 for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
                   const img = pendingImages[i + j];
                   // 다음 이미지가 다른 카테고리면 건너뛰기
                   if (j > 0 && !isTwoPerPageCategory(img.doc.category || ""))
                     break;
 
-                  const yPos =
+                  actualCount++;
+
+                  // 슬롯 시작 위치 계산
+                  const slotY =
                     j === 0
-                      ? A4_HEIGHT -
-                        MARGIN -
-                        PAGE_HEADER_HEIGHT -
-                        GAP -
-                        imgHeight
-                      : MARGIN;
+                      ? A4_HEIGHT - MARGIN - slotHeight
+                      : A4_HEIGHT - MARGIN - slotHeight - GAP - slotHeight;
+
+                  // 개별 헤더 그리기 (각 이미지 위)
+                  page.drawRectangle({
+                    x: MARGIN,
+                    y: slotY + imgHeight + GAP,
+                    width: imgWidth,
+                    height: INDIVIDUAL_HEADER_HEIGHT,
+                    color: rgb(0.2, 0.2, 0.2),
+                  });
+                  page.drawText(img.headerText, {
+                    x: MARGIN + 10,
+                    y: slotY + imgHeight + GAP + 7,
+                    size: 9,
+                    font,
+                    color: rgb(1, 1, 1),
+                  });
 
                   try {
                     const embeddedImage = await mergedPdf.embedJpg(img.buffer);
@@ -8721,7 +8723,7 @@ FLOXN`;
                     const finalW = dims.width * scale;
                     const finalH = dims.height * scale;
                     const imgX = MARGIN + (imgWidth - finalW) / 2;
-                    const imgY = yPos + (imgHeight - finalH) / 2;
+                    const imgY = slotY + (imgHeight - finalH) / 2;
 
                     page.drawImage(embeddedImage, {
                       x: imgX,
@@ -8734,15 +8736,8 @@ FLOXN`;
                   }
                 }
 
-                // 같은 카테고리 이미지 개수 확인하여 스킵
-                const nextIdx =
-                  i + 1 < pendingImages.length &&
-                  isTwoPerPageCategory(
-                    pendingImages[i + 1]?.doc?.category || "",
-                  )
-                    ? 2
-                    : 1;
-                i += nextIdx;
+                // 실제 배치된 이미지 개수만큼 스킵
+                i += actualCount;
               } else {
                 // 1장/페이지 레이아웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
@@ -9470,45 +9465,47 @@ FLOXN`;
               const isTwoPerPage = isTwoPerPageCategory(category);
 
               if (isTwoPerPage) {
-                // 2장/페이지 레이아웃
+                // 2장/페이지 레이아웃 - 각 이미지 위에 개별 헤더 표시
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
 
-                // 헤더 그리기
-                page.drawRectangle({
-                  x: MARGIN,
-                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
-                  width: imgWidth,
-                  height: PAGE_HEADER_HEIGHT,
-                  color: rgb(0.2, 0.2, 0.2),
-                });
-                page.drawText(currentImg.headerText, {
-                  x: MARGIN + 10,
-                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
-                  size: 9,
-                  font,
-                  color: rgb(1, 1, 1),
-                });
-
-                // 이미지 영역 계산 (헤더 제외)
-                const availableHeight =
-                  A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
-                const imgHeight = (availableHeight - GAP) / 2;
+                // 이미지 영역 계산 (각 이미지마다 개별 헤더 포함)
+                const INDIVIDUAL_HEADER_HEIGHT = 24;
+                const availableHeight = A4_HEIGHT - MARGIN * 2;
+                // 각 슬롯: 헤더(24px) + 이미지영역 + GAP
+                const slotHeight = (availableHeight - GAP) / 2;
+                const imgHeight = slotHeight - INDIVIDUAL_HEADER_HEIGHT - GAP;
 
                 // 최대 2장까지 배치
+                let actualCount = 0;
                 for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
                   const img = pendingImages[i + j];
                   // 다음 이미지가 다른 카테고리면 건너뛰기
                   if (j > 0 && !isTwoPerPageCategory(img.doc.category || ""))
                     break;
 
-                  const yPos =
+                  actualCount++;
+
+                  // 슬롯 시작 위치 계산
+                  const slotY =
                     j === 0
-                      ? A4_HEIGHT -
-                        MARGIN -
-                        PAGE_HEADER_HEIGHT -
-                        GAP -
-                        imgHeight
-                      : MARGIN;
+                      ? A4_HEIGHT - MARGIN - slotHeight
+                      : A4_HEIGHT - MARGIN - slotHeight - GAP - slotHeight;
+
+                  // 개별 헤더 그리기 (각 이미지 위)
+                  page.drawRectangle({
+                    x: MARGIN,
+                    y: slotY + imgHeight + GAP,
+                    width: imgWidth,
+                    height: INDIVIDUAL_HEADER_HEIGHT,
+                    color: rgb(0.2, 0.2, 0.2),
+                  });
+                  page.drawText(img.headerText, {
+                    x: MARGIN + 10,
+                    y: slotY + imgHeight + GAP + 7,
+                    size: 9,
+                    font,
+                    color: rgb(1, 1, 1),
+                  });
 
                   try {
                     const embeddedImage = await mergedPdf.embedJpg(img.buffer);
@@ -9521,7 +9518,7 @@ FLOXN`;
                     const finalW = dims.width * scale;
                     const finalH = dims.height * scale;
                     const imgX = MARGIN + (imgWidth - finalW) / 2;
-                    const imgY = yPos + (imgHeight - finalH) / 2;
+                    const imgY = slotY + (imgHeight - finalH) / 2;
 
                     page.drawImage(embeddedImage, {
                       x: imgX,
@@ -9534,15 +9531,8 @@ FLOXN`;
                   }
                 }
 
-                // 같은 카테고리 이미지 개수 확인하여 스킵
-                const nextIdx =
-                  i + 1 < pendingImages.length &&
-                  isTwoPerPageCategory(
-                    pendingImages[i + 1]?.doc?.category || "",
-                  )
-                    ? 2
-                    : 1;
-                i += nextIdx;
+                // 실제 배치된 이미지 개수만큼 스킵
+                i += actualCount;
               } else {
                 // 1장/페이지 레이아웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
