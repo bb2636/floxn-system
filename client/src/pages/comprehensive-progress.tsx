@@ -1664,6 +1664,7 @@ export default function ComprehensiveProgress() {
                         fontFamily: "Pretendard",
                         fontSize: "13px",
                         color: "rgba(12, 12, 12, 0.8)",
+                        textAlign: "center",
                       }}
                     >
                       {calculateDays(caseItem.createdAt)}
