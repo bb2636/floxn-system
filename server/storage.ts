@@ -6837,9 +6837,9 @@ export class DbStorage implements IStorage {
       sameAsPolicyHolder: sourceCase.sameAsPolicyHolder,
       // 피해자 정보 - 동기화에서 제외 (각 케이스별로 개별 관리)
       // victimName, victimContact, victimAddress, victimAddressDetail은 각 케이스에서 독립적으로 관리
-      // 사고 정보
+      // 사고 정보 - accidentCause는 현장조사에서 입력하므로 접수 동기화에서 제외
       accidentType: sourceCase.accidentType,
-      accidentCause: sourceCase.accidentCause,
+      // accidentCause는 현장조사 정보이므로 syncFieldSurveyToRelatedCases에서 별도 관리
       accidentDescription: sourceCase.accidentDescription,
       restorationMethod: sourceCase.restorationMethod,
       otherVendorEstimate: sourceCase.otherVendorEstimate,
