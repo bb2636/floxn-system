@@ -1741,6 +1741,12 @@ export default function Intake({
                       <SelectValue placeholder="심사사 선택" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
+                      {formData.assessorId && !Array.from(new Set(assessors?.map((u) => u.company).filter(Boolean) || [])).includes(formData.assessorId) && (
+                        <SelectItem key={formData.assessorId} value={formData.assessorId}>
+                          {formData.assessorId}
+                        </SelectItem>
+                      )}
                       {Array.from(
                         new Set(
                           assessors?.map((u) => u.company).filter(Boolean) ||
@@ -1773,6 +1779,12 @@ export default function Intake({
                       <SelectValue placeholder="부서 선택" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
+                      {formData.assessorDepartment && !filteredAssessorDepartments.includes(formData.assessorDepartment) && (
+                        <SelectItem key={formData.assessorDepartment} value={formData.assessorDepartment}>
+                          {formData.assessorDepartment}
+                        </SelectItem>
+                      )}
                       {filteredAssessorDepartments.map((dept) => (
                         <SelectItem key={dept} value={dept}>
                           {dept}
@@ -1803,6 +1815,12 @@ export default function Intake({
                       <SelectValue placeholder="심사자 성함" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
+                      {formData.assessorTeam && !filteredAssessorEmployees.some(emp => emp.name === formData.assessorTeam) && (
+                        <SelectItem key={formData.assessorTeam} value={formData.assessorTeam}>
+                          {formData.assessorTeam}
+                        </SelectItem>
+                      )}
                       {filteredAssessorEmployees.map((emp) => (
                         <SelectItem key={emp.id} value={emp.name}>
                           {emp.name}
@@ -1845,6 +1863,12 @@ export default function Intake({
                       <SelectValue placeholder="조사사 명" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
+                      {formData.investigatorTeam && !Array.from(new Set(investigators?.map((u) => u.company).filter(Boolean) || [])).includes(formData.investigatorTeam) && (
+                        <SelectItem key={formData.investigatorTeam} value={formData.investigatorTeam}>
+                          {formData.investigatorTeam}
+                        </SelectItem>
+                      )}
                       {Array.from(
                         new Set(
                           investigators
@@ -1878,6 +1902,12 @@ export default function Intake({
                       <SelectValue placeholder="부서 선택" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
+                      {formData.investigatorDepartment && !filteredInvestigatorDepartments.includes(formData.investigatorDepartment) && (
+                        <SelectItem key={formData.investigatorDepartment} value={formData.investigatorDepartment}>
+                          {formData.investigatorDepartment}
+                        </SelectItem>
+                      )}
                       {filteredInvestigatorDepartments.map((dept) => (
                         <SelectItem key={dept} value={dept}>
                           {dept}
@@ -1908,6 +1938,12 @@ export default function Intake({
                       <SelectValue placeholder="조사자 성함" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
+                      {formData.investigatorTeamName && !filteredInvestigatorEmployees.some(emp => emp.name === formData.investigatorTeamName) && (
+                        <SelectItem key={formData.investigatorTeamName} value={formData.investigatorTeamName}>
+                          {formData.investigatorTeamName}
+                        </SelectItem>
+                      )}
                       {filteredInvestigatorEmployees.map((emp) => (
                         <SelectItem key={emp.id} value={emp.name}>
                           {emp.name}
