@@ -119,6 +119,10 @@ export default function Intake({
   const [addressDropdownOpen, setAddressDropdownOpen] = useState<'main' | 'detail' | null>(null);
   const addressContainerRef = useRef<HTMLDivElement>(null);
   const detailAddressContainerRef = useRef<HTMLDivElement>(null);
+  
+  const [insuredAddressDropdownOpen, setInsuredAddressDropdownOpen] = useState(false);
+  const insuredAddressContainerRef = useRef<HTMLDivElement>(null);
+  const insuredAddressWrapperRef = useRef<HTMLDivElement>(null);
 
   // ESC 키로 모달 및 드롭다운 닫기
   useEffect(() => {
@@ -126,6 +130,9 @@ export default function Intake({
       if (e.key === 'Escape') {
         if (addressDropdownOpen) {
           setAddressDropdownOpen(null);
+        }
+        if (insuredAddressDropdownOpen) {
+          setInsuredAddressDropdownOpen(false);
         }
         if (isPartnerSearchOpen) {
           setIsPartnerSearchOpen(false);
@@ -147,7 +154,21 @@ export default function Intake({
 
     document.addEventListener('keydown', handleEscKey);
     return () => document.removeEventListener('keydown', handleEscKey);
-  }, [addressDropdownOpen, isPartnerSearchOpen, isClientSearchOpen, isAssessorSearchOpen, isInvestigatorSearchOpen, datePickerOpen]);
+  }, [addressDropdownOpen, insuredAddressDropdownOpen, isPartnerSearchOpen, isClientSearchOpen, isAssessorSearchOpen, isInvestigatorSearchOpen, datePickerOpen]);
+
+  // 외부 클릭 시 피보험자 주소 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (insuredAddressDropdownOpen && 
+          insuredAddressWrapperRef.current && 
+          !insuredAddressWrapperRef.current.contains(e.target as Node)) {
+        setInsuredAddressDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [insuredAddressDropdownOpen]);
 
   const { data: partnerStats } = useQuery<
     Array<{
@@ -1244,15 +1265,31 @@ export default function Intake({
     }
   };
 
-  const openAddressPopup = () => {
+  // 피보험자 주소 드롭다운이 열리면 Daum Postcode 초기화
+  useEffect(() => {
+    if (insuredAddressDropdownOpen) {
+      setTimeout(() => {
+        if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+          const container = insuredAddressContainerRef.current;
+          if (container) {
+            container.innerHTML = '';
+            new (window as any).daum.Postcode({
+              oncomplete: function (data: any) {
+                handleInputChange("insuredAddress", data.address);
+                setInsuredAddressDropdownOpen(false);
+              },
+              width: '100%',
+              height: '100%',
+            }).embed(container);
+          }
+        }
+      }, 100);
+    }
+  }, [insuredAddressDropdownOpen]);
+
+  const openInsuredAddressDropdown = () => {
     if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
-      new (window as any).daum.Postcode({
-        oncomplete: function (data: any) {
-          handleInputChange("insuredAddress", data.address);
-        },
-        width: '100%',
-        height: '100%',
-      }).open();
+      setInsuredAddressDropdownOpen(true);
     } else {
       toast({
         description: "주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.",
@@ -1859,16 +1896,23 @@ export default function Intake({
                     피보험자 주소
                     <RequiredMark />
                   </label>
-                  <input
-                    className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""}`}
-                    value={formData.insuredAddress}
-                    onClick={() => !readOnly && openAddressPopup()}
-                    readOnly
-                    disabled={readOnly}
-                    placeholder="클릭하여 주소 검색"
-                    type="text"
-                    data-testid="input-insured-address"
-                  />
+                  <div className="relative flex-1" ref={insuredAddressWrapperRef}>
+                    <input
+                      className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""}`}
+                      value={formData.insuredAddress}
+                      onClick={() => !readOnly && openInsuredAddressDropdown()}
+                      readOnly
+                      disabled={readOnly}
+                      placeholder="클릭하여 주소 검색"
+                      type="text"
+                      data-testid="input-insured-address"
+                    />
+                    {insuredAddressDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                        <div ref={insuredAddressContainerRef} style={{ height: '400px', width: '100%' }} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
