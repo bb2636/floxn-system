@@ -3502,14 +3502,30 @@ export default function FieldReport() {
                   {(() => {
                     const victims = [];
 
-                    // 기본 피해자 (주소 + 상세주소 결합)
+                    // 기본 피해자 (피보험자 주소 + 피해자 상세주소 결합)
                     if (caseData.victimName) {
-                      const fullAddress = [
-                        caseData.victimAddress,
-                        caseData.victimAddressDetail,
-                      ]
-                        .filter(Boolean)
-                        .join(" ");
+                      // -1/-2/-3 케이스는 피보험자 주소 + 피해자 상세주소 (victimAddressDetail 또는 victimAddress)
+                      const caseNumberSuffix = caseData.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
+                      const isVictimCase = caseNumberSuffix !== "0";
+                      
+                      let fullAddress = "";
+                      if (isVictimCase) {
+                        // 피해자 케이스: 피보험자 주소 + 피해자 상세주소
+                        fullAddress = [
+                          caseData.insuredAddress,
+                          caseData.victimAddressDetail || caseData.victimAddress,
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
+                      } else {
+                        // 0번 케이스: 피해자 주소 + 피해자 상세주소
+                        fullAddress = [
+                          caseData.victimAddress,
+                          caseData.victimAddressDetail,
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
+                      }
                       victims.push({
                         name: caseData.victimName,
                         contact: caseData.victimContact || "",
