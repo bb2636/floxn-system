@@ -1667,7 +1667,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <Select
-                    key={`client-residence-${loadedCaseNumber}`}
+                    key={`client-residence-${initialCaseId || 'new'}`}
                     value={formData.clientResidence}
                     onValueChange={(value) =>
                       handleInputChange("clientResidence", value)
@@ -1718,7 +1718,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <Select
-                    key={`client-name-${loadedCaseNumber}`}
+                    key={`client-name-${initialCaseId || 'new'}`}
                     value={formData.clientName}
                     onValueChange={(value) =>
                       handleInputChange("clientName", value)
@@ -1767,7 +1767,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>심사사</label>
                   <Select
-                    key={`assessor-id-${loadedCaseNumber}`}
+                    key={`assessor-id-${initialCaseId || 'new'}`}
                     value={formData.assessorId}
                     onValueChange={(value) =>
                       handleInputChange("assessorId", value)
@@ -1806,7 +1806,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
                   <Select
-                    key={`assessor-dept-${loadedCaseNumber}`}
+                    key={`assessor-dept-${initialCaseId || 'new'}`}
                     value={formData.assessorDepartment}
                     onValueChange={(value) =>
                       handleInputChange("assessorDepartment", value)
@@ -1840,7 +1840,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>심사자</label>
                   <Select
-                    key={`assessor-team-${loadedCaseNumber}`}
+                    key={`assessor-team-${initialCaseId || 'new'}`}
                     value={formData.assessorTeam}
                     onValueChange={(value) =>
                       handleInputChange("assessorTeam", value)
@@ -1889,7 +1889,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>조사사</label>
                   <Select
-                    key={`investigator-team-${loadedCaseNumber}`}
+                    key={`investigator-team-${initialCaseId || 'new'}`}
                     value={formData.investigatorTeam}
                     onValueChange={(value) =>
                       handleInputChange("investigatorTeam", value)
@@ -1929,7 +1929,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
                   <Select
-                    key={`investigator-dept-${loadedCaseNumber}`}
+                    key={`investigator-dept-${initialCaseId || 'new'}`}
                     value={formData.investigatorDepartment}
                     onValueChange={(value) =>
                       handleInputChange("investigatorDepartment", value)
@@ -1966,7 +1966,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <Select
-                    key={`investigator-name-${loadedCaseNumber}`}
+                    key={`investigator-name-${initialCaseId || 'new'}`}
                     value={formData.investigatorTeamName}
                     onValueChange={(value) =>
                       handleInputChange("investigatorTeamName", value)
