@@ -656,7 +656,24 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           console.error("PDF 생성 기록 저장 실패:", e);
         }
         
-        setHasPdfAction(true); // PDF 발송 완료 시 저장 버튼 활성화
+        // PDF 발송 성공 시 동일사고번호 케이스들의 상태를 "청구"로 업데이트
+        try {
+          await apiRequest("POST", "/api/invoice/send", {
+            caseId: caseData?.id,
+            relatedCaseIds: relatedCases.map(c => c.id),
+            damagePreventionAmount: parseInt(invoiceDamagePreventionAmount || "0") || 0,
+            propertyRepairAmount: parseInt(invoicePropertyRepairAmount || "0") || 0,
+            fieldDispatchPreventionAmount: parseInt(fieldDispatchPreventionAmount || "0") || 0,
+            fieldDispatchPropertyAmount: parseInt(fieldDispatchPropertyAmount || "0") || 0,
+            remarks: invoiceRemarks,
+            totalAmount: totalAmount,
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+        } catch (e) {
+          console.error("청구 상태 업데이트 실패:", e);
+        }
+        
+        setHasPdfAction(true);
         onOpenChange(false);
       } else {
         throw new Error(result.error || "이메일 전송에 실패했습니다");
@@ -670,33 +687,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       });
     } finally {
       setIsSendingPdf(false);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      await apiRequest("POST", "/api/invoice/send", {
-        caseId: caseData?.id,
-        relatedCaseIds: relatedCases.map(c => c.id),
-        damagePreventionAmount: parseInt(invoiceDamagePreventionAmount || "0") || 0,
-        propertyRepairAmount: parseInt(invoicePropertyRepairAmount || "0") || 0,
-        fieldDispatchPreventionAmount: parseInt(fieldDispatchPreventionAmount || "0") || 0,
-        fieldDispatchPropertyAmount: parseInt(fieldDispatchPropertyAmount || "0") || 0,
-        remarks: invoiceRemarks,
-        totalAmount: totalAmount,
-      });
-      toast({
-        title: "저장 완료",
-        description: "인보이스가 저장되었습니다.",
-      });
-      onOpenChange(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-    } catch (error: any) {
-      toast({
-        title: "저장 실패",
-        description: error?.message || "저장 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -1825,40 +1815,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 whiteSpace: "nowrap",
               }}>
                 {isSendingPdf ? "발송 중..." : "PDF 발송"}
-              </span>
-            </button>
-
-            {/* 저장 Button - PDF 다운로드 또는 발송 후에만 활성화 */}
-            <button
-              onClick={handleSave}
-              disabled={!hasPdfAction}
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-                padding: "10px 16px",
-                gap: "10px",
-                width: "60px",
-                height: "40px",
-                background: hasPdfAction ? "#008FED" : "rgba(0, 143, 237, 0.4)",
-                borderRadius: "8px",
-                border: "none",
-                cursor: hasPdfAction ? "pointer" : "not-allowed",
-                opacity: hasPdfAction ? 1 : 0.6,
-              }}
-              data-testid="button-invoice-save"
-            >
-              <span style={{
-                fontFamily: "'Pretendard'",
-                fontStyle: "normal",
-                fontWeight: 600,
-                fontSize: "16px",
-                lineHeight: "128%",
-                letterSpacing: "-0.02em",
-                color: "#FFFFFF",
-              }}>
-                저장
               </span>
             </button>
           </div>

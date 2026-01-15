@@ -205,6 +205,21 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
           title: "이메일 전송 완료",
           description: `${invoiceRecipientEmail}으로 현장출동비용 청구서 PDF가 전송되었습니다.`,
         });
+        
+        // PDF 발송 성공 시 동일사고번호 케이스들의 상태를 "청구"로 업데이트
+        try {
+          await apiRequest("POST", "/api/field-dispatch-invoice/send", {
+            caseId: caseData?.id,
+            relatedCaseIds: relatedCases.map(c => c.id),
+            fieldDispatchAmount: parseInt(FIXED_FIELD_DISPATCH_AMOUNT) || 0,
+            remarks: invoiceRemarks,
+            totalAmount: totalAmount,
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+        } catch (e) {
+          console.error("청구 상태 업데이트 실패:", e);
+        }
+        
         onOpenChange(false);
       } else {
         throw new Error(result.error || "이메일 전송에 실패했습니다");
@@ -218,30 +233,6 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
       });
     } finally {
       setIsSendingPdf(false);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      await apiRequest("POST", "/api/field-dispatch-invoice/send", {
-        caseId: caseData?.id,
-        relatedCaseIds: relatedCases.map(c => c.id),
-        fieldDispatchAmount: parseInt(FIXED_FIELD_DISPATCH_AMOUNT) || 0,
-        remarks: invoiceRemarks,
-        totalAmount: totalAmount,
-      });
-      toast({
-        title: "저장 완료",
-        description: "현장출동비용 청구서가 저장되었습니다.",
-      });
-      onOpenChange(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-    } catch (error: any) {
-      toast({
-        title: "저장 실패",
-        description: error?.message || "저장 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -960,23 +951,14 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
               gap: "12px",
             }}>
               {canApproveInvoice ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={handleSendInvoicePdf}
-                    disabled={isSendingPdf || !invoiceRecipientEmail}
-                    data-testid="button-field-dispatch-pdf"
-                  >
-                    {isSendingPdf ? "발송 중..." : "PDF 발송"}
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    style={{ background: "#008FED" }}
-                    data-testid="button-field-dispatch-save"
-                  >
-                    저장
-                  </Button>
-                </>
+                <Button
+                  variant="outline"
+                  onClick={handleSendInvoicePdf}
+                  disabled={isSendingPdf || !invoiceRecipientEmail}
+                  data-testid="button-field-dispatch-pdf"
+                >
+                  {isSendingPdf ? "발송 중..." : "PDF 발송"}
+                </Button>
               ) : (
                 <span style={{
                   fontFamily: "Pretendard",
