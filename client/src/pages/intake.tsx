@@ -2204,25 +2204,16 @@ export default function Intake({
               <div className="col-span-12 md:col-span-6">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>협력사</label>
-                  <div className="flex gap-1 flex-1">
-                    <input
-                      className={`${inputClasses} flex-1`}
-                      value={formData.assignedPartner}
-                      readOnly
-                      placeholder="협력사 선택"
-                      type="text"
-                      data-testid="input-partner"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => !readOnly && setIsPartnerSearchOpen(true)}
-                      disabled={readOnly}
-                      className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
-                      data-testid="button-partner-search-inline"
-                    >
-                      <Search size={16} />
-                    </button>
-                  </div>
+                  <input
+                    className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""}`}
+                    value={formData.assignedPartner}
+                    onClick={() => !readOnly && setIsPartnerSearchOpen(true)}
+                    readOnly
+                    disabled={readOnly}
+                    placeholder="클릭하여 협력사 선택"
+                    type="text"
+                    data-testid="input-partner"
+                  />
                 </div>
               </div>
 
