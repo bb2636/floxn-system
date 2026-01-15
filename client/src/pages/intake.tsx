@@ -1667,6 +1667,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <Select
+                    key={`client-residence-${loadedCaseNumber}`}
                     value={formData.clientResidence}
                     onValueChange={(value) =>
                       handleInputChange("clientResidence", value)
@@ -1680,6 +1681,12 @@ export default function Intake({
                       <SelectValue placeholder="의뢰사 선택" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[160px] overflow-y-scroll">
+                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
+                      {formData.clientResidence && !clientCompanies.includes(formData.clientResidence) && (
+                        <SelectItem key={formData.clientResidence} value={formData.clientResidence}>
+                          {formData.clientResidence}
+                        </SelectItem>
+                      )}
                       {clientCompanies.map((company) => (
                         <SelectItem key={company} value={company}>
                           {company}
@@ -1711,6 +1718,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <Select
+                    key={`client-name-${loadedCaseNumber}`}
                     value={formData.clientName}
                     onValueChange={(value) =>
                       handleInputChange("clientName", value)
@@ -1724,6 +1732,12 @@ export default function Intake({
                       <SelectValue placeholder="의뢰자 성함" />
                     </SelectTrigger>
                     <SelectContent>
+                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
+                      {formData.clientName && !filteredClientEmployees.some(emp => emp.name === formData.clientName) && (
+                        <SelectItem key={formData.clientName} value={formData.clientName}>
+                          {formData.clientName}
+                        </SelectItem>
+                      )}
                       {filteredClientEmployees.map((emp) => (
                         <SelectItem key={emp.id} value={emp.name}>
                           {emp.name}
