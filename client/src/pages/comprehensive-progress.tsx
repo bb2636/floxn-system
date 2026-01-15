@@ -1625,7 +1625,9 @@ export default function ComprehensiveProgress() {
                     </div>
                     {(() => {
                       const caseNumberSuffix = caseItem.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
-                      const isInsuredCase = caseNumberSuffix === "0";
+                      const suffixNum = parseInt(caseNumberSuffix);
+                      const isInsuredCase = suffixNum === 0;
+                      const isAdditionalVictim = suffixNum >= 2;
                       
                       let addressText: string;
                       if (isInsuredCase) {
@@ -1635,8 +1637,16 @@ export default function ComprehensiveProgress() {
                         ]
                           .filter(Boolean)
                           .join(" ") || "-";
+                      } else if (isAdditionalVictim) {
+                        // -2/-3 케이스는 피해자 주소 + 피해자 상세주소
+                        addressText = [
+                          caseItem.victimAddress,
+                          caseItem.victimAddressDetail,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || "-";
                       } else {
-                        // -1/-2/-3 케이스는 피보험자 주소 + 피해자 상세주소 (victimAddress 또는 victimAddressDetail)
+                        // -1 케이스는 피보험자 주소 + 피해자 상세주소 (victimAddress에 저장됨)
                         addressText = [
                           caseItem.insuredAddress,
                           caseItem.victimAddressDetail || caseItem.victimAddress,
