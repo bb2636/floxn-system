@@ -1538,10 +1538,35 @@ async function renderEvidencePages(
     청구: "청구자료",
   };
 
+  // 증빙자료 순서 정의 (사진 → 기본자료 → 증빙자료 → 청구자료)
+  const CATEGORY_ORDER: string[] = [
+    // 사진 (현장사진, 수리중, 복구완료)
+    "현장출동사진", "현장", "현장사진",
+    "수리중 사진", "수리중",
+    "복구완료 사진", "복구완료",
+    // 기본자료 (보험금청구서, 개인정보동의서)
+    "보험금 청구서", "개인정보 동의서(가족용)",
+    // 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
+    "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+    // 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
+    "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료", "청구",
+  ];
+
+  // 문서 정렬 함수
+  const getCategoryOrder = (category: string): number => {
+    const idx = CATEGORY_ORDER.indexOf(category);
+    return idx >= 0 ? idx : CATEGORY_ORDER.length;
+  };
+
+  // 문서를 카테고리 순서대로 정렬
+  const sortedDocuments = [...documents].sort((a, b) => {
+    return getCategoryOrder(a.category) - getCategoryOrder(b.category);
+  });
+
   const imageDocs: Array<{ doc: any; tab: string; imageData: string }> = [];
   const pdfDocs: Array<{ doc: any; tab: string; buffer: Buffer }> = [];
 
-  for (const doc of documents) {
+  for (const doc of sortedDocuments) {
     const isImage = doc.fileType?.startsWith("image/");
     const isPdf =
       doc.fileType === "application/pdf" ||
@@ -3256,10 +3281,33 @@ export async function generatePdfWithPdfLib(
         );
       }
 
-      const imageDocs = filteredDocs.filter((doc) =>
+      // 증빙자료 순서 정의 (사진 → 기본자료 → 증빙자료 → 청구자료)
+      const CATEGORY_ORDER: string[] = [
+        // 사진 (현장사진, 수리중, 복구완료)
+        "현장출동사진", "현장", "현장사진",
+        "수리중 사진", "수리중",
+        "복구완료 사진", "복구완료",
+        // 기본자료 (보험금청구서, 개인정보동의서)
+        "보험금 청구서", "개인정보 동의서(가족용)",
+        // 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
+        "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+        // 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
+        "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료", "청구",
+      ];
+      const getCategoryOrder = (category: string): number => {
+        const idx = CATEGORY_ORDER.indexOf(category);
+        return idx >= 0 ? idx : CATEGORY_ORDER.length;
+      };
+
+      // 문서를 카테고리 순서대로 정렬
+      const sortedFilteredDocs = [...filteredDocs].sort((a, b) => {
+        return getCategoryOrder(a.category) - getCategoryOrder(b.category);
+      });
+
+      const imageDocs = sortedFilteredDocs.filter((doc) =>
         doc.fileType?.startsWith("image/"),
       );
-      const pdfDocs = filteredDocs.filter(
+      const pdfDocs = sortedFilteredDocs.filter(
         (doc) =>
           doc.fileType === "application/pdf" ||
           doc.fileName?.toLowerCase().endsWith(".pdf"),
@@ -3879,6 +3927,14 @@ export async function generateEvidencePDFsByTab(
   );
   console.log(`[pdf-lib] 이미지 문서: ${imageDocs.length}개`);
 
+  // 탭 내 카테고리 순서 정의
+  const CATEGORY_ORDER_WITHIN_TAB: Record<TabName, string[]> = {
+    현장사진: ["현장출동사진", "현장", "현장사진", "수리중 사진", "수리중", "복구완료 사진", "복구완료"],
+    기본자료: ["보험금 청구서", "개인정보 동의서(가족용)"],
+    증빙자료: ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"],
+    청구자료: ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료", "청구"],
+  };
+
   // 탭별로 분류
   const docsByTab: Record<TabName, typeof imageDocs> = {
     현장사진: [],
@@ -3890,6 +3946,16 @@ export async function generateEvidencePDFsByTab(
   for (const doc of imageDocs) {
     const tab = CATEGORY_TO_TAB[doc.category] || "현장사진"; // 기본값
     docsByTab[tab].push(doc);
+  }
+
+  // 각 탭 내 문서를 카테고리 순서대로 정렬
+  for (const tabName of TAB_NAMES) {
+    const categoryOrder = CATEGORY_ORDER_WITHIN_TAB[tabName];
+    docsByTab[tabName].sort((a, b) => {
+      const aIdx = categoryOrder.indexOf(a.category);
+      const bIdx = categoryOrder.indexOf(b.category);
+      return (aIdx >= 0 ? aIdx : categoryOrder.length) - (bIdx >= 0 ? bIdx : categoryOrder.length);
+    });
   }
 
   // 폰트 로드
