@@ -878,6 +878,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.assignedPartner,
       );
 
+      // Debug: log assessor/investigator info for troubleshooting
+      console.log("🔍 Assessor/Investigator Debug:");
+      console.log("  - assessorId:", validatedData.assessorId);
+      console.log("  - assessorDepartment:", validatedData.assessorDepartment);
+      console.log("  - assessorTeam:", validatedData.assessorTeam);
+      console.log("  - assessorContact:", validatedData.assessorContact);
+      console.log("  - investigatorTeam:", validatedData.investigatorTeam);
+      console.log("  - investigatorDepartment:", validatedData.investigatorDepartment);
+      console.log("  - investigatorTeamName:", validatedData.investigatorTeamName);
+      console.log("  - investigatorContact:", validatedData.investigatorContact);
+
       // Debug: log victim address info for troubleshooting
       console.log("🏠 Victim Address Debug:");
       console.log("  - victimName:", validatedData.victimName);
