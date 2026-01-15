@@ -1558,15 +1558,8 @@ export default function Intake({
                       <SelectValue placeholder="의뢰사 선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from(
-                        new Set(
-                          allUsers
-                            ?.filter((u) => u.role === "의뢰사")
-                            .map((u) => u.company)
-                            .filter(Boolean) || [],
-                        ),
-                      ).map((company) => (
-                        <SelectItem key={company} value={company!}>
+                      {insuranceCompanies.map((company) => (
+                        <SelectItem key={company} value={company}>
                           {company}
                         </SelectItem>
                       ))}
