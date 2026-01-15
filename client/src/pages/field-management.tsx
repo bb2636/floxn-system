@@ -413,15 +413,14 @@ export default function FieldManagement() {
       await apiRequest("PATCH", `/api/cases/${editingVictimCase.id}`, {
         victimName: editVictimName,
         victimContact: editVictimContact,
-        victimAddress: editVictimAddress,
-        victimAddressDetail: editVictimAddressDetail,
+        insuredAddress: editVictimAddress,
+        victimAddress: editVictimAddressDetail,
       });
       
       if (editingVictimCase.id === selectedCase) {
         setVictimName(editVictimName);
         setVictimContact(editVictimContact);
-        setVictimAddress(editVictimAddress);
-        setVictimAddressDetail(editVictimAddressDetail);
+        setVictimAddress(editVictimAddressDetail);
       }
       
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
