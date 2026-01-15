@@ -1270,9 +1270,40 @@ export default function FieldManagement() {
                               <span className="ml-1 text-[#6B7280]">{caseItem.insuranceAccidentNo || ""}(사고번호)</span>
                             </div>
                             <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-[#6B7280]">
-                              <span>접수번호 {formatCaseNumber(caseItem.caseNumber) || "-"}</span>
-                              <span>피보험자 {caseItem.insuredName || "-"}</span>
-                              <span>담당자 {caseItem.assignedPartnerManager || "-"}</span>
+                              {(() => {
+                                const caseSuffix = parseInt((caseItem.caseNumber || "").split("-")[1] || "0");
+                                const isInsuredCase = caseSuffix === 0;
+                                const isIntakeVictim = caseSuffix === 1;
+                                const isAdditionalVictim = caseSuffix >= 2;
+                                
+                                let name: string;
+                                let contact: string;
+                                let detailAddress: string;
+                                
+                                if (isInsuredCase) {
+                                  name = caseItem.insuredName || "-";
+                                  contact = caseItem.insuredContact || "-";
+                                  detailAddress = caseItem.insuredAddressDetail || "-";
+                                } else if (isIntakeVictim) {
+                                  const hasVictimInfo = !!(caseItem.victimName || caseItem.victimContact || caseItem.victimAddress);
+                                  name = hasVictimInfo ? (caseItem.victimName || "-") : "-";
+                                  contact = hasVictimInfo ? (caseItem.victimContact || "-") : "-";
+                                  detailAddress = hasVictimInfo ? (caseItem.victimAddress || "-") : "-";
+                                } else {
+                                  name = caseItem.victimName || "-";
+                                  contact = caseItem.victimContact || "-";
+                                  detailAddress = caseItem.victimAddressDetail || "-";
+                                }
+                                
+                                return (
+                                  <>
+                                    <span>접수번호 {formatCaseNumber(caseItem.caseNumber) || "-"}</span>
+                                    <span>성명 {name}</span>
+                                    <span>연락처 {contact}</span>
+                                    <span>상세주소 {detailAddress}</span>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
                           
