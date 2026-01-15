@@ -782,6 +782,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: validatedData.phone,
         office: validatedData.office,
         address: validatedData.address,
+        addressDetail: validatedData.addressDetail, // 상세주소
+        // 협력사 전용 필드 - 반드시 포함
+        businessRegistrationNumber: validatedData.businessRegistrationNumber,
+        representativeName: validatedData.representativeName,
         bankName: validatedData.bankName,
         accountNumber: validatedData.accountNumber,
         accountHolder: validatedData.accountHolder,
