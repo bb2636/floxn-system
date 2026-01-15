@@ -1729,11 +1729,36 @@ async function renderPhotoPage(
   const rightTextWidth = fonts.bold.widthOfTextAtSize(rightText, fontSize);
   drawText(page, { x: A4_WIDTH - MARGIN - 15 - rightTextWidth, y: A4_HEIGHT - MARGIN - 22, text: rightText, font: fonts.bold, size: fontSize, color: { r: 1, g: 1, b: 1 } });
 
-  const imageHeight = 310;
+  const categoryLabelHeight = 22;
+  const imageHeight = 295;
   const imageWidth = CONTENT_WIDTH;
   const spacing = 8;
   const footerHeight = 20;
-  const firstY = A4_HEIGHT - MARGIN - 30 - spacing - imageHeight - footerHeight;
+  
+  // 첫 번째 사진의 카테고리 레이블
+  const firstCategory = normalizeText(firstImage.doc.category || "");
+  const firstCategoryY = A4_HEIGHT - MARGIN - 30 - spacing;
+  
+  // 카테고리 레이블 배경 (하늘색 배경)
+  page.drawRectangle({ 
+    x: MARGIN, 
+    y: firstCategoryY - categoryLabelHeight, 
+    width: CONTENT_WIDTH, 
+    height: categoryLabelHeight, 
+    color: rgb(0.88, 0.95, 1) // 연한 하늘색 배경
+  });
+  
+  // 카테고리 레이블 텍스트
+  drawText(page, { 
+    x: MARGIN + 10, 
+    y: firstCategoryY - categoryLabelHeight + 7, 
+    text: firstCategory, 
+    font: fonts.bold, 
+    size: 10, 
+    color: { r: 0.2, g: 0.4, b: 0.6 } 
+  });
+  
+  const firstY = firstCategoryY - categoryLabelHeight - imageHeight - footerHeight;
 
   page.drawRectangle({ x: MARGIN, y: firstY + footerHeight, width: CONTENT_WIDTH, height: imageHeight, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.5 });
 
@@ -1749,7 +1774,29 @@ async function renderPhotoPage(
 
   if (images[1]) {
     const secondImage = images[1];
-    const secondY = firstY - spacing - imageHeight - footerHeight;
+    const secondCategory = normalizeText(secondImage.doc.category || "");
+    
+    // 두 번째 사진의 카테고리 레이블
+    const secondCategoryY = firstY - spacing;
+    
+    page.drawRectangle({ 
+      x: MARGIN, 
+      y: secondCategoryY - categoryLabelHeight, 
+      width: CONTENT_WIDTH, 
+      height: categoryLabelHeight, 
+      color: rgb(0.88, 0.95, 1) // 연한 하늘색 배경
+    });
+    
+    drawText(page, { 
+      x: MARGIN + 10, 
+      y: secondCategoryY - categoryLabelHeight + 7, 
+      text: secondCategory, 
+      font: fonts.bold, 
+      size: 10, 
+      color: { r: 0.2, g: 0.4, b: 0.6 } 
+    });
+    
+    const secondY = secondCategoryY - categoryLabelHeight - imageHeight - footerHeight;
 
     page.drawRectangle({ x: MARGIN, y: secondY + footerHeight, width: CONTENT_WIDTH, height: imageHeight, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.5 });
 
