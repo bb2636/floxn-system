@@ -2535,31 +2535,31 @@ export default function Intake({
                           {filteredPartners.map((partner) => (
                             <div
                               key={partner.name}
-                              className={`flex flex-row items-center w-full h-14 cursor-pointer border-b border-slate-100 ${tempSelectedPartner?.name === partner.name ? "bg-sky-50" : "hover:bg-slate-50"}`}
+                              className={`flex flex-row items-stretch w-full min-h-14 cursor-pointer border-b border-slate-100 ${tempSelectedPartner?.name === partner.name ? "bg-sky-50" : "hover:bg-slate-50"}`}
                               onClick={() => setTempSelectedPartner(partner)}
                               data-testid={`row-partner-${partner.name}`}
                             >
                               <div
-                                className={`px-3 w-[155px] text-sm ${tempSelectedPartner?.name === partner.name ? "text-sky-600 font-medium" : "text-slate-600"}`}
+                                className={`px-3 py-3 w-[155px] text-sm flex items-center ${tempSelectedPartner?.name === partner.name ? "text-sky-600 font-medium" : "text-slate-600"}`}
                               >
                                 {partner.name}
                               </div>
-                              <div className="px-3 w-[93px] text-sm text-slate-600">
+                              <div className="px-3 py-3 w-[93px] text-sm text-slate-600 flex items-center">
                                 {partner.dailyCount}
                               </div>
-                              <div className="px-3 w-[93px] text-sm text-slate-600">
+                              <div className="px-3 py-3 w-[93px] text-sm text-slate-600 flex items-center">
                                 {partner.monthlyCount}
                               </div>
-                              <div className="px-3 w-[93px] text-sm text-slate-600">
+                              <div className="px-3 py-3 w-[93px] text-sm text-slate-600 flex items-center">
                                 {partner.inProgressCount}
                               </div>
-                              <div className="px-3 w-[93px] text-sm text-slate-600">
+                              <div className="px-3 py-3 w-[93px] text-sm text-slate-600 flex items-center">
                                 {partner.pendingCount}
                               </div>
-                              <div className="px-3 flex-1 text-sm text-slate-600">
+                              <div className="px-3 py-3 flex-1 text-sm text-slate-600 flex items-start whitespace-normal break-words">
                                 {partner.region}
                               </div>
-                              <div className="px-3 w-[49px] flex justify-center">
+                              <div className="px-3 py-3 w-[49px] flex justify-center items-center">
                                 <div
                                   className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedPartner?.name === partner.name ? "bg-sky-500 border-sky-500" : "border-slate-300"}`}
                                 >
