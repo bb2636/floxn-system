@@ -6132,19 +6132,16 @@ export class DbStorage implements IStorage {
       caseId,
     );
 
-    // Find ALL related cases that have drawings, include status for filtering
-    const casesWithDrawings: Array<{ caseId: string; caseNumber: string; status: string | null }> = [];
+    // Return ALL related cases with the same accident number (not just those with drawings)
+    const allRelatedCases: Array<{ caseId: string; caseNumber: string; status: string | null }> = [];
     for (const relatedCase of relatedCases) {
-      const drawing = await this.getDrawingByCaseId(relatedCase.id);
-      if (drawing) {
-        casesWithDrawings.push({
-          caseId: relatedCase.id,
-          caseNumber: relatedCase.caseNumber || "",
-          status: relatedCase.status,
-        });
-      }
+      allRelatedCases.push({
+        caseId: relatedCase.id,
+        caseNumber: relatedCase.caseNumber || "",
+        status: relatedCase.status,
+      });
     }
-    return casesWithDrawings;
+    return allRelatedCases;
   }
 
   async getRelatedCaseWithEstimate(
