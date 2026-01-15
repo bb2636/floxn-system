@@ -18,11 +18,10 @@ export function AppSidebarStatistics() {
 
   return (
     <div
-      className="flex flex-col bg-[#E5E7EB]"
+      className="flex flex-col bg-white"
       style={{
         width: "260px",
-        background: "rgba(255, 255, 255, 0.06)",
-        borderRight: "1px solid rgba(0, 143, 237, 0.2)",
+        borderRight: "1px solid #E5E7EB",
       }}
     >
       {/* Section Header */}
