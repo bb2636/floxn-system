@@ -1763,7 +1763,9 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-assessor-id"
                     >
-                      <SelectValue placeholder="심사사 선택" />
+                      <SelectValue placeholder="심사사 선택">
+                        {formData.assessorId || undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1801,7 +1803,9 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-assessor-department"
                     >
-                      <SelectValue placeholder="부서 선택" />
+                      <SelectValue placeholder="부서 선택">
+                        {formData.assessorDepartment || undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1834,7 +1838,9 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-assessor-team"
                     >
-                      <SelectValue placeholder="심사자 성함" />
+                      <SelectValue placeholder="심사자 성함">
+                        {formData.assessorTeam || undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1882,7 +1888,9 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-team"
                     >
-                      <SelectValue placeholder="조사사 명" />
+                      <SelectValue placeholder="조사사 명">
+                        {formData.investigatorTeam || undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1921,7 +1929,9 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-department"
                     >
-                      <SelectValue placeholder="부서 선택" />
+                      <SelectValue placeholder="부서 선택">
+                        {formData.investigatorDepartment || undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1957,7 +1967,9 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-name"
                     >
-                      <SelectValue placeholder="조사자 성함" />
+                      <SelectValue placeholder="조사자 성함">
+                        {formData.investigatorTeamName || undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
