@@ -42,6 +42,11 @@ export default function Dashboard() {
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
+  
+  // 새 문의 모달 상태
+  const [showNewInquiryModal, setShowNewInquiryModal] = useState(false);
+  const [inquiryTitle, setInquiryTitle] = useState("");
+  const [inquiryContent, setInquiryContent] = useState("");
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -124,6 +129,29 @@ export default function Dashboard() {
       setTimeout(() => {
         setLocation("/");
       }, 500);
+    },
+  });
+
+  const createInquiryMutation = useMutation({
+    mutationFn: async (data: { title: string; content: string }) => {
+      return await apiRequest("POST", "/api/inquiries", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
+      toast({
+        title: "문의 등록 완료",
+        description: "문의가 성공적으로 등록되었습니다.",
+      });
+      setShowNewInquiryModal(false);
+      setInquiryTitle("");
+      setInquiryContent("");
+    },
+    onError: () => {
+      toast({
+        title: "문의 등록 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -1012,6 +1040,8 @@ export default function Dashboard() {
                 <button
                   className="rounded-lg bg-[#EAF2FF] px-3 py-2 text-sm font-semibold text-[#0B6BFF] hover:bg-[#DDEBFF]"
                   type="button"
+                  onClick={() => setShowNewInquiryModal(true)}
+                  data-testid="button-new-inquiry"
                 >
                   새 문의
                 </button>
@@ -1168,6 +1198,186 @@ export default function Dashboard() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* 새 문의 모달 */}
+      {showNewInquiryModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => {
+              setShowNewInquiryModal(false);
+              setInquiryTitle("");
+              setInquiryContent("");
+            }}
+            data-testid="modal-overlay-new-inquiry"
+          />
+
+          <div
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
+            style={{
+              width: "420px",
+              background: "#FDFDFD",
+              borderRadius: "12px",
+              padding: "24px",
+            }}
+            data-testid="modal-new-inquiry"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
+                1:1 문의하기
+              </h2>
+              <button
+                onClick={() => {
+                  setShowNewInquiryModal(false);
+                  setInquiryTitle("");
+                  setInquiryContent("");
+                }}
+                className="p-1 hover:bg-gray-100 rounded"
+                data-testid="button-close-new-inquiry"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label
+                className="block mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#0C0C0C",
+                }}
+              >
+                제목
+              </label>
+              <input
+                type="text"
+                value={inquiryTitle}
+                onChange={(e) => setInquiryTitle(e.target.value)}
+                placeholder="문의 제목을 입력하세요"
+                className="w-full px-4 py-3"
+                style={{
+                  background: "#FDFDFD",
+                  border: "2px solid rgba(12, 12, 12, 0.08)",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  color: "#0C0C0C",
+                }}
+                data-testid="input-inquiry-title"
+              />
+            </div>
+
+            <div className="mb-2">
+              <label
+                className="block mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#0C0C0C",
+                }}
+              >
+                내용
+              </label>
+              <div className="relative">
+                <textarea
+                  value={inquiryContent}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 1000) {
+                      setInquiryContent(e.target.value);
+                    }
+                  }}
+                  placeholder="문의 내용을 입력하세요"
+                  rows={8}
+                  className="w-full px-4 py-3 resize-none"
+                  style={{
+                    background: "#FDFDFD",
+                    border: "2px solid rgba(12, 12, 12, 0.08)",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="textarea-inquiry-content"
+                />
+                <div
+                  className="absolute bottom-3 right-3"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
+                    fontWeight: 400,
+                    color: "#686A6E",
+                  }}
+                >
+                  {inquiryContent.length}/1000
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowNewInquiryModal(false);
+                  setInquiryTitle("");
+                  setInquiryContent("");
+                }}
+                className="flex-1 py-3"
+                style={{
+                  background: "#F5F5F5",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#686A6E",
+                }}
+                data-testid="button-cancel-inquiry"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  if (!inquiryTitle.trim() || !inquiryContent.trim()) {
+                    toast({
+                      title: "입력 오류",
+                      description: "제목과 내용을 입력해주세요.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  createInquiryMutation.mutate({
+                    title: inquiryTitle.trim(),
+                    content: inquiryContent.trim(),
+                  });
+                }}
+                disabled={createInquiryMutation.isPending}
+                className="flex-1 py-3"
+                style={{
+                  background: createInquiryMutation.isPending ? "#CCC" : "#008FED",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#FDFDFD",
+                  cursor: createInquiryMutation.isPending ? "not-allowed" : "pointer",
+                }}
+                data-testid="button-submit-inquiry"
+              >
+                {createInquiryMutation.isPending ? "등록 중..." : "문의하기"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
