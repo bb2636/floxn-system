@@ -1140,6 +1140,10 @@ export default function SettlementsInquiry() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                     minWidth: "90px",
+                    position: "sticky",
+                    left: "750px",
+                    zIndex: 30,
+                    background: "rgba(240, 240, 240, 1)",
                   }}
                 >
                   종결일
@@ -1156,6 +1160,10 @@ export default function SettlementsInquiry() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                     minWidth: "50px",
+                    position: "sticky",
+                    left: "840px",
+                    zIndex: 30,
+                    background: "rgba(240, 240, 240, 1)",
                   }}
                 >
                   공사<br />유무
@@ -1670,6 +1678,10 @@ export default function SettlementsInquiry() {
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
                       minWidth: "90px",
+                      position: "sticky",
+                      left: "750px",
+                      zIndex: 10,
+                      background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                     }}
                   >
                     {row.withdrawalDate}
@@ -1683,6 +1695,10 @@ export default function SettlementsInquiry() {
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
                       minWidth: "50px",
+                      position: "sticky",
+                      left: "840px",
+                      zIndex: 10,
+                      background: index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)",
                     }}
                   >
                     {row.constructionStatus}
