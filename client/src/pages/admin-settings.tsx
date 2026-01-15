@@ -1142,7 +1142,6 @@ export default function AdminSettings() {
   return (
     <div className="relative flex flex-col h-screen overflow-hidden bg-white">
       <GlobalHeader />
-
       {/* Main Content */}
       <div className="relative flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
@@ -1584,7 +1583,6 @@ export default function AdminSettings() {
                       }}
                       data-testid="modal-overlay-inquiry"
                     />
-
                     {/* Modal Panel */}
                     <div
                       className="fixed right-0 top-0 h-screen w-[600px] bg-white z-50 shadow-2xl overflow-y-auto"
@@ -1984,8 +1982,8 @@ export default function AdminSettings() {
                       </div>
                     </div>
                   </div>
-                </>
-              );
+                  </>
+                );
             })()}
           </>
           ) : activeMenu === "공지사항 관리" ? (
@@ -4447,7 +4445,6 @@ export default function AdminSettings() {
           ) : null}
         </div>
       </div>
-
       {activeMenu === "사용자 계정 관리" && (
         <>
       {/* Account Detail Modal */}
@@ -7346,7 +7343,7 @@ export default function AdminSettings() {
                   </>
                 ) : (
                   /* 다른 역할: 회사명, 소속부서, 직급, 사무실 전화 */
-                  <div className="flex gap-3" style={{ width: "100%" }}>
+                  (<div className="flex gap-3" style={{ width: "100%" }}>
                     <div className="flex-1">
                       <label
                         className="block mb-2"
@@ -7513,7 +7510,7 @@ export default function AdminSettings() {
                         data-testid="input-office"
                       />
                     </div>
-                  </div>
+                  </div>)
                 )}
               </div>
             </div>
@@ -8612,7 +8609,6 @@ export default function AdminSettings() {
       )}
         </>
       )}
-
       {/* Add Notice Modal */}
       {showAddNoticeModal && (
         <>
@@ -8789,7 +8785,6 @@ export default function AdminSettings() {
           </div>
         </>
       )}
-
       {/* Notice Confirmation Modal */}
       {showNoticeConfirmModal && (
         <>
@@ -8837,9 +8832,7 @@ export default function AdminSettings() {
                 color: "#686A6E",
                 textAlign: "center",
               }}
-            >
-              게시 후에는 즉시 노출됩니다. 내용과 대상을 다시 확인해주세요.
-            </p>
+            >게시 후에는 즉시 노출됩니다. 내용을 다시 확인해주세요.</p>
 
             {/* Buttons */}
             <div className="flex gap-3">
@@ -8885,7 +8878,6 @@ export default function AdminSettings() {
           </div>
         </>
       )}
-
       {/* Notice Cancel Confirmation Modal */}
       {showNoticeCancelConfirmModal && (
         <>
