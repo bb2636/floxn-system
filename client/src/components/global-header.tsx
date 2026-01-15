@@ -72,11 +72,9 @@ export function GlobalHeader() {
     return (
       <>
         <header 
-          className="flex relative w-full"
+          className="flex relative w-full bg-white"
           style={{
-            background: 'rgba(255, 255, 255, 0.06)',
-            backdropFilter: 'blur(22px)',
-            borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
+            borderBottom: '1px solid #E5E7EB',
           }}
         >
           <div 
@@ -165,11 +163,9 @@ export function GlobalHeader() {
     <>
       {/* Mobile Header (viewport responsive) */}
       <header 
-        className="lg:hidden flex relative w-full"
+        className="lg:hidden flex relative w-full bg-white"
         style={{
-          background: 'rgba(255, 255, 255, 0.06)',
-          backdropFilter: 'blur(22px)',
-          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
+          borderBottom: '1px solid #E5E7EB',
         }}
       >
         {/* Logo and User Profile */}
@@ -249,11 +245,9 @@ export function GlobalHeader() {
 
       {/* Desktop Header */}
       <header 
-        className="hidden lg:flex relative w-full h-[89px] px-8 items-center justify-between"
+        className="hidden lg:flex relative w-full h-[89px] px-8 items-center justify-between bg-white"
         style={{
-          background: 'rgba(255, 255, 255, 0.06)',
-          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
-          backdropFilter: 'blur(22px)',
+          borderBottom: '1px solid #E5E7EB',
         }}
       >
         {/* Logo */}
