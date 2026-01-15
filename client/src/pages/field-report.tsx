@@ -318,9 +318,9 @@ export default function FieldReport() {
     enabled: !!selectedCaseId,
   });
 
-  // 관련 접수건 조회 (심사하기용)
+  // 관련 접수건 조회 (심사하기용) - status 포함하여 현장출동보고서 제출건 필터링
   const { data: relatedCasesData } = useQuery<{
-    relatedCases: Array<{ caseId: string; caseNumber: string }>;
+    relatedCases: Array<{ caseId: string; caseNumber: string; status: string | null }>;
   }>({
     queryKey: ["/api/cases", selectedCaseId, "related-drawings"],
     enabled: !!selectedCaseId,
@@ -1255,7 +1255,7 @@ export default function FieldReport() {
         </div>
       </div>
 
-      {/* 관련 접수건 전환 버튼 - 같은 접수번호의 -0, -1, -2 케이스만 표시 */}
+      {/* 관련 접수건 전환 버튼 - 동일 사고번호의 현장출동보고서를 제출한 모든 접수건 표시 */}
       {(() => {
         // 현재 케이스 번호에서 기본 번호 추출 (예: "123-456-0" -> "123-456")
         const currentCaseNumber = caseData?.caseNumber || "";
@@ -1263,20 +1263,23 @@ export default function FieldReport() {
         if (!baseMatch) return null;
         
         const baseCaseNumber = baseMatch[1];
-        const currentSuffix = baseMatch[2];
         
-        // 관련 케이스 중 같은 기본 번호를 가진 -0, -1, -2 케이스만 필터링
+        // 현장출동보고서 제출 완료된 상태 목록 (1차승인 이후)
+        const SUBMITTED_STATUSES = ["1차승인", "현장정보제출", "복구요청", "청구", "청구대기", "정산완료"];
+        
+        // 관련 케이스 중 같은 기본 번호를 가진 케이스들 필터링 (현장출동보고서 제출건만)
         const suffixCases = relatedCasesData?.relatedCases?.filter((rc) => {
           const match = rc.caseNumber.match(/^(.+)-(\d+)$/);
           if (!match) return false;
           const rcBase = match[1];
-          const rcSuffix = match[2];
-          return rcBase === baseCaseNumber && ["0", "1", "2"].includes(rcSuffix);
+          // 같은 기본 번호 + 현장출동보고서 제출 완료 상태인 경우만
+          return rcBase === baseCaseNumber && rc.status && SUBMITTED_STATUSES.includes(rc.status);
         }) || [];
         
-        // 현재 케이스도 목록에 추가 (중복 방지)
+        // 현재 케이스도 목록에 추가 (중복 방지, 현재 케이스의 상태 포함)
+        const currentCaseStatus = caseData?.status || "";
         const allSuffixCases = [
-          { caseId: selectedCaseId, caseNumber: currentCaseNumber },
+          { caseId: selectedCaseId, caseNumber: currentCaseNumber, status: currentCaseStatus },
           ...suffixCases.filter(rc => rc.caseId !== selectedCaseId)
         ].sort((a, b) => {
           const suffixA = a.caseNumber.match(/-(\d+)$/)?.[1] || "0";

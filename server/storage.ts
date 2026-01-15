@@ -358,7 +358,7 @@ export interface IStorage {
   ): Promise<{ caseId: string; caseNumber: string } | null>;
   getAllRelatedCasesWithDrawings(
     caseId: string,
-  ): Promise<Array<{ caseId: string; caseNumber: string }>>;
+  ): Promise<Array<{ caseId: string; caseNumber: string; status: string | null }>>;
   getRelatedCaseWithEstimate(
     caseId: string,
   ): Promise<{ caseId: string; caseNumber: string } | null>;
@@ -2509,7 +2509,7 @@ export class MemStorage implements IStorage {
 
   async getAllRelatedCasesWithDrawings(
     caseId: string,
-  ): Promise<Array<{ caseId: string; caseNumber: string }>> {
+  ): Promise<Array<{ caseId: string; caseNumber: string; status: string | null }>> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
@@ -6121,7 +6121,7 @@ export class DbStorage implements IStorage {
 
   async getAllRelatedCasesWithDrawings(
     caseId: string,
-  ): Promise<Array<{ caseId: string; caseNumber: string }>> {
+  ): Promise<Array<{ caseId: string; caseNumber: string; status: string | null }>> {
     // Get the source case to find its accident number
     const sourceCase = await this.getCaseById(caseId);
     if (!sourceCase || !sourceCase.insuranceAccidentNo) return [];
@@ -6132,14 +6132,15 @@ export class DbStorage implements IStorage {
       caseId,
     );
 
-    // Find ALL related cases that have drawings
-    const casesWithDrawings: Array<{ caseId: string; caseNumber: string }> = [];
+    // Find ALL related cases that have drawings, include status for filtering
+    const casesWithDrawings: Array<{ caseId: string; caseNumber: string; status: string | null }> = [];
     for (const relatedCase of relatedCases) {
       const drawing = await this.getDrawingByCaseId(relatedCase.id);
       if (drawing) {
         casesWithDrawings.push({
           caseId: relatedCase.id,
           caseNumber: relatedCase.caseNumber || "",
+          status: relatedCase.status,
         });
       }
     }
