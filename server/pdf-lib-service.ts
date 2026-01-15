@@ -1575,7 +1575,7 @@ async function renderEvidencePages(
   // PDF 문서 페이지들을 현재 문서에 복사 (각 페이지에 헤더 추가)
   // embedPage 방식으로 변경: 페이지 크기를 늘려서 상단에 헤더 공간 확보
   const PDF_HEADER_HEIGHT = 35;
-  const HEADER_CONTENT_GAP = 15; // 헤더와 원본 PDF 콘텐츠 사이 여백
+  const HEADER_CONTENT_GAP = 10; // 헤더와 원본 PDF 콘텐츠 사이 여백 (10px)
   const TOTAL_HEADER_SPACE = PDF_HEADER_HEIGHT + HEADER_CONTENT_GAP;
 
   for (const pdfItem of pdfDocs) {
