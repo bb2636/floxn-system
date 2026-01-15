@@ -18,6 +18,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Star, X, Calendar as CalendarIcon, Search } from "lucide-react";
 import { format } from "date-fns";
@@ -113,6 +119,9 @@ export default function Intake({
   const [addressDropdownOpen, setAddressDropdownOpen] = useState<'main' | 'detail' | null>(null);
   const addressContainerRef = useRef<HTMLDivElement>(null);
   const detailAddressContainerRef = useRef<HTMLDivElement>(null);
+  
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+  const addressModalContainerRef = useRef<HTMLDivElement>(null);
 
   // ESC 키로 모달 및 드롭다운 닫기
   useEffect(() => {
@@ -1238,6 +1247,27 @@ export default function Intake({
     }
   };
 
+  const openAddressModal = () => {
+    if (readOnly) return;
+    setAddressModalOpen(true);
+    setTimeout(() => {
+      if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+        const container = addressModalContainerRef.current;
+        if (container) {
+          container.innerHTML = '';
+          new (window as any).daum.Postcode({
+            oncomplete: function (data: any) {
+              handleInputChange("insuredAddress", data.address);
+              setAddressModalOpen(false);
+            },
+            width: '100%',
+            height: '100%',
+          }).embed(container);
+        }
+      }
+    }, 100);
+  };
+
   if (userLoading || !user) return null;
 
   return (
@@ -1836,17 +1866,24 @@ export default function Intake({
                     피보험자 주소
                     <RequiredMark />
                   </label>
-                  <input
-                    className={inputClasses}
-                    value={formData.insuredAddress}
-                    onChange={(e) =>
-                      handleInputChange("insuredAddress", e.target.value)
-                    }
-                    disabled={readOnly}
-                    placeholder="피보험자 주소"
-                    type="text"
-                    data-testid="input-insured-address"
-                  />
+                  <div className="flex gap-1 flex-1">
+                    <input
+                      className={`${inputClasses} flex-1 ${!readOnly ? "cursor-pointer" : ""}`}
+                      value={formData.insuredAddress}
+                      onClick={openAddressModal}
+                      readOnly
+                      disabled={readOnly}
+                      placeholder="클릭하여 주소 검색"
+                      type="text"
+                      data-testid="input-insured-address"
+                    />
+                    <div
+                      onClick={openAddressModal}
+                      className={`${inputClasses} w-10 !p-0 flex items-center justify-center ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                    >
+                      <Search size={16} />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -2878,6 +2915,15 @@ export default function Intake({
           </div>,
           document.body,
         )}
+
+      <Dialog open={addressModalOpen} onOpenChange={setAddressModalOpen}>
+        <DialogContent className="max-w-lg p-0">
+          <DialogHeader className="px-4 pt-4">
+            <DialogTitle>주소 검색</DialogTitle>
+          </DialogHeader>
+          <div ref={addressModalContainerRef} style={{ height: '450px', width: '100%' }} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
