@@ -1639,7 +1639,7 @@ export default function Intake({
                       <SelectValue placeholder="의뢰사 선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {insuranceCompanies.map((company) => (
+                      {clientCompanies.map((company) => (
                         <SelectItem key={company} value={company}>
                           {company}
                         </SelectItem>
