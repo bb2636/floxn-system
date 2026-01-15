@@ -1147,7 +1147,7 @@ export default function FieldReport() {
                   console.log("현장입력 완료:", completionStatus.fieldSurvey);
                   console.log("도면 완료:", completionStatus.drawing);
                   console.log("증빙자료 완료:", completionStatus.documents);
-                  console.log("견적 완료:", completionStatus.estimate);ㅣ
+                  console.log("견적 완료:", completionStatus.estimate);
                   console.log(
                     "전체 완료 (isComplete):",
                     completionStatus.isComplete,
