@@ -3502,23 +3502,33 @@ export default function FieldReport() {
                   {(() => {
                     const victims = [];
 
-                    // 기본 피해자 (피보험자 주소 + 피해자 상세주소 결합)
+                    // 기본 피해자 (케이스 유형에 따라 주소 구성)
                     if (caseData.victimName) {
-                      // -1/-2/-3 케이스는 피보험자 주소 + 피해자 상세주소 (victimAddressDetail 또는 victimAddress)
                       const caseNumberSuffix = caseData.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
-                      const isVictimCase = caseNumberSuffix !== "0";
+                      const suffixNum = parseInt(caseNumberSuffix);
+                      const isInsuredCase = suffixNum === 0;
+                      const isIntakeVictim = suffixNum === 1;
+                      const isAdditionalVictim = suffixNum >= 2;
                       
                       let fullAddress = "";
-                      if (isVictimCase) {
-                        // 피해자 케이스: 피보험자 주소 + 피해자 상세주소
+                      if (isInsuredCase) {
+                        // 0번 케이스: 피해자 주소 + 피해자 상세주소
+                        fullAddress = [
+                          caseData.victimAddress,
+                          caseData.victimAddressDetail,
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
+                      } else if (isIntakeVictim) {
+                        // -1 케이스: 피보험자 주소 + 피해자 상세주소 (victimAddress에 저장됨)
                         fullAddress = [
                           caseData.insuredAddress,
-                          caseData.victimAddressDetail || caseData.victimAddress,
+                          caseData.victimAddress,
                         ]
                           .filter(Boolean)
                           .join(" ");
                       } else {
-                        // 0번 케이스: 피해자 주소 + 피해자 상세주소
+                        // -2/-3 케이스: 피해자 주소 + 피해자 상세주소
                         fullAddress = [
                           caseData.victimAddress,
                           caseData.victimAddressDetail,
