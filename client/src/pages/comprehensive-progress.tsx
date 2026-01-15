@@ -132,8 +132,8 @@ const CASE_STATUSES = [
   "복구요청(2차승인)",
   "직접복구",
   "선견적요청",
-  "(직접복구인 경우) 청구자료제출",
-  "(선견적요청인 경우) 출동비 청구",
+  "청구자료제출(복구)",
+  "출동비청구(선견적)",
   "청구",
   "입금완료",
   "부분입금",
@@ -144,8 +144,8 @@ const CASE_STATUSES = [
 // 상태값을 화면 표시용 텍스트로 변환하는 함수
 const getStatusDisplayText = (status: string | null | undefined): string => {
   if (!status) return "배당대기";
-  if (status === "(직접복구인 경우) 청구자료제출") return "청구자료제출(복구)";
-  if (status === "(선견적요청인 경우) 출동비 청구") return "출동비청구(선견적)";
+  if (status === "청구자료제출(복구)") return "(직접복구인 경우) 청구자료제출";
+  if (status === "출동비청구(선견적)") return "(선견적요청인 경우) 출동비 청구";
   return status;
 };
 
