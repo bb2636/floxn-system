@@ -1509,7 +1509,7 @@ export default function Intake({
                     }}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses} 
+                      className={`${selectTriggerClasses} bg-white`} 
                       data-testid="select-manager"
                     >
                       <SelectValue placeholder="담당자명" />
