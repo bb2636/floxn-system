@@ -1030,39 +1030,41 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
-              <h3 className="font-bold mb-4">즐겨찾기</h3>
-              
-              <div className="space-y-2">
-                {userFavorites.length === 0 ? (
-                  <div className="text-center text-slate-500 py-4 text-sm">
-                    즐겨찾기가 없습니다
-                  </div>
-                ) : (
-                  userFavorites.map((favorite, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
-                      onClick={() => handleFavoriteClick(favorite.menuName)}
-                    >
-                      <div className="flex items-center gap-2">
-                        {getMenuIcon(favorite.menuName)}
-                        <span className="text-sm">{favorite.menuName}</span>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveFavorite(favorite.menuName);
-                        }}
-                        className="text-slate-400 hover:text-slate-600"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+            {user.role !== "협력사" && (
+              <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
+                <h3 className="font-bold mb-4">즐겨찾기</h3>
+                
+                <div className="space-y-2">
+                  {userFavorites.length === 0 ? (
+                    <div className="text-center text-slate-500 py-4 text-sm">
+                      즐겨찾기가 없습니다
                     </div>
-                  ))
-                )}
+                  ) : (
+                    userFavorites.map((favorite, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 cursor-pointer"
+                        onClick={() => handleFavoriteClick(favorite.menuName)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {getMenuIcon(favorite.menuName)}
+                          <span className="text-sm">{favorite.menuName}</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFavorite(favorite.menuName);
+                          }}
+                          className="text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </aside>
         </div>
       </main>
