@@ -880,7 +880,7 @@ export default function FieldReport() {
   const claimSubmitMutation = useMutation({
     mutationFn: async () => {
       return apiRequest("PATCH", `/api/cases/${selectedCaseId}`, {
-        status: "(직접복구인 경우) 청구자료제출",
+        status: "청구자료제출(복구)",
       });
     },
     onSuccess: () => {

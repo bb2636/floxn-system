@@ -131,8 +131,8 @@ const CASE_STATUSES = [
   "복구요청(2차승인)",
   "직접복구",
   "선견적요청",
-  "(직접복구인 경우) 청구자료제출",
-  "(선견적요청인 경우) 출동비 청구",
+  "청구자료제출(복구)",
+  "출동비청구(선견적)",
   "청구",
   "입금완료",
   "부분입금",
@@ -196,8 +196,8 @@ export default function ComprehensiveProgress() {
     // 해당 케이스가 "청구" 또는 청구자료제출 관련 상태인 경우에만 체크
     const claimStatuses = [
       "청구",
-      "(직접복구인 경우) 청구자료제출",
-      "(선견적요청인 경우) 출동비 청구",
+      "청구자료제출(복구)",
+      "출동비청구(선견적)",
     ];
 
     // 현재 케이스가 청구 상태가 아니면 버튼 숨김
@@ -285,8 +285,8 @@ export default function ComprehensiveProgress() {
     );
     const claimRelatedStatuses = [
       "청구",
-      "(직접복구인 경우) 청구자료제출",
-      "(선견적요청인 경우) 출동비 청구",
+      "청구자료제출(복구)",
+      "출동비청구(선견적)",
       "입금완료",
       "부분입금",
       "정산완료",
@@ -531,8 +531,8 @@ export default function ComprehensiveProgress() {
           "복구요청(2차승인)": "복구요청",
           직접복구: "직접복구",
           선견적요청: "선견적요청",
-          "(직접복구인 경우) 청구자료제출": "청구자료제출",
-          "(선견적요청인 경우) 출동비 청구": "청구자료제출",
+          "청구자료제출(복구)": "청구자료제출",
+          "출동비청구(선견적)": "청구자료제출",
           청구자료제출: "청구자료제출",
           청구: "청구",
           "결정금액/수수료": "결정금액/수수료",
@@ -838,7 +838,7 @@ export default function ComprehensiveProgress() {
 
   // 상태 자동 전환 매핑 (선견적요청만 자동전환, 직접복구는 자동전환 없음)
   const STATUS_AUTO_TRANSITION: Record<string, string> = {
-    선견적요청: "(선견적요청인 경우) 출동비 청구",
+    선견적요청: "출동비청구(선견적)",
   };
 
   // 상태 변경 핸들러
@@ -1833,7 +1833,7 @@ export default function ComprehensiveProgress() {
                         data-testid={`button-field-survey-${caseItem.id}`}
                       >
                         {caseItem.status === "직접복구" ||
-                        caseItem.status === "(직접복구인 경우) 청구자료제출" ||
+                        caseItem.status === "청구자료제출(복구)" ||
                         caseItem.status?.includes("직접복구")
                           ? "청구자료 입력"
                           : "현장조사 입력"}

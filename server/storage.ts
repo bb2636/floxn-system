@@ -1692,8 +1692,8 @@ export class MemStorage implements IStorage {
           dateUpdates.approvedAmount = caseItem.estimateAmount;
         }
         break;
-      case "(직접복구인 경우) 청구자료제출":
-      case "(선견적요청인 경우) 출동비 청구":
+      case "청구자료제출(복구)":
+      case "출동비청구(선견적)":
         // 복구완료일 자동 기록 (기존 값 없을 때만)
         if (!caseItem.constructionCompletionDate) {
           dateUpdates.constructionCompletionDate = currentDate;
@@ -1727,9 +1727,9 @@ export class MemStorage implements IStorage {
 
     // 상태에 따라 recoveryType 자동 설정
     let recoveryTypeUpdate: Partial<Case> = {};
-    if (normalizedStatus === "직접복구" || normalizedStatus === "(직접복구인 경우) 청구자료제출") {
+    if (normalizedStatus === "직접복구" || normalizedStatus === "청구자료제출(복구)") {
       recoveryTypeUpdate.recoveryType = "직접복구";
-    } else if (normalizedStatus === "선견적요청" || normalizedStatus === "(선견적요청인 경우) 출동비 청구") {
+    } else if (normalizedStatus === "선견적요청" || normalizedStatus === "출동비청구(선견적)") {
       recoveryTypeUpdate.recoveryType = "선견적요청";
     }
 
@@ -4625,8 +4625,8 @@ export class DbStorage implements IStorage {
           dateUpdates.approvedAmount = existingCase.estimateAmount;
         }
         break;
-      case "(직접복구인 경우) 청구자료제출":
-      case "(선견적요청인 경우) 출동비 청구":
+      case "청구자료제출(복구)":
+      case "출동비청구(선견적)":
         // 복구완료일 자동 기록 (기존 값 없을 때만)
         if (!existingCase.constructionCompletionDate) {
           dateUpdates.constructionCompletionDate = currentDate;
@@ -4660,9 +4660,9 @@ export class DbStorage implements IStorage {
 
     // 상태에 따라 recoveryType 자동 설정
     let recoveryTypeUpdate: { recoveryType?: string } = {};
-    if (normalizedStatus === "직접복구" || normalizedStatus === "(직접복구인 경우) 청구자료제출") {
+    if (normalizedStatus === "직접복구" || normalizedStatus === "청구자료제출(복구)") {
       recoveryTypeUpdate.recoveryType = "직접복구";
-    } else if (normalizedStatus === "선견적요청" || normalizedStatus === "(선견적요청인 경우) 출동비 청구") {
+    } else if (normalizedStatus === "선견적요청" || normalizedStatus === "출동비청구(선견적)") {
       recoveryTypeUpdate.recoveryType = "선견적요청";
     }
 
@@ -6897,8 +6897,8 @@ export class DbStorage implements IStorage {
         "복구요청(2차승인)",
         "직접복구",
         "선견적요청",
-        "(직접복구인 경우) 청구자료제출",
-        "(선견적요청인 경우) 출동비 청구",
+        "청구자료제출(복구)",
+        "출동비청구(선견적)",
         "청구",
         "입금완료",
         "부분입금",
@@ -6951,9 +6951,9 @@ export class DbStorage implements IStorage {
       if (
         !caseItem.constructionCompletionDate &&
         (currentIndex >=
-          statusOrder.indexOf("(직접복구인 경우) 청구자료제출") ||
+          statusOrder.indexOf("청구자료제출(복구)") ||
           currentIndex >=
-            statusOrder.indexOf("(선견적요청인 경우) 출동비 청구"))
+            statusOrder.indexOf("출동비청구(선견적)"))
       ) {
         dateUpdates.constructionCompletionDate = baseDate;
       }

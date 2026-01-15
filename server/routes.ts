@@ -2571,8 +2571,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "복구요청(2차승인)",
         "직접복구",
         "선견적요청",
-        "(직접복구인 경우) 청구자료제출",
-        "(선견적요청인 경우) 출동비 청구",
+        "청구자료제출(복구)",
+        "출동비청구(선견적)",
         "청구",
         "입금완료",
         "부분입금",
@@ -2591,8 +2591,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const PARTNER_ALLOWED = [
           "직접복구",
           "선견적요청",
-          "(직접복구인 경우) 청구자료제출",
-          "(선견적요청인 경우) 출동비 청구",
+          "청구자료제출(복구)",
+          "출동비청구(선견적)",
         ];
         if (!PARTNER_ALLOWED.includes(status)) {
           return res.status(403).json({
@@ -11994,7 +11994,7 @@ https://peulrogseun-aqaqaq4561.replit.app
 
       // 1. 해당 케이스 1건만 청구자료제출 상태로 변경
       const updatedCase = await storage.updateCase(caseId, {
-        status: "(직접복구인 경우) 청구자료제출",
+        status: "청구자료제출(복구)",
       });
 
       if (!updatedCase) {
@@ -12013,12 +12013,12 @@ https://peulrogseun-aqaqaq4561.replit.app
         (c) =>
           c.insuranceAccidentNo === accidentNo &&
           (c.status === "직접복구" ||
-            c.status === "(직접복구인 경우) 청구자료제출"),
+            c.status === "청구자료제출(복구)"),
       );
 
       // 3. 모든 관련 케이스가 청구자료제출 상태인지 확인
       const allSubmitted = relatedCases.every(
-        (c) => c.status === "(직접복구인 경우) 청구자료제출",
+        (c) => c.status === "청구자료제출(복구)",
       );
       let smsSent = false;
 
@@ -12382,8 +12382,8 @@ https://peulrogseun-aqaqaq4561.replit.app
         "복구요청(2차승인)",
         "직접복구",
         "선견적요청",
-        "(직접복구인 경우) 청구자료제출",
-        "(선견적요청인 경우) 출동비 청구",
+        "청구자료제출(복구)",
+        "출동비청구(선견적)",
         "청구",
         "입금완료",
         "부분입금",
