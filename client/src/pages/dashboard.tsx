@@ -887,13 +887,13 @@ export default function Dashboard() {
                     총 <span className="font-bold">{myTasks.length}건</span>의 업데이트
                   </div>
 
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-4 space-y-3 max-h-[400px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                     {myTasks.length === 0 ? (
                       <div className="text-center text-slate-500 py-8">
                         맡은 작업이 없습니다
                       </div>
                     ) : (
-                      myTasks.slice(0, 3).map((task, index) => {
+                      myTasks.map((task, index) => {
                         const statusStyle = getStatusColor(task.status || '작성중');
                         return (
                           <div
