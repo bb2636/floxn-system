@@ -1264,8 +1264,8 @@ export default function FieldReport() {
         
         const baseCaseNumber = baseMatch[1];
         
-        // 현장출동보고서 제출 완료된 상태 목록 (1차승인 이후)
-        const SUBMITTED_STATUSES = ["1차승인", "현장정보제출", "복구요청", "청구", "청구대기", "정산완료"];
+        // 현장출동보고서 제출 완료된 상태 목록 (검토중 이후)
+        const SUBMITTED_STATUSES = ["검토중", "1차승인", "현장정보제출", "복구요청", "청구", "청구대기", "정산완료"];
         
         // 관련 케이스 중 같은 기본 번호를 가진 케이스들 필터링 (현장출동보고서 제출건만)
         const suffixCases = relatedCasesData?.relatedCases?.filter((rc) => {
