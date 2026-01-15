@@ -1247,26 +1247,29 @@ export default function Intake({
     }
   };
 
-  const openAddressModal = () => {
-    if (readOnly) return;
-    setAddressModalOpen(true);
-    setTimeout(() => {
-      if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
-        const container = addressModalContainerRef.current;
-        if (container) {
-          container.innerHTML = '';
-          new (window as any).daum.Postcode({
-            oncomplete: function (data: any) {
-              handleInputChange("insuredAddress", data.address);
-              setAddressModalOpen(false);
-            },
-            width: '100%',
-            height: '100%',
-          }).embed(container);
+  useEffect(() => {
+    if (addressModalOpen) {
+      setTimeout(() => {
+        if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+          const container = addressModalContainerRef.current;
+          if (container) {
+            container.innerHTML = '';
+            new (window as any).daum.Postcode({
+              oncomplete: function (data: any) {
+                handleInputChange("insuredAddress", data.address);
+                setAddressModalOpen(false);
+              },
+              onclose: function () {
+                setAddressModalOpen(false);
+              },
+              width: '100%',
+              height: '100%',
+            }).embed(container);
+          }
         }
-      }
-    }, 100);
-  };
+      }, 100);
+    }
+  }, [addressModalOpen]);
 
   if (userLoading || !user) return null;
 
@@ -1866,17 +1869,23 @@ export default function Intake({
                     피보험자 주소
                     <RequiredMark />
                   </label>
-                  <input
-                    className={inputClasses}
-                    value={formData.insuredAddress}
-                    onChange={(e) =>
-                      handleInputChange("insuredAddress", e.target.value)
-                    }
-                    disabled={readOnly}
-                    placeholder="피보험자 주소"
-                    type="text"
-                    data-testid="input-insured-address"
-                  />
+                  <div className="relative flex-1">
+                    <input
+                      className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""}`}
+                      value={formData.insuredAddress}
+                      onClick={() => !readOnly && setAddressModalOpen(true)}
+                      readOnly
+                      disabled={readOnly}
+                      placeholder="클릭하여 주소 검색"
+                      type="text"
+                      data-testid="input-insured-address"
+                    />
+                    {addressModalOpen && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                        <div ref={addressModalContainerRef} style={{ height: '400px', width: '100%' }} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2909,14 +2918,6 @@ export default function Intake({
           document.body,
         )}
 
-      <Dialog open={addressModalOpen} onOpenChange={setAddressModalOpen}>
-        <DialogContent className="max-w-lg p-0">
-          <DialogHeader className="px-4 pt-4">
-            <DialogTitle>주소 검색</DialogTitle>
-          </DialogHeader>
-          <div ref={addressModalContainerRef} style={{ height: '450px', width: '100%' }} />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
