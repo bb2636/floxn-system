@@ -1753,6 +1753,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>심사사</label>
                   <Select
+                    key={`assessor-id-${loadedCaseNumber}`}
                     value={formData.assessorId}
                     onValueChange={(value) =>
                       handleInputChange("assessorId", value)
@@ -1763,9 +1764,7 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-assessor-id"
                     >
-                      <SelectValue placeholder="심사사 선택">
-                        {formData.assessorId || undefined}
-                      </SelectValue>
+                      <SelectValue placeholder="심사사 선택" />
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1793,6 +1792,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
                   <Select
+                    key={`assessor-dept-${loadedCaseNumber}`}
                     value={formData.assessorDepartment}
                     onValueChange={(value) =>
                       handleInputChange("assessorDepartment", value)
@@ -1803,9 +1803,7 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-assessor-department"
                     >
-                      <SelectValue placeholder="부서 선택">
-                        {formData.assessorDepartment || undefined}
-                      </SelectValue>
+                      <SelectValue placeholder="부서 선택" />
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1828,6 +1826,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>심사자</label>
                   <Select
+                    key={`assessor-team-${loadedCaseNumber}`}
                     value={formData.assessorTeam}
                     onValueChange={(value) =>
                       handleInputChange("assessorTeam", value)
@@ -1838,9 +1837,7 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-assessor-team"
                     >
-                      <SelectValue placeholder="심사자 성함">
-                        {formData.assessorTeam || undefined}
-                      </SelectValue>
+                      <SelectValue placeholder="심사자 성함" />
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1878,6 +1875,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>조사사</label>
                   <Select
+                    key={`investigator-team-${loadedCaseNumber}`}
                     value={formData.investigatorTeam}
                     onValueChange={(value) =>
                       handleInputChange("investigatorTeam", value)
@@ -1888,9 +1886,7 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-team"
                     >
-                      <SelectValue placeholder="조사사 명">
-                        {formData.investigatorTeam || undefined}
-                      </SelectValue>
+                      <SelectValue placeholder="조사사 명" />
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1919,6 +1915,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
                   <Select
+                    key={`investigator-dept-${loadedCaseNumber}`}
                     value={formData.investigatorDepartment}
                     onValueChange={(value) =>
                       handleInputChange("investigatorDepartment", value)
@@ -1929,9 +1926,7 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-department"
                     >
-                      <SelectValue placeholder="부서 선택">
-                        {formData.investigatorDepartment || undefined}
-                      </SelectValue>
+                      <SelectValue placeholder="부서 선택" />
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
@@ -1957,6 +1952,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <Select
+                    key={`investigator-name-${loadedCaseNumber}`}
                     value={formData.investigatorTeamName}
                     onValueChange={(value) =>
                       handleInputChange("investigatorTeamName", value)
@@ -1967,9 +1963,7 @@ export default function Intake({
                       className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-name"
                     >
-                      <SelectValue placeholder="조사자 성함">
-                        {formData.investigatorTeamName || undefined}
-                      </SelectValue>
+                      <SelectValue placeholder="조사자 성함" />
                     </SelectTrigger>
                     <SelectContent>
                       {/* 현재 저장된 값이 목록에 없으면 추가 */}
