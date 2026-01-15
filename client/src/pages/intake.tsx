@@ -604,6 +604,17 @@ export default function Intake({
     apiRequest("GET", `/api/cases/${initialCaseId}`)
       .then((res) => res.json())
       .then((caseData: any) => {
+        console.log("🔍 [Intake Modal] Loaded case data:", {
+          caseNumber: caseData.caseNumber,
+          assessorId: caseData.assessorId,
+          assessorDepartment: caseData.assessorDepartment,
+          assessorTeam: caseData.assessorTeam,
+          assessorContact: caseData.assessorContact,
+          investigatorTeam: caseData.investigatorTeam,
+          investigatorDepartment: caseData.investigatorDepartment,
+          investigatorTeamName: caseData.investigatorTeamName,
+          investigatorContact: caseData.investigatorContact,
+        });
         if (caseData.caseNumber) setLoadedCaseNumber(caseData.caseNumber);
         const manager = administrators?.find(
           (a) => a.id === caseData.managerId,
