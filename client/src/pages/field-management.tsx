@@ -117,7 +117,7 @@ export default function FieldManagement() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: selectedCaseDetail } = useQuery<Case>({
+  const { data: selectedCaseDetail, isLoading: isLoadingSelectedCaseDetail } = useQuery<Case>({
     queryKey: [`/api/cases/${selectedCase}`],
     enabled: !!selectedCase,
     refetchOnWindowFocus: false,
@@ -216,6 +216,12 @@ export default function FieldManagement() {
   }, [availableCases]);
 
   useEffect(() => {
+    // selectedCaseDetail이 아직 로딩 중이면 자동 선택을 하지 않음
+    // 이는 "관련접수건 전환"으로 선택한 케이스가 로딩 완료될 때까지 기다림
+    if (selectedCase && isLoadingSelectedCaseDetail) {
+      return;
+    }
+    
     // selectedCaseDetail이 있으면 (직접 API로 조회 성공) 리셋하지 않음
     // 이는 "관련접수건 전환"으로 선택한 케이스가 availableCases에 없어도 유지되게 함
     if (selectedCase && selectedCaseDetail) {
@@ -223,7 +229,7 @@ export default function FieldManagement() {
     }
     
     if (availableCases.length === 0) {
-      if (selectedCase && !selectedCaseDetail) {
+      if (selectedCase && !selectedCaseDetail && !isLoadingSelectedCaseDetail) {
         setSelectedCase("");
         localStorage.removeItem('selectedFieldSurveyCaseId');
       }
@@ -232,12 +238,12 @@ export default function FieldManagement() {
 
     const isCurrentCaseAvailable = selectedCase && availableCases.some(c => c.id === selectedCase);
     
-    if (!isCurrentCaseAvailable && !selectedCaseDetail) {
+    if (!isCurrentCaseAvailable && !selectedCaseDetail && !isLoadingSelectedCaseDetail) {
       const newCaseId = availableCases[0].id;
       setSelectedCase(newCaseId);
       localStorage.setItem('selectedFieldSurveyCaseId', newCaseId);
     }
-  }, [availableCaseIds, selectedCase, selectedCaseDetail]);
+  }, [availableCaseIds, selectedCase, selectedCaseDetail, isLoadingSelectedCaseDetail]);
 
   const handleCaseChange = (caseId: string) => {
     setSelectedCase(caseId);
