@@ -1759,22 +1759,28 @@ export default function ComprehensiveProgress() {
                       )}
                     </div>
                     {(() => {
-                      const addressText =
-                        caseItem.damagePreventionCost === "true"
-                          ? [
-                              caseItem.insuredAddress,
-                              caseItem.insuredAddressDetail,
-                            ]
-                              .filter(Boolean)
-                              .join(" ") || "-"
-                          : caseItem.victimIncidentAssistance === "true"
-                            ? [
-                                caseItem.victimAddress,
-                                caseItem.victimAddressDetail,
-                              ]
-                                .filter(Boolean)
-                                .join(" ") || "-"
-                            : "-";
+                      // 케이스 번호에서 suffix 추출 (-0, -1, -2, etc.)
+                      const caseNumberSuffix = caseItem.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
+                      const isInsuredCase = caseNumberSuffix === "0"; // -0은 피보험자 케이스
+                      
+                      let addressText: string;
+                      if (isInsuredCase) {
+                        // -0 케이스: 피보험자 주소 + 피보험자 상세주소
+                        addressText = [
+                          caseItem.insuredAddress,
+                          caseItem.insuredAddressDetail,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || "-";
+                      } else {
+                        // -1, -2, -3 등 피해세대 케이스: 피보험자 주소 + 피해자 상세주소
+                        addressText = [
+                          caseItem.insuredAddress,
+                          caseItem.victimAddressDetail,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || "-";
+                      }
                       const fontSize =
                         addressText.length > 40 ? "11px" : "13px";
                       return (
