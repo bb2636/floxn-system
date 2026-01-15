@@ -1067,11 +1067,18 @@ export default function ComprehensiveProgress() {
             검색
           </h2>
 
-          {/* Status Filter Dropdown */}
-          <div style={{ marginBottom: "16px" }}>
+          {/* Status Filter Dropdown + Search Input (한 줄 배치) */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            {/* Status Filter Dropdown */}
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger
-                className="w-[180px] h-[44px]"
+                className="w-[180px] h-[52px]"
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
@@ -1096,16 +1103,8 @@ export default function ComprehensiveProgress() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
 
-          {/* Search Input */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
+            {/* Search Input */}
             <div style={{ position: "relative", flex: 1 }}>
               <Search
                 className="absolute left-4 top-1/2 transform -translate-y-1/2"
@@ -1141,6 +1140,8 @@ export default function ComprehensiveProgress() {
                 data-testid="input-search"
               />
             </div>
+
+            {/* Search Button */}
             <button
               onClick={() => {
                 // 검색 기능은 실시간으로 이미 작동 중
