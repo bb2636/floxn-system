@@ -4528,6 +4528,9 @@ export class DbStorage implements IStorage {
     // caseNumber도 업데이트 대상에 포함
     const updateData: any = { ...caseData, ...additionalUpdates, updatedAt: currentDate };
     
+    // id는 업데이트 대상에서 제외 (duplicate key 오류 방지)
+    delete updateData.id;
+    
     // managerId가 빈 문자열이면 null로 변환 (외래 키 제약 조건 방지)
     if (updateData.managerId === '') {
       updateData.managerId = null;
