@@ -181,8 +181,10 @@ export default function Dashboard() {
       case 'reception':
         return filteredCasesByPeriod;
       case 'pending':
+        // 미결건: 청구단계 이전 (청구, 입금완료, 부분입금, 정산완료, 접수취소 제외)
         return filteredCasesByPeriod.filter(c => 
-          c.status !== '완료' && c.status !== '취소' && c.status !== '종결' && c.status !== '접수취소'
+          c.status !== '청구' && c.status !== '입금완료' && c.status !== '부분입금' && 
+          c.status !== '정산완료' && c.status !== '접수취소' && c.status !== '취소'
         );
       case 'insurance':
         return filteredCasesByPeriod.filter(c => c.status === '완료');
@@ -250,7 +252,9 @@ export default function Dashboard() {
       const companyName = c.insuranceCompany || '미지정';
       
       const existing = companyCounts.get(companyName);
-      const isPending = c.status !== '완료' && c.status !== '취소' && c.status !== '종결' && c.status !== '접수취소';
+      // 미결건: 청구단계 이전 (청구, 입금완료, 부분입금, 정산완료, 접수취소, 취소 제외)
+      const isPending = c.status !== '청구' && c.status !== '입금완료' && c.status !== '부분입금' && 
+                        c.status !== '정산완료' && c.status !== '접수취소' && c.status !== '취소';
       // 보험사 미정산: 완료 상태이면서 insuranceSettlementStatus가 '미정산'이거나 정산 전인 경우
       const insuranceStatus = (c as any).insuranceSettlementStatus;
       const partnerStatus = (c as any).partnerSettlementStatus;
