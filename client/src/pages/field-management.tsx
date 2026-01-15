@@ -1340,12 +1340,12 @@ export default function FieldManagement() {
               </div>
             </section>
 
-            {/* 피해자 추가 섹션 - 관리자만 접근 가능 */}
+            {/* 피해자 추가 섹션 - 관리자만 접근 가능 (관리자는 제출 후에도 추가 가능) */}
             {isAdmin && (
             <section className="mt-8">
               <div className="flex items-center justify-between">
                 <div className="text-[14px] font-bold">피해자 추가</div>
-                {!isReadOnly && !isSubmitted && (
+                {(isAdmin || (!isReadOnly && !isSubmitted)) && (
                   <button
                     type="button"
                     className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F6FA]"
@@ -1360,7 +1360,7 @@ export default function FieldManagement() {
               </div>
               <div className="mt-3 border-t border-[#E5E7EB]"></div>
 
-              {!isReadOnly && !isSubmitted && (
+              {(isAdmin || (!isReadOnly && !isSubmitted)) && (
                 <div className="mt-4 space-y-4">
                   <div className="grid grid-cols-12 gap-4">
                     <div className="col-span-12 flex items-center gap-3">
