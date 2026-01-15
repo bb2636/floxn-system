@@ -1636,9 +1636,10 @@ export default function ComprehensiveProgress() {
                           .filter(Boolean)
                           .join(" ") || "-";
                       } else {
+                        // -1/-2/-3 케이스는 피보험자 주소 + 피해자 상세주소 (victimAddress 또는 victimAddressDetail)
                         addressText = [
                           caseItem.insuredAddress,
-                          caseItem.victimAddressDetail,
+                          caseItem.victimAddressDetail || caseItem.victimAddress,
                         ]
                           .filter(Boolean)
                           .join(" ") || "-";
