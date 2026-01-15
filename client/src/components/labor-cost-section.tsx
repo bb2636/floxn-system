@@ -2282,7 +2282,7 @@ export function LaborCostSection({
                     />
                   </td>
 
-                  {/* 수량(인) - 연동행: I÷E (합계÷노임단가), 직접추가행: 수기입력 가능 (소수점 1자리, 음수 불가) */}
+                  {/* 수량(인) - 연동행: I÷E (합계÷노임단가), 직접추가행: 화살표/수기 입력 가능 (소수점 1자리, 음수 불가) */}
                   <td
                     style={{
                       padding: "0 8px",
@@ -2293,7 +2293,7 @@ export function LaborCostSection({
                   >
                     {(() => {
                       // 연동행: 수량 = I ÷ E (합계 ÷ 노임단가)
-                      // 직접추가행: 수기입력 가능
+                      // 직접추가행: 수기/화살표 입력 가능
                       const I =
                         (row as MergedLaborCostRow).mergedAmount ??
                         row.amount ??
@@ -2307,41 +2307,18 @@ export function LaborCostSection({
                       
                       return (
                         <Input
-                          type="text"
-                          inputMode="decimal"
-                          value={isLinkedRow ? displayQuantity.toFixed(2) : (displayQuantity === 0 ? "" : String(Math.round(displayQuantity * 10) / 10))}
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={isLinkedRow ? displayQuantity.toFixed(2) : (displayQuantity || '')}
                           onChange={(e) => {
                             // 직접추가행만 수정 가능
                             if (isLinkedRow) return;
                             
-                            const inputValue = e.target.value;
-                            // 빈 값 허용 (0으로 처리)
-                            if (inputValue === "" || inputValue === ".") {
-                              updateRow(row.id, "quantity", 0);
-                              return;
-                            }
-                            
-                            // 숫자와 소수점만 허용
-                            const cleanValue = inputValue.replace(/[^\d.]/g, "");
-                            // 소수점 1자리까지만 허용
-                            const parts = cleanValue.split(".");
-                            let finalValue = parts[0];
-                            if (parts.length > 1) {
-                              finalValue += "." + parts[1].slice(0, 1);
-                            }
-                            
-                            const numValue = parseFloat(finalValue) || 0;
+                            const numValue = parseFloat(e.target.value) || 0;
                             // 음수 방지: 0 미만이면 0으로 설정
                             const safeValue = Math.max(0, numValue);
                             // 소수점 1자리까지 반올림
-                            const roundedValue = Math.round(safeValue * 10) / 10;
-                            updateRow(row.id, "quantity", roundedValue);
-                          }}
-                          onBlur={(e) => {
-                            // blur 시 값 정리 (소수점 1자리, 음수 방지)
-                            if (isLinkedRow) return;
-                            const numValue = parseFloat(e.target.value) || 0;
-                            const safeValue = Math.max(0, numValue);
                             const roundedValue = Math.round(safeValue * 10) / 10;
                             updateRow(row.id, "quantity", roundedValue);
                           }}
