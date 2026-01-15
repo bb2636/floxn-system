@@ -355,6 +355,7 @@ export default function Intake({
     victimName: "",
     victimContact: "",
     victimAddress: "",
+    victimAddressDetail: "",
     accompaniedPerson: "",
     accidentType: "",
     accidentCause: "",
@@ -653,6 +654,7 @@ export default function Intake({
           victimName: caseData.victimName || "",
           victimContact: caseData.victimContact || "",
           victimAddress: caseData.victimAddress || "",
+          victimAddressDetail: caseData.victimAddressDetail || "",
           accompaniedPerson: caseData.accompaniedPerson || "",
           accidentType: caseData.accidentType || "",
           accidentCause: caseData.accidentCause || "",
@@ -765,6 +767,7 @@ export default function Intake({
             victimName: caseData.victimName || "",
             victimContact: caseData.victimContact || "",
             victimAddress: caseData.victimAddress || "",
+            victimAddressDetail: caseData.victimAddressDetail || "",
             accompaniedPerson: caseData.accompaniedPerson || "",
             accidentType: caseData.accidentType || "",
             accidentCause: caseData.accidentCause || "",
@@ -1196,6 +1199,7 @@ export default function Intake({
       victimName: "",
       victimContact: "",
       victimAddress: "",
+      victimAddressDetail: "",
       accompaniedPerson: "",
       accidentType: "",
       accidentCause: "",
@@ -2176,14 +2180,14 @@ export default function Intake({
                   <label className={labelClasses}>상세주소</label>
                   <input
                     className={`${inputClasses} bg-white`}
-                    value={formData.victimAddress}
+                    value={formData.victimAddressDetail}
                     onChange={(e) =>
-                      handleInputChange("victimAddress", e.target.value)
+                      handleInputChange("victimAddressDetail", e.target.value)
                     }
                     disabled={readOnly}
                     placeholder="상세주소"
                     type="text"
-                    data-testid="input-victim-address"
+                    data-testid="input-victim-address-detail"
                   />
                 </div>
               </div>
