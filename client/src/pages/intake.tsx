@@ -465,9 +465,14 @@ export default function Intake({
     return Array.from(new Set(companies));
   }, [assessors]);
 
-  const { data: clientCompanies = [] } = useQuery<string[]>({
-    queryKey: ["/api/client-companies"],
-  });
+  // Combine insurance, assessor, and investigator companies for 의뢰사 dropdown
+  const clientCompanies = useMemo(() => {
+    const allCompanies = new Set<string>();
+    insuranceCompanies.forEach((c) => allCompanies.add(c));
+    assessorCompanies.forEach((c) => allCompanies.add(c));
+    investigatorCompanies.forEach((c) => allCompanies.add(c));
+    return Array.from(allCompanies).sort();
+  }, [insuranceCompanies, assessorCompanies, investigatorCompanies]);
 
   const filteredClients = useMemo(() => {
     if (!clientCompanies) return [];
