@@ -2557,7 +2557,7 @@ export default function Intake({
                               <div className="px-3 py-3 w-[93px] text-sm text-slate-600 flex items-center">
                                 {partner.pendingCount}
                               </div>
-                              <div className="px-3 py-3 flex-1 text-sm text-slate-600 flex items-start whitespace-normal break-words">
+                              <div className="px-3 py-3 flex-1 min-w-0 text-sm text-slate-600 items-start" style={{ wordBreak: 'break-word' }}>
                                 {partner.region}
                               </div>
                               <div className="px-3 py-3 w-[49px] flex justify-center items-center">
