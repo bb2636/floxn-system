@@ -141,11 +141,9 @@ const CASE_STATUSES = [
   "접수취소",
 ] as const;
 
-// 상태값을 화면 표시용 텍스트로 변환하는 함수
+// 상태값을 화면 표시용 텍스트로 변환하는 함수 (변환 없이 그대로 반환)
 const getStatusDisplayText = (status: string | null | undefined): string => {
   if (!status) return "배당대기";
-  if (status === "청구자료제출(복구)") return "(직접복구인 경우) 청구자료제출";
-  if (status === "출동비청구(선견적)") return "(선견적요청인 경우) 출동비 청구";
   return status;
 };
 
