@@ -1193,7 +1193,7 @@ export function InvoiceManagementPopup({
                   </span>
                 </div>
 
-                {/* 접수번호 */}
+                {/* 접수번호 - 모든 관련 케이스 번호 표시 */}
                 <div className="flex items-center justify-between">
                   <span
                     style={{
@@ -1211,7 +1211,13 @@ export function InvoiceManagementPopup({
                       color: "rgba(12, 12, 12, 0.9)",
                     }}
                   >
-                    {caseData.caseNumber || "-"}
+                    {relatedCases && relatedCases.length > 0
+                      ? relatedCases
+                          .sort((a, b) => getCaseSuffix(a.caseNumber) - getCaseSuffix(b.caseNumber))
+                          .map(c => c.caseNumber)
+                          .filter(Boolean)
+                          .join(", ") || caseData.caseNumber || "-"
+                      : caseData.caseNumber || "-"}
                   </span>
                 </div>
 

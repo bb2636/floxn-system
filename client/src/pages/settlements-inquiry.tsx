@@ -131,13 +131,17 @@ export default function SettlementsInquiry() {
 
   // Helper function to open Invoice Management Popup
   const handleOpenManagement = (row: SettlementRow) => {
-    const targetCase = cases.find(c => c.id === row.id);
+    // 같은 사고번호의 모든 케이스들 찾기 (row.caseIds 사용)
+    const relatedCases = row.caseIds
+      .map(caseId => cases.find(c => c.id === caseId))
+      .filter((c): c is CaseWithLatestProgress => c !== undefined);
+    
+    // 직접복구 건이 있으면 해당 케이스를 선택, 없으면 첫 번째 케이스
+    const directRepairCase = relatedCases.find(c => c.recoveryType === "직접복구");
+    const targetCase = directRepairCase || relatedCases[0] || cases.find(c => c.id === row.id);
+    
     if (targetCase) {
       setSelectedCaseForInvoice(targetCase);
-      // 같은 사고번호의 모든 케이스들 찾기 (row.caseIds 사용)
-      const relatedCases = row.caseIds
-        .map(caseId => cases.find(c => c.id === caseId))
-        .filter((c): c is CaseWithLatestProgress => c !== undefined);
       setSelectedRelatedCasesForInvoice(relatedCases);
       setSelectedEstimateData({
         preventionEstimate: row.preventionEstimateAmount || 0,
