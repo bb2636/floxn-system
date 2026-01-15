@@ -18,7 +18,7 @@ export function AppSidebarStatistics() {
 
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col bg-[#E5E7EB]"
       style={{
         width: "260px",
         background: "rgba(255, 255, 255, 0.06)",
@@ -39,7 +39,6 @@ export function AppSidebarStatistics() {
           통계 및 정산
         </span>
       </div>
-
       {/* Menu Items */}
       <div className="flex flex-col px-3 gap-2">
         {menuItems.map((item) => (
