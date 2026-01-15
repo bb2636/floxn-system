@@ -1667,7 +1667,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <Select
-                    key={`client-residence-${initialCaseId || 'new'}`}
+                    key={`client-residence-${initialCaseId || 'new'}-${loadedCaseNumber}`}
                     value={formData.clientResidence}
                     onValueChange={(value) =>
                       handleInputChange("clientResidence", value)
@@ -1718,7 +1718,7 @@ export default function Intake({
                     <RequiredMark />
                   </label>
                   <Select
-                    key={`client-name-${initialCaseId || 'new'}`}
+                    key={`client-name-${initialCaseId || 'new'}-${loadedCaseNumber}`}
                     value={formData.clientName}
                     onValueChange={(value) =>
                       handleInputChange("clientName", value)
@@ -1767,7 +1767,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>심사사</label>
                   <Select
-                    key={`assessor-id-${initialCaseId || 'new'}`}
+                    key={`assessor-id-${initialCaseId || 'new'}-${loadedCaseNumber}`}
                     value={formData.assessorId}
                     onValueChange={(value) =>
                       handleInputChange("assessorId", value)
@@ -1806,7 +1806,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
                   <Select
-                    key={`assessor-dept-${initialCaseId || 'new'}`}
+                    key={`assessor-dept-${initialCaseId || 'new'}-${loadedCaseNumber}`}
                     value={formData.assessorDepartment}
                     onValueChange={(value) =>
                       handleInputChange("assessorDepartment", value)
@@ -1840,7 +1840,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>심사자</label>
                   <Select
-                    key={`assessor-team-${initialCaseId || 'new'}`}
+                    key={`assessor-team-${initialCaseId || 'new'}-${loadedCaseNumber}`}
                     value={formData.assessorTeam}
                     onValueChange={(value) =>
                       handleInputChange("assessorTeam", value)
@@ -1889,7 +1889,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>조사사</label>
                   <Select
-                    key={`investigator-team-${initialCaseId || 'new'}`}
+                    key={`investigator-team-${initialCaseId || 'new'}-${loadedCaseNumber}`}
                     value={formData.investigatorTeam}
                     onValueChange={(value) =>
                       handleInputChange("investigatorTeam", value)
@@ -1929,7 +1929,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
                   <Select
-                    key={`investigator-dept-${initialCaseId || 'new'}`}
+                    key={`investigator-dept-${initialCaseId || 'new'}-${loadedCaseNumber}`}
                     value={formData.investigatorDepartment}
                     onValueChange={(value) =>
                       handleInputChange("investigatorDepartment", value)
@@ -1963,7 +1963,7 @@ export default function Intake({
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>조사자</label>
                   <Select
-                    key={`investigator-name-${initialCaseId || 'new'}`}
+                    key={`investigator-name-${initialCaseId || 'new'}-${loadedCaseNumber}`}
                     value={formData.investigatorTeamName}
                     onValueChange={(value) =>
                       handleInputChange("investigatorTeamName", value)
