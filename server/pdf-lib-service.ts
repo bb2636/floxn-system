@@ -1084,7 +1084,7 @@ async function renderFieldReportPage(
     // 2️⃣ 피해자명 / 피해자 연락처
     [
       { text: "피해자명", width: 90, isHeader: true, align: "center" },
-      { text: caseData.insuredName || "-", width: 180, align: "left" },
+      { text: caseData.victimName || "-", width: 180, align: "left" },
       { text: "피해자 연락처", width: 110, isHeader: true, align: "center" },
       { text: caseData.victimContact || "-", width: 135, align: "left" },
     ],
