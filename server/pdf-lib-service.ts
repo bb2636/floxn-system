@@ -3088,17 +3088,22 @@ export async function generatePdfWithPdfLib(
         return getCategoryOrder(a.category) - getCategoryOrder(b.category);
       });
 
-      const imageDocs = sortedFilteredDocs.filter((doc) =>
+      // skipPdfAttachments=true 면 PDF 제외, 그 외에는 모든 문서 포함
+      const docsToProcess = skipPdfAttachments 
+        ? sortedFilteredDocs.filter((doc) => doc.fileType?.startsWith("image/"))
+        : sortedFilteredDocs;
+
+      const imageDocs = docsToProcess.filter((doc) =>
         doc.fileType?.startsWith("image/"),
       );
-      const pdfDocs = sortedFilteredDocs.filter(
+      const pdfDocs = docsToProcess.filter(
         (doc) =>
           doc.fileType === "application/pdf" ||
           doc.fileName?.toLowerCase().endsWith(".pdf"),
       );
 
       console.log(
-        `[pdf-lib] 선택된 문서: 이미지 ${imageDocs.length}개, PDF ${pdfDocs.length}개`,
+        `[pdf-lib] 선택된 문서: 이미지 ${imageDocs.length}개, PDF ${pdfDocs.length}개 (skipPdfAttachments=${skipPdfAttachments})`,
       );
       if (skipPdfAttachments) {
         console.log(
@@ -3106,12 +3111,13 @@ export async function generatePdfWithPdfLib(
         );
       }
 
-      if (imageDocs.length > 0) {
+      // 카테고리 순서대로 이미지와 PDF를 통합 처리 (renderEvidencePages가 이미 통합 처리 지원)
+      if (docsToProcess.length > 0) {
         const { errors } = await renderEvidencePages(
           pdfDoc,
           fonts,
           caseData,
-          imageDocs,
+          docsToProcess,
           processingConfig,
         );
         if (errors.length > 0) {
@@ -3120,117 +3126,7 @@ export async function generatePdfWithPdfLib(
             errors,
           );
         }
-        console.log("[pdf-lib] 증빙자료 이미지 페이지 생성 완료");
-      }
-
-      // skipPdfAttachments=true 면 PDF 첨부 스킵 (이메일 용량 제한용)
-      if (skipPdfAttachments) {
-        console.log(`[pdf-lib] PDF 첨부 ${pdfDocs.length}개 스킵됨`);
-      }
-      
-      // PDF 헤더 추가 상수
-      const PDF_HEADER_HEIGHT = 35;
-      const HEADER_CONTENT_GAP = 10;
-      const TOTAL_HEADER_SPACE = PDF_HEADER_HEIGHT + HEADER_CONTENT_GAP;
-      
-      for (const pdfDocData of skipPdfAttachments ? [] : pdfDocs) {
-        try {
-          // Object Storage 또는 fileData에서 PDF 로드
-          const pdfBuffer = await getImageBuffer(pdfDocData);
-          if (!pdfBuffer) {
-            console.warn(`[pdf-lib] PDF 데이터 없음: ${pdfDocData.fileName}`);
-            continue;
-          }
-
-          const attachedPdf = await PDFDocument.load(pdfBuffer, {
-            ignoreEncryption: true,
-          });
-          const pageCount = attachedPdf.getPageCount();
-          
-          // 헤더 정보 생성 - 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
-          let pdfFullAddress = "";
-          if (caseData.victimAddress) {
-            pdfFullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
-          } else if (caseData.insuredAddress) {
-            pdfFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
-          }
-          // 사고번호에서 특수기호 뒤 공백 제거 (예: "S25- 1044" → "S25-1044")
-          const rawAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "";
-          const pdfAccidentNo = normalizeText(rawAccidentNo.replace(/-\s+/g, "-").replace(/:\s+/g, ":"));
-          const pdfCategory = pdfDocData.category || "증빙자료";
-          const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategory}`;
-          const pdfFontSize = normalizedHeaderText.length > 60 ? 8 : normalizedHeaderText.length > 45 ? 9 : 10;
-          
-          // 각 페이지에 헤더 추가하며 임베드
-          for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
-            const srcPage = attachedPdf.getPage(pageIdx);
-            const { width, height } = srcPage.getSize();
-            
-            // 새 페이지 생성 (원본 + 헤더 공간)
-            const newPage = pdfDoc.addPage([width, height + TOTAL_HEADER_SPACE]);
-            
-            // 원본 페이지 임베드
-            const embeddedPage = await pdfDoc.embedPage(srcPage);
-            newPage.drawPage(embeddedPage, {
-              x: 0,
-              y: 0,
-              width: width,
-              height: height,
-            });
-            
-            // 헤더 배경 (어두운 회색)
-            const headerBaseY = height + HEADER_CONTENT_GAP;
-            newPage.drawRectangle({
-              x: 0,
-              y: headerBaseY,
-              width: width,
-              height: PDF_HEADER_HEIGHT,
-              color: rgb(0.2, 0.2, 0.2),
-            });
-            
-            // 헤더와 콘텐츠 사이 구분선
-            newPage.drawLine({
-              start: { x: 0, y: headerBaseY },
-              end: { x: width, y: headerBaseY },
-              thickness: 1,
-              color: rgb(0.3, 0.3, 0.3),
-            });
-            
-            // 헤더 텍스트
-            const textY = headerBaseY + (PDF_HEADER_HEIGHT - pdfFontSize) / 2;
-            try {
-              newPage.drawText(normalizedHeaderText, {
-                x: 10,
-                y: textY,
-                size: pdfFontSize,
-                font: fonts.bold,
-                color: rgb(1, 1, 1),
-              });
-            } catch (textErr) {
-              console.warn(`[pdf-lib] PDF 헤더 텍스트 실패: ${pdfDocData.fileName}`);
-            }
-            
-            // 페이지 번호
-            try {
-              newPage.drawText(`${pageIdx + 1}/${pageCount}`, {
-                x: width - 50,
-                y: textY,
-                size: 8,
-                font: fonts.regular,
-                color: rgb(1, 1, 1),
-              });
-            } catch (numErr) {
-              // 무시
-            }
-          }
-          
-          console.log(`[pdf-lib] PDF 첨부 완료 (헤더 추가됨): ${pdfDocData.fileName} (${pageCount}페이지)`);
-        } catch (pdfErr: any) {
-          console.error(
-            `[pdf-lib] PDF 첨부 실패 (${pdfDocData.fileName}):`,
-            pdfErr.message,
-          );
-        }
+        console.log("[pdf-lib] 증빙자료 페이지 생성 완료 (이미지+PDF 통합 처리)");
       }
     } catch (err: any) {
       console.error("[pdf-lib] 증빙자료 섹션 생성 실패:", err.message);
