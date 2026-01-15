@@ -465,14 +465,9 @@ export default function Intake({
     return Array.from(new Set(companies));
   }, [assessors]);
 
-  // Combine insurance, assessor, and investigator companies for 의뢰사 dropdown
-  const clientCompanies = useMemo(() => {
-    const allCompanies = new Set<string>();
-    insuranceCompanies.forEach((c) => allCompanies.add(c));
-    assessorCompanies.forEach((c) => allCompanies.add(c));
-    investigatorCompanies.forEach((c) => allCompanies.add(c));
-    return Array.from(allCompanies).sort();
-  }, [insuranceCompanies, assessorCompanies, investigatorCompanies]);
+  const { data: clientCompanies = [] } = useQuery<string[]>({
+    queryKey: ["/api/client-companies"],
+  });
 
   const filteredClients = useMemo(() => {
     if (!clientCompanies) return [];
@@ -1557,7 +1552,7 @@ export default function Intake({
                     disabled={readOnly}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-insurance-company"
                     >
                       <SelectValue placeholder="보험사 선택" />
@@ -1633,7 +1628,7 @@ export default function Intake({
                     disabled={readOnly}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-client-residence"
                     >
                       <SelectValue placeholder="의뢰사 선택" />
@@ -1677,7 +1672,7 @@ export default function Intake({
                     disabled={readOnly || !formData.clientResidence}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-client-name"
                     >
                       <SelectValue placeholder="의뢰자 성함" />
@@ -1722,7 +1717,7 @@ export default function Intake({
                     disabled={readOnly}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-assessor-id"
                     >
                       <SelectValue placeholder="심사사 선택" />
@@ -1754,7 +1749,7 @@ export default function Intake({
                     disabled={readOnly || !formData.assessorId}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-assessor-department"
                     >
                       <SelectValue placeholder="부서 선택" />
@@ -1784,7 +1779,7 @@ export default function Intake({
                     disabled={readOnly || !formData.assessorId}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-assessor-team"
                     >
                       <SelectValue placeholder="심사자 성함" />
@@ -1826,7 +1821,7 @@ export default function Intake({
                     disabled={readOnly}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-team"
                     >
                       <SelectValue placeholder="손사명" />
@@ -1859,7 +1854,7 @@ export default function Intake({
                     disabled={readOnly || !formData.investigatorTeam}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-department"
                     >
                       <SelectValue placeholder="부서 선택" />
@@ -1889,7 +1884,7 @@ export default function Intake({
                     disabled={readOnly || !formData.investigatorTeam}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-investigator-name"
                     >
                       <SelectValue placeholder="조사자 성함" />
@@ -2156,7 +2151,7 @@ export default function Intake({
                     disabled={readOnly}
                   >
                     <SelectTrigger
-                      className={selectTriggerClasses}
+                      className={`${selectTriggerClasses} bg-white`}
                       data-testid="select-accident-type"
                     >
                       <SelectValue placeholder="사고 유형 선택" />
