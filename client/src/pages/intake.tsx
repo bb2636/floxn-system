@@ -457,16 +457,6 @@ export default function Intake({
     return Array.from(new Set(companies));
   }, [investigators]);
 
-  const clientCompanies = useMemo(() => {
-    if (!allUsers) return [];
-    const allowedRoles = ["보험사", "심사사", "조사사"];
-    const companies = allUsers
-      .filter((u) => u.role && allowedRoles.includes(u.role))
-      .map((u) => u.company)
-      .filter((company): company is string => !!company);
-    return Array.from(new Set(companies));
-  }, [allUsers]);
-
   const assessorCompanies = useMemo(() => {
     if (!assessors) return [];
     const companies = assessors
@@ -474,6 +464,21 @@ export default function Intake({
       .filter((company): company is string => !!company);
     return Array.from(new Set(companies));
   }, [assessors]);
+
+  const clientCompanies = useMemo(() => {
+    const allCompanies = new Set<string>();
+    
+    // Add insurance companies (보험사)
+    insuranceCompanies.forEach((company) => allCompanies.add(company));
+    
+    // Add assessor companies (심사사)
+    assessorCompanies.forEach((company) => allCompanies.add(company));
+    
+    // Add investigator companies (조사사/손사명)
+    investigatorCompanies.forEach((company) => allCompanies.add(company));
+    
+    return Array.from(allCompanies).sort();
+  }, [insuranceCompanies, assessorCompanies, investigatorCompanies]);
 
   const filteredClients = useMemo(() => {
     if (!clientCompanies) return [];
