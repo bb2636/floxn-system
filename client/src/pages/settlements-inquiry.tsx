@@ -1250,8 +1250,11 @@ export default function SettlementsInquiry() {
                     textAlign: "center",
                     minWidth: "120px",
                   }}
-                >현장
-                출동비</th>
+                >
+                  <div style={{ textAlign: "center" }}>
+                    현장<br />출동비
+                  </div>
+                </th>
                 <th
                   rowSpan={2}
                   style={{
