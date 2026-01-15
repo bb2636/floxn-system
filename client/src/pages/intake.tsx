@@ -1262,6 +1262,13 @@ export default function Intake({
       });
       return;
     }
+    if (!formData.insurancePolicyNo && !formData.insuranceAccidentNo) {
+      toast({
+        description: "증권번호 또는 사고번호 중 하나는 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!formData.clientResidence) {
       toast({ description: "의뢰사를 선택해주세요.", variant: "destructive" });
       return;
@@ -1586,9 +1593,12 @@ export default function Intake({
                 </div>
               </div>
 
-              <div className="col-span-12 md:col-span-5">
+              <div className="col-span-12 md:col-span-4">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>증권번호</label>
+                  <label className={labelClasses}>
+                    증권번호
+                    <RequiredMark />
+                  </label>
                   <input
                     className={`${inputClasses} bg-white`}
                     value={formData.insurancePolicyNo}
@@ -1603,9 +1613,16 @@ export default function Intake({
                 </div>
               </div>
 
+              <div className="col-span-12 md:col-span-1 flex items-end justify-center pb-2">
+                <span className="text-sm text-slate-500 font-medium">또는</span>
+              </div>
+
               <div className="col-span-12 md:col-span-4">
                 <div className={fieldRowClasses}>
-                  <label className={labelClasses}>사고번호</label>
+                  <label className={labelClasses}>
+                    사고번호
+                    <RequiredMark />
+                  </label>
                   <input
                     className={`${inputClasses} bg-white`}
                     value={formData.insuranceAccidentNo}
