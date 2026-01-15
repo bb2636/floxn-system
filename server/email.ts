@@ -103,6 +103,7 @@ export async function sendCaseNotificationEmail(
     insuranceAccidentNo?: string;
     insuredName?: string;
     insuredAddress?: string;
+    insuredAddressDetail?: string;
     cancelReason?: string;
     recoveryAmount?: number;
     feeRate?: number;
@@ -110,6 +111,9 @@ export async function sendCaseNotificationEmail(
   }
 ): Promise<boolean> {
   let content = '';
+  
+  // 기본주소 + 상세주소 결합
+  const fullAddress = [caseInfo.insuredAddress, caseInfo.insuredAddressDetail].filter(Boolean).join(" ") || "-";
   
   if (stage === '접수완료') {
     content = `[${stage} 알림]
@@ -119,7 +123,7 @@ export async function sendCaseNotificationEmail(
 증권번호 : ${caseInfo.insurancePolicyNo || '-'}
 사고번호 : ${caseInfo.insuranceAccidentNo || '-'}
 피보험자 : ${caseInfo.insuredName || '-'}
-사고장소 : ${caseInfo.insuredAddress || '-'}`;
+사고장소 : ${fullAddress}`;
   } else if (stage === '접수취소') {
     content = `[${stage} 알림]
 
@@ -128,7 +132,7 @@ export async function sendCaseNotificationEmail(
 증권번호 : ${caseInfo.insurancePolicyNo || '-'}
 사고번호 : ${caseInfo.insuranceAccidentNo || '-'}
 피보험자 : ${caseInfo.insuredName || '-'}
-사고장소 : ${caseInfo.insuredAddress || '-'}
+사고장소 : ${fullAddress}
 
 위 접수건은 접수 취소 되었음을 알려드립니다.
 취소 사유 : ${caseInfo.cancelReason || '-'}`;
@@ -140,7 +144,7 @@ export async function sendCaseNotificationEmail(
 증권번호 : ${caseInfo.insurancePolicyNo || '-'}
 사고번호 : ${caseInfo.insuranceAccidentNo || '-'}
 피보험자 : ${caseInfo.insuredName || '-'}
-사고장소 : ${caseInfo.insuredAddress || '-'}
+사고장소 : ${fullAddress}
 복구금액 : ${caseInfo.recoveryAmount?.toLocaleString() || '-'}원
 수수료 : 최종금액의 ${caseInfo.feeRate || '-'}%
 지급금액 : ${caseInfo.paymentAmount?.toLocaleString() || '-'}원`;
@@ -152,7 +156,7 @@ export async function sendCaseNotificationEmail(
 증권번호 : ${caseInfo.insurancePolicyNo || '-'}
 사고번호 : ${caseInfo.insuranceAccidentNo || '-'}
 피보험자 : ${caseInfo.insuredName || '-'}
-사고장소 : ${caseInfo.insuredAddress || '-'}
+사고장소 : ${fullAddress}
 진행사항 : ${stage}`;
   }
 

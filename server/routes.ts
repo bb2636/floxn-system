@@ -5192,14 +5192,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Return simplified case summary for picker
-      const caseSummaries = cases.map((c) => ({
-        id: c.id,
-        caseNumber: c.caseNumber,
-        insuredName: c.insuredName,
-        accidentLocation: c.insuredAddress || c.victimAddress || "-",
-        insuranceCompany: c.insuranceCompany,
-        status: c.status,
-      }));
+      const caseSummaries = cases.map((c) => {
+        // 기본주소 + 상세주소 결합
+        const baseAddr = c.insuredAddress || c.victimAddress || "";
+        const detailAddr = c.insuredAddressDetail || c.victimAddressDetail || "";
+        const fullAddress = [baseAddr, detailAddr].filter(Boolean).join(" ") || "-";
+        
+        return {
+          id: c.id,
+          caseNumber: c.caseNumber,
+          insuredName: c.insuredName,
+          accidentLocation: fullAddress,
+          insuranceCompany: c.insuranceCompany,
+          status: c.status,
+        };
+      });
 
       res.json(caseSummaries);
     } catch (error) {
@@ -8267,13 +8274,19 @@ FLOXN`;
           continue;
         }
 
-        // 상세주소 가져오기 (상세주소 우선, 없으면 기본주소)
-        const addressLabel =
-          relatedCase.victimAddressDetail ||
-          relatedCase.victimAddress ||
-          relatedCase.insuredAddressDetail ||
-          relatedCase.insuredAddress ||
-          "-";
+        // 주소 가져오기: -0 케이스는 피보험자 주소, -1 이상은 피해자 주소 (기본주소 + 상세주소 결합)
+        let addressLabel = "-";
+        if (caseSuffix === 0) {
+          // 손방건(-0): 피보험자 주소 사용
+          const baseAddr = relatedCase.insuredAddress || relatedCase.victimAddress || "";
+          const detailAddr = relatedCase.insuredAddressDetail || relatedCase.victimAddressDetail || "";
+          addressLabel = [baseAddr, detailAddr].filter(Boolean).join(" ") || "-";
+        } else {
+          // 대물건(-1, -2, ...): 피해자 주소 사용
+          const baseAddr = relatedCase.victimAddress || relatedCase.insuredAddress || "";
+          const detailAddr = relatedCase.victimAddressDetail || relatedCase.insuredAddressDetail || "";
+          addressLabel = [baseAddr, detailAddr].filter(Boolean).join(" ") || "-";
+        }
 
         // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 승인금액 > 견적금액 순서로 확인)
         let caseDamagePreventionAmt =
