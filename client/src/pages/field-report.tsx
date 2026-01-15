@@ -3371,37 +3371,6 @@ export default function FieldReport() {
                 </CardContent>
               </Card>
 
-              {/* 현장 특이사항 */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      color: "rgba(12, 12, 12, 0.8)",
-                    }}
-                  >
-                    현장 특이사항
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div
-                    className="p-4 rounded"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "#0C0C0C",
-                      background: "rgba(12, 12, 12, 0.03)",
-                      whiteSpace: "pre-wrap",
-                    }}
-                  >
-                    {caseData.specialNotes ||
-                      "이 안에는 특이사항이 적성됩니다."}
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* VOC(고객의 소리) - 협력사가 현장입력시 작성한 VOC */}
               <Card className="mb-6">
                 <CardHeader>
