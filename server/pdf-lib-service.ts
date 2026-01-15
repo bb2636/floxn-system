@@ -1304,11 +1304,45 @@ async function renderDrawingPage(
 
       const originalMeta = await sharp(imageData).metadata();
       console.log(
-        `[pdf-lib] te�본 크기: ${originalMeta.width}x${originalMeta.height}`,
+        `[pdf-lib] 원본 크기: ${originalMeta.width}x${originalMeta.height}`,
       );
 
+      // 도면 이미지를 자동 크롭(trim)하여 실제 내용만 추출
+      // 흰색/투명 배경을 제거하고 실제 도면 내용만 크게 표시
+      let processedImageData = imageData;
+      try {
+        const trimmedBuffer = await sharp(imageData)
+          .trim({ 
+            background: { r: 255, g: 255, b: 255, alpha: 0 },
+            threshold: 10  // 약간의 여유를 두고 트림
+          })
+          .extend({
+            top: 20,
+            bottom: 20,
+            left: 20,
+            right: 20,
+            background: { r: 255, g: 255, b: 255, alpha: 1 }
+          })
+          .png()
+          .toBuffer();
+        
+        const trimmedMeta = await sharp(trimmedBuffer).metadata();
+        console.log(`[pdf-lib] 크롭 후 크기: ${trimmedMeta.width}x${trimmedMeta.height}`);
+        
+        // 크롭된 이미지가 너무 작지 않은 경우에만 사용
+        if (trimmedMeta.width && trimmedMeta.height && 
+            trimmedMeta.width > 50 && trimmedMeta.height > 50) {
+          processedImageData = trimmedBuffer;
+          console.log(`[pdf-lib] 자동 크롭 적용됨`);
+        } else {
+          console.log(`[pdf-lib] 크롭 결과가 너무 작아 원본 사용`);
+        }
+      } catch (trimErr) {
+        console.log(`[pdf-lib] 자동 크롭 실패, 원본 사용:`, trimErr);
+      }
+
       // PNG 이미지 (html2canvas는 PNG로 출력)
-      const embeddedImage = await pdfDoc.embedPng(imageData);
+      const embeddedImage = await pdfDoc.embedPng(processedImageData);
 
       // 도면 영역 안에 맞도록 스케일링 (프레임을 벗어나지 않도록)
       const maxWidth = drawingAreaWidth - 10; // 여백 5px씩
