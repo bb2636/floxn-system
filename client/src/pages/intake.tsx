@@ -2692,7 +2692,7 @@ export default function Intake({
                     </div>
                     <div
                       className="flex flex-col items-start w-full overflow-y-auto"
-                      style={{ maxHeight: "300px" }}
+                      style={{ maxHeight: "192px" }}
                     >
                       {filteredClients.map((client) => (
                         <div
