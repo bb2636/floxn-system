@@ -1230,14 +1230,11 @@ export default function Intake({
               setDetailAddressSearchQuery("");
               setAddressDropdownOpen(null);
             },
-            onclose: function (state: string) {
-              if (state === 'FORCE_CLOSE' || state === 'COMPLETE_CLOSE') {
-                setAddressDropdownOpen(null);
-              }
+            onclose: function () {
+              setAddressDropdownOpen(null);
             },
             width: '100%',
             height: '100%',
-            autoClose: true,
           }).embed(container, { q: query });
         }
       }, 100);
@@ -1262,14 +1259,11 @@ export default function Intake({
                 handleInputChange("insuredAddress", data.address);
                 setAddressModalOpen(false);
               },
-              onclose: function (state: string) {
-                if (state === 'FORCE_CLOSE' || state === 'COMPLETE_CLOSE') {
-                  setAddressModalOpen(false);
-                }
+              onclose: function () {
+                setAddressModalOpen(false);
               },
               width: '100%',
               height: '100%',
-              autoClose: true,
             }).embed(container);
           }
         }
