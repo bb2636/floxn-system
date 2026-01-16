@@ -604,7 +604,7 @@ export default function SettlementsInquiry() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-white min-h-full">
       {/* Page title */}
       <div className="flex items-center gap-2 mb-6">
         <h1
