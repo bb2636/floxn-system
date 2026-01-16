@@ -857,6 +857,17 @@ export default function Intake({
       cleanedData.sameAsPolicyHolder = sameAsPolicyHolderValue
         ? "true"
         : "false";
+      
+      // 피해세대복구 체크 시 victimAddress가 비어있으면 insuredAddress 복사
+      if (
+        cleanedData.victimIncidentAssistance === true ||
+        (cleanedData.victimIncidentAssistance as unknown) === "true"
+      ) {
+        if (!cleanedData.victimAddress && cleanedData.insuredAddress) {
+          cleanedData.victimAddress = cleanedData.insuredAddress;
+        }
+      }
+      
       const payload = {
         ...cleanedData,
         status: "배당대기",
@@ -910,6 +921,17 @@ export default function Intake({
       cleanedData.sameAsPolicyHolder = sameAsPolicyHolderValue
         ? "true"
         : "false";
+      
+      // 피해세대복구 체크 시 victimAddress가 비어있으면 insuredAddress 복사
+      if (
+        cleanedData.victimIncidentAssistance === true ||
+        (cleanedData.victimIncidentAssistance as unknown) === "true"
+      ) {
+        if (!cleanedData.victimAddress && cleanedData.insuredAddress) {
+          cleanedData.victimAddress = cleanedData.insuredAddress;
+        }
+      }
+      
       const payload = {
         ...cleanedData,
         status: "접수완료",
