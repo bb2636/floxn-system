@@ -60,6 +60,24 @@ import {
 } from "./evidence-pdf-service";
 import { compressPdf, isPdfFile, compressPdfForEmail } from "./pdf-compression";
 
+// 피해세대 케이스용 피해자 주소 설정 헬퍼 함수
+// 규칙:
+// - 피해자 정보가 없는 경우: victimAddress = insuredAddress, victimAddressDetail = insuredAddressDetail
+// - 피해자 정보가 있는 경우: victimAddress = insuredAddress, victimAddressDetail = 사용자 입력값 유지
+function setVictimAddressForRecoveryCase(caseData: any): void {
+  const hasVictimInfo = !!(caseData.victimName || caseData.victimContact || caseData.victimAddressDetail);
+  
+  if (!hasVictimInfo) {
+    // 피해자 정보 없음: 피보험자 주소 전체 복사
+    caseData.victimAddress = caseData.insuredAddress || "";
+    caseData.victimAddressDetail = caseData.insuredAddressDetail || "";
+  } else {
+    // 피해자 정보 있음: 기본주소는 피보험자 것 사용, 상세주소는 사용자 입력값 유지
+    caseData.victimAddress = caseData.insuredAddress || "";
+    // victimAddressDetail은 그대로 유지 (사용자 입력값)
+  }
+}
+
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
   const date = new Date().toISOString();
@@ -1158,6 +1176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const nextSuffix =
                     await storage.getNextVictimSuffix(existingPrefix);
                   const recoveryData = JSON.parse(JSON.stringify(validatedData));
+                  setVictimAddressForRecoveryCase(recoveryData);
                   const recoveryCase = await storage.createCase({
                     ...recoveryData,
                     caseNumber: `${existingPrefix}-${nextSuffix}`,
@@ -1270,6 +1289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 2. Always create victim recovery case with next available suffix
           const nextSuffix = await storage.getNextVictimSuffix(prefix);
           const recoveryData = JSON.parse(JSON.stringify(validatedData));
+          setVictimAddressForRecoveryCase(recoveryData);
           const recoveryDraft = await storage.createCase({
             ...recoveryData,
             caseNumber: `${prefix}-${nextSuffix}`,
@@ -1518,6 +1538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     const recoveryData = JSON.parse(
                       JSON.stringify(validatedData),
                     );
+                    setVictimAddressForRecoveryCase(recoveryData);
                     const recoveryCase = await storage.createCase({
                       ...recoveryData,
                       caseNumber: `${existingPrefix}-${nextSuffix}`,
@@ -1551,6 +1572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   const recoveryData = JSON.parse(
                     JSON.stringify(validatedData),
                   );
+                  setVictimAddressForRecoveryCase(recoveryData);
                   const recoveryCase = await storage.createCase({
                     ...recoveryData,
                     caseNumber: `${existingPrefix}-${nextSuffix}`,
@@ -1698,6 +1720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const nextSuffix = await storage.getNextVictimSuffix(prefix);
           const recoveryData = JSON.parse(JSON.stringify(validatedData));
+          setVictimAddressForRecoveryCase(recoveryData);
           const recoveryCase = await storage.createCase({
             ...recoveryData,
             caseNumber: `${prefix}-${nextSuffix}`,
@@ -2355,6 +2378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 existingCase.caseGroupId || `group-${Date.now()}`;
               const recoveryData = JSON.parse(JSON.stringify(updateData));
               delete recoveryData.id;
+              setVictimAddressForRecoveryCase(recoveryData);
 
               const recoveryCase = await storage.createCase({
                 ...recoveryData,
