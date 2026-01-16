@@ -687,9 +687,16 @@ async function renderCoverPage(
 
   y -= 40;
 
-  const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
-    .filter(Boolean)
-    .join(" ");
+  // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
+  const caseNumber = caseData.caseNumber || "";
+  const suffixMatch = caseNumber.match(/-(\d+)$/);
+  const caseSuffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
+  
+  // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
+  const fullAddress = caseSuffix === 0
+    ? [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ")
+    : [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
+      [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
 
   // 날짜/시간 형식에서 불필요한 공백 제거 (예: "2026- 01- 15 13: 07" -> "2026-01-15 13:07")
   const formatDateTimeStr = (str: string): string => {
@@ -1231,13 +1238,18 @@ async function renderDrawingPage(
   // Info line: 보험사, 피보험자, 주소 (해당건의 주소 사용)
   const insuranceCompany = caseData.insuranceCompany || "-";
   const insuredName = caseData.insuredName || caseData.victimName || "-";
-  // 해당건의 주소 사용 - 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
-  // victimAddress가 있으면 victim 주소 세트 사용, 없으면 insured 주소 세트 사용
+  // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
+  const drawingCaseNumber = caseData.caseNumber || "";
+  const drawingSuffixMatch = drawingCaseNumber.match(/-(\d+)$/);
+  const drawingCaseSuffix = drawingSuffixMatch ? parseInt(drawingSuffixMatch[1], 10) : 0;
+  
+  // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
   let fullAddress = "-";
-  if (caseData.victimAddress) {
-    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") || "-";
-  } else if (caseData.insuredAddress) {
+  if (drawingCaseSuffix === 0) {
     fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+  } else {
+    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
+      [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
   }
 
   drawText(page, {
@@ -1636,12 +1648,18 @@ async function renderEvidencePages(
         });
         const pageCount = externalPdf.getPageCount();
 
-        // 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
+        // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
+        const pdfCaseNum = caseData.caseNumber || "";
+        const pdfSuffixMatch = pdfCaseNum.match(/-(\d+)$/);
+        const pdfCaseSuffix = pdfSuffixMatch ? parseInt(pdfSuffixMatch[1], 10) : 0;
+        
+        // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
         let pdfFullAddress = "";
-        if (caseData.victimAddress) {
-          pdfFullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
-        } else if (caseData.insuredAddress) {
+        if (pdfCaseSuffix === 0) {
           pdfFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+        } else {
+          pdfFullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
+            [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
         }
         // 사고번호에서 특수기호 뒤 공백 제거 (예: "S25- 1044" → "S25-1044")
         const rawAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "";
@@ -1714,12 +1732,18 @@ async function renderPhotoPage(
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   const firstImage = images[0];
 
-  // 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
+  // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
+  const photoCaseNum = caseData.caseNumber || "";
+  const photoSuffixMatch = photoCaseNum.match(/-(\d+)$/);
+  const photoCaseSuffix = photoSuffixMatch ? parseInt(photoSuffixMatch[1], 10) : 0;
+  
+  // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
   let fullAddress = "";
-  if (caseData.victimAddress) {
-    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
-  } else if (caseData.insuredAddress) {
+  if (photoCaseSuffix === 0) {
     fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+  } else {
+    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
+      [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
   }
 
   const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
@@ -1835,12 +1859,18 @@ async function renderSingleImagePage(
 ) {
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
 
-  // 주소와 상세주소는 반드시 같은 소스에서 가져와야 함
+  // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
+  const singleCaseNum = caseData.caseNumber || "";
+  const singleSuffixMatch = singleCaseNum.match(/-(\d+)$/);
+  const singleCaseSuffix = singleSuffixMatch ? parseInt(singleSuffixMatch[1], 10) : 0;
+  
+  // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
   let fullAddress = "";
-  if (caseData.victimAddress) {
-    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
-  } else if (caseData.insuredAddress) {
+  if (singleCaseSuffix === 0) {
     fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+  } else {
+    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
+      [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
   }
 
   const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
