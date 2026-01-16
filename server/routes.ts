@@ -12125,44 +12125,43 @@ https://peulrogseun-aqaqaq4561.replit.app
       );
       let smsSent = false;
 
-      if (allSubmitted && relatedCases.length > 0) {
-        console.log(
-          `[submit-claim-documents] All ${relatedCases.length} cases submitted, sending SMS`,
-        );
+      // 개별 케이스 제출 시에도 SMS 발송 (각 케이스마다)
+      console.log(
+        `[submit-claim-documents] Case ${caseId} submitted, sending SMS`,
+      );
 
-        // 플록슨 담당자에게 SMS 발송
-        const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
-        const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
-        const SOLAPI_SENDER_NUMBER = process.env.SOLAPI_SENDER_NUMBER;
+      // 플록슨 담당자에게 SMS 발송
+      const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+      const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+      const SOLAPI_SENDER_NUMBER = process.env.SOLAPI_SENDER_NUMBER;
 
-        if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER_NUMBER) {
-          // 현재 제출한 케이스 정보 사용 (updatedCase)
-          const submittedCase = updatedCase;
-          const addressMain =
-            submittedCase.victimAddress ||
-            submittedCase.insuredAddress;
-          const addressDetail =
-            submittedCase.victimAddressDetail ||
-            submittedCase.insuredAddressDetail;
-          const fullAddress = [addressMain, addressDetail]
-            .filter(Boolean)
-            .join(" ");
+      if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER_NUMBER) {
+        // 현재 제출한 케이스 정보 사용 (updatedCase)
+        const submittedCase = updatedCase;
+        const addressMain =
+          submittedCase.victimAddress ||
+          submittedCase.insuredAddress;
+        const addressDetail =
+          submittedCase.victimAddressDetail ||
+          submittedCase.insuredAddressDetail;
+        const fullAddress = [addressMain, addressDetail]
+          .filter(Boolean)
+          .join(" ");
 
-          // 모든 관련 케이스의 접수번호 목록 생성
-          const allCaseNumbers = relatedCases
-            .map((c) => c.caseNumber)
-            .filter(Boolean)
-            .join(", ");
+        // 제출된 케이스 수 계산
+        const submittedCount = relatedCases.filter(
+          (c) => c.status === "청구자료제출(복구)",
+        ).length;
 
-          const messageText = `<청구자료제출 알림>
+        const messageText = `<청구자료제출 알림>
 
-접수번호 : ${allCaseNumbers || submittedCase.caseNumber || "-"}
+접수번호 : ${submittedCase.caseNumber || "-"}
 보험사 : ${submittedCase.insuranceCompany || "-"}
 증권번호 : ${submittedCase.insurancePolicyNo || "-"}
 사고번호 : ${submittedCase.insuranceAccidentNo || "-"}
 피보험자 : ${submittedCase.insuredName || "-"}
 사고장소 : ${fullAddress || "-"}
-진행사항 : 청구자료제출 (${relatedCases.length}건 완료)`;
+진행사항 : 청구자료제출 (${submittedCount}/${relatedCases.length}건 완료)`;
 
           // 플록슨 담당자 번호 조회 (managerId를 통해 사용자 정보에서 조회)
           let floxnManagerPhone: string | null = null;
@@ -12212,20 +12211,21 @@ https://peulrogseun-aqaqaq4561.replit.app
             );
           }
         }
-      } else {
-        const remaining = relatedCases.filter(
-          (c) => c.status === "직접복구",
-        ).length;
-        console.log(
-          `[submit-claim-documents] ${remaining} cases remaining to submit`,
-        );
       }
+
+      // 제출된 케이스 수 계산 (응답용)
+      const submittedCasesCount = relatedCases.filter(
+        (c) => c.status === "청구자료제출(복구)",
+      ).length;
+      const remainingCasesCount = relatedCases.filter(
+        (c) => c.status === "직접복구",
+      ).length;
 
       res.json({
         success: true,
         message: allSubmitted
           ? `청구자료가 제출되었습니다. (${relatedCases.length}건 모두 완료${smsSent ? ", SMS 발송 완료" : ""})`
-          : `청구자료가 제출되었습니다. (${relatedCases.filter((c) => c.status === "직접복구").length}건 남음)`,
+          : `청구자료가 제출되었습니다. (${submittedCasesCount}/${relatedCases.length}건 완료${smsSent ? ", SMS 발송 완료" : ""})`,
         updatedCount: 1,
         allSubmitted,
         smsSent,
