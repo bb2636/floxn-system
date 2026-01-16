@@ -4849,7 +4849,8 @@ export class DbStorage implements IStorage {
     const currentDate = getKSTDate();
     const currentTimestamp = getKSTTimestamp();
 
-    // 승인 시 1차 승인일(내부) 자동 기록 및 승인금액 확정 (기존 값이 없을 때만)
+    // 승인 시 1차 승인일(내부) 자동 기록 (기존 값이 없을 때만)
+    // 승인금액은 2차승인 시 확정 (approveReport에서 처리)
     const existingCase = await this.getCaseById(caseId);
     const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
 
@@ -4859,11 +4860,6 @@ export class DbStorage implements IStorage {
       !existingCase.firstApprovalDate
     ) {
       additionalUpdates.firstApprovalDate = currentDate;
-      // 1차승인 시 승인금액 확정 (현재 견적 총액을 승인금액으로 저장)
-      // estimateAmount는 견적 저장 시 updateCaseEstimateAmount()에 의해 이미 저장되어 있음
-      if (existingCase.estimateAmount) {
-        additionalUpdates.approvedAmount = existingCase.estimateAmount;
-      }
     }
 
     const result = await db
@@ -4904,16 +4900,19 @@ export class DbStorage implements IStorage {
       return null;
     }
     
-    // 승인 시 2차 승인일 자동 기록 (기존 값이 없을 때만)
-    // 승인금액은 1차승인 시 이미 확정됨 (reviewCase에서 처리)
+    // 승인 시 2차 승인일 및 승인금액 확정
     const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
 
-    if (
-      decision === "승인" &&
-      existingCase &&
-      !existingCase.secondApprovalDate
-    ) {
-      additionalUpdates.secondApprovalDate = currentDate;
+    if (decision === "승인" && existingCase) {
+      // 2차 승인일 기록 (기존 값이 없을 때만)
+      if (!existingCase.secondApprovalDate) {
+        additionalUpdates.secondApprovalDate = currentDate;
+      }
+      // 2차승인 시 승인금액 확정 (현재 견적 총액을 승인금액으로 저장 - 매번 갱신)
+      // 협력사가 견적을 수정한 후 재승인 받으면 최신 금액이 저장됨
+      if (existingCase.estimateAmount) {
+        additionalUpdates.approvedAmount = existingCase.estimateAmount;
+      }
     }
 
     const result = await db
