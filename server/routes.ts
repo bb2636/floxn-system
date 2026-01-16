@@ -11812,6 +11812,25 @@ https://peulrogseun-aqaqaq4561.replit.app
       let messageText = "";
       let subject = "";
 
+      // 케이스 접미사에 따른 주소 결정: -0은 피보험자 주소, -1 이상은 피해자 주소
+      const getFullAddress = () => {
+        const caseNumber = caseData.caseNumber || "";
+        const suffixMatch = caseNumber.match(/-(\d+)$/);
+        const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
+        
+        if (suffix === 0) {
+          // 손해방지(-0): 피보험자 주소 + 상세주소
+          return [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+        } else {
+          // 피해세대(-1, -2, ...): 피해자 주소 + 상세주소 (없으면 피보험자 주소로 대체)
+          const victimAddr = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
+          if (victimAddr) {
+            return victimAddr;
+          }
+          return [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+        }
+      };
+
       if (stage === "접수완료") {
         subject = "접수완료 알림";
         // 값이 없는 항목은 표시하지 않음
@@ -11852,13 +11871,7 @@ https://peulrogseun-aqaqaq4561.replit.app
           );
         }
 
-        const fullAddress = [
-          caseData.insuredAddress,
-          caseData.insuredAddressDetail,
-        ]
-          .filter(Boolean)
-          .join(" ");
-        if (fullAddress) msgLines.push(`사고장소 : ${fullAddress}`);
+        msgLines.push(`사고장소 : ${getFullAddress()}`);
 
         const requestScope = [
           caseData.damagePreventionCost === "true" ? "손방" : null,
@@ -11878,7 +11891,7 @@ https://peulrogseun-aqaqaq4561.replit.app
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${[caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
+사고장소 : ${getFullAddress()}
 
 위 접수건은 접수 취소 되었음을 알려드립니다.
 취소 사유 : ${cancelReason || "-"}`;
@@ -11891,17 +11904,14 @@ https://peulrogseun-aqaqaq4561.replit.app
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${[caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
+사고장소 : ${getFullAddress()}
 복구금액 : ${recoveryAmount?.toLocaleString() || "-"}원
 수수료 : 최종금액의 ${feeRate || "-"}%
 지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
       } else if (stage === "반려" || stage === "승인반려") {
-        // 심사반려 또는 승인반려 모두 동 ��한 형식으로 처리
+        // 심사반려 또는 승인반려 모두 동일한 형식으로 처리
         const rejectionType = stage === "승인반려" ? "승인반려" : "심사반려";
         subject = `${rejectionType} 알림`;
-        const addressMain = caseData.victimAddress || caseData.insuredAddress;
-        const addressDetail =
-          caseData.victimAddressDetail || caseData.insuredAddressDetail;
         // 반려 직전 상태 표시 (예: "검토중에서 반려", "현장정보제출에서 반려")
         const rejectionStatus = previousStatus
           ? `${previousStatus}에서 반려`
@@ -11913,17 +11923,13 @@ https://peulrogseun-aqaqaq4561.replit.app
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${[addressMain, addressDetail].filter(Boolean).join(" ") || "-"}
+사고장소 : ${getFullAddress()}
 진행상태 : ${rejectionStatus}`;
       } else {
         // 현장정보입력~청구 등 단계별 항목 알림
         const stageDisplayName =
           stage === "직접복구" || stage === "미복구" ? `${stage}` : stage;
         subject = `${stageDisplayName} 알림`;
-        // 피해자 주소가 있으면 피해자 주소 사용, 없으면 피보험자 주소 사용
-        const addressMain = caseData.victimAddress || caseData.insuredAddress;
-        const addressDetail =
-          caseData.victimAddressDetail || caseData.insuredAddressDetail;
         messageText = `<${stageDisplayName} 알림>
 
 접수번호 : ${caseData.caseNumber || "-"}
@@ -11931,7 +11937,7 @@ https://peulrogseun-aqaqaq4561.replit.app
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${[addressMain, addressDetail].filter(Boolean).join(" ") || "-"}
+사고장소 : ${getFullAddress()}
 진행사항 : ${stageDisplayName}`;
       }
 

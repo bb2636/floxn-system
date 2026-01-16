@@ -165,6 +165,25 @@ export function SmsNotificationDialog({
     return items.length > 0 ? items.join(", ") : "기타";
   };
 
+  // 케이스 접미사에 따른 주소 결정: -0은 피보험자 주소, -1 이상은 피해자 주소
+  const getFullAddress = () => {
+    const caseNumber = caseData.caseNumber || "";
+    const suffixMatch = caseNumber.match(/-(\d+)$/);
+    const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
+    
+    if (suffix === 0) {
+      // 손해방지(-0): 피보험자 주소 + 상세주소
+      return [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+    } else {
+      // 피해세대(-1, -2, ...): 피해자 주소 + 상세주소 (없으면 피보험자 주소로 대체)
+      const victimAddr = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
+      if (victimAddr) {
+        return victimAddr;
+      }
+      return [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+    }
+  };
+
   const getMessagePreview = () => {
     if (stage === "접수완료") {
       const lines: string[] = [];
@@ -195,7 +214,7 @@ export function SmsNotificationDialog({
         lines.push(`심사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`);
       }
       
-      if (caseData.insuredAddress) lines.push(`사고장소 : ${caseData.insuredAddress}`);
+      lines.push(`사고장소 : ${getFullAddress()}`);
       
       const requestScope = getRequestScope();
       if (requestScope !== "기타") lines.push(`의뢰범위 : ${requestScope}`);
@@ -207,7 +226,7 @@ export function SmsNotificationDialog({
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${caseData.insuredAddress || "-"}
+사고장소 : ${getFullAddress()}
 
 위 접수건은 접수 취소 되었음을 알려드립니다.
 취소 사유 : ${cancelReason || "-"}`;
@@ -217,30 +236,26 @@ export function SmsNotificationDialog({
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${[caseData.victimAddress || caseData.insuredAddress, caseData.victimAddressDetail || caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
+사고장소 : ${getFullAddress()}
 복구금액 : ${recoveryAmount?.toLocaleString() || "-"}원
 수수료 : 최종금액의 ${feeRate || "-"}%
 지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
     } else if (stage === "반려" || stage === "승인반려") {
-      const addressMain = caseData.victimAddress || caseData.insuredAddress;
-      const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail;
       const rejectionStatus = previousStatus ? `${previousStatus}에서 반려` : "반려";
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${[addressMain, addressDetail].filter(Boolean).join(" ") || "-"}
+사고장소 : ${getFullAddress()}
 진행상태 : ${rejectionStatus}`;
     } else {
-      const addressMain = caseData.victimAddress || caseData.insuredAddress;
-      const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail;
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${[addressMain, addressDetail].filter(Boolean).join(" ") || "-"}
+사고장소 : ${getFullAddress()}
 진행사항 : ${stage}`;
     }
   };
