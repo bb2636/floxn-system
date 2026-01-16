@@ -106,6 +106,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   직접복구: { partner: true, manager: true, assessorInvestigator: false },
   미복구: { partner: true, manager: true, assessorInvestigator: false },
   청구자료제출: { partner: false, manager: true, assessorInvestigator: false },
+  "출동비청구(선견적)": { partner: false, manager: true, assessorInvestigator: false },
   청구: { partner: false, manager: false, assessorInvestigator: true },
   "결정금액/수수료": {
     partner: true,
@@ -539,7 +540,7 @@ export default function ComprehensiveProgress() {
           직접복구: "직접복구",
           선견적요청: "선견적요청",
           "청구자료제출(복구)": "청구자료제출",
-          "출동비청구(선견적)": "청구자료제출",
+          "출동비청구(선견적)": "출동비청구(선견적)",
           청구자료제출: "청구자료제출",
           청구: "청구",
           "결정금액/수수료": "결정금액/수수료",
