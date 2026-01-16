@@ -3457,7 +3457,7 @@ export default function FieldReport() {
                         // -0 케이스 (손해방지): 피보험자 주소 + 피보험자 상세주소
                         fullAddress = [
                           caseData.insuredAddress,
-                          caseData.insuredAddressDetail,
+                          (caseData as any).insuredAddressDetail,
                         ]
                           .filter(Boolean)
                           .join(" ");
