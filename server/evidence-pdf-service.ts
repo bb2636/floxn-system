@@ -224,11 +224,15 @@ async function createEvidencePdfForTab(
     });
     
     // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
-    const displayCaseNumber = img.caseNumber || insuranceAccidentNo || caseNumber;
+    // 특수문자(하이픈, 콜론) 주변 공백 제거
+    const displayCaseNumber = (img.caseNumber || insuranceAccidentNo || caseNumber || "")
+      .replace(/\s*-\s*/g, "-")
+      .replace(/\s*:\s*/g, ":");
+    const cleanFullAddress = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":");
     // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
     const categoryDisplay = img.category ? `${tabName}-${img.category}` : tabName;
-    const headerText = fullAddress 
-      ? `사고번호 ${displayCaseNumber} ${fullAddress} ${categoryDisplay}`
+    const headerText = cleanFullAddress 
+      ? `사고번호 ${displayCaseNumber} ${cleanFullAddress} ${categoryDisplay}`
       : `사고번호 ${displayCaseNumber} ${categoryDisplay}`;
     try {
       // 헤더 텍스트가 길면 작은 폰트 사용
@@ -387,11 +391,15 @@ async function createEvidencePdfForTab(
         });
         
         // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
-        const displayCaseNumber2 = img.caseNumber || insuranceAccidentNo || caseNumber;
+        // 특수문자(하이픈, 콜론) 주변 공백 제거
+        const displayCaseNumber2 = (img.caseNumber || insuranceAccidentNo || caseNumber || "")
+          .replace(/\s*-\s*/g, "-")
+          .replace(/\s*:\s*/g, ":");
+        const cleanFullAddress2 = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":");
         // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
         const categoryDisplay2 = img.category ? `${tabName}-${img.category}` : tabName;
-        const headerText2 = fullAddress 
-          ? `사고번호 ${displayCaseNumber2} ${fullAddress} ${categoryDisplay2}`
+        const headerText2 = cleanFullAddress2 
+          ? `사고번호 ${displayCaseNumber2} ${cleanFullAddress2} ${categoryDisplay2}`
           : `사고번호 ${displayCaseNumber2} ${categoryDisplay2}`;
         try {
           const fontSize2 = headerText2.length > 60 ? 8 : 10;
@@ -532,10 +540,12 @@ async function addHeaderToPdf(
         color: rgb(0.8, 0.8, 0.8),
       });
       
-      // Build header text
+      // Build header text - 특수문자(하이픈, 콜론) 주변 공백 제거
+      const cleanAccidentNo = (insuranceAccidentNo || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":");
+      const cleanAddr = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":");
       const headerParts: string[] = [];
-      if (insuranceAccidentNo) headerParts.push(`사고번호: ${insuranceAccidentNo}`);
-      if (fullAddress) headerParts.push(`주소: ${fullAddress}`);
+      if (cleanAccidentNo) headerParts.push(`사고번호: ${cleanAccidentNo}`);
+      if (cleanAddr) headerParts.push(`주소: ${cleanAddr}`);
       const headerText = headerParts.join('  |  ') || fileName;
       
       // Draw header text
