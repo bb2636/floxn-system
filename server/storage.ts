@@ -4399,10 +4399,10 @@ export class DbStorage implements IStorage {
       clientAddress: caseData.clientAddress || null,
       accidentLocation: caseData.accidentLocation || null,
       accidentDescription: caseData.accidentDescription || null,
-      accidentType: caseData.accidentType || null,
-      accidentCause: caseData.accidentCause || null,
-      restorationMethod: caseData.restorationMethod || null,
-      otherVendorEstimate: caseData.otherVendorEstimate || null,
+      accidentType: caseData.accidentType?.trim() || null,
+      accidentCause: caseData.accidentCause?.trim() || null,
+      restorationMethod: caseData.restorationMethod?.trim() || null,
+      otherVendorEstimate: caseData.otherVendorEstimate?.trim() || null,
       damageItems: caseData.damageItems || null,
       damagePreventionCost: caseData.damagePreventionCost || null,
       victimIncidentAssistance: caseData.victimIncidentAssistance || null,
@@ -4534,6 +4534,20 @@ export class DbStorage implements IStorage {
     // managerId가 빈 문자열이면 null로 변환 (외래 키 제약 조건 방지)
     if (updateData.managerId === '') {
       updateData.managerId = null;
+    }
+    
+    // Select 필드 값들 trim 처리
+    if (updateData.accidentType) {
+      updateData.accidentType = updateData.accidentType.trim();
+    }
+    if (updateData.accidentCause) {
+      updateData.accidentCause = updateData.accidentCause.trim();
+    }
+    if (updateData.restorationMethod) {
+      updateData.restorationMethod = updateData.restorationMethod.trim();
+    }
+    if (updateData.otherVendorEstimate) {
+      updateData.otherVendorEstimate = updateData.otherVendorEstimate.trim();
     }
 
     const result = await db
