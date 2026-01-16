@@ -3451,28 +3451,18 @@ export default function FieldReport() {
                       const caseNumberSuffix = caseData.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
                       const suffixNum = parseInt(caseNumberSuffix);
                       const isInsuredCase = suffixNum === 0;
-                      const isIntakeVictim = suffixNum === 1;
-                      const isAdditionalVictim = suffixNum >= 2;
                       
                       let fullAddress = "";
                       if (isInsuredCase) {
-                        // 0번 케이스: 피해자 주소 + 피해자 상세주소
-                        fullAddress = [
-                          caseData.victimAddress,
-                          caseData.victimAddressDetail,
-                        ]
-                          .filter(Boolean)
-                          .join(" ");
-                      } else if (isIntakeVictim) {
-                        // -1 케이스: 피보험자 주소 + 피해자 상세주소 (victimAddress에 저장됨)
+                        // -0 케이스 (손해방지): 피보험자 주소 + 피보험자 상세주소
                         fullAddress = [
                           caseData.insuredAddress,
-                          caseData.victimAddress,
+                          caseData.insuredAddressDetail,
                         ]
                           .filter(Boolean)
                           .join(" ");
                       } else {
-                        // -2/-3 케이스: 피해자 주소 + 피해자 상세주소
+                        // -1 이상 케이스 (피해세대): 피해자 주소 + 피해자 상세주소
                         fullAddress = [
                           caseData.victimAddress,
                           caseData.victimAddressDetail,
