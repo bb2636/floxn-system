@@ -554,23 +554,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all users endpoint (admin only)
+  // Get all users endpoint (all authenticated users - limited info for non-admins)
   app.get("/api/users", async (req, res) => {
     // Check authentication
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
-    // Check admin authorization
-    if (req.session.userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
-    }
-
     try {
       const users = await storage.getAllUsers();
-      // Remove passwords from all users
-      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
-      res.json(usersWithoutPasswords);
+      
+      // 관리자: 전체 정보 (비밀번호 제외)
+      if (req.session.userRole === "관리자") {
+        const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+        return res.json(usersWithoutPasswords);
+      }
+      
+      // 협력사/기타: 기본 정보만 제공 (담당자 조회용)
+      const basicUsers = users.map(({ 
+        id, name, username, phone, role, company, department, position 
+      }) => ({
+        id,
+        name,
+        username,
+        phone,
+        role,
+        company,
+        department,
+        position,
+      }));
+      res.json(basicUsers);
     } catch (error) {
       console.error("Get users error:", error);
       res
