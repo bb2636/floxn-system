@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -133,6 +134,23 @@ export function InvoiceManagementPopup({
 }: InvoiceManagementPopupProps) {
   const { toast } = useToast();
   const { hasItem, isAdmin } = usePermissions();
+
+  // 보험사 역할의 사용자 목록 가져오기
+  interface BasicUser {
+    id: string;
+    name: string | null;
+    username: string;
+    role: string;
+    company: string | null;
+  }
+  const { data: allUsers = [] } = useQuery<BasicUser[]>({
+    queryKey: ["/api/users/basic"],
+  });
+  
+  // 보험사 역할의 사용자만 필터링
+  const insurerUsers = useMemo(() => {
+    return allUsers.filter(u => u.role === "보험사");
+  }, [allUsers]);
 
   // 초기 로드 상태 추적 (팝업이 열릴 때만 데이터 로드)
   const lastLoadedCaseId = useRef<string | null>(null);
@@ -2772,14 +2790,11 @@ export function InvoiceManagementPopup({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="전체">전체</SelectItem>
-                  <SelectItem value="현대해상">현대해상</SelectItem>
-                  <SelectItem value="삼성화재">삼성화재</SelectItem>
-                  <SelectItem value="DB손해보험">DB손해보험</SelectItem>
-                  <SelectItem value="KB손해보험">KB손해보험</SelectItem>
-                  <SelectItem value="메리츠화재">메리츠화재</SelectItem>
-                  <SelectItem value="한화손해보험">한화손해보험</SelectItem>
-                  <SelectItem value="롯데손해보험">롯데손해보험</SelectItem>
-                  <SelectItem value="흥국화재">흥국화재</SelectItem>
+                  {insurerUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.company || user.name || user.username}>
+                      {user.company || user.name || user.username}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
