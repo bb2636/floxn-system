@@ -1204,23 +1204,18 @@ export default function FieldManagement() {
                               {(() => {
                                 const caseSuffix = parseInt((caseItem.caseNumber || "").split("-")[1] || "0");
                                 const isInsuredCase = caseSuffix === 0;
-                                const isIntakeVictim = caseSuffix === 1;
-                                const isAdditionalVictim = caseSuffix >= 2;
                                 
                                 let name: string;
                                 let contact: string;
                                 let detailAddress: string;
                                 
                                 if (isInsuredCase) {
+                                  // -0 케이스: 피보험자 정보 표시
                                   name = caseItem.insuredName || "-";
                                   contact = caseItem.insuredContact || "-";
                                   detailAddress = caseItem.insuredAddressDetail || "-";
-                                } else if (isIntakeVictim) {
-                                  const hasVictimInfo = !!(caseItem.victimName || caseItem.victimContact || caseItem.victimAddress);
-                                  name = hasVictimInfo ? (caseItem.victimName || "-") : "-";
-                                  contact = hasVictimInfo ? (caseItem.victimContact || "-") : "-";
-                                  detailAddress = hasVictimInfo ? (caseItem.victimAddress || "-") : "-";
                                 } else {
+                                  // -1 이상 케이스: 피해자 정보 표시
                                   name = caseItem.victimName || "-";
                                   contact = caseItem.victimContact || "-";
                                   detailAddress = caseItem.victimAddressDetail || "-";
