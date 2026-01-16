@@ -1661,15 +1661,8 @@ async function renderEvidencePages(
           pdfFullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
             [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
         }
-        // 사고번호에서 특수 대시 문자를 ASCII 하이픈으로 변환하고 공백 제거 (예: "S25- 1044" → "S25-1044")
-        const rawAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "";
-        const pdfAccidentNo = normalizeText(
-          rawAccidentNo
-            .replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D\u00AD]/g, "-") // 다양한 대시/하이픈 문자를 ASCII 하이픈으로
-            .replace(/-\s+/g, "-")
-            .replace(/\s+-/g, "-")
-            .replace(/:\s+/g, ":")
-        );
+        // 사고번호 처리: 일반 이미지 헤더와 동일한 방식으로 처리
+        const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
         const pdfCategoryDisplay = normalizeText(
           current.doc.category ? `${current.tab}-${current.doc.category}` : current.tab,
         );
