@@ -3435,136 +3435,130 @@ export default function FieldReport() {
                 피해 복구방식 및 처리 유형
               </h2>
 
-              {/* 피해자 정보 */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      color: "rgba(12, 12, 12, 0.8)",
-                    }}
-                  >
-                    피해자 정보
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {(() => {
-                    const victims = [];
-
-                    // 기본 피해자 (케이스 유형에 따라 주소 구성)
-                    if (caseData.victimName) {
-                      const caseNumberSuffix = caseData.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
-                      const suffixNum = parseInt(caseNumberSuffix);
-                      const isInsuredCase = suffixNum === 0;
-                      
-                      let fullAddress = "";
-                      if (isInsuredCase) {
-                        // -0 케이스 (손해방지): 피보험자 주소 + 피보험자 상세주소
-                        fullAddress = [
-                          caseData.insuredAddress,
-                          (caseData as any).insuredAddressDetail,
-                        ]
-                          .filter(Boolean)
-                          .join(" ");
-                      } else {
-                        // -1 이상 케이스 (피해세대): 피해자 주소 + 피해자 상세주소
-                        fullAddress = [
-                          caseData.victimAddress,
-                          caseData.victimAddressDetail,
-                        ]
-                          .filter(Boolean)
-                          .join(" ");
-                      }
-                      victims.push({
-                        name: caseData.victimName,
-                        contact: caseData.victimContact || "",
-                        address: fullAddress || "",
-                      });
-                    }
-
-                    // 추가 피해자 (주소 + 상세주소 결합)
-                    if (
-                      caseData.additionalVictims &&
-                      caseData.additionalVictims.trim()
-                    ) {
-                      try {
-                        const additional = JSON.parse(
-                          caseData.additionalVictims,
-                        );
-                        if (Array.isArray(additional)) {
-                          victims.push(
-                            ...additional.map((v: any) => ({
-                              name: v.name || "",
-                              contact: v.contact || "",
-                              address:
-                                [v.address, v.addressDetail]
-                                  .filter(Boolean)
-                                  .join(" ") || "",
-                            })),
-                          );
-                        }
-                      } catch (e) {
-                        console.error("Error parsing additional victims:", e);
-                      }
-                    }
-
-                    return victims.length > 0 ? (
-                      victims.map((victim, index) => (
-                        <div
-                          key={index}
-                          className="p-3 rounded flex items-center gap-3"
-                          style={{ background: "rgba(12, 12, 12, 0.03)" }}
-                        >
-                          <div
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ background: "#008FED" }}
-                          />
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              fontWeight: 600,
-                              color: "#0C0C0C",
-                            }}
-                          >
-                            {victim.name}
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.6)",
-                            }}
-                          >
-                            {victim.contact}
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.6)",
-                            }}
-                          >
-                            {victim.address}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <p
+              {/* 피해자 정보 - -1 이상 케이스에서만 표시 */}
+              {(() => {
+                const caseNumberSuffix = caseData.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
+                const suffixNum = parseInt(caseNumberSuffix);
+                const isInsuredCase = suffixNum === 0;
+                
+                if (isInsuredCase) {
+                  return null;
+                }
+                
+                return (
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle
                         style={{
                           fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          color: "rgba(12, 12, 12, 0.5)",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          color: "rgba(12, 12, 12, 0.8)",
                         }}
                       >
-                        등록된 피해자가 없습니다.
-                      </p>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
+                        피해자 정보
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {(() => {
+                        const victims = [];
+
+                        if (caseData.victimName) {
+                          const fullAddress = [
+                            caseData.victimAddress,
+                            caseData.victimAddressDetail,
+                          ]
+                            .filter(Boolean)
+                            .join(" ");
+                          victims.push({
+                            name: caseData.victimName,
+                            contact: caseData.victimContact || "",
+                            address: fullAddress || "",
+                          });
+                        }
+
+                        if (
+                          caseData.additionalVictims &&
+                          caseData.additionalVictims.trim()
+                        ) {
+                          try {
+                            const additional = JSON.parse(
+                              caseData.additionalVictims,
+                            );
+                            if (Array.isArray(additional)) {
+                              victims.push(
+                                ...additional.map((v: any) => ({
+                                  name: v.name || "",
+                                  contact: v.contact || "",
+                                  address:
+                                    [v.address, v.addressDetail]
+                                      .filter(Boolean)
+                                      .join(" ") || "",
+                                })),
+                              );
+                            }
+                          } catch (e) {
+                            console.error("Error parsing additional victims:", e);
+                          }
+                        }
+
+                        return victims.length > 0 ? (
+                          victims.map((victim, index) => (
+                            <div
+                              key={index}
+                              className="p-3 rounded flex items-center gap-3"
+                              style={{ background: "rgba(12, 12, 12, 0.03)" }}
+                            >
+                              <div
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{ background: "#008FED" }}
+                              />
+                              <span
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  fontWeight: 600,
+                                  color: "#0C0C0C",
+                                }}
+                              >
+                                {victim.name}
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  color: "rgba(12, 12, 12, 0.6)",
+                                }}
+                              >
+                                {victim.contact}
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  color: "rgba(12, 12, 12, 0.6)",
+                                }}
+                              >
+                                {victim.address}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <p
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.5)",
+                            }}
+                          >
+                            등록된 피해자가 없습니다.
+                          </p>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* 처리 유형 및 복구 방식 */}
               <Card>
