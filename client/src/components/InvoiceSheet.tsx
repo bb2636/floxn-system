@@ -1639,60 +1639,68 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
               paddingLeft: "8px",
             }}>
               {caseData?.assessorEmail && (
-                <label
+                <div
                   style={{
                     display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
                     gap: "8px",
-                    cursor: "pointer",
                   }}
                   data-testid="checkbox-assessor-email"
                 >
                   <Checkbox
+                    id="invoice-assessor-email-checkbox"
                     checked={selectedEmails.includes(caseData.assessorEmail)}
                     onCheckedChange={() => toggleEmail(caseData.assessorEmail!)}
                   />
-                  <span style={{
-                    fontFamily: "'Pretendard'",
-                    fontStyle: "normal",
-                    fontWeight: 400,
-                    fontSize: "13px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.01em",
-                    color: "rgba(12, 12, 12, 0.8)",
-                  }}>
+                  <label
+                    htmlFor="invoice-assessor-email-checkbox"
+                    style={{
+                      fontFamily: "'Pretendard'",
+                      fontStyle: "normal",
+                      fontWeight: 400,
+                      fontSize: "13px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "rgba(12, 12, 12, 0.8)",
+                      cursor: "pointer",
+                    }}
+                  >
                     심사자 이메일: {caseData.assessorEmail}
-                  </span>
-                </label>
+                  </label>
+                </div>
               )}
               {caseData?.investigatorEmail && (
-                <label
+                <div
                   style={{
                     display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
                     gap: "8px",
-                    cursor: "pointer",
                   }}
                   data-testid="checkbox-investigator-email"
                 >
                   <Checkbox
+                    id="invoice-investigator-email-checkbox"
                     checked={selectedEmails.includes(caseData.investigatorEmail)}
                     onCheckedChange={() => toggleEmail(caseData.investigatorEmail!)}
                   />
-                  <span style={{
-                    fontFamily: "'Pretendard'",
-                    fontStyle: "normal",
-                    fontWeight: 400,
-                    fontSize: "13px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.01em",
-                    color: "rgba(12, 12, 12, 0.8)",
-                  }}>
+                  <label
+                    htmlFor="invoice-investigator-email-checkbox"
+                    style={{
+                      fontFamily: "'Pretendard'",
+                      fontStyle: "normal",
+                      fontWeight: 400,
+                      fontSize: "13px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "rgba(12, 12, 12, 0.8)",
+                      cursor: "pointer",
+                    }}
+                  >
                     조사자 이메일: {caseData.investigatorEmail}
-                  </span>
-                </label>
+                  </label>
+                </div>
               )}
             </div>
           )}
