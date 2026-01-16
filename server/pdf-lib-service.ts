@@ -1661,8 +1661,9 @@ async function renderEvidencePages(
           pdfFullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
             [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
         }
-        // 사고번호 처리: 일반 이미지 헤더와 동일한 방식으로 처리
-        const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
+        // 사고번호 처리: normalizeText 후 하이픈 앞뒤 공백 완전 제거
+        const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "")
+          .replace(/\s*-\s*/g, "-");
         const pdfCategoryDisplay = normalizeText(
           current.doc.category ? `${current.tab}-${current.doc.category}` : current.tab,
         );
@@ -1745,7 +1746,8 @@ async function renderPhotoPage(
       [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
   }
 
-  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
+  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "")
+    .replace(/\s*-\s*/g, "-");
   const leftText = `사고번호 ${accidentNo}`;
   const centerText = normalizeText(fullAddress);
   const rightText = normalizeText(firstImage.doc.category ? `${firstImage.tab}-${firstImage.doc.category}` : firstImage.tab);
@@ -1872,7 +1874,8 @@ async function renderSingleImagePage(
       [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
   }
 
-  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
+  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "")
+    .replace(/\s*-\s*/g, "-");
   const leftText = `사고번호 ${accidentNo}`;
   const centerText = normalizeText(fullAddress);
   const rightText = normalizeText(imageDoc.doc.category ? `${imageDoc.tab}-${imageDoc.doc.category}` : imageDoc.tab);
