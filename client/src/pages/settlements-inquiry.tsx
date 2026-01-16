@@ -340,10 +340,10 @@ export default function SettlementsInquiry() {
         || usersByCompanyMap.get(assignedPartnerValue);
       const depositBank = partnerUser?.bankName || "-";
       
-      // 당사 관리자 (플록슨 관리자) - assignedTo 필드에서 가져옴
-      const assignedAdminId = caseItem.assignedTo;
-      const assignedAdminUser = assignedAdminId ? usersByIdMap.get(assignedAdminId) : null;
-      const adminName = assignedAdminUser?.name || "-";
+      // 당사 관리자 (플록슨 관리자) - managerId(담당자명) 필드에서 가져옴
+      const caseManagerId = caseItem.managerId;
+      const caseManagerUser = caseManagerId ? usersByIdMap.get(caseManagerId) : null;
+      const adminName = caseManagerUser?.name || "-";
 
       // 정산 데이터 파싱
       const settlement = settlementsByCaseIdMap.get(caseItem.id);
@@ -426,6 +426,9 @@ export default function SettlementsInquiry() {
         || cases.find(c => getCaseNumberPrefix(c.caseNumber) === prefix && getCaseSuffix(c.caseNumber) === 0);
       // 관리자 ID: -0 케이스의 managerId 우선, 없으면 primaryCase의 managerId
       const groupManagerId = zeroCase?.managerId || preventionCaseInGroup?.managerId || primaryCase.managerId;
+      // 관리자 이름: groupManagerId로 사용자 이름 조회
+      const groupManagerUser = groupManagerId ? usersByIdMap.get(groupManagerId) : null;
+      const groupAdminName = groupManagerUser?.name || "-";
 
       // 그룹 내 직접복구 건이 있는지 확인
       // 직접복구 건이 하나라도 있으면 해당 건들의 금액만 표시, 사용료 없음
@@ -488,7 +491,7 @@ export default function SettlementsInquiry() {
         managerId: groupManagerId,
         withdrawalNumber: primaryCase.withdrawalNumber,
         accidentNumber: primaryCase.accidentNumber,
-        admin: primaryCase.admin,
+        admin: groupAdminName,
         withdrawalDate: primaryCase.withdrawalDate,
         constructionStatus: hasDirectRepair ? "수리" : (allNoRepair ? "미수리" : "-"),
         recoveryType: hasDirectRepair ? "직접복구" : primaryCase.recoveryType,
