@@ -239,11 +239,13 @@ export default function FieldReport() {
   const [, setLocation] = useLocation();
 
   // 현장입력에서 선택한 케이스 ID 가져오기 (문자열 "null" 방지)
-  const rawCaseId = localStorage.getItem("selectedFieldSurveyCaseId");
-  const selectedCaseId =
-    rawCaseId && rawCaseId !== "null" && rawCaseId !== "undefined"
+  const getInitialCaseId = () => {
+    const rawCaseId = localStorage.getItem("selectedFieldSurveyCaseId");
+    return rawCaseId && rawCaseId !== "null" && rawCaseId !== "undefined"
       ? rawCaseId
       : "";
+  };
+  const [selectedCaseId, setSelectedCaseId] = useState(getInitialCaseId);
 
   // 종합진행관리에서 왔는지 확인
   const returnToComprehensiveProgress =
@@ -1359,9 +1361,14 @@ export default function FieldReport() {
                             key={suffixCase.caseId}
                             onClick={() => {
                               if (!isCurrentCase) {
+                                // localStorage와 상태 모두 업데이트
                                 localStorage.setItem("selectedFieldSurveyCaseId", suffixCase.caseId);
+                                setSelectedCaseId(suffixCase.caseId);
                                 setIsRelatedCasesPopoverOpen(false);
-                                window.location.reload();
+                                // React Query 캐시 무효화하여 새 데이터 fetch
+                                queryClient.invalidateQueries({ queryKey: ["/api/field-surveys"] });
+                                queryClient.invalidateQueries({ queryKey: ["/api/documents/case"] });
+                                queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
                               }
                             }}
                             className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
