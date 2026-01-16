@@ -147,9 +147,14 @@ export function InvoiceManagementPopup({
     queryKey: ["/api/users/basic"],
   });
   
-  // 보험사 역할의 사용자만 필터링
-  const insurerUsers = useMemo(() => {
-    return allUsers.filter(u => u.role === "보험사");
+  // 보험사 역할의 사용자에서 고유한 보험사명만 추출
+  const insuranceCompanyNames = useMemo(() => {
+    const companies = allUsers
+      .filter(u => u.role === "보험사" && u.company)
+      .map(u => u.company!)
+      .filter((company, index, self) => self.indexOf(company) === index) // 중복 제거
+      .sort((a, b) => a.localeCompare(b, 'ko'));
+    return companies;
   }, [allUsers]);
 
   // 초기 로드 상태 추적 (팝업이 열릴 때만 데이터 로드)
@@ -2790,9 +2795,9 @@ export function InvoiceManagementPopup({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="전체">전체</SelectItem>
-                  {insurerUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.company || user.name || user.username}>
-                      {user.company || user.name || user.username}
+                  {insuranceCompanyNames.map((companyName) => (
+                    <SelectItem key={companyName} value={companyName}>
+                      {companyName}
                     </SelectItem>
                   ))}
                 </SelectContent>
