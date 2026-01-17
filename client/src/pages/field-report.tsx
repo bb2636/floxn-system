@@ -883,11 +883,11 @@ export default function FieldReport() {
     mutationFn: async () => {
       // KST 오늘 날짜
       const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
-      const recoveryCompletedDateStr = kstNow.toISOString().split("T")[0];
+      const constructionCompletionDateStr = kstNow.toISOString().split("T")[0];
       
       return apiRequest("PATCH", `/api/cases/${selectedCaseId}`, {
         status: "청구자료제출(복구)",
-        recoveryCompletedDate: recoveryCompletedDateStr, // 복구완료일 설정
+        constructionCompletionDate: constructionCompletionDateStr, // 복구완료일 설정
       });
     },
     onSuccess: () => {
