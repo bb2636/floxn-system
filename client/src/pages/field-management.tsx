@@ -144,10 +144,20 @@ export default function FieldManagement() {
   }, [selectedCase, availableCases, selectedCaseDetail]);
 
   const relatedCases = useMemo(() => {
-    if (!selectedCaseData?.insuranceAccidentNo || !availableCases) return [];
-    return availableCases
-      .filter(c => c.insuranceAccidentNo === selectedCaseData.insuranceAccidentNo)
-      .sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
+    if (!availableCases || !selectedCaseData) return [];
+    
+    // 1순위: 사고번호로 조회, 2순위: 증권번호로 조회
+    if (selectedCaseData.insuranceAccidentNo) {
+      return availableCases
+        .filter(c => c.insuranceAccidentNo === selectedCaseData.insuranceAccidentNo)
+        .sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
+    } else if (selectedCaseData.insurancePolicyNo) {
+      return availableCases
+        .filter(c => c.insurancePolicyNo === selectedCaseData.insurancePolicyNo)
+        .sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
+    }
+    
+    return [];
   }, [selectedCaseData, availableCases]);
 
   useEffect(() => {
