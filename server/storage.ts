@@ -6117,15 +6117,29 @@ export class DbStorage implements IStorage {
   async getRelatedCaseWithDrawing(
     caseId: string,
   ): Promise<{ caseId: string; caseNumber: string } | null> {
-    // Get the source case to find its accident number
+    // Get the source case to find its accident number or policy number
     const sourceCase = await this.getCaseById(caseId);
-    if (!sourceCase || !sourceCase.insuranceAccidentNo) return null;
+    if (!sourceCase) return null;
 
-    // Find related cases with the same accident number
-    const relatedCases = await this.getCasesByAccidentNo(
-      sourceCase.insuranceAccidentNo,
-      caseId,
-    );
+    let relatedCases: Case[] = [];
+
+    // 1차: 사고번호가 있으면 사고번호 기준으로 검색
+    if (sourceCase.insuranceAccidentNo) {
+      relatedCases = await this.getCasesByAccidentNo(
+        sourceCase.insuranceAccidentNo,
+        caseId,
+      );
+    }
+    // 2차: 사고번호가 없고 증권번호가 있으면 증권번호 기준으로 검색
+    else if (sourceCase.insurancePolicyNo) {
+      const allCasesWithPolicyNo = await db
+        .select()
+        .from(cases)
+        .where(eq(cases.insurancePolicyNo, sourceCase.insurancePolicyNo))
+        .orderBy(asc(cases.caseNumber));
+      
+      relatedCases = allCasesWithPolicyNo.filter((c) => c.id !== caseId);
+    }
 
     // Find the first related case that has a drawing
     for (const relatedCase of relatedCases) {
@@ -6183,15 +6197,29 @@ export class DbStorage implements IStorage {
   async getRelatedCaseWithEstimate(
     caseId: string,
   ): Promise<{ caseId: string; caseNumber: string } | null> {
-    // Get the source case to find its accident number
+    // Get the source case to find its accident number or policy number
     const sourceCase = await this.getCaseById(caseId);
-    if (!sourceCase || !sourceCase.insuranceAccidentNo) return null;
+    if (!sourceCase) return null;
 
-    // Find related cases with the same accident number
-    const relatedCases = await this.getCasesByAccidentNo(
-      sourceCase.insuranceAccidentNo,
-      caseId,
-    );
+    let relatedCases: Case[] = [];
+
+    // 1차: 사고번호가 있으면 사고번호 기준으로 검색
+    if (sourceCase.insuranceAccidentNo) {
+      relatedCases = await this.getCasesByAccidentNo(
+        sourceCase.insuranceAccidentNo,
+        caseId,
+      );
+    }
+    // 2차: 사고번호가 없고 증권번호가 있으면 증권번호 기준으로 검색
+    else if (sourceCase.insurancePolicyNo) {
+      const allCasesWithPolicyNo = await db
+        .select()
+        .from(cases)
+        .where(eq(cases.insurancePolicyNo, sourceCase.insurancePolicyNo))
+        .orderBy(asc(cases.caseNumber));
+      
+      relatedCases = allCasesWithPolicyNo.filter((c) => c.id !== caseId);
+    }
 
     // Find the first related case that has an estimate
     for (const relatedCase of relatedCases) {
@@ -6213,15 +6241,29 @@ export class DbStorage implements IStorage {
     caseNumber: string;
     documentCount: number;
   } | null> {
-    // Get the source case to find its accident number
+    // Get the source case to find its accident number or policy number
     const sourceCase = await this.getCaseById(caseId);
-    if (!sourceCase || !sourceCase.insuranceAccidentNo) return null;
+    if (!sourceCase) return null;
 
-    // Find related cases with the same accident number
-    const relatedCases = await this.getCasesByAccidentNo(
-      sourceCase.insuranceAccidentNo,
-      caseId,
-    );
+    let relatedCases: Case[] = [];
+
+    // 1차: 사고번호가 있으면 사고번호 기준으로 검색
+    if (sourceCase.insuranceAccidentNo) {
+      relatedCases = await this.getCasesByAccidentNo(
+        sourceCase.insuranceAccidentNo,
+        caseId,
+      );
+    }
+    // 2차: 사고번호가 없고 증권번호가 있으면 증권번호 기준으로 검색
+    else if (sourceCase.insurancePolicyNo) {
+      const allCasesWithPolicyNo = await db
+        .select()
+        .from(cases)
+        .where(eq(cases.insurancePolicyNo, sourceCase.insurancePolicyNo))
+        .orderBy(asc(cases.caseNumber));
+      
+      relatedCases = allCasesWithPolicyNo.filter((c) => c.id !== caseId);
+    }
 
     // Find the first related case that has documents
     for (const relatedCase of relatedCases) {
