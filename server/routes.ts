@@ -8347,18 +8347,16 @@ FLOXN`;
           continue;
         }
 
-        // 주소 가져오기: -0 케이스는 피보험자 주소, -1 이상은 피해자 주소 (기본주소 + 상세주소 결합)
+        // 주소 가져오기: -0 케이스는 피보험자 상세주소만, -1 이상은 피해자 상세주소만 (fallback 없음)
         let addressLabel = "-";
         if (caseSuffix === 0) {
-          // 손방건(-0): 피보험자 주소 사용
-          const baseAddr = relatedCase.insuredAddress || relatedCase.victimAddress || "";
-          const detailAddr = relatedCase.insuredAddressDetail || relatedCase.victimAddressDetail || "";
-          addressLabel = [baseAddr, detailAddr].filter(Boolean).join(" ") || "-";
+          // 손방건(-0): 피보험자 상세주소만 사용 (피해세대 주소로 fallback하지 않음)
+          const detailAddr = relatedCase.insuredAddressDetail || "";
+          addressLabel = detailAddr || "-";
         } else {
-          // 대물건(-1, -2, ...): 피해자 주소 사용
-          const baseAddr = relatedCase.victimAddress || relatedCase.insuredAddress || "";
-          const detailAddr = relatedCase.victimAddressDetail || relatedCase.insuredAddressDetail || "";
-          addressLabel = [baseAddr, detailAddr].filter(Boolean).join(" ") || "-";
+          // 대물건(-1, -2, ...): 피해자 상세주소만 사용 (피보험자 주소로 fallback하지 않음)
+          const detailAddr = relatedCase.victimAddressDetail || "";
+          addressLabel = detailAddr || "-";
         }
 
         // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 승인금액 > 견적금액 순서로 확인)
@@ -9216,13 +9214,15 @@ FLOXN`;
           continue;
         }
 
-        // 상세주소 가져오기 (상세주소 우선, 없으면 기본주소)
-        const caseAddressLabel =
-          relatedCase.victimAddressDetail ||
-          relatedCase.victimAddress ||
-          relatedCase.insuredAddressDetail ||
-          relatedCase.insuredAddress ||
-          "-";
+        // 상세주소 가져오기: -0 케이스는 피보험자 상세주소만, -1+ 케이스는 피해자 상세주소만 (fallback 없음)
+        let caseAddressLabel = "-";
+        if (caseSuffix === 0) {
+          // 손방건(-0): 피보험자 상세주소만 사용 (피해세대 주소로 fallback하지 않음)
+          caseAddressLabel = relatedCase.insuredAddressDetail || "-";
+        } else {
+          // 대물건(-1, -2, ...): 피해자 상세주소만 사용 (피보험자 주소로 fallback하지 않음)
+          caseAddressLabel = relatedCase.victimAddressDetail || "-";
+        }
 
         // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 승인금액 > 견적금액 순서로 확인)
         let caseDamagePreventionAmt =
