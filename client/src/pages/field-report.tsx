@@ -881,8 +881,13 @@ export default function FieldReport() {
   // 청구자료제출 mutation (직접복구 → 청구자료제출)
   const claimSubmitMutation = useMutation({
     mutationFn: async () => {
+      // KST 오늘 날짜
+      const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+      const recoveryCompletedDateStr = kstNow.toISOString().split("T")[0];
+      
       return apiRequest("PATCH", `/api/cases/${selectedCaseId}`, {
         status: "청구자료제출(복구)",
+        recoveryCompletedDate: recoveryCompletedDateStr, // 복구완료일 설정
       });
     },
     onSuccess: () => {
