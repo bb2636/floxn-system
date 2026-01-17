@@ -10924,12 +10924,14 @@ FLOXN 드림`;
       // ========== 첨부파일 준비 (단일 PDF) ==========
       const accidentNo =
         caseData.insuranceAccidentNo || caseData.caseNumber || "UNKNOWN";
-      const detailAddress =
-        caseData.victimAddressDetail ||
-        caseData.victimAddress ||
-        caseData.insuredAddressDetail ||
-        caseData.insuredAddress ||
-        "";
+      
+      // -0 (손해방지/피보험자) 건: 피보험자 상세주소 사용
+      // -1 이상 (피해자 복구) 건: 피해자 상세주소 사용
+      const isLossPreventionCase = /-0$/.test(caseData.caseNumber || '');
+      const detailAddress = isLossPreventionCase
+        ? (caseData.insuredAddressDetail || caseData.insuredAddress || "")
+        : (caseData.victimAddressDetail || caseData.victimAddress || caseData.insuredAddressDetail || caseData.insuredAddress || "");
+      
       // 파일명에 사용할 수 없는 특수문자 제거
       const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, "_");
       const mainFileName = safeDetailAddress
@@ -12605,12 +12607,14 @@ https://peulrogseun-aqaqaq4561.replit.app
       const caseData = await storage.getCaseById(payload.caseId);
       const accidentNo =
         caseData?.insuranceAccidentNo || caseData?.caseNumber || payload.caseId;
-      const detailAddress =
-        caseData?.victimAddressDetail ||
-        caseData?.victimAddress ||
-        caseData?.insuredAddressDetail ||
-        caseData?.insuredAddress ||
-        "";
+      
+      // -0 (손해방지/피보험자) 건: 피보험자 상세주소 사용
+      // -1 이상 (피해자 복구) 건: 피해자 상세주소 사용
+      const isLossPreventionCase = /-0$/.test(caseData?.caseNumber || '');
+      const detailAddress = isLossPreventionCase
+        ? (caseData?.insuredAddressDetail || caseData?.insuredAddress || "")
+        : (caseData?.victimAddressDetail || caseData?.victimAddress || caseData?.insuredAddressDetail || caseData?.insuredAddress || "");
+      
       const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, "_");
       const filename = safeDetailAddress
         ? `현장출동보고서 _${accidentNo} (${safeDetailAddress}).pdf`
