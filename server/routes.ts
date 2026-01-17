@@ -11003,9 +11003,9 @@ FLOXN 드림`;
       <tr>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">담당자</td>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 80px;">심사자</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.assessorTeamName || "-"}</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.assessorTeam || "-"}</td>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 80px;">조사자</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.investigatorTeamName || "-"}</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.investigatorTeam || "-"}</td>
       </tr>
       <tr>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">피보험자</td>
@@ -11042,8 +11042,8 @@ FLOXN 드림`;
 아래 접수건에 대한 현장출동보고서를 첨부하여 송부드립니다.
 
 사고번호: ${caseData.insuranceAccidentNo || "-"}
-심사자: ${caseData.assessorTeamName || "-"}
-조사자: ${caseData.investigatorTeamName || "-"}
+심사자: ${caseData.assessorTeam || "-"}
+조사자: ${caseData.investigatorTeam || "-"}
 피보험자: ${caseData.insuredName || "-"}
 접수번호: ${caseData.caseNumber || "-"}
 발송일: ${new Date().toISOString().split("T")[0]}
