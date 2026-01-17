@@ -915,7 +915,13 @@ export default function FieldManagement() {
               <div className="flex items-center gap-2 text-[13px] font-semibold">
                 <span className="inline-flex h-2 w-2 rounded-full bg-[#008FED]"></span>
                 <span>{selectedCaseData.insuranceCompany || "보험사 미지정"}</span>
-                <span className="text-[#6B7280]">{selectedCaseData.insuranceAccidentNo || ""}(사고번호)</span>
+                <span className="text-[#6B7280]">
+                  {selectedCaseData.insuranceAccidentNo 
+                    ? `${selectedCaseData.insuranceAccidentNo}(사고번호)` 
+                    : selectedCaseData.insurancePolicyNo 
+                      ? `${selectedCaseData.insurancePolicyNo}(증권번호)` 
+                      : ""}
+                </span>
               </div>
               <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-[#6B7280]">
                 <span>접수번호 {formatCaseNumber(selectedCaseData.caseNumber) || "-"}</span>
@@ -1198,7 +1204,13 @@ export default function FieldManagement() {
                           <div>
                             <div className="text-[13px] font-semibold">
                               {caseItem.insuranceCompany || "-"}
-                              <span className="ml-1 text-[#6B7280]">{caseItem.insuranceAccidentNo || ""}(사고번호)</span>
+                              <span className="ml-1 text-[#6B7280]">
+                                {caseItem.insuranceAccidentNo 
+                                  ? `${caseItem.insuranceAccidentNo}(사고번호)` 
+                                  : caseItem.insurancePolicyNo 
+                                    ? `${caseItem.insurancePolicyNo}(증권번호)` 
+                                    : ""}
+                              </span>
                             </div>
                             <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-[#6B7280]">
                               {(() => {
