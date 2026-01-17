@@ -8359,26 +8359,24 @@ FLOXN`;
           addressLabel = detailAddr || "-";
         }
 
-        // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 승인금액 > 견적금액 순서로 확인)
-        let caseDamagePreventionAmt =
-          parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
-        let casePropertyRepairAmt =
-          parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        // 해당 케이스에 저장된 금액 가져오기 (승인금액 > 견적금액 > 인보이스금액 순서로 확인)
+        // 인보이스 금액은 합계로 저장되므로 개별 금액인 승인금액/견적금액을 우선 사용
         const caseApprovedAmt =
           parseInt(relatedCase.approvedAmount || "0") || 0;
         const caseEstimateAmt =
           parseInt(relatedCase.estimateAmount || "0") || 0;
 
         console.log(
-          `[Invoice PDF] Case ${relatedCase.caseNumber}: suffix=${caseSuffix}, damageAmt=${caseDamagePreventionAmt}, propertyAmt=${casePropertyRepairAmt}, approvedAmt=${caseApprovedAmt}, estimateAmt=${caseEstimateAmt}, address=${addressLabel}`,
+          `[Invoice PDF] Case ${relatedCase.caseNumber}: suffix=${caseSuffix}, approvedAmt=${caseApprovedAmt}, estimateAmt=${caseEstimateAmt}, address=${addressLabel}`,
         );
 
         // 손방건(-0)인 경우: 손해방지비용
         if (caseSuffix === 0) {
-          // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
-          if (caseDamagePreventionAmt === 0 && caseApprovedAmt > 0) {
+          // 승인금액 > 견적금액 순서로 확인
+          let caseDamagePreventionAmt = 0;
+          if (caseApprovedAmt > 0) {
             caseDamagePreventionAmt = caseApprovedAmt;
-          } else if (caseDamagePreventionAmt === 0 && caseEstimateAmt > 0) {
+          } else if (caseEstimateAmt > 0) {
             caseDamagePreventionAmt = caseEstimateAmt;
           }
           if (caseDamagePreventionAmt > 0) {
@@ -8395,10 +8393,11 @@ FLOXN`;
 
         // 대물건(-1, -2, ...)인 경우: 대물복구비용
         if (caseSuffix > 0) {
-          // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
-          if (casePropertyRepairAmt === 0 && caseApprovedAmt > 0) {
+          // 승인금액 > 견적금액 순서로 확인
+          let casePropertyRepairAmt = 0;
+          if (caseApprovedAmt > 0) {
             casePropertyRepairAmt = caseApprovedAmt;
-          } else if (casePropertyRepairAmt === 0 && caseEstimateAmt > 0) {
+          } else if (caseEstimateAmt > 0) {
             casePropertyRepairAmt = caseEstimateAmt;
           }
           if (casePropertyRepairAmt > 0) {
@@ -9224,11 +9223,8 @@ FLOXN`;
           caseAddressLabel = relatedCase.victimAddressDetail || "-";
         }
 
-        // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 승인금액 > 견적금액 순서로 확인)
-        let caseDamagePreventionAmt =
-          parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
-        let casePropertyRepairAmt =
-          parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        // 해당 케이스에 저장된 금액 가져오기 (승인금액 > 견적금액 순서로 확인)
+        // 인보이스 금액은 합계로 저장되므로 개별 금액인 승인금액/견적금액을 우선 사용
         const caseApprovedAmt =
           parseInt(relatedCase.approvedAmount || "0") || 0;
         const caseEstimateAmt =
@@ -9236,10 +9232,11 @@ FLOXN`;
 
         // 손방건(-0)인 경우: 손해방지비용
         if (caseSuffix === 0) {
-          // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
-          if (caseDamagePreventionAmt === 0 && caseApprovedAmt > 0) {
+          // 승인금액 > 견적금액 순서로 확인
+          let caseDamagePreventionAmt = 0;
+          if (caseApprovedAmt > 0) {
             caseDamagePreventionAmt = caseApprovedAmt;
-          } else if (caseDamagePreventionAmt === 0 && caseEstimateAmt > 0) {
+          } else if (caseEstimateAmt > 0) {
             caseDamagePreventionAmt = caseEstimateAmt;
           }
           if (caseDamagePreventionAmt > 0) {
@@ -9253,10 +9250,11 @@ FLOXN`;
 
         // 대물건(-1, -2, ...)인 경우: 대물복구비용
         if (caseSuffix > 0) {
-          // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
-          if (casePropertyRepairAmt === 0 && caseApprovedAmt > 0) {
+          // 승인금액 > 견적금액 순서로 확인
+          let casePropertyRepairAmt = 0;
+          if (caseApprovedAmt > 0) {
             casePropertyRepairAmt = caseApprovedAmt;
-          } else if (casePropertyRepairAmt === 0 && caseEstimateAmt > 0) {
+          } else if (caseEstimateAmt > 0) {
             casePropertyRepairAmt = caseEstimateAmt;
           }
           if (casePropertyRepairAmt > 0) {
