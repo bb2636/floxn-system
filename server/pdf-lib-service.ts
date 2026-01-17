@@ -717,7 +717,7 @@ async function renderCoverPage(
 
   // Main info table
   // 특수기호 뒤 공백 제거
-  const cleanAccidentNo = (caseData.insuranceAccidentNo || "-")
+  const cleanAccidentNo = (caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-")
     .replace(/-\s+/g, "-")
     .replace(/:\s+/g, ":");
   const tableRows: TableCell[][] = [
@@ -1219,7 +1219,7 @@ async function renderDrawingPage(
   // 사고번호(계약번호) on the right - 헤더박스 내에 맞도록 폰트 크기 조정
   // 특수기호 뒤 공백 제거
   const rawAccidentNo =
-    caseData.insuranceAccidentNo || caseData.caseNumber || "-";
+    caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-";
   const accidentNo = rawAccidentNo.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
   const accidentNoText = `사고번호(계약번호):${accidentNo}`;
   // 텍스트 길이에 따라 폰트 크기 조정 (헤더 영역 안에 들어가도록)
@@ -1662,7 +1662,7 @@ async function renderEvidencePages(
             [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
         }
         // 사고번호 처리: normalizeText 후 하이픈 앞뒤 공백 완전 제거
-        const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "")
+        const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "")
           .replace(/\s*-\s*/g, "-");
         const pdfCategoryDisplay = normalizeText(
           current.doc.category ? `${current.tab}-${current.doc.category}` : current.tab,
@@ -1746,7 +1746,7 @@ async function renderPhotoPage(
       [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
   }
 
-  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "")
+  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "")
     .replace(/\s*-\s*/g, "-");
   const leftText = `사고번호 ${accidentNo}`;
   const centerText = normalizeText(fullAddress);
@@ -1874,7 +1874,7 @@ async function renderSingleImagePage(
       [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
   }
 
-  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "")
+  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "")
     .replace(/\s*-\s*/g, "-");
   const leftText = `사고번호 ${accidentNo}`;
   const centerText = normalizeText(fullAddress);
@@ -1959,7 +1959,7 @@ async function renderRecoveryAreaPage(
       { text: "사고번호", width: 70, isHeader: true, align: "center" },
       {
         text: removeSymbolSpaces(
-          caseData.insuranceAccidentNo || caseData.caseNumber || "-",
+          caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-",
         ),
         width: 120,
         align: "left",
@@ -2371,7 +2371,7 @@ async function renderEstimatePage(
       { text: "사고번호", width: 70, isHeader: true, align: "center" },
       {
         text: removeAccidentSpaces(
-          caseData.insuranceAccidentNo || caseData.caseNumber || "-",
+          caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-",
         ),
         width: 250,
         align: "left",
@@ -3626,7 +3626,7 @@ export async function generateEvidencePDFsByTab(
   }
 
   const accidentNo =
-    caseData.insuranceAccidentNo || caseData.caseNumber || "UNKNOWN";
+    caseData.insuranceAccidentNo || caseData.insurancePolicyNo || caseData.caseNumber || "UNKNOWN";
 
   // 선택된 문서 조회
   const selectedDocs = await db
