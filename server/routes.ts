@@ -9043,7 +9043,7 @@ FLOXN`;
   // POST /api/send-invoice-email-v2 - INVOICE PDF 템플릿 기반 이메일 첨부 발송
   // ==========================================
   const sendInvoiceEmailV2Schema = z.object({
-    email: z.string().email("올바른 이메일 형식이 아닙니다"),
+    email: z.string().min(1, "이메일 주소가 필요합니다"),
     caseId: z.string().min(1, "케이스 ID가 필요합니다"),
     recipientName: z.string().optional(),
     damagePreventionAmount: z.number().optional().default(0),
@@ -9082,7 +9082,7 @@ FLOXN`;
       }
 
       const {
-        email,
+        email: rawEmail,
         caseId,
         recipientName,
         damagePreventionAmount,
@@ -9093,6 +9093,30 @@ FLOXN`;
         remarks,
         selectedDocumentIds,
       } = validationResult.data;
+
+      // 쉼표로 구분된 여러 이메일 처리 (공백 제거 후 검증)
+      const emailList = rawEmail
+        .split(",")
+        .map((e) => e.trim())
+        .filter((e) => e.length > 0);
+
+      // 각 이메일 형식 검증
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalidEmails = emailList.filter((e) => !emailRegex.test(e));
+      if (invalidEmails.length > 0) {
+        return res.status(400).json({
+          error: `올바른 이메일 형식이 아닙니다: ${invalidEmails.join(", ")}`,
+        });
+      }
+
+      if (emailList.length === 0) {
+        return res
+          .status(400)
+          .json({ error: "수신자 이메일 주소가 필요합니다" });
+      }
+
+      // 첫 번째 이메일을 주 수신자로 사용 (기존 호환성 유지)
+      const email = emailList[0];
 
       // Get case data
       const caseData = await storage.getCaseById(caseId);
@@ -9989,12 +10013,13 @@ Front·Line·Ops·Xpert·Net
       console.log(`총 첨부 파일 개수: ${attachments.length}`);
       console.log(`==========================================\n`);
 
-      // Send email with all PDF attachments
+      // Send email with all PDF attachments - 여러 수신자 지원
+      const allRecipients = emailList.join(", ");
       console.log(
-        `[Invoice Email] Sending ${attachments.length} PDF attachments to ${email}`,
+        `[Invoice Email] Sending ${attachments.length} PDF attachments to ${emailList.length} recipients: ${allRecipients}`,
       );
       const emailResult = await sendEmailWithAttachment({
-        to: email,
+        to: allRecipients,
         subject: emailSubject,
         text: textContent,
         html: htmlContent,
@@ -10009,12 +10034,13 @@ Front·Line·Ops·Xpert·Net
       }
 
       console.log(
-        `[Invoice Email] ${attachments.length} PDF attachments sent successfully to ${email} by ${user.username}`,
+        `[Invoice Email] ${attachments.length} PDF attachments sent successfully to ${emailList.length} recipients by ${user.username}`,
       );
       res.json({
         success: true,
-        message: `INVOICE PDF가 이메일 첨부파일로 전송되었습니다 (총 ${attachments.length}개 파일)`,
+        message: `INVOICE PDF가 ${emailList.length}명에게 이메일 첨부파일로 전송되었습니다`,
         attachmentCount: attachments.length,
+        recipientCount: emailList.length,
       });
     } catch (error) {
       console.error("Send invoice email v2 error:", error);
