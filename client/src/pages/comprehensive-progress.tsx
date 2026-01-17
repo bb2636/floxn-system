@@ -2473,12 +2473,12 @@ export default function ComprehensiveProgress() {
                             },
                             { label: "청구일", value: selectedCase?.claimDate },
                             {
-                              label: "입금완료일",
-                              value: selectedCase?.paymentCompletedDate,
-                            },
-                            {
                               label: "일부입금일",
                               value: selectedCase?.partialPaymentDate,
+                            },
+                            {
+                              label: "입금완료일",
+                              value: selectedCase?.paymentCompletedDate,
                             },
                             {
                               label: "정산완료일",
