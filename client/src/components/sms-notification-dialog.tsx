@@ -211,9 +211,15 @@ export function SmsNotificationDialog({
         lines.push(`피해자 : ${victimParts.join("  ")}`);
       }
       
-      // 심사자 라인: 이름과 연락처 모두 있을 때만 표시
+      // 심사자 라인: 이름과 연락처가 있을 때만 표시 (assessorTeam 또는 assessorId 사용)
+      const assessorName = caseData.assessorTeam || caseData.assessorId;
+      if (assessorName && caseData.assessorContact) {
+        lines.push(`심사자 : ${assessorName}  연락처 ${caseData.assessorContact}`);
+      }
+      
+      // 조사자 라인: 이름과 연락처가 있을 때만 표시
       if (caseData.investigatorTeamName && caseData.investigatorContact) {
-        lines.push(`심사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`);
+        lines.push(`조사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`);
       }
       
       lines.push(`사고장소 : ${getFullAddress()}`);
