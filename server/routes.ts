@@ -11033,7 +11033,7 @@ FLOXN 드림`;
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 80px;">심사자</td>
         <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.assessorTeam || "-"}</td>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 80px;">조사자</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.investigatorTeam || "-"}</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.investigatorTeamName || "-"}</td>
       </tr>
       <tr>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">피보험자</td>
@@ -11071,7 +11071,7 @@ FLOXN 드림`;
 
 사고번호: ${caseData.insuranceAccidentNo || "-"}
 심사자: ${caseData.assessorTeam || "-"}
-조사자: ${caseData.investigatorTeam || "-"}
+조사자: ${caseData.investigatorTeamName || "-"}
 피보험자: ${caseData.insuredName || "-"}
 접수번호: ${caseData.caseNumber || "-"}
 발송일: ${new Date().toISOString().split("T")[0]}
