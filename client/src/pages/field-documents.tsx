@@ -189,8 +189,13 @@ export default function FieldDocuments() {
     enabled: caseSearchModalOpen,
   });
 
-  // 케이스 필터링 (검색어 기준) - 안전한 null 처리
+  // 케이스 필터링 (검색어 기준 + 협력사 필터링) - 안전한 null 처리
   const filteredCases = allCases.filter(c => {
+    // 협력사 사용자인 경우: 본인 협력사에 배당된 케이스만 표시
+    if (user?.role === '협력사') {
+      if (c.assignedPartner !== user.company) return false;
+    }
+    
     if (!caseSearchQuery) return true;
     const query = caseSearchQuery.toLowerCase();
     const caseNumber = c.caseNumber?.toLowerCase() ?? '';
