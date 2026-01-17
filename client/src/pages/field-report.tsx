@@ -5822,19 +5822,6 @@ export default function FieldReport() {
             className="px-6-relative"
             id="pdf-section-기타사항"
           >
-            <div
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "20px",
-                fontWeight: "700",
-                lineHeight: "30px",
-                color: "#0C0C0C",
-                marginBottom: "24px",
-              }}
-            >
-              기타사항
-            </div>
-
             <Card>
               <CardContent className="p-6 space-y-4">
                 <div>
