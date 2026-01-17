@@ -139,6 +139,7 @@ const CASE_STATUSES = [
   "입금완료",
   "부분입금",
   "정산완료",
+  "종결",
   "접수취소",
 ] as const;
 
@@ -153,7 +154,7 @@ const getStatusColor = (status: string | null | undefined) => {
   if (status === "1차승인") return "#008FED"; // 파란색
   if (status === "복구요청(2차승인)") return "#00C853"; // 초록색
   if (status === "접수취소" || status === "반려") return "#ED1C00"; // 빨간색
-  if (status === "입금완료" || status === "정산완료") return "#4CAF50"; // 완료 초록색
+  if (status === "입금완료" || status === "정산완료" || status === "종결") return "#4CAF50"; // 완료 초록색
   return "rgba(12, 12, 12, 0.7)"; // 기본 회색
 };
 

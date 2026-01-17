@@ -436,7 +436,8 @@ export function InvoiceManagementPopup({
 
       // "정산" 또는 "부분입금"이 선택된 경우 같은 사고번호의 모든 케이스 상태 변경 및 날짜 설정
       if (settlementStatus === "정산" || settlementStatus === "부분입금") {
-        const newStatus = settlementStatus === "정산" ? "정산완료" : "부분입금";
+        // 정산 선택 시 '입금완료' 상태 (세금계산서 발행일 입력 시 '종결'로 변경됨)
+        const newStatus = settlementStatus === "정산" ? "입금완료" : "부분입금";
 
         // 날짜 필드 설정 - 기존 값 보존하면서 새 값만 업데이트
         const caseUpdateData: Record<string, unknown> = {
@@ -449,10 +450,9 @@ export function InvoiceManagementPopup({
         };
 
         if (settlementStatus === "정산") {
-          // 정산 선택 시: 입금완료일, 정산완료일 설정 (새로 설정)
+          // 정산 선택 시: 입금완료일만 설정 (정산완료일은 세금계산서 발행일 선택 시 설정됨)
           caseUpdateData.paymentCompletedDate = todayDate;
-          caseUpdateData.settlementCompletedDate = todayDate;
-          // partialPaymentDate는 기존 값 유지 (위에서 이미 설정됨)
+          // partialPaymentDate, settlementCompletedDate는 기존 값 유지
         } else if (settlementStatus === "부분입금") {
           // 부분입금 선택 시: 일부입금일 설정 (새로 설정)
           caseUpdateData.partialPaymentDate = todayDate;
@@ -480,11 +480,14 @@ export function InvoiceManagementPopup({
               };
 
               if (settlementStatus === "정산") {
+                // 정산 선택 시: 입금완료일만 설정 (정산완료일은 세금계산서 발행일 선택 시 설정됨)
                 rcUpdateData.paymentCompletedDate = todayDate;
-                rcUpdateData.settlementCompletedDate = todayDate;
-                // 기존 partialPaymentDate 보존
+                // 기존 partialPaymentDate, settlementCompletedDate 보존
                 if (rc.partialPaymentDate) {
                   rcUpdateData.partialPaymentDate = rc.partialPaymentDate;
+                }
+                if (rc.settlementCompletedDate) {
+                  rcUpdateData.settlementCompletedDate = rc.settlementCompletedDate;
                 }
               } else if (settlementStatus === "부분입금") {
                 rcUpdateData.partialPaymentDate = todayDate;
@@ -531,7 +534,7 @@ export function InvoiceManagementPopup({
     }
   };
 
-  // 세금계산서 날짜 선택 핸들러
+  // 세금계산서 발행일 선택 핸들러 - 정산완료일 설정 및 상태 '종결'로 변경
   const handleTaxInvoiceDateSelect = async (date: Date | undefined) => {
     if (!date || !caseData) return;
 
@@ -539,20 +542,37 @@ export function InvoiceManagementPopup({
     const formattedDate = format(date, "yyyy-MM-dd");
 
     try {
+      // 현재 케이스: 세금계산서 발행일, 정산완료일 설정 + 상태 '종결'
       await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
         taxInvoiceConfirmDate: formattedDate,
+        settlementCompletedDate: formattedDate,
+        status: "종결",
       });
+
+      // 관련 케이스들도 모두 정산완료일 및 상태 '종결'로 변경
+      if (relatedCases && relatedCases.length > 0) {
+        const updatePromises = relatedCases
+          .filter((rc) => rc.id !== caseData.id)
+          .map((rc) =>
+            apiRequest("PATCH", `/api/cases/${rc.id}`, {
+              settlementCompletedDate: formattedDate,
+              status: "종결",
+            })
+          );
+        await Promise.all(updatePromises);
+      }
 
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
 
+      const updatedCount = relatedCases ? relatedCases.length : 1;
       toast({
-        title: "세금계산서 확인일 저장",
-        description: `${formattedDate}로 저장되었습니다.`,
+        title: "세금계산서 발행일 저장",
+        description: `${formattedDate}로 저장되었습니다. (${updatedCount}건 종결 처리)`,
       });
     } catch (error) {
       toast({
         title: "저장 실패",
-        description: "세금계산서 확인일 저장 중 오류가 발생했습니다.",
+        description: "세금계산서 발행일 저장 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     }
