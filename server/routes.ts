@@ -8758,7 +8758,80 @@ FLOXN`;
             doc: any;
             buffer: Buffer;
             headerText: string;
+            headerInfo: { accidentNo: string; address: string; category: string };
           }[] = [];
+          
+          // 테이블 형태 헤더 그리기 헬퍼 함수 (현장출동보고서 스타일)
+          const drawTableHeader = (
+            page: any,
+            x: number,
+            y: number,
+            width: number,
+            height: number,
+            headerInfo: { accidentNo: string; address: string; category: string },
+          ) => {
+            // 열 너비 비율 (사고번호: 30%, 주소: 45%, 카테고리: 25%)
+            const col1Width = width * 0.30;
+            const col2Width = width * 0.45;
+            const col3Width = width * 0.25;
+            
+            // 배경 (연한 민트/하늘색)
+            page.drawRectangle({
+              x: x,
+              y: y,
+              width: width,
+              height: height,
+              color: rgb(0.94, 0.97, 1),
+              borderColor: rgb(0.7, 0.8, 0.9),
+              borderWidth: 0.5,
+            });
+            
+            // 열 구분선
+            page.drawLine({
+              start: { x: x + col1Width, y: y },
+              end: { x: x + col1Width, y: y + height },
+              color: rgb(0.7, 0.8, 0.9),
+              thickness: 0.5,
+            });
+            page.drawLine({
+              start: { x: x + col1Width + col2Width, y: y },
+              end: { x: x + col1Width + col2Width, y: y + height },
+              color: rgb(0.7, 0.8, 0.9),
+              thickness: 0.5,
+            });
+            
+            // 텍스트 (어두운 색상)
+            const textY = y + (height - 9) / 2;
+            const textColor = rgb(0.2, 0.2, 0.2);
+            const textSize = 8;
+            
+            // 사고번호
+            page.drawText(headerInfo.accidentNo, {
+              x: x + 5,
+              y: textY,
+              size: textSize,
+              font,
+              color: textColor,
+            });
+            
+            // 주소
+            page.drawText(headerInfo.address || "-", {
+              x: x + col1Width + 5,
+              y: textY,
+              size: textSize,
+              font,
+              color: textColor,
+            });
+            
+            // 카테고리
+            page.drawText(headerInfo.category, {
+              x: x + col1Width + col2Width + 5,
+              y: textY,
+              size: textSize,
+              font,
+              color: textColor,
+            });
+          };
 
           // Helper function to flush pending images with category-based layout
           const flushPendingImages = async () => {
@@ -8800,21 +8873,15 @@ FLOXN`;
                       ? A4_HEIGHT - MARGIN - slotHeight
                       : A4_HEIGHT - MARGIN - slotHeight - GAP - slotHeight;
 
-                  // 개별 헤더 그리기 (각 이미지 위)
-                  page.drawRectangle({
-                    x: MARGIN,
-                    y: slotY + imgHeight + GAP,
-                    width: imgWidth,
-                    height: INDIVIDUAL_HEADER_HEIGHT,
-                    color: rgb(0.2, 0.2, 0.2),
-                  });
-                  page.drawText(img.headerText, {
-                    x: MARGIN + 10,
-                    y: slotY + imgHeight + GAP + 7,
-                    size: 9,
-                    font,
-                    color: rgb(1, 1, 1),
-                  });
+                  // 개별 헤더 그리기 (각 이미지 위) - 테이블 형태 (현장출동보고서 스타일)
+                  drawTableHeader(
+                    page,
+                    MARGIN,
+                    slotY + imgHeight + GAP,
+                    imgWidth,
+                    INDIVIDUAL_HEADER_HEIGHT,
+                    img.headerInfo,
+                  );
 
                   try {
                     const embeddedImage = await mergedPdf.embedJpg(img.buffer);
@@ -8846,21 +8913,15 @@ FLOXN`;
                 // 1장/페이지 레이아웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
 
-                // 헤더 그리기
-                page.drawRectangle({
-                  x: MARGIN,
-                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
-                  width: imgWidth,
-                  height: PAGE_HEADER_HEIGHT,
-                  color: rgb(0.2, 0.2, 0.2),
-                });
-                page.drawText(currentImg.headerText, {
-                  x: MARGIN + 10,
-                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
-                  size: 9,
-                  font,
-                  color: rgb(1, 1, 1),
-                });
+                // 헤더 그리기 - 테이블 형태 (현장출동보고서 스타일)
+                drawTableHeader(
+                  page,
+                  MARGIN,
+                  A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                  imgWidth,
+                  PAGE_HEADER_HEIGHT,
+                  currentImg.headerInfo,
+                );
 
                 // 전체 페이지 이미지 영역
                 const imgHeight =
@@ -8907,11 +8968,19 @@ FLOXN`;
             const mimeType = doc.fileType || "";
             const fileName = doc.fileName || "";
 
-            // Get header text for this document (보험사사고번호 + 해당 케이스의 주소)
+            // Get header info for this document (보험사사고번호 + 해당 케이스의 주소 + 카테고리)
             const accidentNo = caseData.insuranceAccidentNo || "";
             // Use the address from the case this document belongs to
             const fullAddress = caseAddressMap[doc.caseId] || "";
-            const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || "기타"}`;
+            const docCategory = doc.category || "기타";
+            const headerText = `[${accidentNo}] ${fullAddress} - ${docCategory}`;
+            
+            // 테이블 형태 헤더 정보 (현장출동보고서 스타일)
+            const headerInfo = {
+              accidentNo: `사고번호 ${accidentNo}`,
+              address: fullAddress,
+              category: docCategory,
+            };
 
             if (isPdfFile(mimeType, fileName)) {
               // First, flush any pending images before adding PDF
@@ -8952,24 +9021,15 @@ FLOXN`;
                     height: totalHeaderSpace,
                     color: rgb(1, 1, 1),
                   });
-                  // 헤더 박스
-                  newPage.drawRectangle({
-                    x: MARGIN,
-                    y: height + PDF_HEADER_GAP,
-                    width: width - MARGIN * 2,
-                    height: HEADER_HEIGHT,
-                    color: rgb(0.95, 0.95, 0.95),
-                    borderColor: rgb(0.8, 0.8, 0.8),
-                    borderWidth: 0.5,
-                  });
-                  // 헤더 텍스트
-                  newPage.drawText(headerText, {
-                    x: MARGIN + 8,
-                    y: height + PDF_HEADER_GAP + 6,
-                    size: 9,
-                    font,
-                    color: rgb(0.2, 0.2, 0.2),
-                  });
+                  // 헤더 - 테이블 형태 (현장출동보고서 스타일)
+                  drawTableHeader(
+                    newPage,
+                    MARGIN,
+                    height + PDF_HEADER_GAP,
+                    width - MARGIN * 2,
+                    HEADER_HEIGHT,
+                    headerInfo,
+                  );
                 }
                 console.log(
                   `[Invoice PDF] Added PDF: ${doc.fileName} (${pageCount} pages) - ${doc.category}`,
@@ -8996,7 +9056,7 @@ FLOXN`;
                   .jpeg({ quality: 60, mozjpeg: true })
                   .toBuffer();
 
-                pendingImages.push({ doc, buffer: imageBuffer, headerText });
+                pendingImages.push({ doc, buffer: imageBuffer, headerText, headerInfo });
                 console.log(
                   `[Invoice PDF] Queued image: ${doc.fileName} - ${doc.category}`,
                 );
@@ -9587,7 +9647,80 @@ FLOXN`;
             doc: any;
             buffer: Buffer;
             headerText: string;
+            headerInfo: { accidentNo: string; address: string; category: string };
           }[] = [];
+          
+          // 테이블 형태 헤더 그리기 헬퍼 함수 (현장출동보고서 스타일)
+          const drawTableHeader = (
+            page: any,
+            x: number,
+            y: number,
+            width: number,
+            height: number,
+            headerInfo: { accidentNo: string; address: string; category: string },
+          ) => {
+            // 열 너비 비율 (사고번호: 30%, 주소: 45%, 카테고리: 25%)
+            const col1Width = width * 0.30;
+            const col2Width = width * 0.45;
+            const col3Width = width * 0.25;
+            
+            // 배경 (연한 민트/하늘색)
+            page.drawRectangle({
+              x: x,
+              y: y,
+              width: width,
+              height: height,
+              color: rgb(0.94, 0.97, 1),
+              borderColor: rgb(0.7, 0.8, 0.9),
+              borderWidth: 0.5,
+            });
+            
+            // 열 구분선
+            page.drawLine({
+              start: { x: x + col1Width, y: y },
+              end: { x: x + col1Width, y: y + height },
+              color: rgb(0.7, 0.8, 0.9),
+              thickness: 0.5,
+            });
+            page.drawLine({
+              start: { x: x + col1Width + col2Width, y: y },
+              end: { x: x + col1Width + col2Width, y: y + height },
+              color: rgb(0.7, 0.8, 0.9),
+              thickness: 0.5,
+            });
+            
+            // 텍스트 (어두운 색상)
+            const textY = y + (height - 9) / 2;
+            const textColor = rgb(0.2, 0.2, 0.2);
+            const textSize = 8;
+            
+            // 사고번호
+            page.drawText(headerInfo.accidentNo, {
+              x: x + 5,
+              y: textY,
+              size: textSize,
+              font,
+              color: textColor,
+            });
+            
+            // 주소
+            page.drawText(headerInfo.address || "-", {
+              x: x + col1Width + 5,
+              y: textY,
+              size: textSize,
+              font,
+              color: textColor,
+            });
+            
+            // 카테고리
+            page.drawText(headerInfo.category, {
+              x: x + col1Width + col2Width + 5,
+              y: textY,
+              size: textSize,
+              font,
+              color: textColor,
+            });
+          };
 
           // Helper function to flush pending images with category-based layout
           const flushPendingImages = async () => {
@@ -9629,21 +9762,15 @@ FLOXN`;
                       ? A4_HEIGHT - MARGIN - slotHeight
                       : A4_HEIGHT - MARGIN - slotHeight - GAP - slotHeight;
 
-                  // 개별 헤더 그리기 (각 이미지 위)
-                  page.drawRectangle({
-                    x: MARGIN,
-                    y: slotY + imgHeight + GAP,
-                    width: imgWidth,
-                    height: INDIVIDUAL_HEADER_HEIGHT,
-                    color: rgb(0.2, 0.2, 0.2),
-                  });
-                  page.drawText(img.headerText, {
-                    x: MARGIN + 10,
-                    y: slotY + imgHeight + GAP + 7,
-                    size: 9,
-                    font,
-                    color: rgb(1, 1, 1),
-                  });
+                  // 개별 헤더 그리기 (각 이미지 위) - 테이블 형태 (현장출동보고서 스타일)
+                  drawTableHeader(
+                    page,
+                    MARGIN,
+                    slotY + imgHeight + GAP,
+                    imgWidth,
+                    INDIVIDUAL_HEADER_HEIGHT,
+                    img.headerInfo,
+                  );
 
                   try {
                     const embeddedImage = await mergedPdf.embedJpg(img.buffer);
@@ -9675,21 +9802,15 @@ FLOXN`;
                 // 1장/페이지 레이아웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
 
-                // 헤더 그리기
-                page.drawRectangle({
-                  x: MARGIN,
-                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
-                  width: imgWidth,
-                  height: PAGE_HEADER_HEIGHT,
-                  color: rgb(0.2, 0.2, 0.2),
-                });
-                page.drawText(currentImg.headerText, {
-                  x: MARGIN + 10,
-                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
-                  size: 9,
-                  font,
-                  color: rgb(1, 1, 1),
-                });
+                // 헤더 그리기 - 테이블 형태 (현장출동보고서 스타일)
+                drawTableHeader(
+                  page,
+                  MARGIN,
+                  A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                  imgWidth,
+                  PAGE_HEADER_HEIGHT,
+                  currentImg.headerInfo,
+                );
 
                 // 전체 페이지 이미지 영역
                 const imgHeight =
@@ -9736,11 +9857,19 @@ FLOXN`;
             const mimeType = doc.fileType || "";
             const fileName = doc.fileName || "";
 
-            // Get header text for this document (보험사사고번호 + 해당 케이스의 주소)
+            // Get header info for this document (보험사사고번호 + 해당 케이스의 주소 + 카테고리)
             const accidentNo = caseData.insuranceAccidentNo || "";
             // Use the address from the case this document belongs to
             const fullAddress = caseAddressMap[doc.caseId] || "";
-            const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || "기타"}`;
+            const docCategory = doc.category || "기타";
+            const headerText = `[${accidentNo}] ${fullAddress} - ${docCategory}`;
+            
+            // 테이블 형태 헤더 정보 (현장출동보고서 스타일)
+            const headerInfo = {
+              accidentNo: `사고번호 ${accidentNo}`,
+              address: fullAddress,
+              category: docCategory,
+            };
 
             if (isPdfFile(mimeType, fileName)) {
               // First, flush any pending images before adding PDF
@@ -9780,24 +9909,15 @@ FLOXN`;
                     height: totalHeaderSpace,
                     color: rgb(1, 1, 1),
                   });
-                  // 헤더 박스
-                  newPage.drawRectangle({
-                    x: MARGIN,
-                    y: height + PDF_HEADER_GAP,
-                    width: width - MARGIN * 2,
-                    height: HEADER_HEIGHT,
-                    color: rgb(0.95, 0.95, 0.95),
-                    borderColor: rgb(0.8, 0.8, 0.8),
-                    borderWidth: 0.5,
-                  });
-                  // 헤더 텍스트
-                  newPage.drawText(headerText, {
-                    x: MARGIN + 8,
-                    y: height + PDF_HEADER_GAP + 6,
-                    size: 9,
-                    font,
-                    color: rgb(0.2, 0.2, 0.2),
-                  });
+                  // 헤더 - 테이블 형태 (현장출동보고서 스타일)
+                  drawTableHeader(
+                    newPage,
+                    MARGIN,
+                    height + PDF_HEADER_GAP,
+                    width - MARGIN * 2,
+                    HEADER_HEIGHT,
+                    headerInfo,
+                  );
                 }
                 console.log(
                   `[Invoice Email] Added PDF: ${doc.fileName} (${pageCount} pages) - ${doc.category}`,
@@ -9825,7 +9945,7 @@ FLOXN`;
                   .jpeg({ quality: 60, mozjpeg: true })
                   .toBuffer();
 
-                pendingImages.push({ doc, buffer: imageBuffer, headerText });
+                pendingImages.push({ doc, buffer: imageBuffer, headerText, headerInfo });
                 console.log(
                   `[Invoice Email] Queued image: ${doc.fileName} - ${doc.category}`,
                 );
