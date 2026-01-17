@@ -3219,13 +3219,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Approve report endpoint (관리자 only - 2차 승인)
   app.patch("/api/cases/:caseId/approve-report", async (req, res) => {
+    console.log("[APPROVE-REPORT] Request received:", {
+      caseId: req.params.caseId,
+      body: req.body,
+      userId: req.session?.userId,
+      userRole: req.session?.userRole,
+    });
+
     // Check authentication
     if (!req.session?.userId) {
+      console.log("[APPROVE-REPORT] Auth failed - no userId");
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     // Check authorization (관리자만 가능)
     if (req.session.userRole !== "관리자") {
+      console.log("[APPROVE-REPORT] Auth failed - not 관리자, role:", req.session.userRole);
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
     }
 
@@ -3235,6 +3244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate approval data with Zod
       const parsed = approveReportSchema.safeParse(req.body);
       if (!parsed.success) {
+        console.log("[APPROVE-REPORT] Validation failed:", parsed.error.errors);
         return res.status(400).json({
           error: "입력 데이터가 유효하지 않습니다",
           details: parsed.error.errors,
@@ -3242,21 +3252,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { decision, approvalComment } = parsed.data;
+      console.log("[APPROVE-REPORT] Parsed data:", { decision, approvalComment });
 
       // 케이스 확인
       const existingCase = await storage.getCaseById(caseId);
       if (!existingCase) {
+        console.log("[APPROVE-REPORT] Case not found:", caseId);
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
+      console.log("[APPROVE-REPORT] Existing case status:", existingCase.status);
+
       // 현장정보제출 상태만 보고서 승인 가능 (이메일 전송 후 상태)
       if (existingCase.status !== "현장정보제출") {
+        console.log("[APPROVE-REPORT] Status check failed - current status:", existingCase.status);
         return res.status(400).json({
           error: "현장정보제출 상태인 보고서만 승인할 수 있습니다",
         });
       }
 
       // 보고서 승인 처리
+      console.log("[APPROVE-REPORT] Calling storage.approveReport...");
       const updatedCase = await storage.approveReport(
         caseId,
         decision,
@@ -3265,9 +3281,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       if (!updatedCase) {
+        console.log("[APPROVE-REPORT] approveReport returned null");
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
+      console.log("[APPROVE-REPORT] Success - new status:", updatedCase.status);
       res.json({ success: true, case: updatedCase });
     } catch (error) {
       console.error("Approve report error:", error);
