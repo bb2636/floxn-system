@@ -12123,9 +12123,14 @@ https://peulrogseun-aqaqaq4561.replit.app
         return res.status(400).json({ error: "사고번호가 없습니다" });
       }
 
-      // 1. 해당 케이스 1건만 청구자료제출 상태로 변경
+      // 1. 해당 케이스 1건만 청구자료제출 상태로 변경 + 복구완료일 설정
+      // KST 오늘 날짜
+      const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+      const recoveryCompletedDateStr = kstNow.toISOString().split("T")[0];
+      
       const updatedCase = await storage.updateCase(caseId, {
         status: "청구자료제출(복구)",
+        recoveryCompletedDate: recoveryCompletedDateStr, // 복구완료일 설정
       });
 
       if (!updatedCase) {
