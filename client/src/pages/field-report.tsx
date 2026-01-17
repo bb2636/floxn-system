@@ -4548,7 +4548,7 @@ export default function FieldReport() {
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.detailItem || "-"}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.damageArea || 0).toLocaleString()}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.standardPrice || 0).toLocaleString()}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${(row.quantity > 0 ? row.quantity : row.standardPrice > 0 ? (row.amount || 0) / row.standardPrice : 0).toFixed(2)}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${(row.standardPrice > 0 ? (row.amount || 0) / row.standardPrice : 0).toFixed(2)}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.amount || 0).toLocaleString()}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.includeInEstimate ? "부" : "여"}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.request || "-"}</td>
@@ -5255,11 +5255,9 @@ export default function FieldReport() {
                                       textAlign: "center",
                                     }}
                                   >
-                                    {(row.quantity > 0
-                                      ? row.quantity
-                                      : row.standardPrice > 0
-                                        ? (row.amount || 0) / row.standardPrice
-                                        : 0
+                                    {(row.standardPrice > 0
+                                      ? (row.amount || 0) / row.standardPrice
+                                      : 0
                                     ).toFixed(2)}
                                   </td>
                                   <td
