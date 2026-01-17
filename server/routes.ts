@@ -8510,20 +8510,30 @@ FLOXN`;
         // Get documents from main case AND all related cases
         const mainDocs = await storage.getDocumentsByCaseId(caseId);
 
+        // 케이스 타입에 따라 주소 선택 (-0은 insured, -1+는 victim)
+        const getAddressForCase = (caseItem: any): string => {
+          const caseNum = caseItem.caseNumber || "";
+          const suffix = caseNum.split("-").pop() || "";
+          
+          if (suffix === "0") {
+            // 손해방지비용 케이스: insuredAddressDetail만 사용
+            const address = caseItem.insuredAddress || "";
+            const detail = caseItem.insuredAddressDetail || "";
+            return detail ? `${address} ${detail}` : address;
+          } else {
+            // 피해세대 케이스: victimAddressDetail만 사용
+            const address = caseItem.victimAddress || "";
+            const detail = caseItem.victimAddressDetail || "";
+            return detail ? `${address} ${detail}` : address;
+          }
+        };
+
         // Build caseId -> caseNumber and caseId -> address mappings
         const caseNumberMap: Record<string, string> = {
           [caseId]: caseData.caseNumber || "",
         };
         const caseAddressMap: Record<string, string> = {
-          [caseId]: (() => {
-            const address =
-              caseData.victimAddress || caseData.insuredAddress || "";
-            const addressDetail =
-              caseData.victimAddressDetail ||
-              caseData.insuredAddressDetail ||
-              "";
-            return addressDetail ? `${address} ${addressDetail}` : address;
-          })(),
+          [caseId]: getAddressForCase(caseData),
         };
 
         // Get related cases (same insuranceAccidentNo)
@@ -8537,16 +8547,8 @@ FLOXN`;
           // Fetch documents from all related cases and build mapping
           for (const relatedCase of relatedCases) {
             caseNumberMap[relatedCase.id] = relatedCase.caseNumber || "";
-            // Build address for related case
-            const rcAddress =
-              relatedCase.victimAddress || relatedCase.insuredAddress || "";
-            const rcAddressDetail =
-              relatedCase.victimAddressDetail ||
-              relatedCase.insuredAddressDetail ||
-              "";
-            caseAddressMap[relatedCase.id] = rcAddressDetail
-              ? `${rcAddress} ${rcAddressDetail}`
-              : rcAddress;
+            // Build address for related case (케이스 타입에 따라 주소 선택)
+            caseAddressMap[relatedCase.id] = getAddressForCase(relatedCase);
 
             const relatedDocs = await storage.getDocumentsByCaseId(
               relatedCase.id,
@@ -9420,20 +9422,30 @@ FLOXN`;
         // Get documents from main case AND all related cases
         const mainDocs = await storage.getDocumentsByCaseId(caseId);
 
+        // 케이스 타입에 따라 주소 선택 (-0은 insured, -1+는 victim)
+        const getAddressForCase = (caseItem: any): string => {
+          const caseNum = caseItem.caseNumber || "";
+          const suffix = caseNum.split("-").pop() || "";
+          
+          if (suffix === "0") {
+            // 손해방지비용 케이스: insuredAddressDetail만 사용
+            const address = caseItem.insuredAddress || "";
+            const detail = caseItem.insuredAddressDetail || "";
+            return detail ? `${address} ${detail}` : address;
+          } else {
+            // 피해세대 케이스: victimAddressDetail만 사용
+            const address = caseItem.victimAddress || "";
+            const detail = caseItem.victimAddressDetail || "";
+            return detail ? `${address} ${detail}` : address;
+          }
+        };
+
         // Build caseId -> caseNumber and caseId -> address mappings
         const caseNumberMap: Record<string, string> = {
           [caseId]: caseData.caseNumber || "",
         };
         const caseAddressMap: Record<string, string> = {
-          [caseId]: (() => {
-            const address =
-              caseData.victimAddress || caseData.insuredAddress || "";
-            const addressDetail =
-              caseData.victimAddressDetail ||
-              caseData.insuredAddressDetail ||
-              "";
-            return addressDetail ? `${address} ${addressDetail}` : address;
-          })(),
+          [caseId]: getAddressForCase(caseData),
         };
 
         // Get related cases (same insuranceAccidentNo)
@@ -9447,16 +9459,8 @@ FLOXN`;
           // Fetch documents from all related cases and build mapping
           for (const relatedCase of relatedCases) {
             caseNumberMap[relatedCase.id] = relatedCase.caseNumber || "";
-            // Build address for related case
-            const rcAddress =
-              relatedCase.victimAddress || relatedCase.insuredAddress || "";
-            const rcAddressDetail =
-              relatedCase.victimAddressDetail ||
-              relatedCase.insuredAddressDetail ||
-              "";
-            caseAddressMap[relatedCase.id] = rcAddressDetail
-              ? `${rcAddress} ${rcAddressDetail}`
-              : rcAddress;
+            // Build address for related case (케이스 타입에 따라 주소 선택)
+            caseAddressMap[relatedCase.id] = getAddressForCase(relatedCase);
 
             const relatedDocs = await storage.getDocumentsByCaseId(
               relatedCase.id,
