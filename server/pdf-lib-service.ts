@@ -2522,8 +2522,9 @@ async function renderEstimatePage(
         Number(row.pricePerSqm) ||
         Number(row.unitPrice) ||
         0;
-      const quantity = Number(row.quantity) || 1;
       const amount = Number(row.amount) || 0;
+      // 수량 = 합계 / 적용단가 (견적서 작성 페이지와 동일한 계산 방식)
+      const quantity = unitPrice > 0 ? amount / unitPrice : 0;
       // includeInEstimate=false → 경비 항목 (화면에 표시)
       const expense = !row.includeInEstimate ? amount : 0;
       laborTotal += amount;
@@ -2554,7 +2555,7 @@ async function renderEstimatePage(
           width: 65,
           align: "right",
         },
-        { text: String(quantity), width: 45, align: "center" },
+        { text: quantity > 0 ? quantity.toFixed(2) : "-", width: 45, align: "center" },
         { text: formatNumber(amount), width: 70, align: "right" },
         {
           text: expense > 0 ? formatNumber(expense) : "-",
