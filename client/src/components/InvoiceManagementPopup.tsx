@@ -163,6 +163,9 @@ export function InvoiceManagementPopup({
   const [depositDate, setDepositDate] = useState<Date | undefined>(undefined);
   const [totalApprovedAmountInput, setTotalApprovedAmountInput] =
     useState<string>("0");
+  // 총승인금액 수동 오버라이드 (청구변경 시 사용, 다른 값들에 영향 없이 총승인금액만 변경)
+  const [totalApprovedAmountOverride, setTotalApprovedAmountOverride] =
+    useState<string | null>(null);
   const [showApprovalConfirm, setShowApprovalConfirm] = useState(false);
   const [depositEntries, setDepositEntries] = useState<DepositEntry[]>([]);
   const [showDepositForm, setShowDepositForm] = useState(false);
@@ -199,7 +202,13 @@ export function InvoiceManagementPopup({
   };
 
   // 총 승인금액 (선견적요청: 현장출동비용, 직접복구: 손해방지비용 + 대물복구비용 승인금액)
+  // 수동 오버라이드가 있으면 그 값 사용 (청구변경 시)
   const totalApprovedAmount = useMemo(() => {
+    // 수동 오버라이드가 있으면 그 값을 사용
+    if (totalApprovedAmountOverride !== null) {
+      return parseInt(totalApprovedAmountOverride || "0") || 0;
+    }
+    
     if (caseData?.recoveryType === "선견적요청") {
       // 선견적요청 케이스는 현장출동비용(100,000원) 또는 저장된 값 사용
       return (
@@ -217,6 +226,7 @@ export function InvoiceManagementPopup({
     caseData?.fieldDispatchInvoiceAmount,
     preventionApprovedAmount,
     propertyApprovedAmount,
+    totalApprovedAmountOverride,
   ]);
 
   // 수수료 - 정산조회에서 전달받은 값 사용, 없으면 7.7% 계산
@@ -1614,9 +1624,8 @@ export function InvoiceManagementPopup({
                           const value = e.target.value
                             .replace(/,/g, "")
                             .replace(/[^0-9]/g, "");
-                          // 총 승인금액 변경 시 손해방지비용 승인금액으로 설정 (대물복구비용은 0으로)
-                          setPreventionApprovedAmount(value || "0");
-                          setPropertyApprovedAmount("0");
+                          // 총 승인금액만 변경 (손해방지비용/대물비용 등 다른 값들은 변경하지 않음)
+                          setTotalApprovedAmountOverride(value || "0");
                         }}
                         data-testid="input-total-approved-amount"
                         style={{
