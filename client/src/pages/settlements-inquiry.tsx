@@ -105,6 +105,28 @@ export default function SettlementsInquiry() {
     queryKey: ["/api/settlements"],
   });
 
+  // Fetch all invoices (for totalApprovedAmount override)
+  interface Invoice {
+    id: string;
+    caseGroupPrefix: string | null;
+    totalApprovedAmount: string | null;
+    deductible: string | null;
+  }
+  const { data: allInvoices = [], isLoading: invoicesLoading } = useQuery<Invoice[]>({
+    queryKey: ["/api/invoices"],
+  });
+
+  // Create a map for quick invoice lookup by caseGroupPrefix
+  const invoicesByPrefixMap = useMemo(() => {
+    const map = new Map<string, Invoice>();
+    allInvoices.forEach(inv => {
+      if (inv.caseGroupPrefix) {
+        map.set(inv.caseGroupPrefix, inv);
+      }
+    });
+    return map;
+  }, [allInvoices]);
+
   // Create a map for quick settlement lookup by caseId (get the latest)
   const settlementsByCaseIdMap = useMemo(() => {
     const map = new Map<string, Settlement>();
@@ -471,12 +493,31 @@ export default function SettlementsInquiry() {
       const totalSettlementDeductible = casesInGroup.reduce((sum, c) => sum + c.settlementDeductible, 0);
 
       // Total claim amount = 총 승인금액 - 자기부담금
-      // 직접복구: (손해방지 승인금액 + 대물복구 승인금액) - 자기부담금
-      // 선견적요청: 사용료(100,000) - 자기부담금
-      const totalApprovedAmount = hasDirectRepair 
+      // 인보이스에 저장된 totalApprovedAmount가 있으면 그것을 사용 (인보이스 관리에서 수정한 값)
+      const invoice = invoicesByPrefixMap.get(prefix);
+      const invoiceTotalApproved = invoice?.totalApprovedAmount 
+        ? parseInt(invoice.totalApprovedAmount) 
+        : 0;
+      const invoiceDeductible = invoice?.deductible 
+        ? parseInt(invoice.deductible) 
+        : 0;
+      
+      // 계산된 총 승인금액 (기본값)
+      const calculatedTotalApproved = hasDirectRepair 
         ? (preventionApprovedAmount + propertyApprovedAmount)
         : (allNoRepair ? 100000 : 0);
-      const claimAmount = totalApprovedAmount - totalSettlementDeductible;
+      
+      // 인보이스에 저장된 값이 있으면 그것을 사용, 없으면 계산값 사용
+      const totalApprovedAmount = invoiceTotalApproved > 0 
+        ? invoiceTotalApproved 
+        : calculatedTotalApproved;
+      
+      // 자기부담금: 인보이스에 저장된 값이 있으면 우선 사용
+      const finalDeductible = invoiceDeductible > 0 
+        ? invoiceDeductible 
+        : totalSettlementDeductible;
+      
+      const claimAmount = totalApprovedAmount - finalDeductible;
 
       // 협력업체 지급 정보 합산
       const totalPartnerPaymentAmount = casesInGroup.reduce((sum, c) => sum + c.partnerPaymentAmount, 0);
@@ -526,9 +567,9 @@ export default function SettlementsInquiry() {
     });
 
     return combinedRows;
-  }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap, usersByCompanyMap, settlementsByCaseIdMap]);
+  }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap, usersByCompanyMap, settlementsByCaseIdMap, invoicesByPrefixMap]);
 
-  const isLoading = casesLoading || estimatesLoading || usersLoading || settlementsLoading;
+  const isLoading = casesLoading || estimatesLoading || usersLoading || settlementsLoading || invoicesLoading;
 
   // 필터링 (검색어 + 정산여부 + 보험사 + 심사사 + 담당자)
   const filteredRows = useMemo(() => {
