@@ -307,10 +307,10 @@ export default function Dashboard() {
     
     return filteredCases
       .sort((a, b) => {
-        // 접수번호 오름차순 정렬 (오래된 것이 위, 최신이 아래)
+        // 접수번호 내림차순 정렬 (최신 날짜가 위로)
         const receiptA = a.receiptNo || '';
         const receiptB = b.receiptNo || '';
-        return receiptA.localeCompare(receiptB);
+        return receiptB.localeCompare(receiptA);
       });
   }, [allCases, user]);
 
