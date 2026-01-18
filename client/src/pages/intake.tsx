@@ -1102,6 +1102,16 @@ export default function Intake({
       if (!initialCaseId) throw new Error("케이스 ID가 필요합니다");
       const cleanedData = cleanFormData(data);
       cleanedData.sameAsPolicyHolder = sameAsPolicyHolder ? "true" : "false";
+      
+      // 협력사 변경 여부를 명시적으로 전달
+      const isPartnerChanged = initialPartnerInfo && 
+        data.assignedPartner && 
+        data.assignedPartner !== initialPartnerInfo.assignedPartner;
+      if (isPartnerChanged) {
+        cleanedData.partnerChanged = true;
+        console.log(`[intake] Partner changed from "${initialPartnerInfo?.assignedPartner}" to "${data.assignedPartner}"`);
+      }
+      
       return await apiRequest(
         "PATCH",
         `/api/cases/${initialCaseId}`,

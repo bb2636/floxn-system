@@ -2091,14 +2091,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 협력사 배정 시 담당자 정보 자동 채우기
       // assignedPartner가 변경된 경우 새 협력업체의 담당자/연락처로 업데이트
-      const isPartnerChanged = updateData.assignedPartner && 
+      // 클라이언트에서 partnerChanged 플래그도 확인
+      const isPartnerChangedByValue = updateData.assignedPartner && 
         updateData.assignedPartner !== existingCase.assignedPartner;
+      const isPartnerChangedByFlag = updateData.partnerChanged === true || updateData.partnerChanged === "true";
+      const isPartnerChanged = isPartnerChangedByValue || isPartnerChangedByFlag;
       
-      console.log(`[Partner Check] Case: ${existingCase.caseNumber}, isPartnerChanged: ${isPartnerChanged}, existingPartner: "${existingCase.assignedPartner}", newPartner: "${updateData.assignedPartner}", progressStatus: "${existingCase.progressStatus}"`);
+      console.log(`[Partner Check] Case: ${existingCase.caseNumber}, isPartnerChangedByValue: ${isPartnerChangedByValue}, isPartnerChangedByFlag: ${isPartnerChangedByFlag}, isPartnerChanged: ${isPartnerChanged}, existingPartner: "${existingCase.assignedPartner}", newPartner: "${updateData.assignedPartner}", progressStatus: "${existingCase.progressStatus}"`);
       
       // 협력사가 변경되었고 기존 진행상태가 "접수완료"가 아니면 진행상태 및 관련 데이터 초기화
       // progressStatus가 null/undefined인 경우는 초기화하지 않음 (아직 진행된 단계가 없음)
       const hasProgress = existingCase.progressStatus && existingCase.progressStatus !== "접수완료";
+      
+      console.log(`[Partner Check] hasProgress: ${hasProgress}, progressStatus type: ${typeof existingCase.progressStatus}, value: "${existingCase.progressStatus}"`);
       
       if (isPartnerChanged && hasProgress) {
         console.log(
@@ -2116,6 +2121,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `[Partner Changed] Partner changed but no reset needed - progressStatus: "${existingCase.progressStatus}" for case: ${existingCase.caseNumber}`,
         );
       }
+      
+      // partnerChanged 플래그는 DB에 저장하지 않음
+      delete updateData.partnerChanged;
       
       if (updateData.assignedPartner && (!updateData.assignedPartnerManager || isPartnerChanged)) {
         const partnerCompanyName = updateData.assignedPartner;
