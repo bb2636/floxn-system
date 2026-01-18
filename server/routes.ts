@@ -8837,14 +8837,14 @@ FLOXN`;
             const col2Width = width * 0.45;
             const col3Width = width * 0.25;
             
-            // 배경 (연한 민트/하늘색)
+            // 배경 (진한 회색 - 현장출동보고서 스타일)
             page.drawRectangle({
               x: x,
               y: y,
               width: width,
               height: height,
-              color: rgb(0.94, 0.97, 1),
-              borderColor: rgb(0.7, 0.8, 0.9),
+              color: rgb(0.2, 0.2, 0.2),
+              borderColor: rgb(0.3, 0.3, 0.3),
               borderWidth: 0.5,
             });
             
@@ -8852,19 +8852,19 @@ FLOXN`;
             page.drawLine({
               start: { x: x + col1Width, y: y },
               end: { x: x + col1Width, y: y + height },
-              color: rgb(0.7, 0.8, 0.9),
+              color: rgb(0.4, 0.4, 0.4),
               thickness: 0.5,
             });
             page.drawLine({
               start: { x: x + col1Width + col2Width, y: y },
               end: { x: x + col1Width + col2Width, y: y + height },
-              color: rgb(0.7, 0.8, 0.9),
+              color: rgb(0.4, 0.4, 0.4),
               thickness: 0.5,
             });
             
-            // 텍스트 (어두운 색상)
+            // 텍스트 (흰색 - 어두운 배경에 맞춤)
             const textY = y + (height - 9) / 2;
-            const textColor = rgb(0.2, 0.2, 0.2);
+            const textColor = rgb(1, 1, 1);
             const textSize = 8;
             
             // 사고번호
@@ -9728,14 +9728,14 @@ FLOXN`;
             const col2Width = width * 0.45;
             const col3Width = width * 0.25;
             
-            // 배경 (연한 민트/하늘색)
+            // 배경 (진한 회색 - 현장출동보고서 스타일)
             page.drawRectangle({
               x: x,
               y: y,
               width: width,
               height: height,
-              color: rgb(0.94, 0.97, 1),
-              borderColor: rgb(0.7, 0.8, 0.9),
+              color: rgb(0.2, 0.2, 0.2),
+              borderColor: rgb(0.3, 0.3, 0.3),
               borderWidth: 0.5,
             });
             
@@ -9743,19 +9743,19 @@ FLOXN`;
             page.drawLine({
               start: { x: x + col1Width, y: y },
               end: { x: x + col1Width, y: y + height },
-              color: rgb(0.7, 0.8, 0.9),
+              color: rgb(0.4, 0.4, 0.4),
               thickness: 0.5,
             });
             page.drawLine({
               start: { x: x + col1Width + col2Width, y: y },
               end: { x: x + col1Width + col2Width, y: y + height },
-              color: rgb(0.7, 0.8, 0.9),
+              color: rgb(0.4, 0.4, 0.4),
               thickness: 0.5,
             });
             
-            // 텍스트 (어두운 색상)
+            // 텍스트 (흰색 - 어두운 배경에 맞춤)
             const textY = y + (height - 9) / 2;
-            const textColor = rgb(0.2, 0.2, 0.2);
+            const textColor = rgb(1, 1, 1);
             const textSize = 8;
             
             // 사고번호
