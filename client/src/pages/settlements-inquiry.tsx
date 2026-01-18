@@ -464,7 +464,9 @@ export default function SettlementsInquiry() {
       const directRepairPreventionCases = preventionCases.filter(c => c.recoveryType === "직접복구");
       const preventionEstimateAmount = directRepairPreventionCases.reduce((sum, c) => sum + c.estimateTotal, 0);
       const preventionApprovedAmount = directRepairPreventionCases.reduce((sum, c) => sum + c.approvedValue, 0);
-      const preventionDifference = preventionApprovedAmount - preventionEstimateAmount;
+      // 차액: 견적금액 - 승인금액 (승인금액이 더 클 경우 음수 표기)
+      const preventionDifference = preventionEstimateAmount - preventionApprovedAmount;
+      // 수정률: (견적 - 승인) ÷ 견적
       const preventionAdjustmentRate = preventionEstimateAmount > 0 
         ? ((preventionDifference / preventionEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
@@ -475,7 +477,9 @@ export default function SettlementsInquiry() {
       const directRepairPropertyCases = propertyCases.filter(c => c.recoveryType === "직접복구");
       const propertyEstimateAmount = directRepairPropertyCases.reduce((sum, c) => sum + c.estimateTotal, 0);
       const propertyApprovedAmount = directRepairPropertyCases.reduce((sum, c) => sum + c.approvedValue, 0);
-      const propertyDifference = propertyApprovedAmount - propertyEstimateAmount;
+      // 차액: 견적금액 - 승인금액 (승인금액이 더 클 경우 음수 표기)
+      const propertyDifference = propertyEstimateAmount - propertyApprovedAmount;
+      // 수정률: (견적 - 승인) ÷ 견적
       const propertyAdjustmentRate = propertyEstimateAmount > 0
         ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
