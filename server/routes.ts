@@ -2094,11 +2094,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isPartnerChanged = updateData.assignedPartner && 
         updateData.assignedPartner !== existingCase.assignedPartner;
       
-      // 협력사가 변경되었고 기존 진행상태가 "접수완료"가 아니면 진행상태를 초기화
+      // 협력사가 변경되었고 기존 진행상태가 "접수완료"가 아니면 진행상태 및 관련 데이터 초기화
       if (isPartnerChanged && existingCase.progressStatus && existingCase.progressStatus !== "접수완료") {
         updateData.progressStatus = "접수완료";
         console.log(
           `[Partner Changed] Resetting progressStatus from "${existingCase.progressStatus}" to "접수완료" for case: ${existingCase.caseNumber}`,
+        );
+        
+        // 기존 협력사가 진행한 모든 데이터 초기화 (견적서, 증빙자료, 도면 등)
+        await storage.resetCaseFieldSurveyData(id);
+        console.log(
+          `[Partner Changed] All field survey data (documents, drawings, estimates) has been reset for case: ${existingCase.caseNumber}`,
         );
       }
       

@@ -265,6 +265,10 @@ export interface IStorage {
   getDocumentFileData(id: string): Promise<string | null>;
   getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]>;
   deleteDocument(id: string): Promise<void>;
+  deleteDocumentsByCaseId(caseId: string): Promise<number>;
+  deleteDrawingByCaseId(caseId: string): Promise<boolean>;
+  deleteEstimatesByCaseId(caseId: string): Promise<number>;
+  resetCaseFieldSurveyData(caseId: string): Promise<void>;
   updateDocumentCategory(
     id: string,
     category: string,
@@ -5435,6 +5439,99 @@ export class DbStorage implements IStorage {
 
   async deleteDocument(id: string): Promise<void> {
     await db.delete(caseDocuments).where(eq(caseDocuments.id, id));
+  }
+
+  async deleteDocumentsByCaseId(caseId: string): Promise<number> {
+    const deleted = await db
+      .delete(caseDocuments)
+      .where(eq(caseDocuments.caseId, caseId))
+      .returning({ id: caseDocuments.id });
+    return deleted.length;
+  }
+
+  async deleteDrawingByCaseId(caseId: string): Promise<boolean> {
+    const deleted = await db
+      .delete(drawings)
+      .where(eq(drawings.caseId, caseId))
+      .returning({ id: drawings.id });
+    return deleted.length > 0;
+  }
+
+  async deleteEstimatesByCaseId(caseId: string): Promise<number> {
+    // 먼저 해당 케이스의 모든 견적서 ID 가져오기
+    const estimateList = await db
+      .select({ id: estimates.id })
+      .from(estimates)
+      .where(eq(estimates.caseId, caseId));
+    
+    if (estimateList.length === 0) return 0;
+    
+    // 각 견적서에 연결된 견적행 삭제
+    for (const est of estimateList) {
+      await db.delete(estimateRows).where(eq(estimateRows.estimateId, est.id));
+    }
+    
+    // 견적서 삭제
+    const deleted = await db
+      .delete(estimates)
+      .where(eq(estimates.caseId, caseId))
+      .returning({ id: estimates.id });
+    
+    return deleted.length;
+  }
+
+  async resetCaseFieldSurveyData(caseId: string): Promise<void> {
+    console.log(`[resetCaseFieldSurveyData] Starting reset for case: ${caseId}`);
+    
+    // 1. 증빙자료/문서 삭제
+    const docsDeleted = await this.deleteDocumentsByCaseId(caseId);
+    console.log(`[resetCaseFieldSurveyData] Deleted ${docsDeleted} documents`);
+    
+    // 2. 도면 삭제
+    const drawingDeleted = await this.deleteDrawingByCaseId(caseId);
+    console.log(`[resetCaseFieldSurveyData] Drawing deleted: ${drawingDeleted}`);
+    
+    // 3. 견적서 삭제
+    const estimatesDeleted = await this.deleteEstimatesByCaseId(caseId);
+    console.log(`[resetCaseFieldSurveyData] Deleted ${estimatesDeleted} estimates`);
+    
+    // 4. 현장조사 관련 필드 초기화 (케이스 테이블 필드)
+    await db
+      .update(cases)
+      .set({
+        // 현장조사 필드 초기화
+        surveyDate: null,
+        surveyManager: null,
+        buildingName: null,
+        buildingType: null,
+        buildingArea: null,
+        buildingFloor: null,
+        damageLocation: null,
+        damageFloor: null,
+        damageArea: null,
+        damageCause: null,
+        damageDescription: null,
+        repairMethod: null,
+        repairPeriod: null,
+        repairCost: null,
+        surveyNotes: null,
+        // 승인 관련 필드 초기화
+        approvedAmount: null,
+        approvedAt: null,
+        approvedBy: null,
+        // 이메일 전송 관련 초기화
+        emailSentAt: null,
+        emailSentTo: null,
+        // 인보이스 관련 초기화
+        invoiceDamagePreventionAmount: null,
+        invoicePropertyRepairAmount: null,
+        invoiceRemarks: null,
+        fieldDispatchInvoiceAmount: null,
+        fieldDispatchInvoiceRemarks: null,
+      })
+      .where(eq(cases.id, caseId));
+    
+    console.log(`[resetCaseFieldSurveyData] Reset completed for case: ${caseId}`);
   }
 
   async updateDocumentCategory(
