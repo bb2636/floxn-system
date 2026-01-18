@@ -236,21 +236,20 @@ export function InvoiceManagementPopup({
     return baseTotalApprovedAmount;
   }, [baseTotalApprovedAmount, totalApprovedAmountOverride]);
 
-  // 수수료 - 정산조회에서 전달받은 값 사용, 없으면 기본 승인금액 기준 7.7% 계산
-  // (총승인금액 override와 관계없이 원래 금액 기준)
+  // 수수료 - 총승인금액 기준 7.7% 계산 (청구변경 시 수정된 값 반영)
   const feeAmount = useMemo(() => {
-    // 정산조회에서 전달받은 수수료 값이 있으면 그것을 사용
-    if (settlementCommission !== undefined && settlementCommission > 0) {
+    // 정산조회에서 전달받은 수수료 값이 있고 override가 없으면 그것을 사용
+    if (settlementCommission !== undefined && settlementCommission > 0 && totalApprovedAmountOverride === null) {
       return settlementCommission;
     }
-    // 없으면 기본 승인금액 기준 7.7% 계산 (override 적용 안 됨)
-    return Math.round(baseTotalApprovedAmount * 0.077);
-  }, [baseTotalApprovedAmount, settlementCommission]);
+    // 총승인금액 기준 7.7% 계산 (override 적용됨)
+    return Math.round(totalApprovedAmount * 0.077);
+  }, [totalApprovedAmount, settlementCommission, totalApprovedAmountOverride]);
 
-  // 협력업체 지급액 계산 - 기본 승인금액 기준 (총승인금액 override와 관계없음)
+  // 협력업체 지급액 계산 - 총승인금액 기준 (청구변경 시 수정된 값 반영)
   const partnerPaymentAmount = useMemo(() => {
-    return baseTotalApprovedAmount - feeAmount;
-  }, [baseTotalApprovedAmount, feeAmount]);
+    return totalApprovedAmount - feeAmount;
+  }, [totalApprovedAmount, feeAmount]);
 
   // 입금내역 합계 계산
   const depositTotals = useMemo(() => {
