@@ -1054,6 +1054,8 @@ export default function Intake({
                 firstCase.insuredAddressDetail ||
                 submittedData.insuredAddressDetail ||
                 "",
+              victimAddressDetail:
+                submittedData.victimAddressDetail || "",
               requestScope: requestScope,
             };
             try {

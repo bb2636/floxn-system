@@ -11483,6 +11483,7 @@ Front·Line·Ops·Xpert·Net
     investigatorContact: z.string().optional(),
     accidentLocation: z.string().optional(),
     accidentLocationDetail: z.string().optional(),
+    victimAddressDetail: z.string().optional(),
     requestScope: z.string().optional(),
   });
 
@@ -11526,6 +11527,7 @@ Front·Line·Ops·Xpert·Net
         investigatorContact,
         accidentLocation,
         accidentLocationDetail,
+        victimAddressDetail,
         requestScope,
       } = validatedData;
 
@@ -11603,9 +11605,20 @@ Front·Line·Ops·Xpert·Net
         );
       }
 
-      const fullAddress = [accidentLocation, accidentLocationDetail]
+      // 사고장소: 피보험자 주소 + 피보험자 상세주소, 피해자 상세주소(있으면)
+      const insuredFullAddress = [accidentLocation, accidentLocationDetail]
         .filter(Boolean)
         .join(" ");
+      
+      let fullAddress = insuredFullAddress;
+      // 피해자 상세주소가 있고, "-"가 아니면 콤마로 구분하여 추가
+      if (victimAddressDetail && victimAddressDetail !== "-" && victimAddressDetail.trim()) {
+        if (fullAddress) {
+          fullAddress = `${fullAddress}, ${victimAddressDetail}`;
+        } else {
+          fullAddress = victimAddressDetail;
+        }
+      }
       if (fullAddress) messageLines.push(`사고장소 : ${fullAddress}`);
       if (requestScope) messageLines.push(`의뢰범위 : ${requestScope}`);
 
