@@ -307,9 +307,10 @@ export default function Dashboard() {
     
     return filteredCases
       .sort((a, b) => {
-        const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-        const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-        return dateB - dateA;
+        // 접수번호 내림차순 정렬 (최신 접수번호가 위로)
+        const receiptA = a.receiptNo || '';
+        const receiptB = b.receiptNo || '';
+        return receiptB.localeCompare(receiptA);
       });
   }, [allCases, user]);
 
