@@ -342,11 +342,18 @@ export function InvoiceManagementPopup({
           console.log(
             "[Invoice Save] Updating existing invoice, settlementStatus:",
             settlementStatus,
+            "totalApprovedAmount:",
+            totalApprovedAmountOverride !== null ? totalApprovedAmount : null,
           );
-          await apiRequest("PATCH", `/api/invoices/${existingInvoiceData.id}`, {
+          const updateData: Record<string, string> = {
             deductible: deductibleAmount || "0",
             settlementStatus: settlementStatus || "", // 입금구분 저장
-          });
+          };
+          // 총승인금액이 수동 수정된 경우에만 저장
+          if (totalApprovedAmountOverride !== null) {
+            updateData.totalApprovedAmount = totalApprovedAmount.toString();
+          }
+          await apiRequest("PATCH", `/api/invoices/${existingInvoiceData.id}`, updateData);
         } else {
           // 인보이스가 없으면 새로 생성
           console.log(
@@ -356,13 +363,18 @@ export function InvoiceManagementPopup({
           // 인보이스 타입 결정: recoveryType이 "선견적요청"이면 "선견적요청", 그 외는 "직접복구"
           const invoiceType =
             caseData.recoveryType === "선견적요청" ? "선견적요청" : "직접복구";
-          await apiRequest("POST", "/api/invoices", {
+          const createData: Record<string, string> = {
             caseGroupPrefix: caseGroupPrefix,
             caseId: caseData.id,
             type: invoiceType,
             deductible: deductibleAmount || "0",
             settlementStatus: settlementStatus || "", // 입금구분 저장
-          });
+          };
+          // 총승인금액이 수동 수정된 경우에만 저장
+          if (totalApprovedAmountOverride !== null) {
+            createData.totalApprovedAmount = totalApprovedAmount.toString();
+          }
+          await apiRequest("POST", "/api/invoices", createData);
         }
       }
 
@@ -835,6 +847,10 @@ export function InvoiceManagementPopup({
                   // 입금구분 (정산/부분입금/청구변경)
                   if (invoiceData.settlementStatus) {
                     loadedSettlementStatus = invoiceData.settlementStatus;
+                  }
+                  // 총승인금액 수정값 로드 (저장된 값이 있으면 override로 설정)
+                  if (invoiceData.totalApprovedAmount && parseInt(invoiceData.totalApprovedAmount) > 0) {
+                    setTotalApprovedAmountOverride(invoiceData.totalApprovedAmount);
                   }
                 }
               }
