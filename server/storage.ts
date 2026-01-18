@@ -7028,12 +7028,22 @@ export class DbStorage implements IStorage {
       : null;
     const sourceIsDamagePrevention = sourceSuffix === "0";
 
+    // null이나 빈 값은 동기화에서 제외 (기존 값 유지)
+    const filteredSyncData: Partial<Case> = {};
+    for (const [key, value] of Object.entries(syncData)) {
+      if (value !== null && value !== undefined && value !== "") {
+        (filteredSyncData as any)[key] = value;
+      }
+    }
+    
+    console.log(`[Intake Sync] Syncing ${Object.keys(filteredSyncData).length} non-empty fields from case ${sourceCase.caseNumber}`);
+    
     let syncedCount = 0;
     for (const relatedCase of relatedCases) {
       try {
-        // 기본 동기화 데이터
+        // 기본 동기화 데이터 (null/빈 값 제외)
         const updateData: Partial<Case> = {
-          ...syncData,
+          ...filteredSyncData,
           updatedAt: getKSTDate(),
         };
         
