@@ -2094,17 +2094,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isPartnerChanged = updateData.assignedPartner && 
         updateData.assignedPartner !== existingCase.assignedPartner;
       
+      console.log(`[Partner Check] Case: ${existingCase.caseNumber}, isPartnerChanged: ${isPartnerChanged}, existingPartner: "${existingCase.assignedPartner}", newPartner: "${updateData.assignedPartner}", progressStatus: "${existingCase.progressStatus}"`);
+      
       // 협력사가 변경되었고 기존 진행상태가 "접수완료"가 아니면 진행상태 및 관련 데이터 초기화
-      if (isPartnerChanged && existingCase.progressStatus && existingCase.progressStatus !== "접수완료") {
-        updateData.progressStatus = "접수완료";
+      // progressStatus가 null/undefined인 경우는 초기화하지 않음 (아직 진행된 단계가 없음)
+      const hasProgress = existingCase.progressStatus && existingCase.progressStatus !== "접수완료";
+      
+      if (isPartnerChanged && hasProgress) {
         console.log(
           `[Partner Changed] Resetting progressStatus from "${existingCase.progressStatus}" to "접수완료" for case: ${existingCase.caseNumber}`,
         );
+        updateData.progressStatus = "접수완료";
         
         // 기존 협력사가 진행한 모든 데이터 초기화 (견적서, 증빙자료, 도면 등)
         await storage.resetCaseFieldSurveyData(id);
         console.log(
           `[Partner Changed] All field survey data (documents, drawings, estimates) has been reset for case: ${existingCase.caseNumber}`,
+        );
+      } else if (isPartnerChanged) {
+        console.log(
+          `[Partner Changed] Partner changed but no reset needed - progressStatus: "${existingCase.progressStatus}" for case: ${existingCase.caseNumber}`,
         );
       }
       
