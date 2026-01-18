@@ -11477,6 +11477,8 @@ Front·Line·Ops·Xpert·Net
     insuredContact: z.string().optional(),
     victimName: z.string().optional(),
     victimContact: z.string().optional(),
+    assessorTeam: z.string().optional(),
+    assessorContact: z.string().optional(),
     investigatorTeamName: z.string().optional(),
     investigatorContact: z.string().optional(),
     accidentLocation: z.string().optional(),
@@ -11518,6 +11520,8 @@ Front·Line·Ops·Xpert·Net
         insuredContact,
         victimName,
         victimContact,
+        assessorTeam,
+        assessorContact,
         investigatorTeamName,
         investigatorContact,
         accidentLocation,
@@ -11577,15 +11581,26 @@ Front·Line·Ops·Xpert·Net
 
       // 심사자: 이름과 연락처 모두 있을 때만 표시
       if (
+        assessorTeam && 
+        assessorTeam !== "-" &&
+        typeof assessorContact === "string" &&
+        /^[0-9]+$/.test(assessorContact)
+      ) {
+        messageLines.push(
+          `심사자 : ${assessorTeam}  연락처 ${assessorContact}`,
+        );
+      }
+      
+      // 조사자: 이름과 연락처 모두 있을 때만 표시
+      if (
+        investigatorTeamName && 
         investigatorTeamName !== "-" &&
         typeof investigatorContact === "string" &&
         /^[0-9]+$/.test(investigatorContact)
       ) {
         messageLines.push(
-          `심사자 : ${investigatorTeamName}  연락처 ${investigatorContact}`,
+          `조사자 : ${investigatorTeamName}  연락처 ${investigatorContact}`,
         );
-      } else {
-        messageLines.push(``);
       }
 
       const fullAddress = [accidentLocation, accidentLocationDetail]

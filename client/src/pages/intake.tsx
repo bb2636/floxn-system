@@ -1032,6 +1032,14 @@ export default function Intake({
                 firstCase.victimName || submittedData.victimName || "-",
               victimContact:
                 firstCase.victimContact || submittedData.victimContact || "-",
+              assessorTeam:
+                firstCase.assessorTeam ||
+                submittedData.assessorTeam ||
+                "-",
+              assessorContact:
+                firstCase.assessorContact ||
+                submittedData.assessorContact ||
+                "-",
               investigatorTeamName:
                 firstCase.investigatorTeamName ||
                 submittedData.investigatorTeamName ||
