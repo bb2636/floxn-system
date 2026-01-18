@@ -6996,14 +6996,17 @@ export class DbStorage implements IStorage {
       policyHolderName: sourceCase.policyHolderName,
       policyHolderIdNumber: sourceCase.policyHolderIdNumber,
       policyHolderAddress: sourceCase.policyHolderAddress,
-      // 피보험자 정보 (주소 제외 - 각 케이스별로 개별 관리)
+      // 피보험자 정보 (이름, 연락처 동기화 - 주소는 별도 처리)
       insuredName: sourceCase.insuredName,
       insuredIdNumber: sourceCase.insuredIdNumber,
       insuredContact: sourceCase.insuredContact,
-      // insuredAddress, insuredAddressDetail은 동기화에서 제외 - 각 케이스 개별 관리
+      // 피보험자 주소: 모든 케이스에 동기화 (피해세대는 victimAddress로도 복사)
+      insuredAddress: sourceCase.insuredAddress,
+      insuredAddressDetail: sourceCase.insuredAddressDetail,
       sameAsPolicyHolder: sourceCase.sameAsPolicyHolder,
       // 피해자 정보 - 동기화에서 제외 (각 케이스별로 개별 관리)
-      // victimName, victimContact, victimAddress, victimAddressDetail은 각 케이스에서 독립적으로 관리
+      // victimName, victimContact는 각 케이스에서 독립적으로 관리
+      // victimAddress, victimAddressDetail은 -0 케이스 업데이트 시 별도 처리
       // 사고 정보 - accidentCause는 현장조사에서 입력하므로 접수 동기화에서 제외
       accidentType: sourceCase.accidentType,
       // accidentCause는 현장조사 정보이므로 syncFieldSurveyToRelatedCases에서 별도 관리
@@ -7019,15 +7022,47 @@ export class DbStorage implements IStorage {
       specialRequests: sourceCase.specialRequests,
     };
 
+    // 소스 케이스가 -0 (손해방지) 케이스인지 확인
+    const sourceSuffix = sourceCase.caseNumber.includes("-") 
+      ? sourceCase.caseNumber.split("-")[1] 
+      : null;
+    const sourceIsDamagePrevention = sourceSuffix === "0";
+
     let syncedCount = 0;
     for (const relatedCase of relatedCases) {
       try {
+        // 기본 동기화 데이터
+        const updateData: Partial<Case> = {
+          ...syncData,
+          updatedAt: getKSTDate(),
+        };
+        
+        // -0 케이스에서 피보험자 주소가 변경된 경우, -1+ 케이스의 victimAddress도 업데이트
+        if (sourceIsDamagePrevention && relatedCase.caseNumber) {
+          const relatedSuffix = relatedCase.caseNumber.includes("-") 
+            ? relatedCase.caseNumber.split("-")[1] 
+            : null;
+          const relatedIsVictim = relatedSuffix && parseInt(relatedSuffix) >= 1;
+          
+          if (relatedIsVictim) {
+            // 피해세대 케이스: victimAddress를 피보험자 주소로 업데이트
+            updateData.victimAddress = sourceCase.insuredAddress || "";
+            
+            // 피해자 정보가 없는 경우에만 victimAddressDetail도 업데이트
+            const hasVictimInfo = !!(relatedCase.victimName || relatedCase.victimContact || relatedCase.victimAddressDetail);
+            if (!hasVictimInfo) {
+              updateData.victimAddressDetail = sourceCase.insuredAddressDetail || "";
+            }
+            
+            console.log(
+              `[Intake Sync] Updating victimAddress for victim case ${relatedCase.caseNumber} with insuredAddress from -0 case`,
+            );
+          }
+        }
+        
         await db
           .update(cases)
-          .set({
-            ...syncData,
-            updatedAt: getKSTDate(),
-          })
+          .set(updateData)
           .where(eq(cases.id, relatedCase.id));
         syncedCount++;
       } catch (error) {
