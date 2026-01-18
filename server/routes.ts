@@ -2071,8 +2071,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userMap = new Map(allUsers.map((u) => [u.id, u.name]));
 
       // 협력사 배정 시 담당자 정보 자동 채우기
-      // assignedPartner가 설정되고, assignedPartnerManager/Contact가 제공되지 않은 경우
-      if (updateData.assignedPartner && !updateData.assignedPartnerManager) {
+      // assignedPartner가 변경된 경우 새 협력업체의 담당자/연락처로 업데이트
+      const isPartnerChanged = updateData.assignedPartner && 
+        updateData.assignedPartner !== existingCase.assignedPartner;
+      
+      if (updateData.assignedPartner && (!updateData.assignedPartnerManager || isPartnerChanged)) {
         const partnerCompanyName = updateData.assignedPartner;
         // 해당 회사명을 가진 협력사 사용자 찾기
         const partnerUser = allUsers.find(
@@ -2086,12 +2089,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`,
             );
           }
-          if (partnerUser.phone && !updateData.assignedPartnerContact) {
+          if (partnerUser.phone && (!updateData.assignedPartnerContact || isPartnerChanged)) {
             updateData.assignedPartnerContact = partnerUser.phone;
             console.log(
               `[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`,
             );
           }
+        } else if (isPartnerChanged) {
+          // 협력업체가 변경되었지만 해당 협력사 사용자가 없는 경우 연락처 초기화
+          console.log(
+            `[Auto-populate] Partner changed to ${partnerCompanyName}, but no user found - clearing contact`,
+          );
+          updateData.assignedPartnerManager = "";
+          updateData.assignedPartnerContact = "";
         }
       }
 
