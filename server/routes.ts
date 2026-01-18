@@ -2094,6 +2094,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isPartnerChanged = updateData.assignedPartner && 
         updateData.assignedPartner !== existingCase.assignedPartner;
       
+      // 협력사가 변경되었고 기존 진행상태가 "접수완료"가 아니면 진행상태를 초기화
+      if (isPartnerChanged && existingCase.progressStatus && existingCase.progressStatus !== "접수완료") {
+        updateData.progressStatus = "접수완료";
+        console.log(
+          `[Partner Changed] Resetting progressStatus from "${existingCase.progressStatus}" to "접수완료" for case: ${existingCase.caseNumber}`,
+        );
+      }
+      
       if (updateData.assignedPartner && (!updateData.assignedPartnerManager || isPartnerChanged)) {
         const partnerCompanyName = updateData.assignedPartner;
         // 해당 회사명을 가진 협력사 사용자 찾기
