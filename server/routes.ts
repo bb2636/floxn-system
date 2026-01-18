@@ -942,11 +942,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 사용자 정보 가져오기 (자동 채우기용)
       const allUsersForAutoPopulate = await storage.getAllUsers();
 
+      // 기존 케이스의 협력업체 정보 확인 (수정 시 변경 여부 판단용)
+      let existingPartner: string | null = null;
+      if (validatedData.id) {
+        const existingCaseForPartner = await storage.getCaseById(validatedData.id);
+        if (existingCaseForPartner) {
+          existingPartner = existingCaseForPartner.assignedPartner;
+        }
+      }
+
       // 협력사 배정 시 담당자 정보 자동 채우기
-      // assignedPartner가 설정되고, assignedPartnerManager/Contact가 제공되지 않은 경우
+      // 협력업체가 변경된 경우 또는 새로 설정된 경우 연락처 자동 업데이트
+      const isPartnerChangedInPost = validatedData.assignedPartner && 
+        validatedData.assignedPartner !== existingPartner;
+      
       if (
         validatedData.assignedPartner &&
-        !validatedData.assignedPartnerManager
+        (!validatedData.assignedPartnerManager || isPartnerChangedInPost)
       ) {
         const partnerCompanyName = validatedData.assignedPartner;
         // 해당 회사명을 가진 협력사 사용자 찾기
@@ -961,12 +973,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`,
             );
           }
-          if (partnerUser.phone && !validatedData.assignedPartnerContact) {
+          if (partnerUser.phone && (!validatedData.assignedPartnerContact || isPartnerChangedInPost)) {
             (validatedData as any).assignedPartnerContact = partnerUser.phone;
             console.log(
               `[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`,
             );
           }
+        } else if (isPartnerChangedInPost) {
+          // 협력업체가 변경되었지만 해당 협력사 사용자가 없는 경우 연락처 초기화
+          console.log(
+            `[Auto-populate] Partner changed to ${partnerCompanyName}, but no user found - clearing contact`,
+          );
+          (validatedData as any).assignedPartnerManager = "";
+          (validatedData as any).assignedPartnerContact = "";
         }
       }
 
