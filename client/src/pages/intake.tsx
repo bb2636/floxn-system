@@ -105,6 +105,12 @@ export default function Intake({
   const [isClientSearchOpen, setIsClientSearchOpen] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState("");
   const [tempSelectedClient, setTempSelectedClient] = useState<any>(null);
+  
+  // 초기 협력사 정보 저장 (수정 시 협력사 변경 감지용)
+  const [initialPartnerInfo, setInitialPartnerInfo] = useState<{
+    assignedPartner: string;
+    assignedPartnerContact: string;
+  } | null>(null);
 
   const [isAssessorSearchOpen, setIsAssessorSearchOpen] = useState(false);
   const [assessorSearchQuery, setAssessorSearchQuery] = useState("");
@@ -699,6 +705,11 @@ export default function Intake({
             pendingCount: 0,
             region: "",
           });
+          // 초기 협력사 정보 저장 (수정 시 변경 감지용)
+          setInitialPartnerInfo({
+            assignedPartner: caseData.assignedPartner || "",
+            assignedPartnerContact: caseData.assignedPartnerContact || "",
+          });
         }
         if (caseData.accidentDate) {
           const dateParts = caseData.accidentDate.split("-");
@@ -1097,9 +1108,80 @@ export default function Intake({
         cleanedData,
       );
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ description: "수정이 완료되었습니다.", duration: 3000 });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      
+      // 협력사가 변경되었는지 확인하고 새 협력사에게 SMS 발송
+      const isPartnerChanged = initialPartnerInfo && 
+        formData.assignedPartner && 
+        formData.assignedPartner !== initialPartnerInfo.assignedPartner;
+      
+      if (isPartnerChanged) {
+        const rawPartnerContact = formData.assignedPartnerContact?.trim() || "";
+        const partnerContact = rawPartnerContact.replace(/[^0-9]/g, "");
+        
+        if (partnerContact.length >= 10 && partnerContact.length <= 11) {
+          // 의뢰범위 생성
+          const requestScopeItems = [];
+          if (formData.damagePreventionCost === true || (formData.damagePreventionCost as unknown) === "true")
+            requestScopeItems.push("손방");
+          if (formData.victimIncidentAssistance === true || (formData.victimIncidentAssistance as unknown) === "true")
+            requestScopeItems.push("대물");
+          if (requestScopeItems.length === 0) requestScopeItems.push("기타");
+          const requestScope = requestScopeItems.join(", ");
+          
+          // 담당자 이름
+          const managerName = formData.managerId
+            ? allUsers?.find((u) => u.id === formData.managerId)?.name || user?.name || "-"
+            : user?.name || "-";
+          
+          // 접수번호 (loadedCaseNumber 사용)
+          const caseNumber = loadedCaseNumber ? formatCaseNumber(loadedCaseNumber) : "-";
+          
+          const smsPayload = {
+            to: partnerContact,
+            caseNumber: caseNumber,
+            insuranceCompany: formData.insuranceCompany || "-",
+            managerName: managerName,
+            insurancePolicyNo: formData.insurancePolicyNo || "-",
+            insuranceAccidentNo: formData.insuranceAccidentNo || "-",
+            insuredName: formData.insuredName || "-",
+            insuredContact: formData.insuredContact || "-",
+            victimName: formData.victimName || "-",
+            victimContact: formData.victimContact || "-",
+            assessorTeam: formData.assessorTeam || "-",
+            assessorContact: formData.assessorContact || "-",
+            investigatorTeamName: formData.investigatorTeamName || "-",
+            investigatorContact: formData.investigatorContact || "-",
+            accidentLocation: formData.insuredAddress || "-",
+            accidentLocationDetail: formData.insuredAddressDetail || "",
+            victimAddressDetail: formData.victimAddressDetail || "",
+            requestScope: requestScope,
+          };
+          
+          try {
+            await apiRequest("POST", "/api/send-sms", smsPayload);
+            toast({
+              description: "변경된 협력사에 접수 완료 문자가 전송되었습니다.",
+              duration: 3000,
+            });
+          } catch (error) {
+            toast({
+              description: "협력사 문자 전송에 실패했습니다.",
+              variant: "destructive",
+              duration: 3000,
+            });
+          }
+        }
+        
+        // 초기 협력사 정보 업데이트
+        setInitialPartnerInfo({
+          assignedPartner: formData.assignedPartner,
+          assignedPartnerContact: formData.assignedPartnerContact || "",
+        });
+      }
+      
       if (isModal && onSuccess) onSuccess();
     },
     onError: (error: Error) => {
