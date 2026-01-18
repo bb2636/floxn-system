@@ -173,18 +173,19 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     return false;
   };
 
-  // Build all cases list (main case + related cases)
+  // Build all cases list (main case + related cases) - sorted by case suffix (-0, -1, -2, ...)
   const allCases = useMemo(() => {
-    const cases: Array<{ id: string; caseNumber: string | null }> = [];
+    const cases: Array<{ id: string; caseNumber: string | null; recoveryType?: string | null }> = [];
     if (caseData) {
-      cases.push({ id: caseData.id, caseNumber: caseData.caseNumber || null });
+      cases.push({ id: caseData.id, caseNumber: caseData.caseNumber || null, recoveryType: caseData.recoveryType });
     }
     for (const rc of relatedCases) {
       if (rc.id !== caseData?.id) {
-        cases.push({ id: rc.id, caseNumber: rc.caseNumber || null });
+        cases.push({ id: rc.id, caseNumber: rc.caseNumber || null, recoveryType: rc.recoveryType });
       }
     }
-    return cases;
+    // Sort by case suffix to ensure -0, -1, -2 order
+    return cases.sort((a, b) => getCaseSuffix(a.caseNumber) - getCaseSuffix(b.caseNumber));
   }, [caseData, relatedCases]);
 
   // Build documents by caseId
