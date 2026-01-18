@@ -190,6 +190,11 @@ export function InvoiceManagementPopup({
     setLocalInvoiceConfirmDate(caseData?.invoiceConfirmDate || null);
   }, [caseData?.invoiceConfirmDate]);
 
+  // 케이스 변경 시 총승인금액 오버라이드 초기화 (해당 건만 적용되도록)
+  useEffect(() => {
+    setTotalApprovedAmountOverride(null);
+  }, [caseData?.id]);
+
   // 인보이스 승인 여부 확인 (로컬 상태 사용)
   const isInvoiceApproved = !!localInvoiceConfirmDate;
 
@@ -201,14 +206,8 @@ export function InvoiceManagementPopup({
     setSettlementStatus(value);
   };
 
-  // 총 승인금액 (선견적요청: 현장출동비용, 직접복구: 손해방지비용 + 대물복구비용 승인금액)
-  // 수동 오버라이드가 있으면 그 값 사용 (청구변경 시)
-  const totalApprovedAmount = useMemo(() => {
-    // 수동 오버라이드가 있으면 그 값을 사용
-    if (totalApprovedAmountOverride !== null) {
-      return parseInt(totalApprovedAmountOverride || "0") || 0;
-    }
-    
+  // 기본 총 승인금액 (수수료/협력업체 지급액 계산용 - override 적용 안 됨)
+  const baseTotalApprovedAmount = useMemo(() => {
     if (caseData?.recoveryType === "선견적요청") {
       // 선견적요청 케이스는 현장출동비용(100,000원) 또는 저장된 값 사용
       return (
@@ -226,23 +225,32 @@ export function InvoiceManagementPopup({
     caseData?.fieldDispatchInvoiceAmount,
     preventionApprovedAmount,
     propertyApprovedAmount,
-    totalApprovedAmountOverride,
   ]);
 
-  // 수수료 - 정산조회에서 전달받은 값 사용, 없으면 7.7% 계산
+  // 총 승인금액 (화면 표시용 - 청구변경 시 수동 오버라이드 적용)
+  const totalApprovedAmount = useMemo(() => {
+    // 수동 오버라이드가 있으면 그 값을 사용 (화면 표시용)
+    if (totalApprovedAmountOverride !== null) {
+      return parseInt(totalApprovedAmountOverride || "0") || 0;
+    }
+    return baseTotalApprovedAmount;
+  }, [baseTotalApprovedAmount, totalApprovedAmountOverride]);
+
+  // 수수료 - 정산조회에서 전달받은 값 사용, 없으면 기본 승인금액 기준 7.7% 계산
+  // (총승인금액 override와 관계없이 원래 금액 기준)
   const feeAmount = useMemo(() => {
     // 정산조회에서 전달받은 수수료 값이 있으면 그것을 사용
     if (settlementCommission !== undefined && settlementCommission > 0) {
       return settlementCommission;
     }
-    // 없으면 7.7% 계산
-    return Math.round(totalApprovedAmount * 0.077);
-  }, [totalApprovedAmount, settlementCommission]);
+    // 없으면 기본 승인금액 기준 7.7% 계산 (override 적용 안 됨)
+    return Math.round(baseTotalApprovedAmount * 0.077);
+  }, [baseTotalApprovedAmount, settlementCommission]);
 
-  // 협력업체 지급액 계산 - 위쪽 승인금액 기준
+  // 협력업체 지급액 계산 - 기본 승인금액 기준 (총승인금액 override와 관계없음)
   const partnerPaymentAmount = useMemo(() => {
-    return totalApprovedAmount - feeAmount;
-  }, [totalApprovedAmount, feeAmount]);
+    return baseTotalApprovedAmount - feeAmount;
+  }, [baseTotalApprovedAmount, feeAmount]);
 
   // 입금내역 합계 계산
   const depositTotals = useMemo(() => {
