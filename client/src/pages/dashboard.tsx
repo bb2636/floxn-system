@@ -337,12 +337,13 @@ export default function Dashboard() {
       return false;
     });
     
-    // 내작업 기간 필터 적용
+    // 내작업 기간 필터 적용 (updatedAt 기준 - 최근 업데이트된 케이스)
     if (myWorkPeriodType !== 'all' && myWorkDateRange?.from && myWorkDateRange?.to) {
       filteredCases = filteredCases.filter(c => {
-        if (!c.accidentDate) return false;
+        if (!c.updatedAt) return false;
         try {
-          const caseDate = parseISO(c.accidentDate);
+          const caseDate = new Date(c.updatedAt);
+          if (isNaN(caseDate.getTime())) return false;
           return isWithinInterval(caseDate, { start: myWorkDateRange.from!, end: myWorkDateRange.to! });
         } catch {
           return false;
