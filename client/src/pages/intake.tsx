@@ -2782,8 +2782,8 @@ export default function Intake({
                                 {partner.pendingCount}
                               </div>
                               <div
-                                className="px-3 py-3 flex-1 min-w-0 text-sm text-slate-600 items-start"
-                                style={{ wordBreak: "break-word" }}
+                                className="px-3 py-3 flex-1 min-w-0 text-sm text-slate-600 items-start overflow-y-auto"
+                                style={{ wordBreak: "break-word", maxHeight: "80px" }}
                               >
                                 {partner.region}
                               </div>
