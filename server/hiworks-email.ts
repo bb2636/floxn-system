@@ -190,7 +190,8 @@ export async function sendFieldReportEmail(
   const today = new Date();
   const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   
-  const accidentNo = additionalData?.insuranceAccidentNo || '-';
+  // 사고번호(증권번호) 필드: 사고번호 우선, 없으면 증권번호, 둘 다 없으면 '-'
+  const accidentNo = additionalData?.insuranceAccidentNo || additionalData?.policyNumber || '-';
   const policyNo = additionalData?.policyNumber || '-';
   const assessor = additionalData?.assessorTeam || '-';
   const investigator = additionalData?.investigatorTeam || '-';
