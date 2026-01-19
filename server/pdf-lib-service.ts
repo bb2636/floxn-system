@@ -949,8 +949,13 @@ async function renderFieldReportPage(
     [caseData.visitDate, caseData.visitTime].filter(Boolean).join(" "),
   );
 
+  // accidentDate에 이미 시간이 포함되어 있으면 accidentTime 추가하지 않음
+  // 예: "2026-01-19 13:53"에 "13:53"을 추가하면 중복됨
+  const accidentDateHasTime = caseData.accidentDate && /\d{2}:\d{2}/.test(caseData.accidentDate);
   const accidentDateTime = formatDateTime(
-    [caseData.accidentDate, caseData.accidentTime].filter(Boolean).join(" "),
+    accidentDateHasTime
+      ? caseData.accidentDate
+      : [caseData.accidentDate, caseData.accidentTime].filter(Boolean).join(" "),
   );
 
   // Helper function to draw section header with grey background
