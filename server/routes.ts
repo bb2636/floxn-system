@@ -11122,8 +11122,9 @@ FLOXN 드림`;
       );
 
       // ========== 첨부파일 준비 (단일 PDF) ==========
+      // 파일명 우선순위: 사고번호 > 증권번호 > 접수번호
       const accidentNo =
-        caseData.insuranceAccidentNo || caseData.caseNumber || "UNKNOWN";
+        caseData.insuranceAccidentNo || caseData.policyNumber || caseData.caseNumber || "UNKNOWN";
       
       // -0 (손해방지/피보험자) 건: 피보험자 상세주소 사용
       // -1 이상 (피해자 복구) 건: 피해자 상세주소 사용
