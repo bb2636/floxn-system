@@ -257,6 +257,8 @@ export interface IStorage {
   // Same prefix case sync (for intake data synchronization)
   getCasesByPrefix(prefix: string, excludeCaseId?: string): Promise<Case[]>;
   syncIntakeDataToRelatedCases(sourceCaseId: string): Promise<number>;
+  // Copy field survey data from existing related case to new case
+  copyFieldSurveyFromRelatedCase(newCaseId: string): Promise<boolean>;
   // Case helper for drawing persistence
   getOrCreateActiveCase(userId: string): Promise<Case>;
   // Document methods
@@ -2684,6 +2686,12 @@ export class MemStorage implements IStorage {
   async syncIntakeDataToRelatedCases(sourceCaseId: string): Promise<number> {
     throw new Error(
       "syncIntakeDataToRelatedCases not implemented in MemStorage",
+    );
+  }
+
+  async copyFieldSurveyFromRelatedCase(newCaseId: string): Promise<boolean> {
+    throw new Error(
+      "copyFieldSurveyFromRelatedCase not implemented in MemStorage",
     );
   }
 
@@ -7096,6 +7104,99 @@ export class DbStorage implements IStorage {
       `[Intake Sync] Synced intake data from case ${sourceCaseId} (${sourceCase.caseNumber}) to ${syncedCount} related cases`,
     );
     return syncedCount;
+  }
+
+  // 새로 생성된 피해자 케이스에 기존 관련 케이스(-0)의 현장입력 데이터 복사
+  async copyFieldSurveyFromRelatedCase(newCaseId: string): Promise<boolean> {
+    const newCase = await this.getCaseById(newCaseId);
+    if (!newCase || !newCase.caseNumber) {
+      console.log(`[Field Survey Copy] New case ${newCaseId} not found or no case number`);
+      return false;
+    }
+
+    // Extract prefix from case number (e.g., "251102001-1" -> "251102001")
+    const prefix = newCase.caseNumber.split("-")[0];
+    
+    // Find source case with field survey data (prefer -0 case)
+    const relatedCases = await this.getCasesByPrefix(prefix, newCaseId);
+    if (relatedCases.length === 0) {
+      console.log(`[Field Survey Copy] No related cases found for ${newCase.caseNumber}`);
+      return false;
+    }
+
+    // Find the -0 case or any case with field survey data
+    let sourceCase: Case | null = null;
+    
+    // First try to find -0 case
+    for (const c of relatedCases) {
+      if (c.caseNumber?.endsWith("-0")) {
+        sourceCase = c;
+        break;
+      }
+    }
+    
+    // If no -0 case, find any case with field survey data
+    if (!sourceCase) {
+      for (const c of relatedCases) {
+        if (c.accidentCause || c.visitDate || c.accidentCategory) {
+          sourceCase = c;
+          break;
+        }
+      }
+    }
+
+    if (!sourceCase) {
+      console.log(`[Field Survey Copy] No source case with field survey data found for ${newCase.caseNumber}`);
+      return false;
+    }
+
+    // Field survey fields to copy (excluding victim-specific info and status fields)
+    const fieldSurveyData: Partial<Case> = {
+      visitDate: sourceCase.visitDate,
+      visitTime: sourceCase.visitTime,
+      travelDistance: sourceCase.travelDistance,
+      dispatchLocation: sourceCase.dispatchLocation,
+      accompaniedPerson: sourceCase.accompaniedPerson,
+      accidentTime: sourceCase.accidentTime,
+      accidentCategory: sourceCase.accidentCategory,
+      accidentCause: sourceCase.accidentCause,
+      specialNotes: sourceCase.specialNotes,
+      vocContent: sourceCase.vocContent,
+      processingTypes: sourceCase.processingTypes,
+      processingTypeOther: sourceCase.processingTypeOther,
+      recoveryMethodType: sourceCase.recoveryMethodType,
+      // Exclude: victimName, victimContact, victimAddress, victimAddressDetail (case-specific)
+      // Exclude: fieldSurveyStatus, status (case-specific workflow)
+      updatedAt: getKSTDate(),
+    };
+
+    // Filter out null/undefined values
+    const filteredData: Partial<Case> = {};
+    for (const [key, value] of Object.entries(fieldSurveyData)) {
+      if (value !== null && value !== undefined) {
+        (filteredData as any)[key] = value;
+      }
+    }
+
+    if (Object.keys(filteredData).length <= 1) { // Only updatedAt
+      console.log(`[Field Survey Copy] No field survey data to copy from ${sourceCase.caseNumber}`);
+      return false;
+    }
+
+    try {
+      await db
+        .update(cases)
+        .set(filteredData)
+        .where(eq(cases.id, newCaseId));
+      
+      console.log(
+        `[Field Survey Copy] Copied ${Object.keys(filteredData).length - 1} field survey fields from ${sourceCase.caseNumber} to ${newCase.caseNumber}`,
+      );
+      return true;
+    } catch (error) {
+      console.error(`[Field Survey Copy] Failed to copy field survey data:`, error);
+      return false;
+    }
   }
 
   // 기존 케이스들의 날짜를 상태 기반으로 자동 채우기

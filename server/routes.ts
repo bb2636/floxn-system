@@ -1678,7 +1678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           completedCases.push(newCase);
 
-          // 동기화
+          // 접수 정보 동기화
           try {
             const syncCount = await storage.syncIntakeDataToRelatedCases(
               newCase.id,
@@ -1692,6 +1692,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error(
               "Failed to sync intake data to related cases:",
               syncError,
+            );
+          }
+
+          // 기존 케이스(-0)의 현장입력 데이터 복사
+          try {
+            const copied = await storage.copyFieldSurveyFromRelatedCase(
+              newCase.id,
+            );
+            if (copied) {
+              console.log(
+                `[Case Create] Copied field survey data to new victim case ${newCase.caseNumber}`,
+              );
+            }
+          } catch (copyError) {
+            console.error(
+              "Failed to copy field survey data to new case:",
+              copyError,
             );
           }
 
