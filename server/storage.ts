@@ -1696,11 +1696,19 @@ export class MemStorage implements IStorage {
           dateUpdates.approvedAmount = caseItem.estimateAmount;
         }
         break;
+      case "직접복구":
       case "청구자료제출(복구)":
-      case "출동비청구(선견적)":
-        // 복구완료일 자동 기록 (기존 값 없을 때만)
+        // 직접복구/청구자료제출 시 복구완료일 자동 기록 (기존 값 없을 때만)
         if (!caseItem.constructionCompletionDate) {
           dateUpdates.constructionCompletionDate = currentDate;
+        }
+        break;
+      case "선견적요청":
+      case "출동비청구(선견적)":
+        // 선견적요청은 실제 복구를 하지 않으므로 복구완료일은 공란으로 유지
+        // 청구일만 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.claimDate) {
+          dateUpdates.claimDate = currentDate;
         }
         break;
       case "청구":
@@ -4652,11 +4660,19 @@ export class DbStorage implements IStorage {
           dateUpdates.approvedAmount = existingCase.estimateAmount;
         }
         break;
+      case "직접복구":
       case "청구자료제출(복구)":
-      case "출동비청구(선견적)":
-        // 복구완료일 자동 기록 (기존 값 없을 때만)
+        // 직접복구/청구자료제출 시 복구완료일 자동 기록 (기존 값 없을 때만)
         if (!existingCase.constructionCompletionDate) {
           dateUpdates.constructionCompletionDate = currentDate;
+        }
+        break;
+      case "선견적요청":
+      case "출동비청구(선견적)":
+        // 선견적요청은 실제 복구를 하지 않으므로 복구완료일은 공란으로 유지
+        // 청구일만 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.claimDate) {
+          dateUpdates.claimDate = currentDate;
         }
         break;
       case "청구":
