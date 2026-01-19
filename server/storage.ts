@@ -4424,7 +4424,7 @@ export class DbStorage implements IStorage {
       managerId: caseData.managerId || null,
       createdBy: caseData.createdBy,
       createdAt: currentDate,
-      updatedAt: currentDate,
+      updatedAt: getKSTTimestamp(),
     };
 
     const result = await db.insert(cases).values(newCase).returning();
@@ -4516,6 +4516,7 @@ export class DbStorage implements IStorage {
     caseData: Partial<InsertCase> & { caseNumber?: string },
   ): Promise<Case | null> {
     const currentDate = getKSTDate();
+    const currentTimestamp = getKSTTimestamp();
 
     // 배당 협력사 저장 시 assignmentDate 자동 기록 (기존 값이 없을 때만)
     const existingCase = await this.getCaseById(caseId);
@@ -4529,8 +4530,8 @@ export class DbStorage implements IStorage {
       additionalUpdates.assignmentDate = currentDate;
     }
 
-    // caseNumber도 업데이트 대상에 포함
-    const updateData: any = { ...caseData, ...additionalUpdates, updatedAt: currentDate };
+    // caseNumber도 업데이트 대상에 포함 (updatedAt은 타임스탬프로 저장)
+    const updateData: any = { ...caseData, ...additionalUpdates, updatedAt: currentTimestamp };
     
     // id는 업데이트 대상에서 제외 (duplicate key 오류 방지)
     delete updateData.id;
@@ -4696,7 +4697,7 @@ export class DbStorage implements IStorage {
       .update(cases)
       .set({
         status: normalizedStatus,
-        updatedAt: currentDate,
+        updatedAt: getKSTTimestamp(),
         ...dateUpdates,
         ...recoveryTypeUpdate,
       })
@@ -4714,14 +4715,12 @@ export class DbStorage implements IStorage {
     caseId: string,
     specialNotes: string | null,
   ): Promise<Case | null> {
-    const currentDate = getKSTDate();
-
     const result = await db
       .update(cases)
       .set({
         specialNotes,
         specialNotesConfirmedBy: null,
-        updatedAt: currentDate,
+        updatedAt: getKSTTimestamp(),
       }) // Reset confirmation when notes are updated
       .where(eq(cases.id, caseId))
       .returning();
@@ -4737,11 +4736,9 @@ export class DbStorage implements IStorage {
     caseId: string,
     confirmedBy: string,
   ): Promise<Case | null> {
-    const currentDate = getKSTDate();
-
     const result = await db
       .update(cases)
-      .set({ specialNotesConfirmedBy: confirmedBy, updatedAt: currentDate })
+      .set({ specialNotesConfirmedBy: confirmedBy, updatedAt: getKSTTimestamp() })
       .where(eq(cases.id, caseId))
       .returning();
 
@@ -4756,11 +4753,9 @@ export class DbStorage implements IStorage {
     caseId: string,
     additionalNotes: string | null,
   ): Promise<Case | null> {
-    const currentDate = getKSTDate();
-
     const result = await db
       .update(cases)
-      .set({ additionalNotes, updatedAt: currentDate })
+      .set({ additionalNotes, updatedAt: getKSTTimestamp() })
       .where(eq(cases.id, caseId))
       .returning();
 
@@ -4775,11 +4770,9 @@ export class DbStorage implements IStorage {
     caseId: string,
     estimateAmount: string,
   ): Promise<Case | null> {
-    const currentDate = getKSTDate();
-
     const result = await db
       .update(cases)
-      .set({ estimateAmount, updatedAt: currentDate })
+      .set({ estimateAmount, updatedAt: getKSTTimestamp() })
       .where(eq(cases.id, caseId))
       .returning();
 
@@ -4832,7 +4825,7 @@ export class DbStorage implements IStorage {
         reportApprovedAt: null,
         reportApprovedBy: null,
         ...additionalUpdates,
-        updatedAt: currentDate,
+        updatedAt: getKSTTimestamp(),
       })
       .where(eq(cases.id, caseId))
       .returning();
@@ -4875,7 +4868,7 @@ export class DbStorage implements IStorage {
         reviewedBy: reviewedBy,
         status: decision === "승인" ? "1차승인" : "반려",
         ...additionalUpdates,
-        updatedAt: currentDate,
+        updatedAt: currentTimestamp,
       })
       .where(eq(cases.id, caseId))
       .returning();
@@ -4930,7 +4923,7 @@ export class DbStorage implements IStorage {
         // 반려 시 협력사가 수정 후 재제출할 수 있도록 status를 "반려"로 설정
         status: decision === "승인" ? "복구요청(2차승인)" : "반려",
         ...additionalUpdates,
-        updatedAt: currentDate,
+        updatedAt: currentTimestamp,
       })
       .where(eq(cases.id, caseId))
       .returning();
@@ -4987,7 +4980,7 @@ export class DbStorage implements IStorage {
 
     const result = await db
       .update(cases)
-      .set({ ...fieldData, ...additionalUpdates, updatedAt: currentDate })
+      .set({ ...fieldData, ...additionalUpdates, updatedAt: getKSTTimestamp() })
       .where(eq(cases.id, caseId))
       .returning();
 
