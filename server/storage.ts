@@ -7004,11 +7004,13 @@ export class DbStorage implements IStorage {
       assessorDepartment: sourceCase.assessorDepartment,
       assessorTeam: sourceCase.assessorTeam,
       assessorContact: sourceCase.assessorContact,
+      assessorEmail: sourceCase.assessorEmail, // 심사사 이메일 동기화 추가
       // 조사사 정보
       investigatorTeam: sourceCase.investigatorTeam,
       investigatorDepartment: sourceCase.investigatorDepartment,
       investigatorTeamName: sourceCase.investigatorTeamName,
       investigatorContact: sourceCase.investigatorContact,
+      investigatorEmail: sourceCase.investigatorEmail, // 조사사 이메일 동기화 추가
       // 보험계약자 정보
       policyHolderName: sourceCase.policyHolderName,
       policyHolderIdNumber: sourceCase.policyHolderIdNumber,
