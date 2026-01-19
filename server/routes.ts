@@ -8263,6 +8263,9 @@ FLOXN`;
       console.log(
         `[Field Report Email] PDF generated, size: ${pdfBuffer.length} bytes`,
       );
+      console.log(
+        `[Field Report Email] Case data - accidentNo: ${caseData.insuranceAccidentNo}, policyNo: ${caseData.insurancePolicyNo}`,
+      );
 
       const result = await sendFieldReportEmail(
         email,
