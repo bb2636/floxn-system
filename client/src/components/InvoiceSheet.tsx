@@ -591,6 +591,16 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       return;
     }
 
+    // 사고번호 확인 - 없으면 발송 차단
+    if (!caseData?.insuranceAccidentNo) {
+      toast({
+        title: "사고번호가 없습니다",
+        description: "해당 접수건에 사고번호가 등록되어 있지 않습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Show warning toast if many documents are selected
     if (selectedDocumentIds.length >= 5) {
       toast({
