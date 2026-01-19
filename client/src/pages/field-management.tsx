@@ -827,7 +827,7 @@ export default function FieldManagement() {
           specialNotesConfirmedBy: null,
           additionalNotes: null,
           estimateAmount: null,
-          assignedTo: null,
+          assignedTo: selectedCaseData.assignedTo,
           inspectionDate: null,
           siteVisitDate: null,
           fieldSurveyDate: null,
