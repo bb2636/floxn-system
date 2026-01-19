@@ -691,12 +691,19 @@ async function renderCoverPage(
   const caseNumber = caseData.caseNumber || "";
   const suffixMatch = caseNumber.match(/-(\d+)$/);
   const caseSuffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
-  
+
   // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
-  const fullAddress = caseSuffix === 0
-    ? [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ")
-    : [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
-      [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+  const fullAddress =
+    caseSuffix === 0
+      ? [caseData.insuredAddress, caseData.insuredAddressDetail]
+          .filter(Boolean)
+          .join(" ")
+      : [caseData.victimAddress, caseData.victimAddressDetail]
+          .filter(Boolean)
+          .join(" ") ||
+        [caseData.insuredAddress, caseData.insuredAddressDetail]
+          .filter(Boolean)
+          .join(" ");
 
   // 날짜/시간 형식에서 불필요한 공백 제거 (예: "2026- 01- 15 13: 07" -> "2026-01-15 13:07")
   const formatDateTimeStr = (str: string): string => {
@@ -717,12 +724,21 @@ async function renderCoverPage(
 
   // Main info table
   // 특수기호 뒤 공백 제거
-  const cleanAccidentNo = (caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-")
+  const cleanAccidentNo = (
+    caseData.insuranceAccidentNo ||
+    caseData.insurancePolicyNo ||
+    "-"
+  )
     .replace(/-\s+/g, "-")
     .replace(/:\s+/g, ":");
   const tableRows: TableCell[][] = [
     [
-      { text: "사고접수번호", width: 100, isHeader: true, align: "center" },
+      {
+        text: "사고번호(증권번호)",
+        width: 100,
+        isHeader: true,
+        align: "center",
+      },
       { text: cleanAccidentNo, width: 150, align: "left" },
       { text: "출동담당자", width: 100, isHeader: true, align: "center" },
       { text: dispatchManager, width: 165, align: "left" },
@@ -1221,7 +1237,7 @@ async function renderDrawingPage(
   const rawAccidentNo =
     caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-";
   const accidentNo = rawAccidentNo.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
-  const accidentNoText = `사고번호(계약번호):${accidentNo}`;
+  const accidentNoText = `사고번호(증권번호):${accidentNo}`;
   // 텍스트 길이에 따라 폰트 크기 조정 (헤더 영역 안에 들어가도록)
   const accidentNoFontSize =
     accidentNoText.length > 25 ? 8 : accidentNoText.length > 20 ? 9 : 10;
@@ -1241,15 +1257,26 @@ async function renderDrawingPage(
   // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
   const drawingCaseNumber = caseData.caseNumber || "";
   const drawingSuffixMatch = drawingCaseNumber.match(/-(\d+)$/);
-  const drawingCaseSuffix = drawingSuffixMatch ? parseInt(drawingSuffixMatch[1], 10) : 0;
-  
+  const drawingCaseSuffix = drawingSuffixMatch
+    ? parseInt(drawingSuffixMatch[1], 10)
+    : 0;
+
   // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
   let fullAddress = "-";
   if (drawingCaseSuffix === 0) {
-    fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+    fullAddress =
+      [caseData.insuredAddress, caseData.insuredAddressDetail]
+        .filter(Boolean)
+        .join(" ") || "-";
   } else {
-    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
-      [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+    fullAddress =
+      [caseData.victimAddress, caseData.victimAddressDetail]
+        .filter(Boolean)
+        .join(" ") ||
+      [caseData.insuredAddress, caseData.insuredAddressDetail]
+        .filter(Boolean)
+        .join(" ") ||
+      "-";
   }
 
   drawText(page, {
@@ -1330,33 +1357,41 @@ async function renderDrawingPage(
           .flatten({ background: { r: 255, g: 255, b: 255 } })
           .png()
           .toBuffer();
-        
+
         // 흰색 배경 트림 (높은 threshold로 약간의 회색/그림자도 포함)
         const trimmedBuffer = await sharp(flattenedBuffer)
-          .trim({ 
-            background: '#ffffff',
-            threshold: 50  // 높은 threshold로 더 공격적인 트림
+          .trim({
+            background: "#ffffff",
+            threshold: 50, // 높은 threshold로 더 공격적인 트림
           })
           .extend({
             top: 30,
             bottom: 30,
             left: 30,
             right: 30,
-            background: { r: 255, g: 255, b: 255 }
+            background: { r: 255, g: 255, b: 255 },
           })
           .png()
           .toBuffer();
-        
+
         const trimmedMeta = await sharp(trimmedBuffer).metadata();
-        console.log(`[pdf-lib] 크롭 후 크기: ${trimmedMeta.width}x${trimmedMeta.height}`);
-        
+        console.log(
+          `[pdf-lib] 크롭 후 크기: ${trimmedMeta.width}x${trimmedMeta.height}`,
+        );
+
         // 크롭된 이미지가 너무 작지 않은 경우에만 사용
-        if (trimmedMeta.width && trimmedMeta.height && 
-            trimmedMeta.width > 100 && trimmedMeta.height > 100) {
+        if (
+          trimmedMeta.width &&
+          trimmedMeta.height &&
+          trimmedMeta.width > 100 &&
+          trimmedMeta.height > 100
+        ) {
           processedImageData = trimmedBuffer;
           console.log(`[pdf-lib] 자동 크롭 적용됨`);
         } else {
-          console.log(`[pdf-lib] 크롭 결과가 너무 작아 원본 사용: ${trimmedMeta.width}x${trimmedMeta.height}`);
+          console.log(
+            `[pdf-lib] 크롭 결과가 너무 작아 원본 사용: ${trimmedMeta.width}x${trimmedMeta.height}`,
+          );
         }
       } catch (trimErr) {
         console.log(`[pdf-lib] 자동 크롭 실패, 원본 사용:`, trimErr);
@@ -1555,15 +1590,27 @@ async function renderEvidencePages(
   // 증빙자료 순서 정의 (사진 → 기본자료 → 증빙자료 → 청구자료)
   const CATEGORY_ORDER: string[] = [
     // 사진 (현장사진, 수리중, 복구완료)
-    "현장출동사진", "현장", "현장사진",
-    "수리중 사진", "수리중",
-    "복구완료 사진", "복구완료",
+    "현장출동사진",
+    "현장",
+    "현장사진",
+    "수리중 사진",
+    "수리중",
+    "복구완료 사진",
+    "복구완료",
     // 기본자료 (보험금청구서, 개인정보동의서)
-    "보험금 청구서", "개인정보 동의서(가족용)",
+    "보험금 청구서",
+    "개인정보 동의서(가족용)",
     // 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
-    "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+    "주민등록등본",
+    "등기부등본",
+    "건축물대장",
+    "기타증빙자료(민원일지 등)",
     // 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
-    "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료", "청구",
+    "위임장",
+    "도급계약서",
+    "복구완료확인서",
+    "부가세 청구자료",
+    "청구",
   ];
 
   // 문서 정렬 함수
@@ -1581,7 +1628,7 @@ async function renderEvidencePages(
   type UnifiedDoc = {
     doc: any;
     tab: string;
-    type: 'image' | 'pdf';
+    type: "image" | "pdf";
     data: string | Buffer; // 이미지는 base64 string, PDF는 Buffer
   };
   const unifiedDocs: UnifiedDoc[] = [];
@@ -1600,7 +1647,7 @@ async function renderEvidencePages(
       const imageBuffer = await getImageBuffer(doc);
       if (imageBuffer) {
         const base64Data = imageBuffer.toString("base64");
-        unifiedDocs.push({ doc, tab, type: 'image', data: base64Data });
+        unifiedDocs.push({ doc, tab, type: "image", data: base64Data });
       } else {
         errors.push({ fileName: doc.fileName, reason: "이미지 로드 실패" });
       }
@@ -1608,7 +1655,7 @@ async function renderEvidencePages(
       const tab = categoryToTab[doc.category] || "기타";
       const pdfBuffer = await getImageBuffer(doc);
       if (pdfBuffer) {
-        unifiedDocs.push({ doc, tab, type: 'pdf', data: pdfBuffer });
+        unifiedDocs.push({ doc, tab, type: "pdf", data: pdfBuffer });
       } else {
         errors.push({ fileName: doc.fileName, reason: "PDF 로드 실패" });
       }
@@ -1629,8 +1676,17 @@ async function renderEvidencePages(
   const TOTAL_HEADER_SPACE = PDF_HEADER_HEIGHT + HEADER_CONTENT_GAP;
 
   // 사진 카테고리 목록 (2장/페이지 처리용)
-  const PHOTO_CATEGORIES = ["현장출동사진", "현장", "현장사진", "수리중 사진", "수리중", "복구완료 사진", "복구완료"];
-  const isPhotoCategory = (category: string) => PHOTO_CATEGORIES.includes(category);
+  const PHOTO_CATEGORIES = [
+    "현장출동사진",
+    "현장",
+    "현장사진",
+    "수리중 사진",
+    "수리중",
+    "복구완료 사진",
+    "복구완료",
+  ];
+  const isPhotoCategory = (category: string) =>
+    PHOTO_CATEGORIES.includes(category);
 
   // 통합 처리: 카테고리 순서대로 처리
   // 사진 카테고리 이미지는 2장씩 모아서 처리, 나머지는 1개씩
@@ -1639,7 +1695,7 @@ async function renderEvidencePages(
     const current = unifiedDocs[i];
     const isPhoto = isPhotoCategory(current.doc.category);
 
-    if (current.type === 'pdf') {
+    if (current.type === "pdf") {
       // PDF 문서: 1개씩 처리 (카테고리와 무관)
       try {
         console.log(`[pdf-lib] PDF 문서 삽입: ${current.doc.fileName}`);
@@ -1651,24 +1707,44 @@ async function renderEvidencePages(
         // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
         const pdfCaseNum = caseData.caseNumber || "";
         const pdfSuffixMatch = pdfCaseNum.match(/-(\d+)$/);
-        const pdfCaseSuffix = pdfSuffixMatch ? parseInt(pdfSuffixMatch[1], 10) : 0;
-        
+        const pdfCaseSuffix = pdfSuffixMatch
+          ? parseInt(pdfSuffixMatch[1], 10)
+          : 0;
+
         // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
         let pdfFullAddress = "";
         if (pdfCaseSuffix === 0) {
-          pdfFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+          pdfFullAddress = [
+            caseData.insuredAddress,
+            caseData.insuredAddressDetail,
+          ]
+            .filter(Boolean)
+            .join(" ");
         } else {
-          pdfFullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
-            [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+          pdfFullAddress =
+            [caseData.victimAddress, caseData.victimAddressDetail]
+              .filter(Boolean)
+              .join(" ") ||
+            [caseData.insuredAddress, caseData.insuredAddressDetail]
+              .filter(Boolean)
+              .join(" ");
         }
         // 사고번호 처리: normalizeText 후 하이픈 앞뒤 공백 완전 제거
-        const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "")
-          .replace(/\s*-\s*/g, "-");
+        const pdfAccidentNo = normalizeText(
+          caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "",
+        ).replace(/\s*-\s*/g, "-");
         const pdfCategoryDisplay = normalizeText(
-          current.doc.category ? `${current.tab}-${current.doc.category}` : current.tab,
+          current.doc.category
+            ? `${current.tab}-${current.doc.category}`
+            : current.tab,
         );
         const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`;
-        const pdfFontSize = normalizedHeaderText.length > 60 ? 8 : normalizedHeaderText.length > 45 ? 9 : 10;
+        const pdfFontSize =
+          normalizedHeaderText.length > 60
+            ? 8
+            : normalizedHeaderText.length > 45
+              ? 9
+              : 10;
 
         for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
           const srcPage = externalPdf.getPage(pageIdx);
@@ -1678,28 +1754,60 @@ async function renderEvidencePages(
           newPage.drawPage(embeddedPage, { x: 0, y: 0, width, height });
 
           const headerBaseY = height + HEADER_CONTENT_GAP;
-          newPage.drawRectangle({ x: 0, y: headerBaseY, width, height: PDF_HEADER_HEIGHT, color: rgb(0.2, 0.2, 0.2) });
-          newPage.drawLine({ start: { x: 0, y: headerBaseY }, end: { x: width, y: headerBaseY }, thickness: 1, color: rgb(0.3, 0.3, 0.3) });
+          newPage.drawRectangle({
+            x: 0,
+            y: headerBaseY,
+            width,
+            height: PDF_HEADER_HEIGHT,
+            color: rgb(0.2, 0.2, 0.2),
+          });
+          newPage.drawLine({
+            start: { x: 0, y: headerBaseY },
+            end: { x: width, y: headerBaseY },
+            thickness: 1,
+            color: rgb(0.3, 0.3, 0.3),
+          });
 
           const textY = headerBaseY + (PDF_HEADER_HEIGHT - pdfFontSize) / 2;
           try {
-            newPage.drawText(normalizedHeaderText, { x: 10, y: textY, size: pdfFontSize, font: fonts.bold, color: rgb(1, 1, 1) });
+            newPage.drawText(normalizedHeaderText, {
+              x: 10,
+              y: textY,
+              size: pdfFontSize,
+              font: fonts.bold,
+              color: rgb(1, 1, 1),
+            });
           } catch {}
           try {
-            newPage.drawText(`${pageIdx + 1}/${pageCount}`, { x: width - 50, y: textY, size: 8, font: fonts.regular, color: rgb(1, 1, 1) });
+            newPage.drawText(`${pageIdx + 1}/${pageCount}`, {
+              x: width - 50,
+              y: textY,
+              size: 8,
+              font: fonts.regular,
+              color: rgb(1, 1, 1),
+            });
           } catch {}
         }
-        console.log(`[pdf-lib] PDF 문서 삽입 완료: ${current.doc.fileName} (${pageCount}페이지)`);
+        console.log(
+          `[pdf-lib] PDF 문서 삽입 완료: ${current.doc.fileName} (${pageCount}페이지)`,
+        );
       } catch (pdfError) {
-        console.error(`[pdf-lib] PDF 삽입 오류 (${current.doc.fileName}):`, pdfError);
-        errors.push({ fileName: current.doc.fileName, reason: "PDF 삽입 실패" });
+        console.error(
+          `[pdf-lib] PDF 삽입 오류 (${current.doc.fileName}):`,
+          pdfError,
+        );
+        errors.push({
+          fileName: current.doc.fileName,
+          reason: "PDF 삽입 실패",
+        });
       }
       i++;
-    } else if (isPhoto && current.type === 'image') {
+    } else if (isPhoto && current.type === "image") {
       // 사진 카테고리 이미지: 2장씩 한 페이지에 처리
       // 다음 문서도 사진 카테고리 이미지인지 확인
       const next = unifiedDocs[i + 1];
-      const nextIsPhotoImage = next && next.type === 'image' && isPhotoCategory(next.doc.category);
+      const nextIsPhotoImage =
+        next && next.type === "image" && isPhotoCategory(next.doc.category);
 
       const imagesToRender = [current];
       if (nextIsPhotoImage) {
@@ -1707,12 +1815,26 @@ async function renderEvidencePages(
       }
 
       // 사진 2장 한 페이지 렌더링
-      await renderPhotoPage(pdfDoc, fonts, caseData, imagesToRender, processingConfig, errors);
+      await renderPhotoPage(
+        pdfDoc,
+        fonts,
+        caseData,
+        imagesToRender,
+        processingConfig,
+        errors,
+      );
 
       i += imagesToRender.length;
     } else {
       // 비사진 카테고리 이미지: 1장씩 처리
-      await renderSingleImagePage(pdfDoc, fonts, caseData, current, processingConfig, errors);
+      await renderSingleImagePage(
+        pdfDoc,
+        fonts,
+        caseData,
+        current,
+        processingConfig,
+        errors,
+      );
       i++;
     }
   }
@@ -1735,117 +1857,257 @@ async function renderPhotoPage(
   // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
   const photoCaseNum = caseData.caseNumber || "";
   const photoSuffixMatch = photoCaseNum.match(/-(\d+)$/);
-  const photoCaseSuffix = photoSuffixMatch ? parseInt(photoSuffixMatch[1], 10) : 0;
-  
+  const photoCaseSuffix = photoSuffixMatch
+    ? parseInt(photoSuffixMatch[1], 10)
+    : 0;
+
   // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
   let fullAddress = "";
   if (photoCaseSuffix === 0) {
-    fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+    fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
+      .filter(Boolean)
+      .join(" ");
   } else {
-    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
-      [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+    fullAddress =
+      [caseData.victimAddress, caseData.victimAddressDetail]
+        .filter(Boolean)
+        .join(" ") ||
+      [caseData.insuredAddress, caseData.insuredAddressDetail]
+        .filter(Boolean)
+        .join(" ");
   }
 
-  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "")
-    .replace(/\s*-\s*/g, "-");
-  const leftText = `사고번호 ${accidentNo}`;
+  const accidentNo = normalizeText(
+    caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "",
+  ).replace(/\s*-\s*/g, "-");
+  const leftText = `사고번호(증권번호) ${accidentNo}`;
   const centerText = normalizeText(fullAddress);
-  const rightText = normalizeText(firstImage.doc.category ? `${firstImage.tab}-${firstImage.doc.category}` : firstImage.tab);
+  const rightText = normalizeText(
+    firstImage.doc.category
+      ? `${firstImage.tab}-${firstImage.doc.category}`
+      : firstImage.tab,
+  );
 
-  page.drawRectangle({ x: MARGIN, y: A4_HEIGHT - MARGIN - 30, width: CONTENT_WIDTH, height: 30, color: rgb(0.2, 0.2, 0.2) });
+  page.drawRectangle({
+    x: MARGIN,
+    y: A4_HEIGHT - MARGIN - 30,
+    width: CONTENT_WIDTH,
+    height: 30,
+    color: rgb(0.2, 0.2, 0.2),
+  });
 
-  const totalTextLength = leftText.length + centerText.length + rightText.length;
+  const totalTextLength =
+    leftText.length + centerText.length + rightText.length;
   const fontSize = totalTextLength > 70 ? 8 : totalTextLength > 50 ? 9 : 10;
 
-  drawText(page, { x: MARGIN + 15, y: A4_HEIGHT - MARGIN - 22, text: leftText, font: fonts.bold, size: fontSize, color: { r: 1, g: 1, b: 1 } });
+  drawText(page, {
+    x: MARGIN + 15,
+    y: A4_HEIGHT - MARGIN - 22,
+    text: leftText,
+    font: fonts.bold,
+    size: fontSize,
+    color: { r: 1, g: 1, b: 1 },
+  });
 
   const centerTextWidth = fonts.bold.widthOfTextAtSize(centerText, fontSize);
   const centerX = MARGIN + (CONTENT_WIDTH - centerTextWidth) / 2;
-  drawText(page, { x: centerX, y: A4_HEIGHT - MARGIN - 22, text: centerText, font: fonts.bold, size: fontSize, color: { r: 1, g: 1, b: 1 } });
+  drawText(page, {
+    x: centerX,
+    y: A4_HEIGHT - MARGIN - 22,
+    text: centerText,
+    font: fonts.bold,
+    size: fontSize,
+    color: { r: 1, g: 1, b: 1 },
+  });
 
   const rightTextWidth = fonts.bold.widthOfTextAtSize(rightText, fontSize);
-  drawText(page, { x: A4_WIDTH - MARGIN - 15 - rightTextWidth, y: A4_HEIGHT - MARGIN - 22, text: rightText, font: fonts.bold, size: fontSize, color: { r: 1, g: 1, b: 1 } });
+  drawText(page, {
+    x: A4_WIDTH - MARGIN - 15 - rightTextWidth,
+    y: A4_HEIGHT - MARGIN - 22,
+    text: rightText,
+    font: fonts.bold,
+    size: fontSize,
+    color: { r: 1, g: 1, b: 1 },
+  });
 
   const categoryLabelHeight = 22;
   const imageHeight = 295;
   const imageWidth = CONTENT_WIDTH;
   const spacing = 8;
   const footerHeight = 20;
-  
+
   // 첫 번째 사진의 카테고리 레이블
   const firstCategory = normalizeText(firstImage.doc.category || "");
   const firstCategoryY = A4_HEIGHT - MARGIN - 30 - spacing;
-  
+
   // 카테고리 레이블 배경 (하늘색 배경)
-  page.drawRectangle({ 
-    x: MARGIN, 
-    y: firstCategoryY - categoryLabelHeight, 
-    width: CONTENT_WIDTH, 
-    height: categoryLabelHeight, 
-    color: rgb(0.88, 0.95, 1) // 연한 하늘색 배경
+  page.drawRectangle({
+    x: MARGIN,
+    y: firstCategoryY - categoryLabelHeight,
+    width: CONTENT_WIDTH,
+    height: categoryLabelHeight,
+    color: rgb(0.88, 0.95, 1), // 연한 하늘색 배경
   });
-  
+
   // 카테고리 레이블 텍스트
-  drawText(page, { 
-    x: MARGIN + 10, 
-    y: firstCategoryY - categoryLabelHeight + 7, 
-    text: firstCategory, 
-    font: fonts.bold, 
-    size: 10, 
-    color: { r: 0.2, g: 0.4, b: 0.6 } 
+  drawText(page, {
+    x: MARGIN + 10,
+    y: firstCategoryY - categoryLabelHeight + 7,
+    text: firstCategory,
+    font: fonts.bold,
+    size: 10,
+    color: { r: 0.2, g: 0.4, b: 0.6 },
   });
-  
-  const firstY = firstCategoryY - categoryLabelHeight - imageHeight - footerHeight;
 
-  page.drawRectangle({ x: MARGIN, y: firstY + footerHeight, width: CONTENT_WIDTH, height: imageHeight, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.5 });
+  const firstY =
+    firstCategoryY - categoryLabelHeight - imageHeight - footerHeight;
 
-  const firstResult = await embedImage(pdfDoc, page, firstImage.data as string, MARGIN + 5, firstY + footerHeight + 5, imageWidth - 10, imageHeight - 10, processingConfig);
+  page.drawRectangle({
+    x: MARGIN,
+    y: firstY + footerHeight,
+    width: CONTENT_WIDTH,
+    height: imageHeight,
+    borderColor: rgb(0.8, 0.8, 0.8),
+    borderWidth: 0.5,
+  });
+
+  const firstResult = await embedImage(
+    pdfDoc,
+    page,
+    firstImage.data as string,
+    MARGIN + 5,
+    firstY + footerHeight + 5,
+    imageWidth - 10,
+    imageHeight - 10,
+    processingConfig,
+  );
   if (!firstResult.success) {
-    drawErrorSection(page, fonts, MARGIN + 5, firstY + footerHeight + 5, imageWidth - 10, imageHeight - 10, firstImage.doc.fileName, firstResult.error || "첨부 실패");
-    errors.push({ fileName: firstImage.doc.fileName, reason: firstResult.error || "첨부 실패" });
+    drawErrorSection(
+      page,
+      fonts,
+      MARGIN + 5,
+      firstY + footerHeight + 5,
+      imageWidth - 10,
+      imageHeight - 10,
+      firstImage.doc.fileName,
+      firstResult.error || "첨부 실패",
+    );
+    errors.push({
+      fileName: firstImage.doc.fileName,
+      reason: firstResult.error || "첨부 실패",
+    });
   }
 
-  const firstUploadDate = firstImage.doc.createdAt ? new Date(firstImage.doc.createdAt).toLocaleDateString("ko-KR", { year: "numeric", month: "numeric", day: "numeric" }) : "-";
-  drawText(page, { x: MARGIN + 5, y: firstY + 8, text: firstImage.doc.fileName || "", font: fonts.regular, size: 8, color: { r: 0.3, g: 0.3, b: 0.3 } });
-  drawText(page, { x: A4_WIDTH - MARGIN - 100, y: firstY + 8, text: `업로드:${firstUploadDate}`, font: fonts.regular, size: 8, color: { r: 0.3, g: 0.3, b: 0.3 } });
+  const firstUploadDate = firstImage.doc.createdAt
+    ? new Date(firstImage.doc.createdAt).toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      })
+    : "-";
+  drawText(page, {
+    x: MARGIN + 5,
+    y: firstY + 8,
+    text: firstImage.doc.fileName || "",
+    font: fonts.regular,
+    size: 8,
+    color: { r: 0.3, g: 0.3, b: 0.3 },
+  });
+  drawText(page, {
+    x: A4_WIDTH - MARGIN - 100,
+    y: firstY + 8,
+    text: `업로드:${firstUploadDate}`,
+    font: fonts.regular,
+    size: 8,
+    color: { r: 0.3, g: 0.3, b: 0.3 },
+  });
 
   if (images[1]) {
     const secondImage = images[1];
     const secondCategory = normalizeText(secondImage.doc.category || "");
-    
+
     // 두 번째 사진의 카테고리 레이블
     const secondCategoryY = firstY - spacing;
-    
-    page.drawRectangle({ 
-      x: MARGIN, 
-      y: secondCategoryY - categoryLabelHeight, 
-      width: CONTENT_WIDTH, 
-      height: categoryLabelHeight, 
-      color: rgb(0.88, 0.95, 1) // 연한 하늘색 배경
-    });
-    
-    drawText(page, { 
-      x: MARGIN + 10, 
-      y: secondCategoryY - categoryLabelHeight + 7, 
-      text: secondCategory, 
-      font: fonts.bold, 
-      size: 10, 
-      color: { r: 0.2, g: 0.4, b: 0.6 } 
-    });
-    
-    const secondY = secondCategoryY - categoryLabelHeight - imageHeight - footerHeight;
 
-    page.drawRectangle({ x: MARGIN, y: secondY + footerHeight, width: CONTENT_WIDTH, height: imageHeight, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.5 });
+    page.drawRectangle({
+      x: MARGIN,
+      y: secondCategoryY - categoryLabelHeight,
+      width: CONTENT_WIDTH,
+      height: categoryLabelHeight,
+      color: rgb(0.88, 0.95, 1), // 연한 하늘색 배경
+    });
 
-    const secondResult = await embedImage(pdfDoc, page, secondImage.data as string, MARGIN + 5, secondY + footerHeight + 5, imageWidth - 10, imageHeight - 10, processingConfig);
+    drawText(page, {
+      x: MARGIN + 10,
+      y: secondCategoryY - categoryLabelHeight + 7,
+      text: secondCategory,
+      font: fonts.bold,
+      size: 10,
+      color: { r: 0.2, g: 0.4, b: 0.6 },
+    });
+
+    const secondY =
+      secondCategoryY - categoryLabelHeight - imageHeight - footerHeight;
+
+    page.drawRectangle({
+      x: MARGIN,
+      y: secondY + footerHeight,
+      width: CONTENT_WIDTH,
+      height: imageHeight,
+      borderColor: rgb(0.8, 0.8, 0.8),
+      borderWidth: 0.5,
+    });
+
+    const secondResult = await embedImage(
+      pdfDoc,
+      page,
+      secondImage.data as string,
+      MARGIN + 5,
+      secondY + footerHeight + 5,
+      imageWidth - 10,
+      imageHeight - 10,
+      processingConfig,
+    );
     if (!secondResult.success) {
-      drawErrorSection(page, fonts, MARGIN + 5, secondY + footerHeight + 5, imageWidth - 10, imageHeight - 10, secondImage.doc.fileName, secondResult.error || "첨부 실패");
-      errors.push({ fileName: secondImage.doc.fileName, reason: secondResult.error || "첨부 실패" });
+      drawErrorSection(
+        page,
+        fonts,
+        MARGIN + 5,
+        secondY + footerHeight + 5,
+        imageWidth - 10,
+        imageHeight - 10,
+        secondImage.doc.fileName,
+        secondResult.error || "첨부 실패",
+      );
+      errors.push({
+        fileName: secondImage.doc.fileName,
+        reason: secondResult.error || "첨부 실패",
+      });
     }
 
-    const secondUploadDate = secondImage.doc.createdAt ? new Date(secondImage.doc.createdAt).toLocaleDateString("ko-KR", { year: "numeric", month: "numeric", day: "numeric" }) : "-";
-    drawText(page, { x: MARGIN + 5, y: secondY + 8, text: secondImage.doc.fileName || "", font: fonts.regular, size: 8, color: { r: 0.3, g: 0.3, b: 0.3 } });
-    drawText(page, { x: A4_WIDTH - MARGIN - 100, y: secondY + 8, text: `업로드:${secondUploadDate}`, font: fonts.regular, size: 8, color: { r: 0.3, g: 0.3, b: 0.3 } });
+    const secondUploadDate = secondImage.doc.createdAt
+      ? new Date(secondImage.doc.createdAt).toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+        })
+      : "-";
+    drawText(page, {
+      x: MARGIN + 5,
+      y: secondY + 8,
+      text: secondImage.doc.fileName || "",
+      font: fonts.regular,
+      size: 8,
+      color: { r: 0.3, g: 0.3, b: 0.3 },
+    });
+    drawText(page, {
+      x: A4_WIDTH - MARGIN - 100,
+      y: secondY + 8,
+      text: `업로드:${secondUploadDate}`,
+      font: fonts.regular,
+      size: 8,
+      color: { r: 0.3, g: 0.3, b: 0.3 },
+    });
   }
 }
 
@@ -1863,50 +2125,140 @@ async function renderSingleImagePage(
   // 케이스 번호에서 suffix 추출 (-0: 손해방지, -1 이상: 피해세대 복구)
   const singleCaseNum = caseData.caseNumber || "";
   const singleSuffixMatch = singleCaseNum.match(/-(\d+)$/);
-  const singleCaseSuffix = singleSuffixMatch ? parseInt(singleSuffixMatch[1], 10) : 0;
-  
+  const singleCaseSuffix = singleSuffixMatch
+    ? parseInt(singleSuffixMatch[1], 10)
+    : 0;
+
   // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
   let fullAddress = "";
   if (singleCaseSuffix === 0) {
-    fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+    fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
+      .filter(Boolean)
+      .join(" ");
   } else {
-    fullAddress = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ") ||
-      [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ");
+    fullAddress =
+      [caseData.victimAddress, caseData.victimAddressDetail]
+        .filter(Boolean)
+        .join(" ") ||
+      [caseData.insuredAddress, caseData.insuredAddressDetail]
+        .filter(Boolean)
+        .join(" ");
   }
 
-  const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "")
-    .replace(/\s*-\s*/g, "-");
+  const accidentNo = normalizeText(
+    caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "",
+  ).replace(/\s*-\s*/g, "-");
   const leftText = `사고번호 ${accidentNo}`;
   const centerText = normalizeText(fullAddress);
-  const rightText = normalizeText(imageDoc.doc.category ? `${imageDoc.tab}-${imageDoc.doc.category}` : imageDoc.tab);
+  const rightText = normalizeText(
+    imageDoc.doc.category
+      ? `${imageDoc.tab}-${imageDoc.doc.category}`
+      : imageDoc.tab,
+  );
 
-  page.drawRectangle({ x: MARGIN, y: A4_HEIGHT - MARGIN - 30, width: CONTENT_WIDTH, height: 30, color: rgb(0.2, 0.2, 0.2) });
+  page.drawRectangle({
+    x: MARGIN,
+    y: A4_HEIGHT - MARGIN - 30,
+    width: CONTENT_WIDTH,
+    height: 30,
+    color: rgb(0.2, 0.2, 0.2),
+  });
 
-  const totalTextLength = leftText.length + centerText.length + rightText.length;
+  const totalTextLength =
+    leftText.length + centerText.length + rightText.length;
   const fontSize = totalTextLength > 70 ? 8 : totalTextLength > 50 ? 9 : 10;
 
-  drawText(page, { x: MARGIN + 15, y: A4_HEIGHT - MARGIN - 22, text: leftText, font: fonts.bold, size: fontSize, color: { r: 1, g: 1, b: 1 } });
+  drawText(page, {
+    x: MARGIN + 15,
+    y: A4_HEIGHT - MARGIN - 22,
+    text: leftText,
+    font: fonts.bold,
+    size: fontSize,
+    color: { r: 1, g: 1, b: 1 },
+  });
 
   const centerTextWidth = fonts.bold.widthOfTextAtSize(centerText, fontSize);
   const centerX = MARGIN + (CONTENT_WIDTH - centerTextWidth) / 2;
-  drawText(page, { x: centerX, y: A4_HEIGHT - MARGIN - 22, text: centerText, font: fonts.bold, size: fontSize, color: { r: 1, g: 1, b: 1 } });
+  drawText(page, {
+    x: centerX,
+    y: A4_HEIGHT - MARGIN - 22,
+    text: centerText,
+    font: fonts.bold,
+    size: fontSize,
+    color: { r: 1, g: 1, b: 1 },
+  });
 
   const rightTextWidth = fonts.bold.widthOfTextAtSize(rightText, fontSize);
-  drawText(page, { x: A4_WIDTH - MARGIN - 15 - rightTextWidth, y: A4_HEIGHT - MARGIN - 22, text: rightText, font: fonts.bold, size: fontSize, color: { r: 1, g: 1, b: 1 } });
+  drawText(page, {
+    x: A4_WIDTH - MARGIN - 15 - rightTextWidth,
+    y: A4_HEIGHT - MARGIN - 22,
+    text: rightText,
+    font: fonts.bold,
+    size: fontSize,
+    color: { r: 1, g: 1, b: 1 },
+  });
 
   const singleImageHeight = 650;
 
-  page.drawRectangle({ x: MARGIN, y: A4_HEIGHT - MARGIN - 30 - 8 - singleImageHeight, width: CONTENT_WIDTH, height: singleImageHeight, borderColor: rgb(0.8, 0.8, 0.8), borderWidth: 0.5 });
+  page.drawRectangle({
+    x: MARGIN,
+    y: A4_HEIGHT - MARGIN - 30 - 8 - singleImageHeight,
+    width: CONTENT_WIDTH,
+    height: singleImageHeight,
+    borderColor: rgb(0.8, 0.8, 0.8),
+    borderWidth: 0.5,
+  });
 
-  const imageResult = await embedImage(pdfDoc, page, imageDoc.data as string, MARGIN + 5, A4_HEIGHT - MARGIN - 30 - 8 - singleImageHeight + 5, CONTENT_WIDTH - 10, singleImageHeight - 10, processingConfig);
+  const imageResult = await embedImage(
+    pdfDoc,
+    page,
+    imageDoc.data as string,
+    MARGIN + 5,
+    A4_HEIGHT - MARGIN - 30 - 8 - singleImageHeight + 5,
+    CONTENT_WIDTH - 10,
+    singleImageHeight - 10,
+    processingConfig,
+  );
   if (!imageResult.success) {
-    drawErrorSection(page, fonts, MARGIN + 5, A4_HEIGHT - MARGIN - 30 - 8 - singleImageHeight + 5, CONTENT_WIDTH - 10, singleImageHeight - 10, imageDoc.doc.fileName, imageResult.error || "첨부 실패");
-    errors.push({ fileName: imageDoc.doc.fileName, reason: imageResult.error || "첨부 실패" });
+    drawErrorSection(
+      page,
+      fonts,
+      MARGIN + 5,
+      A4_HEIGHT - MARGIN - 30 - 8 - singleImageHeight + 5,
+      CONTENT_WIDTH - 10,
+      singleImageHeight - 10,
+      imageDoc.doc.fileName,
+      imageResult.error || "첨부 실패",
+    );
+    errors.push({
+      fileName: imageDoc.doc.fileName,
+      reason: imageResult.error || "첨부 실패",
+    });
   }
 
-  const uploadDate = imageDoc.doc.createdAt ? new Date(imageDoc.doc.createdAt).toLocaleDateString("ko-KR", { year: "numeric", month: "numeric", day: "numeric" }) : "-";
-  drawText(page, { x: MARGIN + 5, y: MARGIN + 30, text: imageDoc.doc.fileName || "", font: fonts.regular, size: 8, color: { r: 0.3, g: 0.3, b: 0.3 } });
-  drawText(page, { x: A4_WIDTH - MARGIN - 100, y: MARGIN + 30, text: `업로드:${uploadDate}`, font: fonts.regular, size: 8, color: { r: 0.3, g: 0.3, b: 0.3 } });
+  const uploadDate = imageDoc.doc.createdAt
+    ? new Date(imageDoc.doc.createdAt).toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      })
+    : "-";
+  drawText(page, {
+    x: MARGIN + 5,
+    y: MARGIN + 30,
+    text: imageDoc.doc.fileName || "",
+    font: fonts.regular,
+    size: 8,
+    color: { r: 0.3, g: 0.3, b: 0.3 },
+  });
+  drawText(page, {
+    x: A4_WIDTH - MARGIN - 100,
+    y: MARGIN + 30,
+    text: `업로드:${uploadDate}`,
+    font: fonts.regular,
+    size: 8,
+    color: { r: 0.3, g: 0.3, b: 0.3 },
+  });
 }
 
 async function renderRecoveryAreaPage(
@@ -2333,14 +2685,16 @@ async function renderEstimatePage(
   const caseNumber = caseData.caseNumber || "";
   const suffixMatch = caseNumber.match(/-(\d+)$/);
   const caseSuffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
-  
+
   // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
-  const addressMain = caseSuffix === 0 
-    ? (caseData.insuredAddress || caseData.victimAddress || "")
-    : (caseData.victimAddress || caseData.insuredAddress || "");
-  const addressDetail = caseSuffix === 0
-    ? (caseData.insuredAddressDetail || caseData.victimAddressDetail || "")
-    : (caseData.victimAddressDetail || caseData.insuredAddressDetail || "");
+  const addressMain =
+    caseSuffix === 0
+      ? caseData.insuredAddress || caseData.victimAddress || ""
+      : caseData.victimAddress || caseData.insuredAddress || "";
+  const addressDetail =
+    caseSuffix === 0
+      ? caseData.insuredAddressDetail || caseData.victimAddressDetail || ""
+      : caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
   const fullAddress = [addressMain, addressDetail].filter(Boolean).join(" ");
 
   const partnerCompany =
@@ -2555,7 +2909,11 @@ async function renderEstimatePage(
           width: 65,
           align: "right",
         },
-        { text: quantity > 0 ? quantity.toFixed(2) : "-", width: 45, align: "center" },
+        {
+          text: quantity > 0 ? quantity.toFixed(2) : "-",
+          width: 45,
+          align: "center",
+        },
         { text: formatNumber(amount), width: 70, align: "right" },
         {
           text: expense > 0 ? formatNumber(expense) : "-",
@@ -2827,7 +3185,7 @@ async function renderEstimatePage(
   // 안내문구 (합계표 아래, 작성일 위 - 초록색 박스 위치)
   drawText(page, {
     x: MARGIN + 50,
-    y: footerY + 35,
+    y: footerY + 50,
     text: "상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.",
     font: fonts.regular,
     size: 8,
@@ -3101,15 +3459,27 @@ export async function generatePdfWithPdfLib(
       // 증빙자료 순서 정의 (사진 → 기본자료 → 증빙자료 → 청구자료)
       const CATEGORY_ORDER: string[] = [
         // 사진 (현장사진, 수리중, 복구완료)
-        "현장출동사진", "현장", "현장사진",
-        "수리중 사진", "수리중",
-        "복구완료 사진", "복구완료",
+        "현장출동사진",
+        "현장",
+        "현장사진",
+        "수리중 사진",
+        "수리중",
+        "복구완료 사진",
+        "복구완료",
         // 기본자료 (보험금청구서, 개인정보동의서)
-        "보험금 청구서", "개인정보 동의서(가족용)",
+        "보험금 청구서",
+        "개인정보 동의서(가족용)",
         // 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
-        "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+        "주민등록등본",
+        "등기부등본",
+        "건축물대장",
+        "기타증빙자료(민원일지 등)",
         // 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
-        "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료", "청구",
+        "위임장",
+        "도급계약서",
+        "복구완료확인서",
+        "부가세 청구자료",
+        "청구",
       ];
       const getCategoryOrder = (category: string): number => {
         const idx = CATEGORY_ORDER.indexOf(category);
@@ -3122,7 +3492,7 @@ export async function generatePdfWithPdfLib(
       });
 
       // skipPdfAttachments=true 면 PDF 제외, 그 외에는 모든 문서 포함
-      const docsToProcess = skipPdfAttachments 
+      const docsToProcess = skipPdfAttachments
         ? sortedFilteredDocs.filter((doc) => doc.fileType?.startsWith("image/"))
         : sortedFilteredDocs;
 
@@ -3159,7 +3529,9 @@ export async function generatePdfWithPdfLib(
             errors,
           );
         }
-        console.log("[pdf-lib] 증빙자료 페이지 생성 완료 (이미지+PDF 통합 처리)");
+        console.log(
+          "[pdf-lib] 증빙자료 페이지 생성 완료 (이미지+PDF 통합 처리)",
+        );
       }
     } catch (err: any) {
       console.error("[pdf-lib] 증빙자료 섹션 생성 실패:", err.message);
@@ -3626,7 +3998,10 @@ export async function generateEvidencePDFsByTab(
   }
 
   const accidentNo =
-    caseData.insuranceAccidentNo || caseData.insurancePolicyNo || caseData.caseNumber || "UNKNOWN";
+    caseData.insuranceAccidentNo ||
+    caseData.insurancePolicyNo ||
+    caseData.caseNumber ||
+    "UNKNOWN";
 
   // 선택된 문서 조회
   const selectedDocs = await db
@@ -3647,10 +4022,29 @@ export async function generateEvidencePDFsByTab(
 
   // 탭 내 카테고리 순서 정의
   const CATEGORY_ORDER_WITHIN_TAB: Record<TabName, string[]> = {
-    현장사진: ["현장출동사진", "현장", "현장사진", "수리중 사진", "수리중", "복구완료 사진", "복구완료"],
+    현장사진: [
+      "현장출동사진",
+      "현장",
+      "현장사진",
+      "수리중 사진",
+      "수리중",
+      "복구완료 사진",
+      "복구완료",
+    ],
     기본자료: ["보험금 청구서", "개인정보 동의서(가족용)"],
-    증빙자료: ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"],
-    청구자료: ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료", "청구"],
+    증빙자료: [
+      "주민등록등본",
+      "등기부등본",
+      "건축물대장",
+      "기타증빙자료(민원일지 등)",
+    ],
+    청구자료: [
+      "위임장",
+      "도급계약서",
+      "복구완료확인서",
+      "부가세 청구자료",
+      "청구",
+    ],
   };
 
   // 탭별로 분류
@@ -3672,7 +4066,10 @@ export async function generateEvidencePDFsByTab(
     docsByTab[tabName].sort((a, b) => {
       const aIdx = categoryOrder.indexOf(a.category);
       const bIdx = categoryOrder.indexOf(b.category);
-      return (aIdx >= 0 ? aIdx : categoryOrder.length) - (bIdx >= 0 ? bIdx : categoryOrder.length);
+      return (
+        (aIdx >= 0 ? aIdx : categoryOrder.length) -
+        (bIdx >= 0 ? bIdx : categoryOrder.length)
+      );
     });
   }
 
