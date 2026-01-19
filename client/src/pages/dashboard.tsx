@@ -34,14 +34,33 @@ export default function Dashboard() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const pdfContentRef = useRef<HTMLDivElement>(null);
   
-  const [periodType, setPeriodType] = useState<PeriodType>('thisMonth');
-  const [isPeriodSheetOpen, setIsPeriodSheetOpen] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+  // 현황요약 필터 상태
+  const [summaryPeriodType, setSummaryPeriodType] = useState<PeriodType>('thisMonth');
+  const [summaryDateRange, setSummaryDateRange] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
+  const [isSummaryDateRangeModalOpen, setIsSummaryDateRangeModalOpen] = useState(false);
+  
+  // 진행건요약 필터 상태
+  const [progressPeriodType, setProgressPeriodType] = useState<PeriodType>('thisMonth');
+  const [progressDateRange, setProgressDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
+  const [isProgressDateRangeModalOpen, setIsProgressDateRangeModalOpen] = useState(false);
+  
+  // 내작업 필터 상태
+  const [myWorkPeriodType, setMyWorkPeriodType] = useState<PeriodType>('thisMonth');
+  const [myWorkDateRange, setMyWorkDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
+  const [isMyWorkDateRangeModalOpen, setIsMyWorkDateRangeModalOpen] = useState(false);
+  
+  // Legacy states (for compatibility)
+  const [isPeriodSheetOpen, setIsPeriodSheetOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
   // 새 문의 모달 상태
   const [showNewInquiryModal, setShowNewInquiryModal] = useState(false);
@@ -155,45 +174,60 @@ export default function Dashboard() {
     },
   });
 
-  const filteredCasesByPeriod = useMemo(() => {
+  // 현황요약용 필터링
+  const summaryCases = useMemo(() => {
     if (!allCases) return [];
-    
     const activeCases = allCases.filter(c => c.status !== '작성중');
-    
-    if (periodType === 'all') return activeCases;
-    if (!dateRange?.from || !dateRange?.to) return activeCases;
-
+    if (summaryPeriodType === 'all') return activeCases;
+    if (!summaryDateRange?.from || !summaryDateRange?.to) return activeCases;
     return activeCases.filter(c => {
       if (!c.accidentDate) return false;
       try {
         const caseDate = parseISO(c.accidentDate);
-        return isWithinInterval(caseDate, { start: dateRange.from!, end: dateRange.to! });
+        return isWithinInterval(caseDate, { start: summaryDateRange.from!, end: summaryDateRange.to! });
       } catch {
         return false;
       }
     });
-  }, [allCases, periodType, dateRange]);
+  }, [allCases, summaryPeriodType, summaryDateRange]);
+
+  // 진행건요약용 필터링
+  const progressCases = useMemo(() => {
+    if (!allCases) return [];
+    const activeCases = allCases.filter(c => c.status !== '작성중');
+    if (progressPeriodType === 'all') return activeCases;
+    if (!progressDateRange?.from || !progressDateRange?.to) return activeCases;
+    return activeCases.filter(c => {
+      if (!c.accidentDate) return false;
+      try {
+        const caseDate = parseISO(c.accidentDate);
+        return isWithinInterval(caseDate, { start: progressDateRange.from!, end: progressDateRange.to! });
+      } catch {
+        return false;
+      }
+    });
+  }, [allCases, progressPeriodType, progressDateRange]);
 
   const filteredCasesByTab = useMemo(() => {
-    if (!filteredCasesByPeriod) return [];
+    if (!progressCases) return [];
 
     switch (activeTab) {
       case 'reception':
-        return filteredCasesByPeriod;
+        return progressCases;
       case 'pending':
         // 미결건: 청구단계 이전 (청구, 입금완료, 부분입금, 정산완료, 접수취소 제외)
-        return filteredCasesByPeriod.filter(c => 
+        return progressCases.filter(c => 
           c.status !== '청구' && c.status !== '입금완료' && c.status !== '부분입금' && 
           c.status !== '정산완료' && c.status !== '접수취소' && c.status !== '취소'
         );
       case 'insurance':
-        return filteredCasesByPeriod.filter(c => c.status === '완료');
+        return progressCases.filter(c => c.status === '완료');
       case 'partner':
-        return filteredCasesByPeriod.filter(c => c.status === '완료');
+        return progressCases.filter(c => c.status === '완료');
       default:
-        return filteredCasesByPeriod;
+        return progressCases;
     }
-  }, [filteredCasesByPeriod, activeTab]);
+  }, [progressCases, activeTab]);
 
   const staffSummary = useMemo(() => {
     if (!filteredCasesByTab || !user) return [];
@@ -238,7 +272,7 @@ export default function Dashboard() {
   }, [filteredCasesByTab, user, allUsers]);
 
   const insuranceCompanySummary = useMemo(() => {
-    if (!filteredCasesByPeriod) return [];
+    if (!summaryCases) return [];
 
     const companyCounts = new Map<string, {
       name: string;
@@ -248,7 +282,7 @@ export default function Dashboard() {
       partnerUnsettled: number;
     }>();
 
-    filteredCasesByPeriod.forEach(c => {
+    summaryCases.forEach(c => {
       const companyName = c.insuranceCompany || '미지정';
       
       const existing = companyCounts.get(companyName);
@@ -279,7 +313,7 @@ export default function Dashboard() {
     });
 
     return Array.from(companyCounts.values()).sort((a, b) => b.reception - a.reception);
-  }, [filteredCasesByPeriod]);
+  }, [summaryCases]);
 
   const insuranceTotals = useMemo(() => {
     return insuranceCompanySummary.reduce((acc, company) => ({
@@ -295,27 +329,34 @@ export default function Dashboard() {
     
     const isPartner = user.role === "협력사";
     
-    const filteredCases = allCases.filter(c => {
-      // 담당자로 직접 지정된 경우
+    // 먼저 담당자로 필터링
+    let filteredCases = allCases.filter(c => {
       if (c.assignedTo === user.id) return true;
-      
-      // 관리자(managerId)로 지정된 경우
       if (c.managerId === user.id) return true;
-      
-      // 협력사 사용자: 협력사 담당자명이 본인 이름과 일치하는 경우
       if (isPartner && c.assignedPartnerManager === user.name) return true;
-      
       return false;
     });
     
+    // 내작업 기간 필터 적용
+    if (myWorkPeriodType !== 'all' && myWorkDateRange?.from && myWorkDateRange?.to) {
+      filteredCases = filteredCases.filter(c => {
+        if (!c.accidentDate) return false;
+        try {
+          const caseDate = parseISO(c.accidentDate);
+          return isWithinInterval(caseDate, { start: myWorkDateRange.from!, end: myWorkDateRange.to! });
+        } catch {
+          return false;
+        }
+      });
+    }
+    
     return filteredCases
       .sort((a, b) => {
-        // 접수번호 내림차순 정렬 (최신 날짜가 위로)
         const caseNumA = a.caseNumber || '';
         const caseNumB = b.caseNumber || '';
         return caseNumB.localeCompare(caseNumA);
       });
-  }, [allCases, user]);
+  }, [allCases, user, myWorkPeriodType, myWorkDateRange]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -432,64 +473,115 @@ export default function Dashboard() {
     }
   };
 
-  const getPeriodLabel = () => {
-    switch (periodType) {
-      case 'all':
-        return '전체';
-      case 'today':
-        return '오늘';
-      case 'thisMonth':
-        return '이번 달';
-      case 'lastMonth':
-        return '지난 달';
+  // 현황요약 필터 함수
+  const getSummaryPeriodLabel = () => {
+    switch (summaryPeriodType) {
+      case 'all': return '전체';
+      case 'today': return '오늘';
+      case 'thisMonth': return '이번 달';
+      case 'lastMonth': return '지난 달';
       case 'custom':
-        if (dateRange?.from && dateRange?.to) {
-          return `${format(dateRange.from, 'M/d', { locale: ko })} - ${format(dateRange.to, 'M/d', { locale: ko })}`;
+        if (summaryDateRange?.from && summaryDateRange?.to) {
+          return `${format(summaryDateRange.from, 'M/d', { locale: ko })} - ${format(summaryDateRange.to, 'M/d', { locale: ko })}`;
         }
         return '날짜 선택';
-      default:
-        return '이번 달';
+      default: return '이번 달';
     }
   };
 
-  const handlePeriodSelect = (type: PeriodType) => {
-    setPeriodType(type);
-    
+  const handleSummaryPeriodSelect = (type: PeriodType) => {
+    setSummaryPeriodType(type);
     const today = startOfToday();
     const lastMonth = subMonths(today, 1);
-    
     switch (type) {
-      case 'all':
-        setDateRange(undefined);
-        setIsPeriodSheetOpen(false);
-        break;
-      case 'today':
-        setDateRange({ from: today, to: endOfToday() });
-        setIsPeriodSheetOpen(false);
-        break;
-      case 'thisMonth':
-        setDateRange({ from: startOfMonth(today), to: endOfMonth(today) });
-        setIsPeriodSheetOpen(false);
-        break;
-      case 'lastMonth':
-        setDateRange({ from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) });
-        setIsPeriodSheetOpen(false);
-        break;
-      case 'custom':
-        setIsPeriodSheetOpen(false);
-        setIsDateRangeModalOpen(true);
-        break;
+      case 'all': setSummaryDateRange(undefined); break;
+      case 'today': setSummaryDateRange({ from: today, to: endOfToday() }); break;
+      case 'thisMonth': setSummaryDateRange({ from: startOfMonth(today), to: endOfMonth(today) }); break;
+      case 'lastMonth': setSummaryDateRange({ from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) }); break;
+      case 'custom': setIsSummaryDateRangeModalOpen(true); break;
     }
   };
 
-  const handleDateRangeApply = (range: DateRange | undefined) => {
+  // 진행건요약 필터 함수
+  const getProgressPeriodLabel = () => {
+    switch (progressPeriodType) {
+      case 'all': return '전체';
+      case 'today': return '오늘';
+      case 'thisMonth': return '이번 달';
+      case 'lastMonth': return '지난 달';
+      case 'custom':
+        if (progressDateRange?.from && progressDateRange?.to) {
+          return `${format(progressDateRange.from, 'M/d', { locale: ko })} - ${format(progressDateRange.to, 'M/d', { locale: ko })}`;
+        }
+        return '날짜 선택';
+      default: return '이번 달';
+    }
+  };
+
+  const handleProgressPeriodSelect = (type: PeriodType) => {
+    setProgressPeriodType(type);
+    const today = startOfToday();
+    const lastMonth = subMonths(today, 1);
+    switch (type) {
+      case 'all': setProgressDateRange(undefined); break;
+      case 'today': setProgressDateRange({ from: today, to: endOfToday() }); break;
+      case 'thisMonth': setProgressDateRange({ from: startOfMonth(today), to: endOfMonth(today) }); break;
+      case 'lastMonth': setProgressDateRange({ from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) }); break;
+      case 'custom': setIsProgressDateRangeModalOpen(true); break;
+    }
+  };
+
+  // 내작업 필터 함수
+  const getMyWorkPeriodLabel = () => {
+    switch (myWorkPeriodType) {
+      case 'all': return '전체';
+      case 'today': return '오늘';
+      case 'thisMonth': return '이번 달';
+      case 'lastMonth': return '지난 달';
+      case 'custom':
+        if (myWorkDateRange?.from && myWorkDateRange?.to) {
+          return `${format(myWorkDateRange.from, 'M/d', { locale: ko })} - ${format(myWorkDateRange.to, 'M/d', { locale: ko })}`;
+        }
+        return '날짜 선택';
+      default: return '이번 달';
+    }
+  };
+
+  const handleMyWorkPeriodSelect = (type: PeriodType) => {
+    setMyWorkPeriodType(type);
+    const today = startOfToday();
+    const lastMonth = subMonths(today, 1);
+    switch (type) {
+      case 'all': setMyWorkDateRange(undefined); break;
+      case 'today': setMyWorkDateRange({ from: today, to: endOfToday() }); break;
+      case 'thisMonth': setMyWorkDateRange({ from: startOfMonth(today), to: endOfMonth(today) }); break;
+      case 'lastMonth': setMyWorkDateRange({ from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) }); break;
+      case 'custom': setIsMyWorkDateRangeModalOpen(true); break;
+    }
+  };
+
+  // DateRange 적용 핸들러들
+  const handleSummaryDateRangeApply = (range: DateRange | undefined) => {
     if (range?.from && range?.to) {
-      setDateRange(range);
-      setPeriodType('custom');
-      toast({
-        title: "기간 설정 완료",
-        description: `${format(range.from, 'yyyy-MM-dd')} ~ ${format(range.to, 'yyyy-MM-dd')}`,
-      });
+      setSummaryDateRange(range);
+      setSummaryPeriodType('custom');
+      toast({ title: "기간 설정 완료", description: `${format(range.from, 'yyyy-MM-dd')} ~ ${format(range.to, 'yyyy-MM-dd')}` });
+    }
+  };
+
+  const handleProgressDateRangeApply = (range: DateRange | undefined) => {
+    if (range?.from && range?.to) {
+      setProgressDateRange(range);
+      setProgressPeriodType('custom');
+      toast({ title: "기간 설정 완료", description: `${format(range.from, 'yyyy-MM-dd')} ~ ${format(range.to, 'yyyy-MM-dd')}` });
+    }
+  };
+
+  const handleMyWorkDateRangeApply = (range: DateRange | undefined) => {
+    if (range?.from && range?.to) {
+      setMyWorkDateRange(range);
+      setMyWorkPeriodType('custom');
+      toast({ title: "기간 설정 완료", description: `${format(range.from, 'yyyy-MM-dd')} ~ ${format(range.to, 'yyyy-MM-dd')}` });
     }
   };
 
@@ -642,38 +734,38 @@ export default function Dashboard() {
                       data-testid="button-period-selector-summary"
                     >
                       <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
-                      {getPeriodLabel()}
+                      {getSummaryPeriodLabel()}
                       <ChevronDown className="h-4 w-4 text-slate-500" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
                     <DropdownMenuItem 
-                      onClick={() => handlePeriodSelect('all')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
+                      onClick={() => handleSummaryPeriodSelect('all')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
                     >
                       전체
                     </DropdownMenuItem>
                     <DropdownMenuItem 
-                      onClick={() => handlePeriodSelect('today')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
+                      onClick={() => handleSummaryPeriodSelect('today')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
                     >
                       오늘
                     </DropdownMenuItem>
                     <DropdownMenuItem 
-                      onClick={() => handlePeriodSelect('thisMonth')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                      onClick={() => handleSummaryPeriodSelect('thisMonth')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
                     >
                       이번 달
                     </DropdownMenuItem>
                     <DropdownMenuItem 
-                      onClick={() => handlePeriodSelect('lastMonth')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                      onClick={() => handleSummaryPeriodSelect('lastMonth')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
                     >
                       지난달
                     </DropdownMenuItem>
                     <DropdownMenuItem 
-                      onClick={() => handlePeriodSelect('custom')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
+                      onClick={() => handleSummaryPeriodSelect('custom')}
+                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
                     >
                       날짜 선택
                     </DropdownMenuItem>
@@ -748,38 +840,38 @@ export default function Dashboard() {
                         data-testid="button-period-selector-progress"
                       >
                         <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
-                        {getPeriodLabel()}
+                        {getProgressPeriodLabel()}
                         <ChevronDown className="h-4 w-4 text-slate-500" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('all')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleProgressPeriodSelect('all')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         전체
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('today')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleProgressPeriodSelect('today')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         오늘
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('thisMonth')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleProgressPeriodSelect('thisMonth')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         이번 달
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('lastMonth')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleProgressPeriodSelect('lastMonth')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         지난달
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('custom')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleProgressPeriodSelect('custom')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         날짜 선택
                       </DropdownMenuItem>
@@ -887,38 +979,38 @@ export default function Dashboard() {
                         data-testid="button-period-selector-tasks"
                       >
                         <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
-                        {getPeriodLabel()}
+                        {getMyWorkPeriodLabel()}
                         <ChevronDown className="h-4 w-4 text-slate-500" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('all')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleMyWorkPeriodSelect('all')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${myWorkPeriodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         전체
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('today')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleMyWorkPeriodSelect('today')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${myWorkPeriodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         오늘
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('thisMonth')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleMyWorkPeriodSelect('thisMonth')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${myWorkPeriodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         이번 달
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('lastMonth')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleMyWorkPeriodSelect('lastMonth')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${myWorkPeriodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         지난달
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        onClick={() => handlePeriodSelect('custom')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${periodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
+                        onClick={() => handleMyWorkPeriodSelect('custom')}
+                        className={`text-sm py-2 px-3 cursor-pointer rounded ${myWorkPeriodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
                       >
                         날짜 선택
                       </DropdownMenuItem>
@@ -1116,56 +1208,26 @@ export default function Dashboard() {
         </div>
       </main>
 
-      <Sheet open={isPeriodSheetOpen} onOpenChange={setIsPeriodSheetOpen}>
-        <SheetContent side="bottom" className="h-auto">
-          <SheetHeader>
-            <SheetTitle>기간 선택</SheetTitle>
-          </SheetHeader>
-          <div className="grid gap-2 py-4">
-            <Button 
-              variant={periodType === 'all' ? 'default' : 'outline'}
-              onClick={() => handlePeriodSelect('all')}
-              className="justify-start"
-            >
-              전체
-            </Button>
-            <Button 
-              variant={periodType === 'today' ? 'default' : 'outline'}
-              onClick={() => handlePeriodSelect('today')}
-              className="justify-start"
-            >
-              오늘
-            </Button>
-            <Button 
-              variant={periodType === 'thisMonth' ? 'default' : 'outline'}
-              onClick={() => handlePeriodSelect('thisMonth')}
-              className="justify-start"
-            >
-              이번 달
-            </Button>
-            <Button 
-              variant={periodType === 'lastMonth' ? 'default' : 'outline'}
-              onClick={() => handlePeriodSelect('lastMonth')}
-              className="justify-start"
-            >
-              지난 달
-            </Button>
-            <Button 
-              variant={periodType === 'custom' ? 'default' : 'outline'}
-              onClick={() => handlePeriodSelect('custom')}
-              className="justify-start"
-            >
-              날짜 선택
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
 
       <DateRangeModal
-        isOpen={isDateRangeModalOpen}
-        onClose={() => setIsDateRangeModalOpen(false)}
-        dateRange={dateRange}
-        onApply={handleDateRangeApply}
+        isOpen={isSummaryDateRangeModalOpen}
+        onClose={() => setIsSummaryDateRangeModalOpen(false)}
+        dateRange={summaryDateRange}
+        onApply={handleSummaryDateRangeApply}
+      />
+      
+      <DateRangeModal
+        isOpen={isProgressDateRangeModalOpen}
+        onClose={() => setIsProgressDateRangeModalOpen(false)}
+        dateRange={progressDateRange}
+        onApply={handleProgressDateRangeApply}
+      />
+      
+      <DateRangeModal
+        isOpen={isMyWorkDateRangeModalOpen}
+        onClose={() => setIsMyWorkDateRangeModalOpen(false)}
+        dateRange={myWorkDateRange}
+        onApply={handleMyWorkDateRangeApply}
       />
 
       <Sheet open={isNoticesSheetOpen} onOpenChange={setIsNoticesSheetOpen}>
