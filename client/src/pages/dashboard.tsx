@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format, startOfMonth, endOfMonth, startOfToday, subMonths, endOfToday, isWithinInterval, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfToday, subMonths, endOfToday, isWithinInterval, parseISO, parse, startOfDay, endOfDay } from "date-fns";
 import { ko } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { GlobalHeader } from "@/components/global-header";
@@ -339,14 +339,25 @@ export default function Dashboard() {
     
     // 내작업 기간 필터 적용 (접수일 기준)
     if (myWorkPeriodType !== 'all' && myWorkDateRange?.from && myWorkDateRange?.to) {
+      const filterStart = startOfDay(myWorkDateRange.from);
+      const filterEnd = endOfDay(myWorkDateRange.to);
+      
       filteredCases = filteredCases.filter(c => {
         // 접수일(receptionDate) 우선, 없으면 createdAt 사용
         const dateStr = c.receptionDate || c.createdAt;
         if (!dateStr) return false;
         try {
-          const caseDate = new Date(dateStr);
+          // YYYY-MM-DD 형식 파싱 (로컬 시간으로 해석)
+          let caseDate: Date;
+          if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            // YYYY-MM-DD 형식은 parse로 로컬 시간으로 해석
+            caseDate = parse(dateStr, 'yyyy-MM-dd', new Date());
+          } else {
+            // 다른 형식은 그대로 파싱
+            caseDate = new Date(dateStr);
+          }
           if (isNaN(caseDate.getTime())) return false;
-          return isWithinInterval(caseDate, { start: myWorkDateRange.from!, end: myWorkDateRange.to! });
+          return isWithinInterval(caseDate, { start: filterStart, end: filterEnd });
         } catch {
           return false;
         }
