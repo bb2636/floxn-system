@@ -951,11 +951,14 @@ async function renderFieldReportPage(
 
   // accidentDate에 이미 시간이 포함되어 있으면 accidentTime 추가하지 않음
   // 예: "2026-01-19 13:53"에 "13:53"을 추가하면 중복됨
-  const accidentDateHasTime = caseData.accidentDate && /\d{2}:\d{2}/.test(caseData.accidentDate);
+  const accidentDateHasTime =
+    caseData.accidentDate && /\d{2}:\d{2}/.test(caseData.accidentDate);
   const accidentDateTime = formatDateTime(
     accidentDateHasTime
       ? caseData.accidentDate
-      : [caseData.accidentDate, caseData.accidentTime].filter(Boolean).join(" "),
+      : [caseData.accidentDate, caseData.accidentTime]
+          .filter(Boolean)
+          .join(" "),
   );
 
   // Helper function to draw section header with grey background
@@ -1716,7 +1719,7 @@ async function renderEvidencePages(
           ? parseInt(pdfSuffixMatch[1], 10)
           : 0;
 
-        // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
+        // -0 (손해방지)인 경우 피보험자 주소, -1 이상인 경우 피해자 주N � 사용
         let pdfFullAddress = "";
         if (pdfCaseSuffix === 0) {
           pdfFullAddress = [
@@ -3198,7 +3201,8 @@ async function renderEstimatePage(
   const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
 
   // 안내문구 (합계표 아래, 작성일 위 - 초록색 박스 위치) - 가운데 정렬
-  const disclaimerText = "상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.";
+  const disclaimerText =
+    "상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.";
   const disclaimerWidth = fonts.regular.widthOfTextAtSize(disclaimerText, 9);
   drawText(page, {
     x: (A4_WIDTH - disclaimerWidth) / 2,
@@ -3215,7 +3219,7 @@ async function renderEstimatePage(
     y: footerY + 10,
     text: `작성일:${dateStr}`,
     font: fonts.regular,
-    size: 9,
+    size: 15,
   });
 
   // 회사명 (오른쪽)
