@@ -3430,6 +3430,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const fieldData = updateSchema.parse(req.body);
 
+      // 관리자인 경우 status 변경 무시 (기존 상태 유지)
+      // 협력사만 현장입력 저장 시 status 변경 가능
+      if (userRole === "관리자") {
+        delete (fieldData as any).status;
+        console.log(`[Field Survey] Admin user - status field ignored to preserve existing status`);
+      }
+
       const updatedCase = await storage.updateCaseFieldSurvey(
         caseId,
         fieldData,
