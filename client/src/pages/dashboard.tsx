@@ -50,11 +50,11 @@ export default function Dashboard() {
   });
   const [isProgressDateRangeModalOpen, setIsProgressDateRangeModalOpen] = useState(false);
   
-  // 내작업 필터 상태
-  const [myWorkPeriodType, setMyWorkPeriodType] = useState<PeriodType>('thisMonth');
+  // 내작업 필터 상태 (기본값: 오늘)
+  const [myWorkPeriodType, setMyWorkPeriodType] = useState<PeriodType>('today');
   const [myWorkDateRange, setMyWorkDateRange] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
+    from: startOfToday(),
+    to: endOfToday(),
   });
   const [isMyWorkDateRangeModalOpen, setIsMyWorkDateRangeModalOpen] = useState(false);
   
