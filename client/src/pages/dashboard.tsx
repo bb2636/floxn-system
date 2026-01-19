@@ -299,6 +299,9 @@ export default function Dashboard() {
       // 담당자로 직접 지정된 경우
       if (c.assignedTo === user.id) return true;
       
+      // 관리자(managerId)로 지정된 경우
+      if (c.managerId === user.id) return true;
+      
       // 협력사 사용자: 협력사 담당자명이 본인 이름과 일치하는 경우
       if (isPartner && c.assignedPartnerManager === user.name) return true;
       
