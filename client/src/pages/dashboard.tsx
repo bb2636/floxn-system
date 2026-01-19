@@ -308,9 +308,9 @@ export default function Dashboard() {
     return filteredCases
       .sort((a, b) => {
         // 접수번호 내림차순 정렬 (최신 날짜가 위로)
-        const receiptA = a.receiptNo || '';
-        const receiptB = b.receiptNo || '';
-        return receiptB.localeCompare(receiptA);
+        const caseNumA = a.caseNumber || '';
+        const caseNumB = b.caseNumber || '';
+        return caseNumB.localeCompare(caseNumA);
       });
   }, [allCases, user]);
 
