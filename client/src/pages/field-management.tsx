@@ -725,10 +725,18 @@ export default function FieldManagement() {
         ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
         : "";
 
-      toast({
-        title: "임시저장 완료",
-        description: `현장조사 정보가 임시저장되었습니다. (상태: ${status})${syncMessage}`,
-      });
+      // 관리자인 경우 status/fieldSurveyStatus 변경이 무시되므로 다른 메시지 표시
+      if (isAdmin) {
+        toast({
+          title: "저장 완료",
+          description: `현장조사 정보가 저장되었습니다.${syncMessage}`,
+        });
+      } else {
+        toast({
+          title: "임시저장 완료",
+          description: `현장조사 정보가 임시저장되었습니다. (상태: ${status})${syncMessage}`,
+        });
+      }
 
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
