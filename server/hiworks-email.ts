@@ -211,7 +211,7 @@ export async function sendFieldReportEmail(
       
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0; table-layout: fixed;">
         <tr>
-          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 20%; font-weight: bold;">사고번호</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 20%; font-weight: bold;">사고번호(증권번호)</td>
           <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${accidentNo}</td>
         </tr>
         <tr>
@@ -259,7 +259,7 @@ export async function sendFieldReportEmail(
 
 아래 접수건에 대한 현장출동보고서를 첨부하여 송부드립니다.
 
-- 사고번호: ${accidentNo}
+- 사고번호(증권번호): ${accidentNo}
 - 담당자: 심사자 ${assessor} / 조사자 ${investigator}
 - 피보험자: ${insuredName || '-'}
 - 접수번호: ${caseNumber}
@@ -319,7 +319,7 @@ export async function sendFieldReportEmailWithLink(
       
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0; table-layout: fixed;">
         <tr>
-          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 20%; font-weight: bold;">사고번호</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 20%; font-weight: bold;">사고번호(증권번호)</td>
           <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${accidentNo}</td>
         </tr>
         <tr>
@@ -373,7 +373,7 @@ export async function sendFieldReportEmailWithLink(
 
 아래 접수건에 대한 현장출동보고서를 송부드립니다.
 
-- 사고번호: ${accidentNo}
+- 사고번호(증권번호): ${accidentNo}
 - 담당자: 심사자 ${assessor} / 조사자 ${investigator}
 - 피보험자: ${insuredName || '-'}
 - 접수번호: ${caseNumber}
