@@ -8271,7 +8271,7 @@ FLOXN`;
         pdfBuffer,
         {
           insuranceAccidentNo: caseData.insuranceAccidentNo || undefined,
-          policyNumber: caseData.policyNumber || undefined,
+          policyNumber: caseData.insurancePolicyNo || undefined,
           assessorTeam: caseData.assessorTeam || undefined,
           investigatorTeam:
             caseData.investigatorTeam ||
