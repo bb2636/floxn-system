@@ -12396,13 +12396,16 @@ https://peulrogseun-aqaqaq4561.replit.app
       );
 
       // 2. 동일 사고번호의 모든 직접복구/청구자료제출 케이스 조회
+      const accidentNo = currentCase.insuranceAccidentNo;
       const allCases = await storage.getAllCases();
-      const relatedCases = allCases.filter(
-        (c) =>
-          c.insuranceAccidentNo === accidentNo &&
-          (c.status === "직접복구" ||
-            c.status === "청구자료제출(복구)"),
-      );
+      const relatedCases = accidentNo
+        ? allCases.filter(
+            (c) =>
+              c.insuranceAccidentNo === accidentNo &&
+              (c.status === "직접복구" ||
+                c.status === "청구자료제출(복구)"),
+          )
+        : [updatedCase];
 
       // 3. 모든 관련 케이스가 청구자료제출 상태인지 확인
       const allSubmitted = relatedCases.every(
