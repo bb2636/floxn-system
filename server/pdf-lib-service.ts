@@ -1738,7 +1738,7 @@ async function renderEvidencePages(
             ? `${current.tab}-${current.doc.category}`
             : current.tab,
         );
-        const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`;
+        const normalizedHeaderText = `사고번호(증권번호) ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`;
         const pdfFontSize =
           normalizedHeaderText.length > 60
             ? 8
@@ -2148,7 +2148,7 @@ async function renderSingleImagePage(
   const accidentNo = normalizeText(
     caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "",
   ).replace(/\s*-\s*/g, "-");
-  const leftText = `사고번호 ${accidentNo}`;
+  const leftText = `사고번호(증권번호) ${accidentNo}`;
   const centerText = normalizeText(fullAddress);
   const rightText = normalizeText(
     imageDoc.doc.category
@@ -2308,7 +2308,12 @@ async function renderRecoveryAreaPage(
     text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
   const headerRows: TableCell[][] = [
     [
-      { text: "사고번호", width: 70, isHeader: true, align: "center" },
+      {
+        text: "사고번호(증권번호)",
+        width: 70,
+        isHeader: true,
+        align: "center",
+      },
       {
         text: removeSymbolSpaces(
           caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-",
@@ -2722,7 +2727,12 @@ async function renderEstimatePage(
       { text: caseData.insuranceCompany || "-", width: 250, align: "left" },
     ],
     [
-      { text: "사고번호", width: 70, isHeader: true, align: "center" },
+      {
+        text: "사고번호(증권번호)",
+        width: 70,
+        isHeader: true,
+        align: "center",
+      },
       {
         text: removeAccidentSpaces(
           caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-",
@@ -3188,7 +3198,7 @@ async function renderEstimatePage(
     y: footerY + 50,
     text: "상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.",
     font: fonts.regular,
-    size: 8,
+    size: 9,
     color: { r: 0.8, g: 0.2, b: 0.2 },
   });
 
