@@ -11257,8 +11257,8 @@ FLOXN 드림`;
     
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px;">
       <tr>
-        <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 120px;">사고번호</td>
-        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.insuranceAccidentNo || "-"}</td>
+        <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 120px;">사고번호(증권번호)</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-"}</td>
       </tr>
       <tr>
         <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">담당자</td>
