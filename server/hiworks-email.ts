@@ -271,7 +271,9 @@ export async function sendFieldReportEmail(
 FLOXN
   `;
 
-  const filename = `현장출동보고서_${caseNumber}_${dateStr}.pdf`;
+  // 파일명도 이메일 제목과 동일한 우선순위: 사고번호 > 증권번호 > 접수번호
+  const filenameIdentifier = additionalData?.insuranceAccidentNo || additionalData?.policyNumber || caseNumber;
+  const filename = `현장출동보고서_${filenameIdentifier}_${dateStr}.pdf`;
 
   return sendEmailWithAttachment({
     to,
