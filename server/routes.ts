@@ -11123,9 +11123,10 @@ FLOXN 드림`;
 
       // ========== 첨부파일 준비 (단일 PDF) ==========
       // 파일명 우선순위: 사고번호 > 증권번호 > 접수번호
-      console.log(`[send-field-report-email-v2] 파일명 생성 데이터 - insuranceAccidentNo: "${caseData.insuranceAccidentNo}", policyNumber: "${caseData.policyNumber}", caseNumber: "${caseData.caseNumber}"`);
+      // 스키마 필드: insuranceAccidentNo(사고번호), insurancePolicyNo(증권번호), caseNumber(접수번호)
+      console.log(`[send-field-report-email-v2] 파일명 생성 데이터 - insuranceAccidentNo: "${caseData.insuranceAccidentNo}", insurancePolicyNo: "${caseData.insurancePolicyNo}", caseNumber: "${caseData.caseNumber}"`);
       const accidentNo =
-        caseData.insuranceAccidentNo || caseData.policyNumber || caseData.caseNumber || "UNKNOWN";
+        caseData.insuranceAccidentNo || caseData.insurancePolicyNo || caseData.caseNumber || "UNKNOWN";
       console.log(`[send-field-report-email-v2] 선택된 accidentNo: "${accidentNo}"`);
       
       // -0 (손해방지/피보험자) 건: 피보험자 상세주소 사용
