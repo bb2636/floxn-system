@@ -3209,7 +3209,7 @@ async function renderEstimatePage(
     y: footerY + 50,
     text: disclaimerText,
     font: fonts.regular,
-    size: 9,
+    size: 15,
     color: { r: 0.8, g: 0.2, b: 0.2 },
   });
 
