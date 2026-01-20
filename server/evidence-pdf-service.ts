@@ -227,10 +227,11 @@ async function createEvidencePdfForTab(
     // 특수문자(하이픈, 콜론) 주변 공백 제거
     const displayCaseNumber = (img.caseNumber || insuranceAccidentNo || caseNumber || "")
       .replace(/\s*-\s*/g, "-")
-      .replace(/\s*:\s*/g, ":");
-    const cleanFullAddress = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":");
+      .replace(/\s*:\s*/g, ":")
+      .replace(/-/g, "\u2010");
+    const cleanFullAddress = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":").replace(/-/g, "\u2010");
     // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
-    const categoryDisplay = img.category ? `${tabName}-${img.category}` : tabName;
+    const categoryDisplay = img.category ? `${tabName}\u2010${img.category}` : tabName;
     const headerText = cleanFullAddress 
       ? `사고번호 ${displayCaseNumber} ${cleanFullAddress} ${categoryDisplay}`
       : `사고번호 ${displayCaseNumber} ${categoryDisplay}`;
@@ -391,13 +392,14 @@ async function createEvidencePdfForTab(
         });
         
         // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
-        // 특수문자(하이픈, 콜론) 주변 공백 제거
+        // 특수문자(하이픈, 콜론) 주변 공백 제거 + U+2010 치환
         const displayCaseNumber2 = (img.caseNumber || insuranceAccidentNo || caseNumber || "")
           .replace(/\s*-\s*/g, "-")
-          .replace(/\s*:\s*/g, ":");
-        const cleanFullAddress2 = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":");
+          .replace(/\s*:\s*/g, ":")
+          .replace(/-/g, "\u2010");
+        const cleanFullAddress2 = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":").replace(/-/g, "\u2010");
         // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
-        const categoryDisplay2 = img.category ? `${tabName}-${img.category}` : tabName;
+        const categoryDisplay2 = img.category ? `${tabName}\u2010${img.category}` : tabName;
         const headerText2 = cleanFullAddress2 
           ? `사고번호 ${displayCaseNumber2} ${cleanFullAddress2} ${categoryDisplay2}`
           : `사고번호 ${displayCaseNumber2} ${categoryDisplay2}`;
@@ -540,9 +542,9 @@ async function addHeaderToPdf(
         color: rgb(0.8, 0.8, 0.8),
       });
       
-      // Build header text - 특수문자(하이픈, 콜론) 주변 공백 제거
-      const cleanAccidentNo = (insuranceAccidentNo || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":");
-      const cleanAddr = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":");
+      // Build header text - 특수문자(하이픈, 콜론) 주변 공백 제거 + U+2010 치환
+      const cleanAccidentNo = (insuranceAccidentNo || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":").replace(/-/g, "\u2010");
+      const cleanAddr = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":").replace(/-/g, "\u2010");
       const headerParts: string[] = [];
       if (cleanAccidentNo) headerParts.push(`사고번호: ${cleanAccidentNo}`);
       if (cleanAddr) headerParts.push(`주소: ${cleanAddr}`);
