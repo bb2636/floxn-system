@@ -8843,6 +8843,21 @@ FLOXN`;
             );
           };
 
+          // 헤더 텍스트 정규화 함수 (ASCII '-' 유지, U+2010/U+2212 치환 금지)
+          const normalizeHeaderIdentifier = (text: string): string => {
+            if (!text) return "";
+            let s = String(text);
+            // 1) 유니코드 공백을 일반 공백으로 통일 (NBSP, zero-width 등)
+            s = s.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ");
+            // 2) 대시류(en dash, em dash, minus)만 ASCII '-'로 통일
+            s = s.replace(/[–—−]/g, "-");
+            // 3) 코드 패턴([A-Za-z0-9]) 사이 하이픈에서만 공백 제거
+            s = s.replace(/([A-Za-z0-9])\s*-\s*([A-Za-z0-9])/g, "$1-$2");
+            // 4) 연속 공백 축소
+            s = s.replace(/ {2,}/g, " ");
+            return s.trim();
+          };
+
           // Collect images for layout (2-per-page for some categories, 1-per-page for others)
           const pendingImages: {
             doc: any;
@@ -8895,8 +8910,21 @@ FLOXN`;
             const textColor = rgb(1, 1, 1);
             const textSize = 8;
             
+            // 정규화 적용 (ASCII '-' 유지)
+            const normalizedAccidentNo = normalizeHeaderIdentifier(headerInfo.accidentNo);
+            const normalizedAddress = normalizeHeaderIdentifier(headerInfo.address || "-");
+            const normalizedCategory = normalizeHeaderIdentifier(headerInfo.category);
+            
+            // 사고번호 정규화 결과 charCode 로그 (공백 문자 검증)
+            console.log("[Invoice Header] accidentNo RAW:", headerInfo.accidentNo);
+            console.log("[Invoice Header] accidentNo NORM:", normalizedAccidentNo);
+            console.log(
+              "[Invoice Header] accidentNo CODES:",
+              Array.from(normalizedAccidentNo).map((c) => c.charCodeAt(0).toString(16).padStart(4, "0")),
+            );
+            
             // 사고번호
-            page.drawText(headerInfo.accidentNo, {
+            page.drawText(normalizedAccidentNo, {
               x: x + 5,
               y: textY,
               size: textSize,
@@ -8905,7 +8933,7 @@ FLOXN`;
             });
             
             // 주소
-            page.drawText(headerInfo.address || "-", {
+            page.drawText(normalizedAddress, {
               x: x + col1Width + 5,
               y: textY,
               size: textSize,
@@ -8914,7 +8942,7 @@ FLOXN`;
             });
             
             // 카테고리
-            page.drawText(headerInfo.category, {
+            page.drawText(normalizedCategory, {
               x: x + col1Width + col2Width + 5,
               y: textY,
               size: textSize,
@@ -9734,6 +9762,21 @@ FLOXN`;
             );
           };
 
+          // 헤더 텍스트 정규화 함수 (ASCII '-' 유지, U+2010/U+2212 치환 금지)
+          const normalizeHeaderIdentifier = (text: string): string => {
+            if (!text) return "";
+            let s = String(text);
+            // 1) 유니코드 공백을 일반 공백으로 통일 (NBSP, zero-width 등)
+            s = s.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ");
+            // 2) 대시류(en dash, em dash, minus)만 ASCII '-'로 통일
+            s = s.replace(/[–—−]/g, "-");
+            // 3) 코드 패턴([A-Za-z0-9]) 사이 하이픈에서만 공백 제거
+            s = s.replace(/([A-Za-z0-9])\s*-\s*([A-Za-z0-9])/g, "$1-$2");
+            // 4) 연속 공백 축소
+            s = s.replace(/ {2,}/g, " ");
+            return s.trim();
+          };
+
           // Collect images for layout (2-per-page for some categories, 1-per-page for others)
           const pendingImages: {
             doc: any;
@@ -9786,8 +9829,21 @@ FLOXN`;
             const textColor = rgb(1, 1, 1);
             const textSize = 8;
             
+            // 정규화 적용 (ASCII '-' 유지)
+            const normalizedAccidentNo = normalizeHeaderIdentifier(headerInfo.accidentNo);
+            const normalizedAddress = normalizeHeaderIdentifier(headerInfo.address || "-");
+            const normalizedCategory = normalizeHeaderIdentifier(headerInfo.category);
+            
+            // 사고번호 정규화 결과 charCode 로그 (공백 문자 검증)
+            console.log("[Invoice Header] accidentNo RAW:", headerInfo.accidentNo);
+            console.log("[Invoice Header] accidentNo NORM:", normalizedAccidentNo);
+            console.log(
+              "[Invoice Header] accidentNo CODES:",
+              Array.from(normalizedAccidentNo).map((c) => c.charCodeAt(0).toString(16).padStart(4, "0")),
+            );
+            
             // 사고번호
-            page.drawText(headerInfo.accidentNo, {
+            page.drawText(normalizedAccidentNo, {
               x: x + 5,
               y: textY,
               size: textSize,
@@ -9796,7 +9852,7 @@ FLOXN`;
             });
             
             // 주소
-            page.drawText(headerInfo.address || "-", {
+            page.drawText(normalizedAddress, {
               x: x + col1Width + 5,
               y: textY,
               size: textSize,
@@ -9805,7 +9861,7 @@ FLOXN`;
             });
             
             // 카테고리
-            page.drawText(headerInfo.category, {
+            page.drawText(normalizedCategory, {
               x: x + col1Width + col2Width + 5,
               y: textY,
               size: textSize,
