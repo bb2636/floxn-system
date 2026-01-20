@@ -1743,7 +1743,8 @@ async function renderEvidencePages(
         )
           .replace(/\s+/g, " ") // 모든 연속 공백을 하나로
           .replace(/\s*-\s*/g, "-") // 하이픈 앞뒤 공백 제거
-          .trim(); // 앞뒤 공백 제거;
+          .trim(); // 앞뒤 공백 제거
+
         const pdfCategoryDisplay = normalizeText(
           current.doc.category
             ? `${current.tab}-${current.doc.category}`
