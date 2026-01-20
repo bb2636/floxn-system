@@ -58,6 +58,32 @@ function getCategoryToTab(category: string): string {
 
 let cachedFont: Buffer | null = null;
 
+/**
+ * NotoSansKR 폰트용 정규화 (헤더 등)
+ * - 하이픈 주변 공백 제거
+ * - ASCII '-' (U+002D) 유지 (U+2010 치환 금지)
+ */
+function normalizeIdentifierNoto(text: string): string {
+  if (!text) return "";
+  let s = String(text);
+  
+  // 1) 유니코드 공백을 일반 공백으로 통일
+  s = s.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u2060\u3000]/g, " ");
+  
+  // 2) 대시류를 ASCII 하이픈으로 통일 (en dash, em dash, minus sign → -)
+  s = s.replace(/[–—−\u2010\u2011\u2012\u2013\u2014\u2015]/g, "-");
+  
+  // 3) 하이픈/콜론/슬래시 주변 공백 제거
+  s = s.replace(/\s*-\s*/g, "-");
+  s = s.replace(/\s*:\s*/g, ":");
+  s = s.replace(/\s*\/\s*/g, "/");
+  
+  // 4) 연속 공백 축소
+  s = s.replace(/ {2,}/g, " ");
+  
+  return s.trim();
+}
+
 function loadFontBytes(): Buffer {
   if (cachedFont) return cachedFont;
   
@@ -224,17 +250,18 @@ async function createEvidencePdfForTab(
     });
     
     // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
-    // 특수문자(하이픈, 콜론) 주변 공백 제거
-    const displayCaseNumber = (img.caseNumber || insuranceAccidentNo || caseNumber || "")
-      .replace(/\s*-\s*/g, "-")
-      .replace(/\s*:\s*/g, ":")
-      .replace(/-/g, "\u2010");
-    const cleanFullAddress = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":").replace(/-/g, "\u2010");
+    // NotoSansKR용 정규화 (ASCII '-' 유지, U+2010 치환 금지)
+    const displayCaseNumber = normalizeIdentifierNoto(img.caseNumber || insuranceAccidentNo || caseNumber || "");
+    const cleanFullAddress = normalizeIdentifierNoto(fullAddress || "");
     // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
-    const categoryDisplay = img.category ? `${tabName}\u2010${img.category}` : tabName;
+    const categoryDisplay = img.category ? `${tabName}-${img.category}` : tabName;
     const headerText = cleanFullAddress 
       ? `사고번호 ${displayCaseNumber} ${cleanFullAddress} ${categoryDisplay}`
       : `사고번호 ${displayCaseNumber} ${categoryDisplay}`;
+    
+    // 헤더 charCode 로그 (하이픈이 U+002D인지 확인)
+    console.log(`[Evidence PDF Header] displayCaseNumber: "${displayCaseNumber}"`);
+    console.log(`[Evidence PDF Header] charCodes:`, Array.from(displayCaseNumber).map(c => c.charCodeAt(0).toString(16).padStart(4, '0')));
     try {
       // 헤더 텍스트가 길면 작은 폰트 사용
       const fontSize = headerText.length > 60 ? 8 : 10;
@@ -392,14 +419,11 @@ async function createEvidencePdfForTab(
         });
         
         // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
-        // 특수문자(하이픈, 콜론) 주변 공백 제거 + U+2010 치환
-        const displayCaseNumber2 = (img.caseNumber || insuranceAccidentNo || caseNumber || "")
-          .replace(/\s*-\s*/g, "-")
-          .replace(/\s*:\s*/g, ":")
-          .replace(/-/g, "\u2010");
-        const cleanFullAddress2 = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":").replace(/-/g, "\u2010");
+        // NotoSansKR용 정규화 (ASCII '-' 유지, U+2010 치환 금지)
+        const displayCaseNumber2 = normalizeIdentifierNoto(img.caseNumber || insuranceAccidentNo || caseNumber || "");
+        const cleanFullAddress2 = normalizeIdentifierNoto(fullAddress || "");
         // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
-        const categoryDisplay2 = img.category ? `${tabName}\u2010${img.category}` : tabName;
+        const categoryDisplay2 = img.category ? `${tabName}-${img.category}` : tabName;
         const headerText2 = cleanFullAddress2 
           ? `사고번호 ${displayCaseNumber2} ${cleanFullAddress2} ${categoryDisplay2}`
           : `사고번호 ${displayCaseNumber2} ${categoryDisplay2}`;
@@ -542,13 +566,17 @@ async function addHeaderToPdf(
         color: rgb(0.8, 0.8, 0.8),
       });
       
-      // Build header text - 특수문자(하이픈, 콜론) 주변 공백 제거 + U+2010 치환
-      const cleanAccidentNo = (insuranceAccidentNo || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":").replace(/-/g, "\u2010");
-      const cleanAddr = (fullAddress || "").replace(/\s*-\s*/g, "-").replace(/\s*:\s*/g, ":").replace(/-/g, "\u2010");
+      // Build header text - NotoSansKR용 정규화 (ASCII '-' 유지, U+2010 치환 금지)
+      const cleanAccidentNo = normalizeIdentifierNoto(insuranceAccidentNo || "");
+      const cleanAddr = normalizeIdentifierNoto(fullAddress || "");
       const headerParts: string[] = [];
       if (cleanAccidentNo) headerParts.push(`사고번호: ${cleanAccidentNo}`);
       if (cleanAddr) headerParts.push(`주소: ${cleanAddr}`);
       const headerText = headerParts.join('  |  ') || fileName;
+      
+      // 헤더 charCode 로그 (하이픈이 U+002D인지 확인)
+      console.log(`[Evidence PDF Header] cleanAccidentNo: "${cleanAccidentNo}"`);
+      console.log(`[Evidence PDF Header] charCodes:`, Array.from(cleanAccidentNo).map(c => c.charCodeAt(0).toString(16).padStart(4, '0')));
       
       // Draw header text
       try {
