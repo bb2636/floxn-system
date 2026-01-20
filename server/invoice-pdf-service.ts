@@ -451,7 +451,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   drawTextLine(page, ":", colonX1, y, fonts.regular, fontSize);
   drawTextLine(
     page,
-    data.insuranceAccidentNo || data.caseNumber || "-",
+    normalizePdfText(data.insuranceAccidentNo || data.caseNumber || "-"),
     valueX1,
     y,
     fonts.regular,
