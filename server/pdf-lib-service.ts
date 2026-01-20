@@ -1740,12 +1740,15 @@ async function renderEvidencePages(
         // 사고번호 처리: normalizeText 후 하이픈 앞뒤 공백 완전 제거
         const pdfAccidentNo = normalizeText(
           caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "",
-        ).replace(/\s*-\s*/g, "-");
+        )
+          .replace(/\s+/g, " ") // 모든 연속 공백을 하나로
+          .replace(/\s*-\s*/g, "-") // 하이픈 앞뒤 공백 제거
+          .trim(); // 앞뒤 공백 제거;
         const pdfCategoryDisplay = normalizeText(
           current.doc.category
             ? `${current.tab}-${current.doc.category}`
             : current.tab,
-        );
+        ).replace(/\s*-\s*/g, "-");
         const normalizedHeaderText = `사고번호(증권번호) ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`;
         const pdfFontSize =
           normalizedHeaderText.length > 60
