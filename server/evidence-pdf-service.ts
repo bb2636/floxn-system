@@ -61,7 +61,7 @@ let cachedFont: Buffer | null = null;
 /**
  * NotoSansKR 폰트용 정규화 (헤더 등)
  * - 하이픈 주변 공백 제거
- * - ASCII '-' (U+002D) 유지 (U+2010 치환 금지)
+ * - ASCII '-' → 중간점 '·' (U+00B7)로 치환 (pdf-lib 하이픈 버그 회피)
  */
 function normalizeIdentifierNoto(text: string): string {
   if (!text) return "";
@@ -80,6 +80,9 @@ function normalizeIdentifierNoto(text: string): string {
   
   // 4) 연속 공백 축소
   s = s.replace(/ {2,}/g, " ");
+  
+  // 5) ASCII 하이픈 → 중간점으로 치환 (pdf-lib glyph advance 버그 회피)
+  s = s.replace(/-/g, "·");
   
   return s.trim();
 }
