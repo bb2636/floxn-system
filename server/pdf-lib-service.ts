@@ -1767,9 +1767,20 @@ async function renderEvidencePages(
             ? `${current.tab}-${current.doc.category}`
             : current.tab,
         ).replace(/\s*-\s*/g, "-");
-        const headerTextRaw = `사고번호(증권번호) ${pdfAccidentNo}    ${pdfFullAddress}    ${pdfCategoryDisplay}`;
+        const headerRaw = `사고번호(증권번호) ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`;
 
-        const normalizedHeaderText = normalizeEvidenceHeaderText(headerTextRaw);
+        const headerText = headerRaw
+          // 유니코드 공백/제로폭 공백 제거
+          .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u2060\u3000]/g, " ")
+          // 대시류 통일
+          .replace(/[–—−]/g, "-")
+          // 하이픈 주변 공백 제거 (핵심)
+          .replace(/\s*-\s*/g, "-")
+          // 연속 공백 축소
+          .replace(/\s+/g, " ")
+          .trim();
+
+        const normalizedHeaderText = normalizeEvidenceHeaderText(headerRaw);
 
         const pdfFontSize =
           normalizedHeaderText.length > 60
