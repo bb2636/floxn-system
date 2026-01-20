@@ -3325,15 +3325,14 @@ export class DbStorage implements IStorage {
     console.log("[Essential Permissions] Checking and creating essential role permissions...");
     const currentDate = getKSTTimestamp();
 
-    // 기본 권한 구조 - 모든 역할에 대해 전체 메뉴 접근 권한 설정
+    // 기본 권한 구조 - 메뉴 카테고리에 맞춤 (global-header.tsx의 allMenuItems와 일치)
+    // 카테고리: 홈, 새로운접수, 종합진행관리, 통계 및 정산, 관리자 설정
     const fullPermissions = {
       "홈": { enabled: true, items: {} },
-      "접수관리": { enabled: true, items: {} },
-      "현장조사": { enabled: true, items: {} },
-      "진행관리": { enabled: true, items: {} },
-      "정산관리": { enabled: true, items: {} },
-      "기준정보": { enabled: true, items: {} },
-      "관리자": { enabled: true, items: {} }
+      "새로운접수": { enabled: true, items: {} },
+      "종합진행관리": { enabled: true, items: {} },
+      "통계 및 정산": { enabled: true, items: {} },
+      "관리자 설정": { enabled: true, items: {} }
     };
 
     // 역할별 기본 권한 (관리자는 전체, 다른 역할은 제한적)
@@ -3346,60 +3345,50 @@ export class DbStorage implements IStorage {
         roleName: "보험사",
         permissions: JSON.stringify({
           "홈": { enabled: true, items: {} },
-          "접수관리": { enabled: true, items: {} },
-          "현장조사": { enabled: true, items: {} },
-          "진행관리": { enabled: true, items: {} },
-          "정산관리": { enabled: true, items: {} },
-          "기준정보": { enabled: false, items: {} },
-          "관리자": { enabled: false, items: {} }
+          "새로운접수": { enabled: true, items: {} },
+          "종합진행관리": { enabled: true, items: {} },
+          "통계 및 정산": { enabled: true, items: {} },
+          "관리자 설정": { enabled: false, items: {} }
         })
       },
       {
         roleName: "협력사",
         permissions: JSON.stringify({
           "홈": { enabled: true, items: {} },
-          "접수관리": { enabled: true, items: {} },
-          "현장조사": { enabled: true, items: {} },
-          "진행관리": { enabled: true, items: {} },
-          "정산관리": { enabled: true, items: {} },
-          "기준정보": { enabled: false, items: {} },
-          "관리자": { enabled: false, items: {} }
+          "새로운접수": { enabled: true, items: {} },
+          "종합진행관리": { enabled: true, items: {} },
+          "통계 및 정산": { enabled: true, items: {} },
+          "관리자 설정": { enabled: false, items: {} }
         })
       },
       {
         roleName: "심사사",
         permissions: JSON.stringify({
           "홈": { enabled: true, items: {} },
-          "접수관리": { enabled: true, items: {} },
-          "현장조사": { enabled: true, items: {} },
-          "진행관리": { enabled: true, items: {} },
-          "정산관리": { enabled: false, items: {} },
-          "기준정보": { enabled: false, items: {} },
-          "관리자": { enabled: false, items: {} }
+          "새로운접수": { enabled: true, items: {} },
+          "종합진행관리": { enabled: true, items: {} },
+          "통계 및 정산": { enabled: false, items: {} },
+          "관리자 설정": { enabled: false, items: {} }
         })
       },
       {
         roleName: "조사사",
         permissions: JSON.stringify({
           "홈": { enabled: true, items: {} },
-          "접수관리": { enabled: true, items: {} },
-          "현장조사": { enabled: true, items: {} },
-          "진행관리": { enabled: true, items: {} },
-          "정산관리": { enabled: false, items: {} },
-          "기준정보": { enabled: false, items: {} },
-          "관리자": { enabled: false, items: {} }
+          "새로운접수": { enabled: true, items: {} },
+          "종합진행관리": { enabled: true, items: {} },
+          "통계 및 정산": { enabled: false, items: {} },
+          "관리자 설정": { enabled: false, items: {} }
         })
       },
       {
         roleName: "의뢰사",
         permissions: JSON.stringify({
           "홈": { enabled: true, items: {} },
-          "접수관리": { enabled: true, items: {} },
-          "현장조사": { enabled: true, items: {} },
-          "진행관리": { enabled: true, items: {} },
-          "정산관리": { enabled: false, items: {} },
-          "기준정보": { enabled: false, items: {} },
-          "관리자": { enabled: false, items: {} }
+          "새로운접수": { enabled: true, items: {} },
+          "종합진행관리": { enabled: true, items: {} },
+          "통계 및 정산": { enabled: false, items: {} },
+          "관리자 설정": { enabled: false, items: {} }
         })
       }
     ];
@@ -3421,6 +3410,14 @@ export class DbStorage implements IStorage {
           console.log(`[Essential Permissions] Created: ${roleData.roleName}`);
           createdCount++;
         } else {
+          // 기존 권한이 있으면 올바른 카테고리로 업데이트
+          await db.update(rolePermissions)
+            .set({ 
+              permissions: roleData.permissions,
+              updatedAt: currentDate
+            })
+            .where(eq(rolePermissions.roleName, roleData.roleName));
+          console.log(`[Essential Permissions] Updated: ${roleData.roleName}`);
           existingCount++;
         }
       } catch (error) {
@@ -3428,7 +3425,7 @@ export class DbStorage implements IStorage {
       }
     }
 
-    console.log(`[Essential Permissions] Summary: ${createdCount} created, ${existingCount} already exist`);
+    console.log(`[Essential Permissions] Summary: ${createdCount} created, ${existingCount} updated`);
   }
 
   private async seedTestCases() {
