@@ -3282,13 +3282,14 @@ async function renderEstimatePage(
   // 안내문구 (합계표 아래, 작성일 위 - 초록색 박스 위치) - 가운데 정렬
   const disclaimerText =
     "상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.";
-  const disclaimerWidth = fonts.regular.widthOfTextAtSize(disclaimerText, 9);
+  const disclaimerSize = 11;
+  const disclaimerWidth = fonts.regular.widthOfTextAtSize(disclaimerText, disclaimerSize);
   drawText(page, {
     x: (A4_WIDTH - disclaimerWidth) / 2,
     y: footerY + 50,
     text: disclaimerText,
     font: fonts.regular,
-    size: 11,
+    size: disclaimerSize,
     color: { r: 0.8, g: 0.2, b: 0.2 },
   });
 
