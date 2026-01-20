@@ -2776,6 +2776,9 @@ export class DbStorage implements IStorage {
         await this.ensureEssentialAccounts();
       }
 
+      // Always ensure essential role permissions exist
+      await this.ensureEssentialPermissions();
+
       // NOTE: 더 이상 케이스/견적 더미 데이터를 자동 생성하지 않음
       // 사용자가 직접 데이터를 생성해야 함
     } catch (error) {
@@ -3316,6 +3319,116 @@ export class DbStorage implements IStorage {
     console.log(
       `[Essential Accounts] Summary: ${createdCount} created, ${updatedCount} password updated, ${existingCount} already exist`,
     );
+  }
+
+  private async ensureEssentialPermissions() {
+    console.log("[Essential Permissions] Checking and creating essential role permissions...");
+    const currentDate = getKSTTimestamp();
+
+    // 기본 권한 구조 - 모든 역할에 대해 전체 메뉴 접근 권한 설정
+    const fullPermissions = {
+      "홈": { enabled: true, items: {} },
+      "접수관리": { enabled: true, items: {} },
+      "현장조사": { enabled: true, items: {} },
+      "진행관리": { enabled: true, items: {} },
+      "정산관리": { enabled: true, items: {} },
+      "기준정보": { enabled: true, items: {} },
+      "관리자": { enabled: true, items: {} }
+    };
+
+    // 역할별 기본 권한 (관리자는 전체, 다른 역할은 제한적)
+    const rolePermissionsData = [
+      {
+        roleName: "관리자",
+        permissions: JSON.stringify(fullPermissions)
+      },
+      {
+        roleName: "보험사",
+        permissions: JSON.stringify({
+          "홈": { enabled: true, items: {} },
+          "접수관리": { enabled: true, items: {} },
+          "현장조사": { enabled: true, items: {} },
+          "진행관리": { enabled: true, items: {} },
+          "정산관리": { enabled: true, items: {} },
+          "기준정보": { enabled: false, items: {} },
+          "관리자": { enabled: false, items: {} }
+        })
+      },
+      {
+        roleName: "협력사",
+        permissions: JSON.stringify({
+          "홈": { enabled: true, items: {} },
+          "접수관리": { enabled: true, items: {} },
+          "현장조사": { enabled: true, items: {} },
+          "진행관리": { enabled: true, items: {} },
+          "정산관리": { enabled: true, items: {} },
+          "기준정보": { enabled: false, items: {} },
+          "관리자": { enabled: false, items: {} }
+        })
+      },
+      {
+        roleName: "심사사",
+        permissions: JSON.stringify({
+          "홈": { enabled: true, items: {} },
+          "접수관리": { enabled: true, items: {} },
+          "현장조사": { enabled: true, items: {} },
+          "진행관리": { enabled: true, items: {} },
+          "정산관리": { enabled: false, items: {} },
+          "기준정보": { enabled: false, items: {} },
+          "관리자": { enabled: false, items: {} }
+        })
+      },
+      {
+        roleName: "조사사",
+        permissions: JSON.stringify({
+          "홈": { enabled: true, items: {} },
+          "접수관리": { enabled: true, items: {} },
+          "현장조사": { enabled: true, items: {} },
+          "진행관리": { enabled: true, items: {} },
+          "정산관리": { enabled: false, items: {} },
+          "기준정보": { enabled: false, items: {} },
+          "관리자": { enabled: false, items: {} }
+        })
+      },
+      {
+        roleName: "의뢰사",
+        permissions: JSON.stringify({
+          "홈": { enabled: true, items: {} },
+          "접수관리": { enabled: true, items: {} },
+          "현장조사": { enabled: true, items: {} },
+          "진행관리": { enabled: true, items: {} },
+          "정산관리": { enabled: false, items: {} },
+          "기준정보": { enabled: false, items: {} },
+          "관리자": { enabled: false, items: {} }
+        })
+      }
+    ];
+
+    let createdCount = 0;
+    let existingCount = 0;
+
+    for (const roleData of rolePermissionsData) {
+      try {
+        const existing = await this.getRolePermission(roleData.roleName);
+        if (!existing) {
+          await db.insert(rolePermissions).values({
+            id: randomUUID(),
+            roleName: roleData.roleName,
+            permissions: roleData.permissions,
+            createdAt: currentDate,
+            updatedAt: currentDate
+          });
+          console.log(`[Essential Permissions] Created: ${roleData.roleName}`);
+          createdCount++;
+        } else {
+          existingCount++;
+        }
+      } catch (error) {
+        console.error(`[Essential Permissions] Error creating ${roleData.roleName}:`, error);
+      }
+    }
+
+    console.log(`[Essential Permissions] Summary: ${createdCount} created, ${existingCount} already exist`);
   }
 
   private async seedTestCases() {
@@ -5131,21 +5244,10 @@ export class DbStorage implements IStorage {
   async getRolePermission(
     roleName: string,
   ): Promise<RolePermission | undefined> {
-    console.log("[STORAGE] getRolePermission called:", { roleName });
-    
-    // Raw SQL debug - check actual DB content
-    const rawCount = await db.execute(sql`SELECT COUNT(*) as cnt FROM role_permissions`);
-    const rawAll = await db.execute(sql`SELECT role_name FROM role_permissions`);
-    console.log("[STORAGE] RAW SQL DEBUG:", { 
-      totalCount: rawCount.rows?.[0]?.cnt,
-      allRoles: rawAll.rows?.map((r: any) => r.role_name)
-    });
-    
     const result = await db
       .select()
       .from(rolePermissions)
       .where(eq(rolePermissions.roleName, roleName));
-    console.log("[STORAGE] getRolePermission result:", { roleName, resultCount: result.length, firstResult: result[0]?.roleName });
     return result[0];
   }
 
