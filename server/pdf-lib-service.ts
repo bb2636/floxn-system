@@ -1728,16 +1728,16 @@ async function renderEvidencePages(
           ]
             .filter(Boolean)
             .join(" ")
-            .replace(/\s*-\s*/g, "-"); // 추가;
+            .replace(/\s*-\s*/g, "-");
         } else {
-          pdfFullAddress =
+          pdfFullAddress = (
             [caseData.victimAddress, caseData.victimAddressDetail]
               .filter(Boolean)
               .join(" ") ||
             [caseData.insuredAddress, caseData.insuredAddressDetail]
               .filter(Boolean)
               .join(" ")
-              .replace(/\s*-\s*/g, "-"); // 추가;
+          ).replace(/\s*-\s*/g, "-"); // 괄호로 전체 결과에 적용!
         }
         // 사고번호 처리: normalizeText 후 하이픈 앞뒤 공백 완전 제거
         const pdfAccidentNo = normalizeText(
