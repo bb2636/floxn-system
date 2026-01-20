@@ -3410,14 +3410,35 @@ export class DbStorage implements IStorage {
           console.log(`[Essential Permissions] Created: ${roleData.roleName}`);
           createdCount++;
         } else {
-          // 기존 권한이 있으면 올바른 카테고리로 업데이트
-          await db.update(rolePermissions)
-            .set({ 
-              permissions: roleData.permissions,
-              updatedAt: currentDate
-            })
-            .where(eq(rolePermissions.roleName, roleData.roleName));
-          console.log(`[Essential Permissions] Updated: ${roleData.roleName}`);
+          // 기존 권한이 있으면 없는 카테고리만 추가 (사용자 설정 보존)
+          let existingPermissions: Record<string, any> = {};
+          if (typeof existing.permissions === 'string') {
+            existingPermissions = JSON.parse(existing.permissions);
+          } else if (existing.permissions && typeof existing.permissions === 'object') {
+            existingPermissions = existing.permissions as Record<string, any>;
+          }
+          const defaultPermissions = roleData.permissions as Record<string, any>;
+          let needsUpdate = false;
+          
+          // 기본 카테고리 중 없는 것만 추가
+          for (const category of Object.keys(defaultPermissions)) {
+            if (!(category in existingPermissions)) {
+              existingPermissions[category] = defaultPermissions[category];
+              needsUpdate = true;
+            }
+          }
+          
+          if (needsUpdate) {
+            await db.update(rolePermissions)
+              .set({ 
+                permissions: existingPermissions,
+                updatedAt: currentDate
+              })
+              .where(eq(rolePermissions.roleName, roleData.roleName));
+            console.log(`[Essential Permissions] Merged missing categories: ${roleData.roleName}`);
+          } else {
+            console.log(`[Essential Permissions] Already up-to-date: ${roleData.roleName}`);
+          }
           existingCount++;
         }
       } catch (error) {
