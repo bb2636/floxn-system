@@ -5131,10 +5131,12 @@ export class DbStorage implements IStorage {
   async getRolePermission(
     roleName: string,
   ): Promise<RolePermission | undefined> {
+    console.log("[STORAGE] getRolePermission called:", { roleName });
     const result = await db
       .select()
       .from(rolePermissions)
       .where(eq(rolePermissions.roleName, roleName));
+    console.log("[STORAGE] getRolePermission result:", { roleName, resultCount: result.length, firstResult: result[0]?.roleName });
     return result[0];
   }
 
