@@ -341,6 +341,56 @@ function drawTextLine(
   }
 }
 
+// 하이픈 간격 보정 버전 (폰트 메트릭 문제 해결)
+function drawTextLineTight(
+  page: PDFPage,
+  text: string,
+  x: number,
+  y: number,
+  font: PDFFont,
+  size: number,
+  color: { r: number; g: number; b: number } = { r: 0, g: 0, b: 0 },
+): void {
+  drawTextCallCount++;
+  try {
+    const normalized = normalizePdfText(text);
+    
+    // 하이픈이 없으면 일반 렌더링
+    if (!normalized.includes('-')) {
+      page.drawText(normalized, {
+        x,
+        y,
+        size,
+        font,
+        color: rgb(color.r, color.g, color.b),
+      });
+      return;
+    }
+    
+    // 하이픈 간격 보정 (6% offset)
+    const offset = size * 0.06;
+    const parts = normalized.split('-');
+    let cursorX = x;
+    const hyphenWidth = font.widthOfTextAtSize('-', size);
+    const textColor = rgb(color.r, color.g, color.b);
+    
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i]) {
+        page.drawText(parts[i], { x: cursorX, y, size, font, color: textColor });
+        cursorX += font.widthOfTextAtSize(parts[i], size);
+      }
+      if (i < parts.length - 1) {
+        page.drawText('-', { x: cursorX, y, size, font, color: textColor });
+        cursorX += hyphenWidth - offset;
+      }
+    }
+  } catch (e) {
+    console.warn(
+      `[Invoice PDF] Failed to draw tight text: "${text.substring(0, 20)}..." - ${e}`,
+    );
+  }
+}
+
 function drawCenteredText(
   page: PDFPage,
   text: string,
@@ -448,7 +498,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   // 두 번째 행: 사고번호 / 청구일자
   drawTextLine(page, "사고번호", leftColX, y, fonts.regular, fontSize);
   drawTextLine(page, ":", colonX1, y, fonts.regular, fontSize);
-  drawTextLine(
+  drawTextLineTight(
     page,
     data.insuranceAccidentNo || data.caseNumber || "-",
     valueX1,
@@ -568,7 +618,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     // 항목 제목 (현장출동비용만 단독인 경우 ■ 기호 생략)
     const itemTitle =
       item.title === "현장출동비용" ? item.title : "\u25A0 " + item.title;
-    drawTextLine(
+    drawTextLineTight(
       page,
       itemTitle,
       tableX + cellPadding,
@@ -707,7 +757,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
 
   for (const row of accountData) {
     drawTextLine(page, row.label, accountLabelX, accountY, fonts.bold, 10);
-    drawTextLine(page, row.value, accountValueX, accountY, fonts.regular, 10);
+    drawTextLineTight(page, row.value, accountValueX, accountY, fonts.regular, 10);
     accountY -= accountLineHeight;
   }
 
