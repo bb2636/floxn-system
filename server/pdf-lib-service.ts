@@ -1780,8 +1780,8 @@ async function renderEvidencePages(
 
         const pdfCategoryDisplay = normalizeText(
           current.doc.category
-            ? `${current.tab}-${current.doc.category}`
-            : current.tab,
+            ? `${current.tab.trim()}-${current.doc.category.trim()}`
+            : current.tab.trim(),
         ).replace(/\s*-\s*/g, "-");
         const headerRaw = `사고번호(증권번호) ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`;
 
@@ -1854,18 +1854,15 @@ async function renderEvidencePages(
             }
 
             // 4) 한 번에 drawText (중요)
-              drawTextCharByChar(
-                newPage,
-                headerText,
-                10,
-                textY,
-                fonts.bold,
-                pdfFontSize,
-                { r: 1, g: 1, b: 1 }
-              );
-
-            });
-
+            drawTextCharByChar(
+              newPage,
+              headerText,
+              10,
+              textY,
+              fonts.bold,
+              pdfFontSize,
+              { r: 1, g: 1, b: 1 }
+            );
           } catch {}
 
           try {
