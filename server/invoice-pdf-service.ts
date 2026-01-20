@@ -67,7 +67,7 @@ function normalizePdfText(text: string): string {
     .replace(/\s*:\s*/g, ":") // 콜론 주변 공백 제거
     .replace(/\s*\/\s*/g, "/") // 슬래시 주변 공백 제거
     .replace(/\s*\.\s*/g, ".") // 점 주변 공백 제거
-    .replace(/-/g, "-");
+    .replace(/-/g, "\u2010");
 
   // 4) 연속 공백 축소 (단어 사이 공백은 1개 유지)
   s = s.replace(/ {2,}/g, " ");
