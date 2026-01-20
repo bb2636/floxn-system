@@ -8923,14 +8923,29 @@ FLOXN`;
               Array.from(normalizedAccidentNo).map((c) => c.charCodeAt(0).toString(16).padStart(4, "0")),
             );
             
-            // 사고번호
-            page.drawText(normalizedAccidentNo, {
-              x: x + 5,
-              y: textY,
-              size: textSize,
-              font,
-              color: textColor,
-            });
+            // 사고번호 - drawIdentifierTight 방식으로 하이픈 간격 보정
+            const drawAccidentNoTight = (text: string, startX: number) => {
+              if (!text || !text.includes('-')) {
+                page.drawText(text || '', { x: startX, y: textY, size: textSize, font, color: textColor });
+                return;
+              }
+              const offset = textSize * 0.06;
+              const parts = text.split('-');
+              let cursorX = startX;
+              const hyphenWidth = font.widthOfTextAtSize('-', textSize);
+              
+              for (let i = 0; i < parts.length; i++) {
+                if (parts[i]) {
+                  page.drawText(parts[i], { x: cursorX, y: textY, size: textSize, font, color: textColor });
+                  cursorX += font.widthOfTextAtSize(parts[i], textSize);
+                }
+                if (i < parts.length - 1) {
+                  page.drawText('-', { x: cursorX, y: textY, size: textSize, font, color: textColor });
+                  cursorX += hyphenWidth - offset;
+                }
+              }
+            };
+            drawAccidentNoTight(normalizedAccidentNo, x + 5);
             
             // 주소
             page.drawText(normalizedAddress, {
@@ -9842,14 +9857,29 @@ FLOXN`;
               Array.from(normalizedAccidentNo).map((c) => c.charCodeAt(0).toString(16).padStart(4, "0")),
             );
             
-            // 사고번호
-            page.drawText(normalizedAccidentNo, {
-              x: x + 5,
-              y: textY,
-              size: textSize,
-              font,
-              color: textColor,
-            });
+            // 사고번호 - drawIdentifierTight 방식으로 하이픈 간격 보정
+            const drawAccidentNoTight = (text: string, startX: number) => {
+              if (!text || !text.includes('-')) {
+                page.drawText(text || '', { x: startX, y: textY, size: textSize, font, color: textColor });
+                return;
+              }
+              const offset = textSize * 0.06;
+              const parts = text.split('-');
+              let cursorX = startX;
+              const hyphenWidth = font.widthOfTextAtSize('-', textSize);
+              
+              for (let i = 0; i < parts.length; i++) {
+                if (parts[i]) {
+                  page.drawText(parts[i], { x: cursorX, y: textY, size: textSize, font, color: textColor });
+                  cursorX += font.widthOfTextAtSize(parts[i], textSize);
+                }
+                if (i < parts.length - 1) {
+                  page.drawText('-', { x: cursorX, y: textY, size: textSize, font, color: textColor });
+                  cursorX += hyphenWidth - offset;
+                }
+              }
+            };
+            drawAccidentNoTight(normalizedAccidentNo, x + 5);
             
             // 주소
             page.drawText(normalizedAddress, {
