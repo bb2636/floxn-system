@@ -5132,6 +5132,15 @@ export class DbStorage implements IStorage {
     roleName: string,
   ): Promise<RolePermission | undefined> {
     console.log("[STORAGE] getRolePermission called:", { roleName });
+    
+    // Raw SQL debug - check actual DB content
+    const rawCount = await db.execute(sql`SELECT COUNT(*) as cnt FROM role_permissions`);
+    const rawAll = await db.execute(sql`SELECT role_name FROM role_permissions`);
+    console.log("[STORAGE] RAW SQL DEBUG:", { 
+      totalCount: rawCount.rows?.[0]?.cnt,
+      allRoles: rawAll.rows?.map((r: any) => r.role_name)
+    });
+    
     const result = await db
       .select()
       .from(rolePermissions)
