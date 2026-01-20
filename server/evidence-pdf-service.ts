@@ -1,4 +1,4 @@
-import { PDFDocument, PDFPage, rgb } from 'pdf-lib';
+import { PDFDocument, PDFPage, PDFFont, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import sharp from 'sharp';
 import fs from 'fs';
@@ -94,6 +94,8 @@ function loadFontBytes(): Buffer {
   const fontsDir = path.join(process.cwd(), 'server/fonts');
   const pretendardTtf = path.join(fontsDir, 'Pretendard-Regular.ttf');
   
+  console.log(`[Evidence PDF] 폰트 경로: ${pretendardTtf}`);
+  
   try {
     if (fs.existsSync(pretendardTtf)) {
       cachedFont = fs.readFileSync(pretendardTtf);
@@ -105,6 +107,46 @@ function loadFontBytes(): Buffer {
   }
   
   throw new Error('한글 폰트를 로드할 수 없습니다.');
+}
+
+/**
+ * 사고번호(식별자) 전용 렌더링 - 하이픈 분리 + cursorX 당기기
+ * pdf-lib kerning 미지원으로 인한 하이픈 뒤 간격 보정
+ */
+function drawIdentifierTight(
+  page: PDFPage,
+  text: string,
+  x: number,
+  y: number,
+  font: PDFFont,
+  fontSize: number,
+  color: { red: number; green: number; blue: number }
+): number {
+  if (!text || !text.includes('-')) {
+    page.drawText(text || '', { x, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
+    return x + (text ? font.widthOfTextAtSize(text, fontSize) : 0);
+  }
+  
+  const offset = fontSize * 0.06;
+  const parts = text.split('-');
+  let cursorX = x;
+  
+  const hyphenWidth = font.widthOfTextAtSize('-', fontSize);
+  console.log(`[drawIdentifierTight] text="${text}", fontSize=${fontSize}, hyphenWidth=${hyphenWidth.toFixed(2)}, offset=${offset.toFixed(2)}`);
+  
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i]) {
+      page.drawText(parts[i], { x: cursorX, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
+      cursorX += font.widthOfTextAtSize(parts[i], fontSize);
+    }
+    
+    if (i < parts.length - 1) {
+      page.drawText('-', { x: cursorX, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
+      cursorX += hyphenWidth - offset;
+    }
+  }
+  
+  return cursorX;
 }
 
 const COMPRESSION_LEVELS = [
@@ -275,13 +317,23 @@ async function createEvidencePdfForTab(
     try {
       // 헤더 텍스트가 길면 작은 폰트 사용
       const fontSize = headerText.length > 60 ? 8 : 10;
-      page.drawText(headerText, {
-        x: MARGIN + 10,
-        y: A4_HEIGHT - MARGIN - HEADER_HEIGHT + 10,
-        size: fontSize,
-        font,
-        color: rgb(0.2, 0.2, 0.2),
-      });
+      const headerY = A4_HEIGHT - MARGIN - HEADER_HEIGHT + 10;
+      const headerColor = { red: 0.2, green: 0.2, blue: 0.2 };
+      let cursorX = MARGIN + 10;
+      
+      // 3파트 분리 렌더링: prefix / 사고번호(drawIdentifierTight) / suffix
+      const prefix = "사고번호 ";
+      page.drawText(prefix, { x: cursorX, y: headerY, size: fontSize, font, color: rgb(headerColor.red, headerColor.green, headerColor.blue) });
+      cursorX += font.widthOfTextAtSize(prefix, fontSize);
+      
+      // 사고번호 - drawIdentifierTight로 하이픈 간격 보정
+      cursorX = drawIdentifierTight(page, displayCaseNumber, cursorX, headerY, font, fontSize, headerColor);
+      
+      // suffix: 주소 + 카테고리 (또는 카테고리만)
+      const suffix = cleanFullAddress 
+        ? ` ${cleanFullAddress} ${categoryDisplay}`
+        : ` ${categoryDisplay}`;
+      page.drawText(suffix, { x: cursorX, y: headerY, size: fontSize, font, color: rgb(headerColor.red, headerColor.green, headerColor.blue) });
     } catch (e) {
       console.warn(`[Evidence PDF] Failed to draw header text: ${headerText}`);
     }
@@ -446,13 +498,23 @@ async function createEvidencePdfForTab(
         console.log(`[Evidence PDF Header2] charCodes:`, Array.from(displayCaseNumber2).map(c => c.charCodeAt(0).toString(16).padStart(4, '0')));
         try {
           const fontSize2 = headerText2.length > 60 ? 8 : 10;
-          newPage.drawText(headerText2, {
-            x: MARGIN + 10,
-            y: A4_HEIGHT - MARGIN - HEADER_HEIGHT + 10,
-            size: fontSize2,
-            font,
-            color: rgb(0.2, 0.2, 0.2),
-          });
+          const headerY2 = A4_HEIGHT - MARGIN - HEADER_HEIGHT + 10;
+          const headerColor2 = { red: 0.2, green: 0.2, blue: 0.2 };
+          let cursorX2 = MARGIN + 10;
+          
+          // 3파트 분리 렌더링: prefix / 사고번호(drawIdentifierTight) / suffix
+          const prefix2 = "사고번호 ";
+          newPage.drawText(prefix2, { x: cursorX2, y: headerY2, size: fontSize2, font, color: rgb(headerColor2.red, headerColor2.green, headerColor2.blue) });
+          cursorX2 += font.widthOfTextAtSize(prefix2, fontSize2);
+          
+          // 사고번호 - drawIdentifierTight로 하이픈 간격 보정
+          cursorX2 = drawIdentifierTight(newPage, displayCaseNumber2, cursorX2, headerY2, font, fontSize2, headerColor2);
+          
+          // suffix: 주소 + 카테고리 (또는 카테고리만)
+          const suffix2 = cleanFullAddress2 
+            ? ` ${cleanFullAddress2} ${categoryDisplay2}`
+            : ` ${categoryDisplay2}`;
+          newPage.drawText(suffix2, { x: cursorX2, y: headerY2, size: fontSize2, font, color: rgb(headerColor2.red, headerColor2.green, headerColor2.blue) });
         } catch (e) {
           // Silent fail
         }
