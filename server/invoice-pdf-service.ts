@@ -51,8 +51,8 @@ function normalizePdfText(text: string): string {
 
   let s = String(text);
 
-  // 1) 유니코드 공백을 일반 공백으로 통일 (NBSP 포함)
-  s = s.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ");
+  // 1) 유니코드 공백을 일반 공백으로 통일 (NBSP, Word Joiner 포함)
+  s = s.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u2060\u3000]/g, " ");
 
   // 2) 대시류 통일
   //    - (hyphen-minus) / – (en dash) / — (em dash) / − (minus)
