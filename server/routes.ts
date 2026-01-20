@@ -3691,7 +3691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fall back to role-based permissions
       const permission = await storage.getRolePermission(userRole);
-      console.log("[MY-PERMISSIONS] Role permission:", { userRole, found: !!permission, permissionId: permission?.id });
+      
       if (!permission) {
         // If no permissions set for this role, return empty permissions
         return res.json(null);

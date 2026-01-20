@@ -3355,10 +3355,11 @@ export class DbStorage implements IStorage {
         roleName: "협력사",
         permissions: JSON.stringify({
           "홈": { enabled: true, items: {} },
-          "새로운접수": { enabled: true, items: {} },
+          "새로운접수": { enabled: false, items: {} },
+          "현장조사": { enabled: true, items: { "현장입력": true, "도면작성": true, "증빙자료 업로드": true, "견적서 작성": true, "보고서 작성": true } },
           "종합진행관리": { enabled: true, items: {} },
-          "통계 및 정산": { enabled: true, items: {} },
-          "관리자 설정": { enabled: false, items: {} }
+          "통계 및 정산": { enabled: false, items: { "통계": false, "정산조회": false, "정산하기": false } },
+          "관리자 설정": { enabled: false, items: { "계정관리": false, "DB관리": false, "기준정보 관리": false, "접근권한관리": false } }
         })
       },
       {
@@ -3410,6 +3411,25 @@ export class DbStorage implements IStorage {
           console.log(`[Essential Permissions] Created: ${roleData.roleName}`);
           createdCount++;
         } else {
+          // Check if existing permissions are corrupted (contains indexed characters like "0":"{")
+          const isCorrupted = typeof existing.permissions === 'string' && 
+            existing.permissions.includes('"0":"') && 
+            existing.permissions.includes('"1":"');
+          
+          if (isCorrupted) {
+            // Corrupted data detected - replace with fresh default permissions
+            console.log(`[Essential Permissions] CORRUPTED data detected for ${roleData.roleName}, replacing...`);
+            await db.update(rolePermissions)
+              .set({ 
+                permissions: roleData.permissions,
+                updatedAt: currentDate
+              })
+              .where(eq(rolePermissions.roleName, roleData.roleName));
+            console.log(`[Essential Permissions] Replaced corrupted: ${roleData.roleName}`);
+            existingCount++;
+            continue;
+          }
+          
           // 기존 권한이 있으면 없는 카테고리만 추가 (사용자 설정 보존)
           let existingPermissions: Record<string, any> = {};
           if (typeof existing.permissions === 'string') {
