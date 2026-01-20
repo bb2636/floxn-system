@@ -3669,6 +3669,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Get user's role from session
     const userRole = req.session.userRole;
     const userId = req.session.userId;
+    console.log("[MY-PERMISSIONS] Request:", { userId, userRole });
+    
     if (!userRole) {
       return res
         .status(400)
@@ -3681,6 +3683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const individualKey = `관리자_${userId}`;
         const individualPermission =
           await storage.getRolePermission(individualKey);
+        console.log("[MY-PERMISSIONS] Individual check:", { individualKey, found: !!individualPermission });
         if (individualPermission) {
           return res.json(individualPermission);
         }
@@ -3688,6 +3691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fall back to role-based permissions
       const permission = await storage.getRolePermission(userRole);
+      console.log("[MY-PERMISSIONS] Role permission:", { userRole, found: !!permission, permissionId: permission?.id });
       if (!permission) {
         // If no permissions set for this role, return empty permissions
         return res.json(null);
