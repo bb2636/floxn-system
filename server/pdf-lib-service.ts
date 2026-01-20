@@ -1727,7 +1727,8 @@ async function renderEvidencePages(
             caseData.insuredAddressDetail,
           ]
             .filter(Boolean)
-            .join(" ");
+            .join(" ")
+            .replace(/\s*-\s*/g, "-"); // 추가;
         } else {
           pdfFullAddress =
             [caseData.victimAddress, caseData.victimAddressDetail]
@@ -1735,7 +1736,8 @@ async function renderEvidencePages(
               .join(" ") ||
             [caseData.insuredAddress, caseData.insuredAddressDetail]
               .filter(Boolean)
-              .join(" ");
+              .join(" ")
+              .replace(/\s*-\s*/g, "-"); // 추가;
         }
         // 사고번호 처리: normalizeText 후 하이픈 앞뒤 공백 완전 제거
         const pdfAccidentNo = normalizeText(
@@ -1750,7 +1752,11 @@ async function renderEvidencePages(
             ? `${current.tab}-${current.doc.category}`
             : current.tab,
         ).replace(/\s*-\s*/g, "-");
-        const normalizedHeaderText = `사고번호(증권번호) ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`;
+        const normalizedHeaderText =
+          `사고번호(증권번호) ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`.replace(
+            /\s*-\s*/g,
+            "-",
+          );
         const pdfFontSize =
           normalizedHeaderText.length > 60
             ? 8
@@ -2584,7 +2590,7 @@ async function renderRecoveryAreaPage(
         fonts.regular,
         8,
       );
-      // 문자별로 렌더링하여 특수문자 간격 조정
+      // i��자별로 렌더링하여 특수문자 간격 조정
       drawTextCharByChar(
         page,
         normalizedCategory,
