@@ -66,8 +66,8 @@ function normalizePdfText(text: string): string {
     .replace(/\s*-\s*/g, "-") // 하이픈 주변 공백 제거
     .replace(/\s*:\s*/g, ":") // 콜론 주변 공백 제거
     .replace(/\s*\/\s*/g, "/") // 슬래시 주변 공백 제거
-    .replace(/\s*\.\s*/g, ".") // 점 주변 공백 제거
-    .replace(/-/g, "\u2010");
+    .replace(/\s*\.\s*/g, "."); // 점 주변 공백 제거
+    // ASCII '-' 유지 (U+2010 치환 삭제 - pdf-lib kerning 미지원으로 간격 벌어짐 방지)
 
   // 4) 연속 공백 축소 (단어 사이 공백은 1개 유지)
   s = s.replace(/ {2,}/g, " ");
