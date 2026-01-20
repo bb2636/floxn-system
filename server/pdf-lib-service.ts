@@ -3166,7 +3166,23 @@ async function renderEstimatePage(
     rowHeight: 16,
   });
 
-  y -= 20;
+  y -= 15;
+
+  // 안내문구 (자재비 테이블 아래, 총 합계 테이블 위) - 가운데 정렬
+  const disclaimerText =
+    "상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.";
+  const disclaimerSize = 9;
+  const disclaimerWidth = fonts.regular.widthOfTextAtSize(disclaimerText, disclaimerSize);
+  drawText(page, {
+    x: (A4_WIDTH - disclaimerWidth) / 2,
+    y: y,
+    text: disclaimerText,
+    font: fonts.regular,
+    size: disclaimerSize,
+    color: { r: 0.8, g: 0.2, b: 0.2 },
+  });
+
+  y -= 15;
 
   // ===== 합계/정산 구간 (Golden Master 양식) =====
   const subtotal = laborTotal + materialTotal;
@@ -3279,21 +3295,7 @@ async function renderEstimatePage(
   const today = new Date();
   const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
 
-  // 안내문구 (합계표 아래, 작성일 위 - 초록색 박스 위치) - 가운데 정렬
-  const disclaimerText =
-    "상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.";
-  const disclaimerSize = 11;
-  const disclaimerWidth = fonts.regular.widthOfTextAtSize(disclaimerText, disclaimerSize);
-  drawText(page, {
-    x: (A4_WIDTH - disclaimerWidth) / 2,
-    y: footerY + 50,
-    text: disclaimerText,
-    font: fonts.regular,
-    size: disclaimerSize,
-    color: { r: 0.8, g: 0.2, b: 0.2 },
-  });
-
-  // 작성일 (안내문구 아래)
+  // 작성일
   drawText(page, {
     x: MARGIN,
     y: footerY + 10,
