@@ -1802,15 +1802,38 @@ async function renderEvidencePages(
 
           const textY = headerBaseY + (PDF_HEADER_HEIGHT - pdfFontSize) / 2;
           try {
-            drawTextCharByChar(
-              newPage,
-              normalizedHeaderText,
-              10,
-              textY,
-              fonts.bold,
-              pdfFontSize,
-              { r: 1, g: 1, b: 1 },
-            );
+            // 1) 최종 헤더 문자열 (공백 제거는 유지하되, 렌더링이 핵심)
+            const headerText = normalizeText(normalizedHeaderText)
+              .replace(/[–—−]/g, "-") // 대시류 통일
+              .replace(/[\u00A0\u2000-\u200B\u202F\u205F\u2060\u3000]/g, " ") // 유니코드 공백 통일
+              .replace(/\s*-\s*/g, "-") // 하이픈 전후 공백 제거 (핵심)
+              .replace(/\s+/g, " ")
+              .trim();
+
+            // 2) 헤더 영역 폭(오른쪽 페이지번호 영역 확보)
+            const headerLeftPadding = 10;
+            const headerRightPadding = 60;
+            const headerMaxWidth =
+              width - headerLeftPadding - headerRightPadding;
+
+            // 3) 길면 폰트만 줄이기 (줄바꿈/문자쪼개기 금지)
+            let headerFontSize = pdfFontSize;
+            while (
+              measureTextWidthAdjusted(headerText, fonts.bold, headerFontSize) >
+                headerMaxWidth &&
+              headerFontSize > 6
+            ) {
+              headerFontSize -= 0.5;
+            }
+
+            // 4) 한 번에 drawText (중요)
+            newPage.drawText(headerText, {
+              x: headerLeftPadding,
+              y: textY + 2,
+              size: headerFontSize,
+              font: fonts.bold,
+              color: rgb(1, 1, 1),
+            });
           } catch {}
 
           try {
