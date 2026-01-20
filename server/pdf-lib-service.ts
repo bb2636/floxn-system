@@ -1838,13 +1838,17 @@ async function renderEvidencePages(
             }
 
             // 4) 한 번에 drawText (중요)
-            newPage.drawText(headerText, {
-              x: headerLeftPadding,
-              y: textY + 2,
+            newPage.drawText(normalizedHeaderText, {
+              x: 10,
+              y: textY,
               size: headerFontSize,
               font: fonts.bold,
               color: rgb(1, 1, 1),
+
+              characterSpacing: 0,
+              wordSpacing: 0,
             });
+
           } catch {}
 
           try {
@@ -3270,7 +3274,7 @@ async function renderEstimatePage(
     y: footerY + 50,
     text: disclaimerText,
     font: fonts.regular,
-    size: 15,
+    size: 11,
     color: { r: 0.8, g: 0.2, b: 0.2 },
   });
 
@@ -3280,7 +3284,7 @@ async function renderEstimatePage(
     y: footerY + 10,
     text: `작성일:${dateStr}`,
     font: fonts.regular,
-    size: 15,
+    size: 9,
   });
 
   // 회사명 (오른쪽)
