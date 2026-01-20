@@ -181,16 +181,14 @@ function drawTextCharByChar(
   y: number,
   font: PDFFont,
   size: number,
-  color: { r: number; g: number; b: number },
+  color: { r: number; g: number; b: number }
 ): void {
   if (!text) return;
 
   let currentX = x;
   const chars = Array.from(text);
 
-  for (let i = 0; i < chars.length; i++) {
-    const char = chars[i];
-
+  for (const char of chars) {
     try {
       page.drawText(char, {
         x: currentX,
@@ -200,7 +198,24 @@ function drawTextCharByChar(
         color: rgb(color.r, color.g, color.b),
       });
 
-      let charWidth = font.widthOfTextAtSize(char, size);
+      let charWidth = 0;
+
+      try {
+        charWidth = font.widthOfTextAtSize(char, size);
+      } catch {
+        charWidth = size * 0.5;
+      }
+
+      // ✅ 핵심 보정 구간
+      if (
+        char === "-" ||
+        char === "–" ||
+        char === "—" ||
+        char === "−"
+      ) {
+        // 하이픈 폭 강제 축소 (pdf-lib + 한글폰트 버그 대응)
+        charWidth = charWidth * 0.55;
+      }
 
       currentX += charWidth;
     } catch {
@@ -208,6 +223,7 @@ function drawTextCharByChar(
     }
   }
 }
+
 
 function wrapText(
   text: string,
@@ -1838,15 +1854,16 @@ async function renderEvidencePages(
             }
 
             // 4) 한 번에 drawText (중요)
-            newPage.drawText(normalizedHeaderText, {
-              x: 10,
-              y: textY,
-              size: headerFontSize,
-              font: fonts.bold,
-              color: rgb(1, 1, 1),
+              drawTextCharByChar(
+                newPage,
+                headerText,
+                10,
+                textY,
+                fonts.bold,
+                pdfFontSize,
+                { r: 1, g: 1, b: 1 }
+              );
 
-              characterSpacing: 0,
-              wordSpacing: 0,
             });
 
           } catch {}
