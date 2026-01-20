@@ -20,13 +20,32 @@ export function usePermissions() {
     enabled: !!user, // Only fetch if user is logged in
   });
 
-  // Parse permissions JSON
+  // Parse permissions JSON (handle both string and object, including double-encoded JSON)
   let permissions: PermissionState = {};
-  if (userPermission) {
+  if (userPermission && userPermission.permissions) {
     try {
-      permissions = JSON.parse(userPermission.permissions);
+      let parsed: unknown = userPermission.permissions;
+      
+      // Keep parsing while we have a string (handles double-encoded JSON)
+      let attempts = 0;
+      while (typeof parsed === 'string' && attempts < 3) {
+        parsed = JSON.parse(parsed);
+        attempts++;
+      }
+      
+      // Verify we have a valid permissions object
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const keys = Object.keys(parsed);
+        const hasValidKeys = keys.some(k => isNaN(Number(k)));
+        if (hasValidKeys) {
+          permissions = parsed as PermissionState;
+          console.log("[Permissions] Loaded categories:", keys.filter(k => isNaN(Number(k))));
+        } else {
+          console.error("[Permissions] Invalid structure - only numeric keys");
+        }
+      }
     } catch (e) {
-      console.error("Failed to parse user permissions:", e);
+      console.error("[Permissions] Failed to parse:", e);
     }
   }
 
@@ -37,14 +56,24 @@ export function usePermissions() {
    * 2. Any item within the category is true
    */
   const hasCategory = (category: string): boolean => {
-    if (!permissions[category]) return false;
-    // If enabled is true, return true
-    if (permissions[category].enabled === true) return true;
-    // If enabled is false, check if any item is true
-    const items = permissions[category].items;
-    if (items) {
-      return Object.values(items).some(value => value === true);
+    const cat = permissions[category];
+    if (!cat) {
+      console.log(`[hasCategory] ${category}: NO ENTRY`);
+      return false;
     }
+    // If enabled is true, return true
+    if (cat.enabled === true) {
+      console.log(`[hasCategory] ${category}: ENABLED=true -> true`);
+      return true;
+    }
+    // If enabled is false, check if any item is true
+    const items = cat.items;
+    if (items) {
+      const anyItemTrue = Object.values(items).some(value => value === true);
+      console.log(`[hasCategory] ${category}: ENABLED=false, items=${JSON.stringify(items)}, anyTrue=${anyItemTrue}`);
+      return anyItemTrue;
+    }
+    console.log(`[hasCategory] ${category}: ENABLED=false, no items -> false`);
     return false;
   };
 

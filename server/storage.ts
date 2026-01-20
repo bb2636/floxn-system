@@ -3417,7 +3417,9 @@ export class DbStorage implements IStorage {
           } else if (existing.permissions && typeof existing.permissions === 'object') {
             existingPermissions = existing.permissions as Record<string, any>;
           }
-          const defaultPermissions = roleData.permissions as Record<string, any>;
+          
+          // roleData.permissions is already JSON.stringify'd - need to parse it
+          const defaultPermissions = JSON.parse(roleData.permissions);
           let needsUpdate = false;
           
           // 기본 카테고리 중 없는 것만 추가
@@ -3431,7 +3433,7 @@ export class DbStorage implements IStorage {
           if (needsUpdate) {
             await db.update(rolePermissions)
               .set({ 
-                permissions: existingPermissions,
+                permissions: JSON.stringify(existingPermissions),
                 updatedAt: currentDate
               })
               .where(eq(rolePermissions.roleName, roleData.roleName));
