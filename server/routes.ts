@@ -8923,8 +8923,8 @@ FLOXN`;
               Array.from(normalizedAccidentNo).map((c) => c.charCodeAt(0).toString(16).padStart(4, "0")),
             );
             
-            // 사고번호 - drawIdentifierTight 방식으로 하이픈 간격 보정
-            const drawAccidentNoTight = (text: string, startX: number) => {
+            // 하이픈 간격 보정 함수 (사고번호, 주소 공용)
+            const drawTextTight = (text: string, startX: number) => {
               if (!text || !text.includes('-')) {
                 page.drawText(text || '', { x: startX, y: textY, size: textSize, font, color: textColor });
                 return;
@@ -8945,16 +8945,12 @@ FLOXN`;
                 }
               }
             };
-            drawAccidentNoTight(normalizedAccidentNo, x + 5);
             
-            // 주소
-            page.drawText(normalizedAddress, {
-              x: x + col1Width + 5,
-              y: textY,
-              size: textSize,
-              font,
-              color: textColor,
-            });
+            // 사고번호
+            drawTextTight(normalizedAccidentNo, x + 5);
+            
+            // 주소 (하이픈 간격 보정 적용)
+            drawTextTight(normalizedAddress, x + col1Width + 5);
             
             // 카테고리
             page.drawText(normalizedCategory, {
@@ -9857,8 +9853,8 @@ FLOXN`;
               Array.from(normalizedAccidentNo).map((c) => c.charCodeAt(0).toString(16).padStart(4, "0")),
             );
             
-            // 사고번호 - drawIdentifierTight 방식으로 하이픈 간격 보정
-            const drawAccidentNoTight = (text: string, startX: number) => {
+            // 하이픈 간격 보정 함수 (사고번호, 주소 공용)
+            const drawTextTight = (text: string, startX: number) => {
               if (!text || !text.includes('-')) {
                 page.drawText(text || '', { x: startX, y: textY, size: textSize, font, color: textColor });
                 return;
@@ -9879,16 +9875,12 @@ FLOXN`;
                 }
               }
             };
-            drawAccidentNoTight(normalizedAccidentNo, x + 5);
             
-            // 주소
-            page.drawText(normalizedAddress, {
-              x: x + col1Width + 5,
-              y: textY,
-              size: textSize,
-              font,
-              color: textColor,
-            });
+            // 사고번호
+            drawTextTight(normalizedAccidentNo, x + 5);
+            
+            // 주소 (하이픈 간격 보정 적용)
+            drawTextTight(normalizedAddress, x + col1Width + 5);
             
             // 카테고리
             page.drawText(normalizedCategory, {
