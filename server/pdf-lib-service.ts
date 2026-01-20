@@ -512,6 +512,146 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
   return currentY;
 }
 
+// 페이지네이션을 지원하는 테이블 렌더링 함수
+interface PaginatedTableResult {
+  page: PDFPage;
+  y: number;
+}
+
+function drawPaginatedTable(
+  pdfDoc: PDFDocument,
+  currentPage: PDFPage,
+  options: DrawTableOptions & {
+    pageBottomY?: number;
+    headerRow?: TableCell[];
+  },
+): PaginatedTableResult {
+  const {
+    x,
+    y,
+    rows,
+    fonts,
+    fontSize = 9,
+    headerBgColor = { r: 0.94, g: 0.94, b: 0.94 },
+    rowHeight = 22,
+    borderWidth = 0.5,
+    pageBottomY = MARGIN + 60,
+    headerRow,
+  } = options;
+
+  let page = currentPage;
+  let currentY = y;
+
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+    const row = rows[rowIndex];
+    
+    // 페이지 하단을 넘어가면 새 페이지 생성
+    if (currentY - rowHeight < pageBottomY) {
+      page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+      currentY = A4_HEIGHT - MARGIN;
+      
+      // 헤더 행이 있으면 새 페이지에 헤더 먼저 그리기
+      if (headerRow) {
+        currentY = drawTableRow(page, headerRow, x, currentY, fonts, fontSize, headerBgColor, rowHeight, borderWidth);
+      }
+    }
+    
+    currentY = drawTableRow(page, row, x, currentY, fonts, fontSize, headerBgColor, rowHeight, borderWidth);
+  }
+
+  return { page, y: currentY };
+}
+
+// 단일 행 렌더링 헬퍼 함수
+function drawTableRow(
+  page: PDFPage,
+  row: TableCell[],
+  x: number,
+  currentY: number,
+  fonts: FontSet,
+  fontSize: number,
+  headerBgColor: { r: number; g: number; b: number },
+  rowHeight: number,
+  borderWidth: number,
+): number {
+  let cellX = x;
+  const isHeaderRow = row.some((cell) => cell.isHeader);
+
+  for (const cell of row) {
+    if (cell.isHeader) {
+      page.drawRectangle({
+        x: cellX,
+        y: currentY - rowHeight,
+        width: cell.width,
+        height: rowHeight,
+        color: rgb(headerBgColor.r, headerBgColor.g, headerBgColor.b),
+      });
+    }
+
+    page.drawRectangle({
+      x: cellX,
+      y: currentY - rowHeight,
+      width: cell.width,
+      height: rowHeight,
+      borderColor: rgb(0.3, 0.3, 0.3),
+      borderWidth,
+    });
+
+    const font = cell.isHeader ? fonts.bold : fonts.regular;
+    const padding = 4;
+    const rightPadding = cell.align === "right" ? 8 : padding;
+    const maxTextWidth = cell.width - padding - rightPadding;
+
+    let actualFontSize = fontSize;
+    const cellText = normalizeText(cell.text || "");
+
+    const isNegative =
+      cell.align === "right" &&
+      cellText.startsWith("-") &&
+      cellText.length > 1;
+    const displayText = isNegative ? cellText.substring(1) : cellText;
+    const minusSign = isNegative ? "-" : "";
+
+    let textWidth = measureTextWidthAdjusted(displayText, font, actualFontSize);
+    const minusWidth = isNegative
+      ? measureTextWidthAdjusted(minusSign, font, actualFontSize)
+      : 0;
+
+    while (textWidth + minusWidth > maxTextWidth && actualFontSize > 5) {
+      actualFontSize -= 0.5;
+      textWidth = measureTextWidthAdjusted(displayText, font, actualFontSize);
+    }
+
+    const textY = currentY - rowHeight / 2 - actualFontSize / 3;
+
+    let textX = cellX + padding;
+    if (cell.align === "center") {
+      const fullWidth = measureTextWidthAdjusted(cellText, font, actualFontSize);
+      textX = cellX + (cell.width - fullWidth) / 2;
+    } else if (cell.align === "right") {
+      textX = cellX + cell.width - textWidth - rightPadding;
+    }
+
+    const defaultColor = { r: 0, g: 0, b: 0 };
+
+    try {
+      if (isNegative) {
+        const minusX = textX - minusWidth - 2;
+        drawTextCharByChar(page, minusSign, minusX, textY, font, actualFontSize, defaultColor);
+        drawTextCharByChar(page, displayText, textX, textY, font, actualFontSize, defaultColor);
+      } else {
+        drawTextCharByChar(page, cellText, textX, textY, font, actualFontSize, defaultColor);
+      }
+    } catch (e) {
+      console.warn(`[pdf-lib] Table cell text failed: "${cellText.substring(0, 10)}..."`);
+    }
+
+    cellX += cell.width;
+  }
+
+  return currentY - rowHeight;
+}
+
 async function normalizeImage(
   base64Data: string,
   config: ImageProcessingConfig = PROCESSING_LEVELS[0],
@@ -2756,7 +2896,7 @@ async function renderEstimatePage(
   estimateRowsData: any[],
   partnerData: any,
 ): Promise<void> {
-  const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+  let page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
 
   // ===== 견적서 타이틀 =====
@@ -3032,16 +3172,27 @@ async function renderEstimatePage(
     { text: formatNumber(laborTotal), width: 115, align: "right" },
   ]);
 
-  y = drawTable(page, {
+  // 페이지네이션 적용 노무비 테이블
+  const laborResult = drawPaginatedTable(pdfDoc, page, {
     x: MARGIN,
     y,
     rows: laborRows,
     fonts,
     fontSize: 7,
     rowHeight: 16,
+    pageBottomY: MARGIN + 80,
+    headerRow: laborHeader,
   });
+  page = laborResult.page;
+  y = laborResult.y;
 
   y -= 15;
+
+  // 자재비 섹션 시작 전 페이지 경계 체크
+  if (y - 35 < MARGIN + 80) {
+    page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+    y = A4_HEIGHT - MARGIN;
+  }
 
   // ===== 자재비 테이블 =====
   page.drawRectangle({
@@ -3157,16 +3308,27 @@ async function renderEstimatePage(
     { text: formatNumber(materialTotal), width: 115, align: "right" },
   ]);
 
-  y = drawTable(page, {
+  // 페이지네이션 적용 자재비 테이블
+  const materialResult = drawPaginatedTable(pdfDoc, page, {
     x: MARGIN,
     y,
     rows: materialRows,
     fonts,
     fontSize: 7,
     rowHeight: 16,
+    pageBottomY: MARGIN + 80,
+    headerRow: materialHeader,
   });
+  page = materialResult.page;
+  y = materialResult.y;
 
   y -= 20;
+
+  // 합계/정산 섹션 전 페이지 경계 체크 (약 200px 필요)
+  if (y - 200 < MARGIN + 60) {
+    page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+    y = A4_HEIGHT - MARGIN;
+  }
 
   // ===== 합계/정산 구간 (Golden Master 양식) =====
   const subtotal = laborTotal + materialTotal;
