@@ -59,21 +59,23 @@ function getCategoryToTab(category: string): string {
 let cachedFont: Buffer | null = null;
 
 /**
- * NotoSansKR 폰트용 정규화 (헤더 등)
- * - 하이픈 주변 공백 제거
- * - ASCII '-' (U+002D) 그대로 유지 (치환 금지)
+ * 헤더 텍스트 정규화 (Pretendard 폰트용)
+ * - 유니코드 공백 제거
+ * - 대시류(–—−) → ASCII '-'
+ * - 코드 패턴에서만 하이픈 주변 공백 제거
+ * - ASCII '-' (U+002D) 그대로 유지 (U+2010/2011/2212 치환 금지)
  */
-function normalizeIdentifierNoto(text: string): string {
+function normalizeHeaderText(text: string): string {
   if (!text) return "";
   let s = String(text);
   
   // 1) 유니코드 공백을 일반 공백으로 통일
   s = s.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u2060\u3000]/g, " ");
   
-  // 2) 대시류를 ASCII 하이픈으로 통일 (en dash, em dash, minus sign, U+2212 → ASCII -)
+  // 2) 대시류를 ASCII 하이픈으로 통일 (en dash, em dash, minus sign, etc → ASCII -)
   s = s.replace(/[–—−\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, "-");
   
-  // 3) 하이픈/콜론/슬래시 주변 공백 제거
+  // 3) 하이픈/콜론/슬래시 주변 공백 제거 (코드 패턴)
   s = s.replace(/\s*-\s*/g, "-");
   s = s.replace(/\s*:\s*/g, ":");
   s = s.replace(/\s*\/\s*/g, "/");
@@ -90,12 +92,12 @@ function loadFontBytes(): Buffer {
   if (cachedFont) return cachedFont;
   
   const fontsDir = path.join(process.cwd(), 'server/fonts');
-  const regularTtf = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
+  const pretendardTtf = path.join(fontsDir, 'Pretendard-Regular.ttf');
   
   try {
-    if (fs.existsSync(regularTtf)) {
-      cachedFont = fs.readFileSync(regularTtf);
-      console.log(`[Evidence PDF] NotoSansKR 폰트 로드 완료 (${Math.round(cachedFont.length / 1024 / 1024)}MB)`);
+    if (fs.existsSync(pretendardTtf)) {
+      cachedFont = fs.readFileSync(pretendardTtf);
+      console.log(`[Evidence PDF] Pretendard 폰트 로드 완료 (${Math.round(cachedFont.length / 1024 / 1024 * 100) / 100}MB)`);
       return cachedFont;
     }
   } catch (err) {
@@ -252,9 +254,9 @@ async function createEvidencePdfForTab(
     });
     
     // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
-    // NotoSansKR용 정규화 (ASCII '-' 유지, 치환 금지)
-    const displayCaseNumber = normalizeIdentifierNoto(img.caseNumber || insuranceAccidentNo || caseNumber || "");
-    const cleanFullAddress = normalizeIdentifierNoto(fullAddress || "");
+    // Pretendard용 정규화 (ASCII '-' 유지, 치환 금지)
+    const displayCaseNumber = normalizeHeaderText(img.caseNumber || insuranceAccidentNo || caseNumber || "");
+    const cleanFullAddress = normalizeHeaderText(fullAddress || "");
     // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
     // categoryDisplay 조합 전 trim() 적용
     const safeTabName = (tabName || "").trim();
@@ -427,9 +429,9 @@ async function createEvidencePdfForTab(
         });
         
         // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
-        // NotoSansKR용 정규화 (ASCII '-' 유지, 치환 금지)
-        const displayCaseNumber2 = normalizeIdentifierNoto(img.caseNumber || insuranceAccidentNo || caseNumber || "");
-        const cleanFullAddress2 = normalizeIdentifierNoto(fullAddress || "");
+        // Pretendard용 정규화 (ASCII '-' 유지, 치환 금지)
+        const displayCaseNumber2 = normalizeHeaderText(img.caseNumber || insuranceAccidentNo || caseNumber || "");
+        const cleanFullAddress2 = normalizeHeaderText(fullAddress || "");
         // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
         // categoryDisplay 조합 전 trim() 적용
         const safeTabName2 = (tabName || "").trim();
@@ -581,9 +583,9 @@ async function addHeaderToPdf(
         color: rgb(0.8, 0.8, 0.8),
       });
       
-      // Build header text - NotoSansKR용 정규화 (ASCII '-' 유지, U+2010 치환 금지)
-      const cleanAccidentNo = normalizeIdentifierNoto(insuranceAccidentNo || "");
-      const cleanAddr = normalizeIdentifierNoto(fullAddress || "");
+      // Build header text - Pretendard용 정규화 (ASCII '-' 유지, 치환 금지)
+      const cleanAccidentNo = normalizeHeaderText(insuranceAccidentNo || "");
+      const cleanAddr = normalizeHeaderText(fullAddress || "");
       const headerParts: string[] = [];
       if (cleanAccidentNo) headerParts.push(`사고번호: ${cleanAccidentNo}`);
       if (cleanAddr) headerParts.push(`주소: ${cleanAddr}`);
