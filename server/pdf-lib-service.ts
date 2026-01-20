@@ -269,6 +269,21 @@ function normalizeText(text: string): string {
   );
 }
 
+// 증빙 PDF 헤더 전용 정규화 (헤더 텍스트는 하이픈/콜론 주변 공백이 섞여 들어오는 경우가 많음)
+// - normalizeText로 유니코드 공백 통일
+// - 하이픈(-) 앞뒤 공백 제거
+// - 콜론(:) 앞 공백 제거 + 콜론 뒤 공백 1개만 유지(너무 붙지 않게)
+function normalizeEvidenceHeaderText(text: string): string {
+  if (!text) return "";
+
+  return normalizeText(text)
+    .replace(/\s*-\s*/g, "-") // "2026 - 01 - 15" -> "2026-01-15"
+    .replace(/\s*:\s*/g, ": ") // "13 : 07" -> "13: 07"
+    .replace(/:\s+/g, ": ") // 콜론 뒤 공백은 1개로
+    .replace(/\s+/g, " ") // 연속 공백 정리
+    .trim();
+}
+
 function drawText(page: PDFPage, options: DrawTextOptions): number {
   const {
     x,
@@ -1752,11 +1767,10 @@ async function renderEvidencePages(
             ? `${current.tab}-${current.doc.category}`
             : current.tab,
         ).replace(/\s*-\s*/g, "-");
-        const normalizedHeaderText =
-          `사고번호(증권번호) ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`.replace(
-            /\s*-\s*/g,
-            "-",
-          );
+        const headerTextRaw = `사고번호(증권번호) ${pdfAccidentNo}    ${pdfFullAddress}    ${pdfCategoryDisplay}`;
+
+        const normalizedHeaderText = normalizeEvidenceHeaderText(headerTextRaw);
+
         const pdfFontSize =
           normalizedHeaderText.length > 60
             ? 8
@@ -1788,14 +1802,17 @@ async function renderEvidencePages(
 
           const textY = headerBaseY + (PDF_HEADER_HEIGHT - pdfFontSize) / 2;
           try {
-            newPage.drawText(normalizedHeaderText, {
-              x: 10,
-              y: textY,
-              size: pdfFontSize,
-              font: fonts.bold,
-              color: rgb(1, 1, 1),
-            });
+            drawTextCharByChar(
+              newPage,
+              normalizedHeaderText,
+              10,
+              textY,
+              fonts.bold,
+              pdfFontSize,
+              { r: 1, g: 1, b: 1 },
+            );
           } catch {}
+
           try {
             newPage.drawText(`${pageIdx + 1}/${pageCount}`, {
               x: width - 50,
