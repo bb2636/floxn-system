@@ -2860,10 +2860,18 @@ export default function AdminSettings() {
                         }
                       });
                       
-                      // Find 기준작업량(D) column index for 일위대가 editable D values
+                      // Find 기준작업량(D), 노임단가(E), 일위대가 column indices for 일위대가 tab
                       const currentHeaders = dbTab === "노무비" ? laborExcelHeaders : dbTab === "자재비" ? materialExcelHeaders : unitPriceExcelHeaders;
                       const dValueColIndex = dbTab === "일위대가" ? currentHeaders.findIndex(h => 
                         h.includes("기준작업량") || h.includes("기준 작업량") || h === "D" || h.includes("D값") || h.includes("D 값")
+                      ) : -1;
+                      // 노임단가(인당) 컬럼 인덱스
+                      const laborRateColIndex = dbTab === "일위대가" ? currentHeaders.findIndex(h => 
+                        h.includes("노임단가") || h.includes("단가_인") || h.includes("단가(인당)")
+                      ) : -1;
+                      // 일위대가 컬럼 인덱스 (노임단가/기준작업량)
+                      const unitPriceColIndex = dbTab === "일위대가" ? currentHeaders.findIndex(h => 
+                        h.includes("일위대가") && (h.includes("노임단가") || h.includes("기준작업량"))
                       ) : -1;
                       
                       return currentData.map((row: any, rowIdx: number) => {
@@ -2918,6 +2926,39 @@ export default function AdminSettings() {
                               const overriddenDValue = overridesMap.get(overrideKey);
                               const hasOverride = overriddenDValue !== undefined;
                               const currentEditValue = editedDValues[overrideKey];
+                              
+                              // 일위대가 컬럼인 경우 노임단가/기준작업량으로 동적 계산
+                              const isUnitPriceColumn = dbTab === "일위대가" && cellIdx === unitPriceColIndex && unitPriceColIndex !== -1;
+                              if (isUnitPriceColumn && laborRateColIndex !== -1 && dValueColIndex !== -1 && Array.isArray(row)) {
+                                // 노임단가(E) 가져오기
+                                const laborRate = typeof row[laborRateColIndex] === 'number' ? row[laborRateColIndex] : parseFloat(String(row[laborRateColIndex]).replace(/,/g, '')) || 0;
+                                // 기준작업량(D) 가져오기 - override 있으면 override 값 사용
+                                const originalD = typeof row[dValueColIndex] === 'number' ? row[dValueColIndex] : parseFloat(String(row[dValueColIndex]).replace(/,/g, '')) || 0;
+                                const effectiveD = hasOverride ? Number(overriddenDValue) : originalD;
+                                // 일위대가 계산: 노임단가 / 기준작업량
+                                const calculatedUnitPrice = effectiveD > 0 ? Math.round(laborRate / effectiveD) : 0;
+                                
+                                return (
+                                  <td
+                                    key={cellIdx}
+                                    className="px-4 py-4"
+                                    rowSpan={rowspan > 1 ? rowspan : undefined}
+                                    style={{
+                                      fontFamily: "Pretendard",
+                                      fontSize: "14px",
+                                      fontWeight: 400,
+                                      color: hasOverride ? "#008FED" : "#0C0C0C",
+                                      whiteSpace: "nowrap",
+                                      verticalAlign: rowspan > 1 ? "middle" : undefined,
+                                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                                      borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                                      background: hasOverride ? "rgba(0, 143, 237, 0.05)" : (rowspan > 1 ? "rgba(248, 248, 248, 0.5)" : undefined),
+                                    }}
+                                  >
+                                    {calculatedUnitPrice.toLocaleString()}
+                                  </td>
+                                );
+                              }
                               
                               if (isEditableDColumn && isAdmin && laborItem) {
                                 // 소수점 한자리로 표시
