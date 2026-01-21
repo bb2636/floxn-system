@@ -217,6 +217,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             req.sessionID,
           );
           const { password, ...userWithoutPassword } = user;
+          console.log("[LOGIN] Response data:", { 
+            userId: userWithoutPassword.id, 
+            mustChangePassword: userWithoutPassword.mustChangePassword 
+          });
           res.json(userWithoutPassword);
         });
         return;
