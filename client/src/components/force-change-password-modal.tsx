@@ -121,7 +121,7 @@ export function ForceChangePasswordModal({
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         type={showNewPassword ? "text" : "password"}
-                        placeholder="8자 이상, 영문/숫자 포함"
+                        placeholder="6자 이상, 영문/숫자, 특수문자 포함"
                         className="pl-10 pr-10"
                         data-testid="input-new-password"
                         {...field}
