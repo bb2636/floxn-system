@@ -7179,6 +7179,13 @@ export class DbStorage implements IStorage {
   async upsertUnitPriceOverride(data: InsertUnitPriceOverride): Promise<UnitPriceOverride> {
     const existing = await this.getUnitPriceOverride(data.category, data.workName, data.laborItem);
     
+    console.log("[upsertUnitPriceOverride] Input:", { 
+      ...data, 
+      standardWorkQuantity: data.standardWorkQuantity,
+      type: typeof data.standardWorkQuantity 
+    });
+    console.log("[upsertUnitPriceOverride] Existing:", existing);
+    
     // Raw SQL을 사용하여 Drizzle 타입 캐싱 문제 우회 (real 타입 소수점 지원)
     if (existing) {
       const result = await db.execute(sql`
@@ -7190,6 +7197,7 @@ export class DbStorage implements IStorage {
                   standard_work_quantity as "standardWorkQuantity", 
                   created_at as "createdAt", updated_at as "updatedAt"
       `);
+      console.log("[upsertUnitPriceOverride] UPDATE result:", result);
       return result.rows[0] as UnitPriceOverride;
     } else {
       const result = await db.execute(sql`
@@ -7199,6 +7207,7 @@ export class DbStorage implements IStorage {
                   standard_work_quantity as "standardWorkQuantity", 
                   created_at as "createdAt", updated_at as "updatedAt"
       `);
+      console.log("[upsertUnitPriceOverride] INSERT result:", result);
       return result.rows[0] as UnitPriceOverride;
     }
   }
