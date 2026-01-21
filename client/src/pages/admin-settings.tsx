@@ -2951,7 +2951,7 @@ export default function AdminSettings() {
                                           }));
                                         }}
                                         onBlur={(e) => {
-                                          const newValue = parseInt(e.target.value, 10);
+                                          const newValue = parseFloat(e.target.value);
                                           if (!isNaN(newValue) && newValue > 0) {
                                             saveDValueMutation.mutate({
                                               category,
