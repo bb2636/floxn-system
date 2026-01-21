@@ -67,7 +67,7 @@ export type ChangeMyPasswordInput = z.infer<typeof changeMyPasswordSchema>;
 
 export const forceChangePasswordSchema = z.object({
   newPassword: z.string()
-    .min(8, "비밀번호는 8자 이상이어야 합니다")
+    .min(6, "비밀번호는 6자 이상이어야 합니다")
     .regex(/[A-Za-z]/, "비밀번호에 영문자가 포함되어야 합니다")
     .regex(/[0-9]/, "비밀번호에 숫자가 포함되어야 합니다"),
   confirmPassword: z.string().min(1, "비밀번호 확인을 입력해주세요"),
