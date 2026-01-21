@@ -7157,13 +7157,13 @@ export class DbStorage implements IStorage {
   }
 
   // Unit Price Override methods (D값 관리)
-  // Raw SQL + text 캐스팅으로 Neon 드라이버 타입 캐싱 문제 우회
+  // 새 테이블명 d_value_overrides 사용 (Neon pooler 캐시 문제 해결)
   async getAllUnitPriceOverrides(): Promise<UnitPriceOverride[]> {
     const result = await db.execute(sql`
       SELECT id, category, work_name as "workName", labor_item as "laborItem", 
              standard_work_quantity::text as "standardWorkQuantity", 
              created_at as "createdAt", updated_at as "updatedAt"
-      FROM unit_price_overrides
+      FROM d_value_overrides
       ORDER BY category, work_name
     `);
     return result.rows.map((row: any) => ({
@@ -7177,7 +7177,7 @@ export class DbStorage implements IStorage {
       SELECT id, category, work_name as "workName", labor_item as "laborItem", 
              standard_work_quantity::text as "standardWorkQuantity", 
              created_at as "createdAt", updated_at as "updatedAt"
-      FROM unit_price_overrides
+      FROM d_value_overrides
       WHERE category = ${category} AND work_name = ${workName} AND labor_item = ${laborItem}
     `);
     if (result.rows.length === 0) return null;
@@ -7198,12 +7198,12 @@ export class DbStorage implements IStorage {
     });
     console.log("[upsertUnitPriceOverride] Existing:", existing);
     
-    // Raw SQL + 문자열 변환으로 Drizzle 파라미터 타입 추론 문제 우회
+    // Raw SQL + 문자열 변환 + 새 테이블명 (d_value_overrides)
     const quantityStr = String(data.standardWorkQuantity);
     
     if (existing) {
       const result = await db.execute(sql`
-        UPDATE unit_price_overrides 
+        UPDATE d_value_overrides 
         SET standard_work_quantity = ${quantityStr}::real, 
             updated_at = NOW()
         WHERE id = ${existing.id}
@@ -7219,7 +7219,7 @@ export class DbStorage implements IStorage {
       } as UnitPriceOverride;
     } else {
       const result = await db.execute(sql`
-        INSERT INTO unit_price_overrides (category, work_name, labor_item, standard_work_quantity, created_at, updated_at)
+        INSERT INTO d_value_overrides (category, work_name, labor_item, standard_work_quantity, created_at, updated_at)
         VALUES (${data.category}, ${data.workName}, ${data.laborItem}, ${quantityStr}::real, NOW(), NOW())
         RETURNING id, category, work_name as "workName", labor_item as "laborItem", 
                   standard_work_quantity::text as "standardWorkQuantity", 
