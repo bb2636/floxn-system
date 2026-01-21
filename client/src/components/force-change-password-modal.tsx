@@ -188,6 +188,7 @@ export function ForceChangePasswordModal({
                 <li>6자 이상</li>
                 <li>영문자 포함</li>
                 <li>숫자 포함</li>
+                <li>특수문자 포함</li>
               </ul>
             </div>
 
