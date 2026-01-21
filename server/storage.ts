@@ -7179,22 +7179,27 @@ export class DbStorage implements IStorage {
   async upsertUnitPriceOverride(data: InsertUnitPriceOverride): Promise<UnitPriceOverride> {
     const existing = await this.getUnitPriceOverride(data.category, data.workName, data.laborItem);
     
+    // Raw SQL을 사용하여 Drizzle 타입 캐싱 문제 우회 (real 타입 소수점 지원)
     if (existing) {
-      const [updated] = await db
-        .update(unitPriceOverrides)
-        .set({
-          standardWorkQuantity: data.standardWorkQuantity,
-          updatedAt: new Date(),
-        })
-        .where(eq(unitPriceOverrides.id, existing.id))
-        .returning();
-      return updated;
+      const result = await db.execute(sql`
+        UPDATE unit_price_overrides 
+        SET standard_work_quantity = ${data.standardWorkQuantity}::real, 
+            updated_at = NOW()
+        WHERE id = ${existing.id}
+        RETURNING id, category, work_name as "workName", labor_item as "laborItem", 
+                  standard_work_quantity as "standardWorkQuantity", 
+                  created_at as "createdAt", updated_at as "updatedAt"
+      `);
+      return result.rows[0] as UnitPriceOverride;
     } else {
-      const [created] = await db
-        .insert(unitPriceOverrides)
-        .values(data)
-        .returning();
-      return created;
+      const result = await db.execute(sql`
+        INSERT INTO unit_price_overrides (category, work_name, labor_item, standard_work_quantity, created_at, updated_at)
+        VALUES (${data.category}, ${data.workName}, ${data.laborItem}, ${data.standardWorkQuantity}::real, NOW(), NOW())
+        RETURNING id, category, work_name as "workName", labor_item as "laborItem", 
+                  standard_work_quantity as "standardWorkQuantity", 
+                  created_at as "createdAt", updated_at as "updatedAt"
+      `);
+      return result.rows[0] as UnitPriceOverride;
     }
   }
 
