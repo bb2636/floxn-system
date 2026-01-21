@@ -5838,8 +5838,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(updated);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Update master data error:", error);
+      
+      // Handle unique constraint violation
+      if (error?.code === "23505" || error?.message?.includes("unique constraint")) {
+        return res.status(400).json({ error: "동일한 값이 이미 존재합니다. 다른 값을 입력해주세요." });
+      }
+      
       res
         .status(500)
         .json({ error: "기준정보를 수정하는 중 오류가 발생했습니다" });
