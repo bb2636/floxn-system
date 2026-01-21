@@ -5,7 +5,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { formatCaseNumber } from "@/lib/utils";
 import {
   AlertDialog,
@@ -322,7 +326,11 @@ export default function FieldReport() {
 
   // 관련 접수건 조회 (심사하기용) - status 포함하여 현장출동보고서 제출건 필터링
   const { data: relatedCasesData } = useQuery<{
-    relatedCases: Array<{ caseId: string; caseNumber: string; status: string | null }>;
+    relatedCases: Array<{
+      caseId: string;
+      caseNumber: string;
+      status: string | null;
+    }>;
   }>({
     queryKey: ["/api/cases", selectedCaseId, "related-drawings"],
     enabled: !!selectedCaseId,
@@ -343,7 +351,8 @@ export default function FieldReport() {
   });
 
   // 관련 접수건 심사하기 팝오버 상태
-  const [isRelatedCasesPopoverOpen, setIsRelatedCasesPopoverOpen] = useState(false);
+  const [isRelatedCasesPopoverOpen, setIsRelatedCasesPopoverOpen] =
+    useState(false);
 
   // 기타사항 상태
   const [additionalNotes, setAdditionalNotes] = useState("");
@@ -884,7 +893,7 @@ export default function FieldReport() {
       // KST 오늘 날짜
       const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
       const constructionCompletionDateStr = kstNow.toISOString().split("T")[0];
-      
+
       return apiRequest("PATCH", `/api/cases/${selectedCaseId}`, {
         status: "청구자료제출(복구)",
         constructionCompletionDate: constructionCompletionDateStr, // 복구완료일 설정
@@ -1268,34 +1277,42 @@ export default function FieldReport() {
         const currentCaseNumber = caseData?.caseNumber || "";
         const baseMatch = currentCaseNumber.match(/^(.+)-(\d+)$/);
         if (!baseMatch) return null;
-        
+
         const baseCaseNumber = baseMatch[1];
-        
+
         // 관련 케이스 중 같은 기본 번호를 가진 케이스들 필터링 (모든 상태 표시)
-        const suffixCases = relatedCasesData?.relatedCases?.filter((rc) => {
-          const match = rc.caseNumber.match(/^(.+)-(\d+)$/);
-          if (!match) return false;
-          const rcBase = match[1];
-          // 같은 기본 번호를 가진 모든 케이스 표시
-          return rcBase === baseCaseNumber;
-        }) || [];
-        
+        const suffixCases =
+          relatedCasesData?.relatedCases?.filter((rc) => {
+            const match = rc.caseNumber.match(/^(.+)-(\d+)$/);
+            if (!match) return false;
+            const rcBase = match[1];
+            // 같은 기본 번호를 가진 모든 케이스 표시
+            return rcBase === baseCaseNumber;
+          }) || [];
+
         // 현재 케이스도 목록에 추가 (중복 방지, 현재 케이스의 상태 포함)
         const currentCaseStatus = caseData?.status || "";
         const allSuffixCases = [
-          { caseId: selectedCaseId, caseNumber: currentCaseNumber, status: currentCaseStatus },
-          ...suffixCases.filter(rc => rc.caseId !== selectedCaseId)
+          {
+            caseId: selectedCaseId,
+            caseNumber: currentCaseNumber,
+            status: currentCaseStatus,
+          },
+          ...suffixCases.filter((rc) => rc.caseId !== selectedCaseId),
         ].sort((a, b) => {
           const suffixA = a.caseNumber.match(/-(\d+)$/)?.[1] || "0";
           const suffixB = b.caseNumber.match(/-(\d+)$/)?.[1] || "0";
           return parseInt(suffixA) - parseInt(suffixB);
         });
-        
+
         // 항상 버튼 표시 (관리자 및 협력사 모두 가능) - 관련 케이스가 1개만 있어도 표시
         if (!isUserLoading && (isAdmin || isPartner)) {
           return (
             <div className="flex justify-end mb-4">
-              <Popover open={isRelatedCasesPopoverOpen} onOpenChange={setIsRelatedCasesPopoverOpen}>
+              <Popover
+                open={isRelatedCasesPopoverOpen}
+                onOpenChange={setIsRelatedCasesPopoverOpen}
+              >
                 <PopoverTrigger asChild>
                   <Button
                     data-testid="button-related-cases-review"
@@ -1320,7 +1337,10 @@ export default function FieldReport() {
                     boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
                   }}
                 >
-                  <div className="p-3 border-b" style={{ borderColor: "rgba(0, 0, 0, 0.06)" }}>
+                  <div
+                    className="p-3 border-b"
+                    style={{ borderColor: "rgba(0, 0, 0, 0.06)" }}
+                  >
                     <p
                       style={{
                         fontFamily: "Pretendard",
@@ -1357,28 +1377,40 @@ export default function FieldReport() {
                       </p>
                     ) : (
                       allSuffixCases.map((suffixCase) => {
-                        const isCurrentCase = suffixCase.caseId === selectedCaseId;
-                        const suffix = suffixCase.caseNumber.match(/-(\d+)$/)?.[1] || "0";
-                        const label = suffix === "0" ? "손해방지" : `피해세대 ${suffix}`;
-                        
+                        const isCurrentCase =
+                          suffixCase.caseId === selectedCaseId;
+                        const suffix =
+                          suffixCase.caseNumber.match(/-(\d+)$/)?.[1] || "0";
+                        const label =
+                          suffix === "0" ? "손해방지" : `피해세대 ${suffix}`;
+
                         return (
                           <button
                             key={suffixCase.caseId}
                             onClick={() => {
                               if (!isCurrentCase) {
                                 // localStorage와 상태 모두 업데이트
-                                localStorage.setItem("selectedFieldSurveyCaseId", suffixCase.caseId);
+                                localStorage.setItem(
+                                  "selectedFieldSurveyCaseId",
+                                  suffixCase.caseId,
+                                );
                                 setSelectedCaseId(suffixCase.caseId);
                                 setIsRelatedCasesPopoverOpen(false);
                                 // React Query 캐시 무효화하여 새 데이터 fetch
-                                queryClient.invalidateQueries({ queryKey: ["/api/field-surveys"] });
-                                queryClient.invalidateQueries({ queryKey: ["/api/documents/case"] });
-                                queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                                queryClient.invalidateQueries({
+                                  queryKey: ["/api/field-surveys"],
+                                });
+                                queryClient.invalidateQueries({
+                                  queryKey: ["/api/documents/case"],
+                                });
+                                queryClient.invalidateQueries({
+                                  queryKey: ["/api/cases"],
+                                });
                               }
                             }}
                             className={`w-full text-left px-3 py-2 rounded-lg transition-all ${
-                              isCurrentCase 
-                                ? "bg-yellow-100 cursor-default" 
+                              isCurrentCase
+                                ? "bg-yellow-100 cursor-default"
                                 : "hover-elevate active-elevate-2"
                             }`}
                             style={{
@@ -1389,14 +1421,18 @@ export default function FieldReport() {
                             disabled={isCurrentCase}
                             data-testid={`button-switch-${suffixCase.caseNumber}`}
                           >
-                            <span style={{ fontWeight: isCurrentCase ? 600 : 500 }}>
+                            <span
+                              style={{ fontWeight: isCurrentCase ? 600 : 500 }}
+                            >
                               {formatCaseNumber(suffixCase.caseNumber)}
                             </span>
-                            <span 
-                              style={{ 
-                                marginLeft: "8px", 
+                            <span
+                              style={{
+                                marginLeft: "8px",
                                 fontSize: "11px",
-                                color: isCurrentCase ? "#B45309" : "rgba(12, 12, 12, 0.5)"
+                                color: isCurrentCase
+                                  ? "#B45309"
+                                  : "rgba(12, 12, 12, 0.5)",
                               }}
                             >
                               ({label}){isCurrentCase ? " - 현재" : ""}
@@ -1656,7 +1692,7 @@ export default function FieldReport() {
               data-testid="textarea-review-comment"
               value={reviewComment}
               onChange={(e) => setReviewComment(e.target.value.slice(0, 800))}
-              placeholder="검토 의견을 입력해주세요"
+              placeholder="검<�� 의견을 입력해주세요"
               className="resize-none"
               rows={4}
               style={{
@@ -2775,7 +2811,7 @@ export default function FieldReport() {
                   }
 
                   if (response.ok) {
-                    // 이메일 전송 성공 시 케이스 상태를 "현장정보제출"로 변경
+                    // 이메일 전송 성공 시 케이스  =�태를 "현장정보제출"로 변경
                     try {
                       await apiRequest(
                         "PATCH",
@@ -3442,14 +3478,15 @@ export default function FieldReport() {
 
               {/* 피해자 정보 - -1 이상 케이스에서만 표시 */}
               {(() => {
-                const caseNumberSuffix = caseData.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
+                const caseNumberSuffix =
+                  caseData.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
                 const suffixNum = parseInt(caseNumberSuffix);
                 const isInsuredCase = suffixNum === 0;
-                
+
                 if (isInsuredCase) {
                   return null;
                 }
-                
+
                 return (
                   <Card className="mb-6">
                     <CardHeader>
@@ -3503,7 +3540,10 @@ export default function FieldReport() {
                               );
                             }
                           } catch (e) {
-                            console.error("Error parsing additional victims:", e);
+                            console.error(
+                              "Error parsing additional victims:",
+                              e,
+                            );
                           }
                         }
 
@@ -5263,7 +5303,7 @@ export default function FieldReport() {
                                     {(row.standardPrice > 0
                                       ? (row.amount || 0) / row.standardPrice
                                       : 0
-                                    ).toFixed(2)}
+                                    ).toFixed(1)}
                                   </td>
                                   <td
                                     style={{
