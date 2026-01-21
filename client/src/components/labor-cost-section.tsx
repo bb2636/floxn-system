@@ -2299,27 +2299,34 @@ export function LaborCostSection({
                         row.amount ??
                         0;
                       const E = row.standardPrice || 0;
-                      
+
                       // 연동행은 자동계산된 값 표시, 직접추가행은 row.quantity 사용
                       const displayQuantity = isLinkedRow
-                        ? (E > 0 ? Math.round((I / E) * 100) / 100 : 0)
-                        : (row.quantity || 0);
-                      
+                        ? E > 0
+                          ? Math.round((I / E) * 100) / 100
+                          : 0
+                        : row.quantity || 0;
+
                       return (
                         <Input
                           type="number"
                           step="0.1"
                           min="0"
-                          value={isLinkedRow ? displayQuantity.toFixed(2) : (displayQuantity || '')}
+                          value={
+                            isLinkedRow
+                              ? displayQuantity.toFixed(1)
+                              : displayQuantity || ""
+                          }
                           onChange={(e) => {
                             // 직접추가행만 수정 가능
                             if (isLinkedRow) return;
-                            
+
                             const numValue = parseFloat(e.target.value) || 0;
                             // 음수 방지: 0 미만이면 0으로 설정
                             const safeValue = Math.max(0, numValue);
                             // 소수점 1자리까지 반올림
-                            const roundedValue = Math.round(safeValue * 10) / 10;
+                            const roundedValue =
+                              Math.round(safeValue * 10) / 10;
                             updateRow(row.id, "quantity", roundedValue);
                           }}
                           className="h-9 border text-center"
