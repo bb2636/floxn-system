@@ -2,8 +2,12 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
+import { types } from 'pg';
 
 neonConfig.webSocketConstructor = ws;
+
+// PostgreSQL real (float4) 타입 = OID 700을 소수점으로 파싱
+types.setTypeParser(700, (val: string) => parseFloat(val));
 
 // 환경에 따라 적절한 DB URL 선택
 const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
