@@ -5548,10 +5548,9 @@ export class DbStorage implements IStorage {
   }
 
   async deleteMasterData(id: string): Promise<void> {
-    // Soft delete: isActive를 false로 설정
+    // Hard delete: 실제로 데이터를 삭제
     await db
-      .update(masterData)
-      .set({ isActive: "false", updatedAt: new Date() })
+      .delete(masterData)
       .where(eq(masterData.id, id));
   }
 
