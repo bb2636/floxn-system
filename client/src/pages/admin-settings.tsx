@@ -1164,7 +1164,7 @@ export default function AdminSettings() {
                 color: "rgba(12, 12, 12, 0.5)",
               }}
             >
-              통계 및 정산
+              정산 및 통계
             </span>
           </div>
 

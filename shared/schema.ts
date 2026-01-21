@@ -408,7 +408,7 @@ export const PERMISSION_CATEGORIES = {
   "새로운접수": [],
   "현장조사": ["현장입력", "도면작성", "증빙자료 업로드", "견적서 작성", "보고서 작성"],
   "종합진행관리": [],
-  "통계 및 정산": ["통계", "정산조회"],
+  "정산 및 통계": ["통계", "정산조회"],
   "관리자 설정": ["계정관리", "DB관리", "기준정보 관리", "접근권한관리", "인보이스 승인", "보고서 승인"],
 } as const;
 
@@ -771,14 +771,14 @@ export type Material = typeof materials.$inferSelect;
 export const userFavorites = pgTable("user_favorites", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
-  menuName: text("menu_name").notNull(), // 메뉴 이름 (홈, 접수하기, 현장조사, 종합진행관리, 통계 및 정산, 관리자 설정)
+  menuName: text("menu_name").notNull(), // 메뉴 이름 (홈, 접수하기, 현장조사, 종합진행관리, 정산 및 통계, 관리자 설정)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   // 한 사용자가 같은 메뉴를 중복으로 즐겨찾기 할 수 없도록
   unq: unique().on(table.userId, table.menuName),
 }));
 
-export const MENU_ITEMS = ["홈", "접수하기", "현장조사", "종합진행관리", "통계 및 정산", "관리자 설정"] as const;
+export const MENU_ITEMS = ["홈", "접수하기", "현장조사", "종합진행관리", "정산 및 통계", "관리자 설정"] as const;
 
 export const insertUserFavoriteSchema = createInsertSchema(userFavorites).omit({
   id: true,

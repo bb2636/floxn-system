@@ -2788,12 +2788,12 @@ export class DbStorage implements IStorage {
     const currentDate = getKSTTimestamp();
 
     // 기본 권한 구조 - 메뉴 카테고리에 맞춤 (global-header.tsx의 allMenuItems와 일치)
-    // 카테고리: 홈, 새로운접수, 종합진행관리, 통계 및 정산, 관리자 설정
+    // 카테고리: 홈, 새로운접수, 종합진행관리, 정산 및 통계, 관리자 설정
     const fullPermissions = {
       "홈": { enabled: true, items: {} },
       "새로운접수": { enabled: true, items: {} },
       "종합진행관리": { enabled: true, items: {} },
-      "통계 및 정산": { enabled: true, items: {} },
+      "정산 및 통계": { enabled: true, items: {} },
       "관리자 설정": { enabled: true, items: {} }
     };
 
@@ -2809,7 +2809,7 @@ export class DbStorage implements IStorage {
           "홈": { enabled: true, items: {} },
           "새로운접수": { enabled: true, items: {} },
           "종합진행관리": { enabled: true, items: {} },
-          "통계 및 정산": { enabled: true, items: {} },
+          "정산 및 통계": { enabled: true, items: {} },
           "관리자 설정": { enabled: false, items: {} }
         })
       },
@@ -2820,7 +2820,7 @@ export class DbStorage implements IStorage {
           "새로운접수": { enabled: false, items: {} },
           "현장조사": { enabled: true, items: { "현장입력": true, "도면작성": true, "증빙자료 업로드": true, "견적서 작성": true, "보고서 작성": true } },
           "종합진행관리": { enabled: true, items: {} },
-          "통계 및 정산": { enabled: false, items: { "통계": false, "정산조회": false, "정산하기": false } },
+          "정산 및 통계": { enabled: false, items: { "통계": false, "정산조회": false, "정산하기": false } },
           "관리자 설정": { enabled: false, items: { "계정관리": false, "DB관리": false, "기준정보 관리": false, "접근권한관리": false } }
         })
       },
@@ -2830,7 +2830,7 @@ export class DbStorage implements IStorage {
           "홈": { enabled: true, items: {} },
           "새로운접수": { enabled: true, items: {} },
           "종합진행관리": { enabled: true, items: {} },
-          "통계 및 정산": { enabled: false, items: {} },
+          "정산 및 통계": { enabled: false, items: {} },
           "관리자 설정": { enabled: false, items: {} }
         })
       },
@@ -2840,7 +2840,7 @@ export class DbStorage implements IStorage {
           "홈": { enabled: true, items: {} },
           "새로운접수": { enabled: true, items: {} },
           "종합진행관리": { enabled: true, items: {} },
-          "통계 및 정산": { enabled: false, items: {} },
+          "정산 및 통계": { enabled: false, items: {} },
           "관리자 설정": { enabled: false, items: {} }
         })
       },
@@ -2850,7 +2850,7 @@ export class DbStorage implements IStorage {
           "홈": { enabled: true, items: {} },
           "새로운접수": { enabled: true, items: {} },
           "종합진행관리": { enabled: true, items: {} },
-          "통계 및 정산": { enabled: false, items: {} },
+          "정산 및 통계": { enabled: false, items: {} },
           "관리자 설정": { enabled: false, items: {} }
         })
       }

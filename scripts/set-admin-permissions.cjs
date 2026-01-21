@@ -24,7 +24,7 @@ async function setAdminPermissions() {
     "새로운접수": {"enabled": true, "items": {}},
     "현장조사": {"enabled": true, "items": {"현장입력": true, "도면작성": true, "증빙자료 업로드": true, "견적서 작성": true, "보고서 작성": true}},
     "종합진행관리": {"enabled": true, "items": {}},
-    "통계 및 정산": {"enabled": true, "items": {"통계": true, "정산조회": true, "정산하기": true}},
+    "정산 및 통계": {"enabled": true, "items": {"통계": true, "정산조회": true, "정산하기": true}},
     "관리자 설정": {"enabled": true, "items": {"계정관리": true, "DB관리": true, "기준정보 관리": true, "접근권한관리": true}}
   };
   

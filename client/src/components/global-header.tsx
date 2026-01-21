@@ -38,7 +38,7 @@ export function GlobalHeader() {
     { name: "홈", category: "홈" },
     { name: "접수하기", category: "새로운접수" },
     { name: "종합진행관리", category: "종합진행관리" },
-    { name: "통계 및 정산", category: "통계 및 정산" },
+    { name: "정산 및 통계", category: "정산 및 통계" },
     { name: "관리자 설정", category: "관리자 설정" },
   ];
 
@@ -53,7 +53,7 @@ export function GlobalHeader() {
     if (location === "/dashboard" || location === "/mobile-home") return "홈";
     if (location === "/intake") return "접수하기";
     if (location === "/comprehensive-progress") return "종합진행관리";
-    if (location.startsWith("/statistics") || location === "/settlements") return "통계 및 정산";
+    if (location.startsWith("/statistics") || location === "/settlements") return "정산 및 통계";
     if (location === "/admin-settings") return "관리자 설정";
     return "";
   };
@@ -276,7 +276,7 @@ export function GlobalHeader() {
                     setLocation("/comprehensive-progress");
                   } else if (item.name === "관리자 설정") {
                     setLocation("/admin-settings");
-                  } else if (item.name === "통계 및 정산") {
+                  } else if (item.name === "정산 및 통계") {
                     setLocation("/statistics");
                   }
                 }}

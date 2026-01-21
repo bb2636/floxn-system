@@ -29,7 +29,7 @@ async function setup() {
         "홈": {"enabled": true, "items": {}},
         "새로운접수": {"enabled": true, "items": {}},
         "종합진행관리": {"enabled": true, "items": {}},
-        "통계 및 정산": {"enabled": true, "items": {}},
+        "정산 및 통계": {"enabled": true, "items": {}},
         "관리자 설정": {"enabled": true, "items": {}},
         "기준정보관리": {"enabled": true, "items": {}},
         "현장조사": {"enabled": true, "items": {"현장입력": true, "도면작성": true, "증빙자료 업로드": true, "견적서 작성": true, "보고서 작성": true}}
@@ -43,7 +43,7 @@ async function setup() {
         "홈": {"enabled": true, "items": {}},
         "새로운접수": {"enabled": true, "items": {}},
         "종합진행관리": {"enabled": true, "items": {}},
-        "통계 및 정산": {"enabled": true, "items": {}}
+        "정산 및 통계": {"enabled": true, "items": {}}
       }),
       '심사사': JSON.stringify({
         "홈": {"enabled": true, "items": {}},

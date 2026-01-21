@@ -433,7 +433,7 @@ export default function Dashboard() {
     { name: "접수하기", active: false },
     { name: "현장조사", active: false },
     { name: "종합진행관리", active: false },
-    { name: "통계 및 정산", active: false },
+    { name: "정산 및 통계", active: false },
     { name: "관리자 설정", active: false },
   ];
 
@@ -455,7 +455,7 @@ export default function Dashboard() {
         return <AlertCircle className="w-4 h-4" />;
       case "종합진행관리":
         return <Building2 className="w-4 h-4" />;
-      case "통계 및 정산":
+      case "정산 및 통계":
         return <TrendingUp className="w-4 h-4" />;
       case "관리자 설정":
         return <Star className="w-4 h-4" />;
@@ -478,7 +478,7 @@ export default function Dashboard() {
       case "종합진행관리":
         setLocation("/comprehensive-progress");
         break;
-      case "통계 및 정산":
+      case "정산 및 통계":
         setLocation("/statistics");
         break;
       case "관리자 설정":

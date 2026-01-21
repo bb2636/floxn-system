@@ -741,7 +741,7 @@ export default function ComprehensiveProgress() {
     { name: "접수하기" },
     { name: "현장조사" },
     { name: "종합진행관리" },
-    { name: "통계 및 정산" },
+    { name: "정산 및 통계" },
     { name: "관리자 설정" },
   ];
 

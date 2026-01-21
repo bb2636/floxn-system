@@ -64,7 +64,7 @@ function Router() {
       
       <Route path="/statistics">
         {() => (
-          <ProtectedRoute category="통계 및 정산">
+          <ProtectedRoute category="정산 및 통계">
             <StatisticsLayout>
               <StatisticsOverview />
             </StatisticsLayout>
@@ -74,7 +74,7 @@ function Router() {
       
       <Route path="/settlements">
         {() => (
-          <ProtectedRoute category="통계 및 정산">
+          <ProtectedRoute category="정산 및 통계">
             <StatisticsLayout>
               <SettlementsInquiry />
             </StatisticsLayout>
@@ -84,7 +84,7 @@ function Router() {
       
       <Route path="/statistics/settlements-inquiry">
         {() => (
-          <ProtectedRoute category="통계 및 정산">
+          <ProtectedRoute category="정산 및 통계">
             <StatisticsLayout>
               <SettlementsInquiry />
             </StatisticsLayout>
@@ -94,7 +94,7 @@ function Router() {
       
       <Route path="/statistics/settlement-action">
         {() => (
-          <ProtectedRoute category="통계 및 정산">
+          <ProtectedRoute category="정산 및 통계">
             <StatisticsLayout>
               <SettlementAction />
             </StatisticsLayout>
