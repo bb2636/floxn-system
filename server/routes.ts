@@ -12265,10 +12265,16 @@ https://www.floxn.co.kr/
           msgLines.push(`피해자 : ${victimParts.join("  ")}`);
         }
 
-        // 심사자: 이름과 연락처 모두 있을 때만 표시
+        // 조사자: 이름과 연락처 모두 있을 때만 표시
         if (caseData.investigatorTeamName && caseData.investigatorContact) {
           msgLines.push(
-            `심사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`,
+            `조사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`,
+          );
+        }
+        // 심사자: 이름과 연락처 모두 있을 때만 표시
+        if (caseData.assessorId && caseData.assessorContact) {
+          msgLines.push(
+            `심사자 : ${caseData.assessorId}  연락처 ${caseData.assessorContact}`,
           );
         }
 
