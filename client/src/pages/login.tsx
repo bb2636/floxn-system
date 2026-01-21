@@ -43,7 +43,11 @@ export default function Login() {
         const response = await fetch("/api/check-session");
         const data = await response.json();
         if (data.authenticated) {
-          setLocation("/dashboard");
+          if (data.user?.mustChangePassword === true) {
+            setShowForceChangePassword(true);
+          } else {
+            setLocation("/dashboard");
+          }
         }
       } catch (error) {
         console.error("Session check failed:", error);
