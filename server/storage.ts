@@ -72,7 +72,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { eq, asc, desc, and, or, like, sql } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
@@ -7157,13 +7157,12 @@ export class DbStorage implements IStorage {
   }
 
   // Unit Price Override methods (D값 관리)
-  // 새 테이블명 d_value_overrides 사용 (Neon pooler 캐시 문제 해결)
   async getAllUnitPriceOverrides(): Promise<UnitPriceOverride[]> {
     const result = await db.execute(sql`
       SELECT id, category, work_name as "workName", labor_item as "laborItem", 
              standard_work_quantity::text as "standardWorkQuantity", 
              created_at as "createdAt", updated_at as "updatedAt"
-      FROM d_value_overrides
+      FROM unit_price_overrides
       ORDER BY category, work_name
     `);
     return result.rows.map((row: any) => ({
@@ -7177,7 +7176,7 @@ export class DbStorage implements IStorage {
       SELECT id, category, work_name as "workName", labor_item as "laborItem", 
              standard_work_quantity::text as "standardWorkQuantity", 
              created_at as "createdAt", updated_at as "updatedAt"
-      FROM d_value_overrides
+      FROM unit_price_overrides
       WHERE category = ${category} AND work_name = ${workName} AND labor_item = ${laborItem}
     `);
     if (result.rows.length === 0) return null;
@@ -7198,34 +7197,48 @@ export class DbStorage implements IStorage {
     });
     console.log("[upsertUnitPriceOverride] Existing:", existing);
     
-    // Raw SQL + 문자열 변환 + 새 테이블명 (d_value_overrides)
-    const quantityStr = String(data.standardWorkQuantity);
+    // 숫자 검증 (SQL 인젝션 방지 - 엄격한 검증)
+    const numValue = Number(data.standardWorkQuantity);
+    if (isNaN(numValue) || !isFinite(numValue)) {
+      throw new Error(`Invalid standardWorkQuantity: ${data.standardWorkQuantity}`);
+    }
+    // 문자열로 변환하고 정규식으로 재검증 (SQL 인젝션 방지)
+    const strValue = String(numValue);
+    if (!/^-?\d+(\.\d+)?$/.test(strValue)) {
+      throw new Error(`Invalid numeric format: ${strValue}`);
+    }
+    console.log("[upsertUnitPriceOverride] strValue:", strValue);
     
+    // SQL 리터럴로 직접 삽입 (Neon serverless 파라미터 바인딩 문제 우회)
     if (existing) {
-      const result = await db.execute(sql`
-        UPDATE d_value_overrides 
-        SET standard_work_quantity = ${quantityStr}::real, 
+      const queryText = `
+        UPDATE unit_price_overrides 
+        SET standard_work_quantity = '${strValue}'::numeric, 
             updated_at = NOW()
-        WHERE id = ${existing.id}
+        WHERE id = $1
         RETURNING id, category, work_name as "workName", labor_item as "laborItem", 
                   standard_work_quantity::text as "standardWorkQuantity", 
                   created_at as "createdAt", updated_at as "updatedAt"
-      `);
-      console.log("[upsertUnitPriceOverride] UPDATE result:", result);
+      `;
+      console.log("[upsertUnitPriceOverride] UPDATE query with literal:", strValue, "id:", existing.id);
+      const result = await pool.query(queryText, [existing.id]);
+      console.log("[upsertUnitPriceOverride] UPDATE result:", result.rows[0]);
       const row = result.rows[0] as any;
       return {
         ...row,
         standardWorkQuantity: parseFloat(row.standardWorkQuantity)
       } as UnitPriceOverride;
     } else {
-      const result = await db.execute(sql`
-        INSERT INTO d_value_overrides (category, work_name, labor_item, standard_work_quantity, created_at, updated_at)
-        VALUES (${data.category}, ${data.workName}, ${data.laborItem}, ${quantityStr}::real, NOW(), NOW())
+      const queryText = `
+        INSERT INTO unit_price_overrides (category, work_name, labor_item, standard_work_quantity, created_at, updated_at)
+        VALUES ($1, $2, $3, '${strValue}'::numeric, NOW(), NOW())
         RETURNING id, category, work_name as "workName", labor_item as "laborItem", 
                   standard_work_quantity::text as "standardWorkQuantity", 
                   created_at as "createdAt", updated_at as "updatedAt"
-      `);
-      console.log("[upsertUnitPriceOverride] INSERT result:", result);
+      `;
+      console.log("[upsertUnitPriceOverride] INSERT query with literal:", strValue);
+      const result = await pool.query(queryText, [data.category, data.workName, data.laborItem]);
+      console.log("[upsertUnitPriceOverride] INSERT result:", result.rows[0]);
       const row = result.rows[0] as any;
       return {
         ...row,

@@ -956,8 +956,7 @@ export const DEFAULT_LABOR_RATE_TIERS: InsertLaborRateTier[] = [
 
 // 일위대가 기준작업량(D값) 오버라이드 테이블
 // Excel 데이터의 D값을 사용자가 수정할 수 있도록 저장
-// v2: 테이블 이름 변경으로 Neon pooler 캐시 문제 해결
-export const unitPriceOverrides = pgTable("d_value_overrides", {
+export const unitPriceOverrides = pgTable("unit_price_overrides", {
   id: serial("id").primaryKey(),
   category: text("category").notNull(), // 공종
   workName: text("work_name").notNull(), // 공사명
