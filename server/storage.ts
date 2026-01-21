@@ -135,6 +135,7 @@ export interface IStorage {
   updatePassword(username: string, newPassword: string): Promise<User | null>;
   reactivateAccount(username: string): Promise<User | null>;
   updateUser(userId: string, userData: Partial<Omit<User, 'id' | 'username' | 'password' | 'company' | 'createdAt' | 'status'>>): Promise<User | null>;
+  updateUserMustChangePassword(userId: string, mustChangePassword: boolean): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
   getNextCaseSequence(
     date: string,
@@ -1295,6 +1296,20 @@ export class MemStorage implements IStorage {
     const updatedUser: User = {
       ...user,
       ...userData,
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUserMustChangePassword(userId: string, mustChangePassword: boolean): Promise<User | null> {
+    const user = this.users.get(userId);
+    if (!user) {
+      return null;
+    }
+
+    const updatedUser: User = {
+      ...user,
+      mustChangePassword,
     };
     this.users.set(userId, updatedUser);
     return updatedUser;
@@ -3783,6 +3798,21 @@ export class DbStorage implements IStorage {
     const result = await db
       .update(users)
       .set(userData)
+      .where(eq(users.id, userId))
+      .returning();
+
+    return result[0] || null;
+  }
+
+  async updateUserMustChangePassword(userId: string, mustChangePassword: boolean): Promise<User | null> {
+    const existingUser = await this.getUser(userId);
+    if (!existingUser) {
+      return null;
+    }
+
+    const result = await db
+      .update(users)
+      .set({ mustChangePassword })
       .where(eq(users.id, userId))
       .returning();
 

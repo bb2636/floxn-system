@@ -7,6 +7,7 @@ import {
   deleteAccountSchema,
   createAccountSchema,
   changeMyPasswordSchema,
+  forceChangePasswordSchema,
   updateUserSchema,
   insertCaseSchema,
   insertCaseRequestSchema,
@@ -247,6 +248,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } else {
       res.json({ success: true });
+    }
+  });
+
+  // Force change password endpoint (최초 로그인 시 임시 비밀번호 변경)
+  app.post("/api/force-change-password", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const validatedData = forceChangePasswordSchema.parse(req.body);
+      const user = await storage.getUser(req.session.userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+
+      // 비밀번호 업데이트
+      const updatedUser = await storage.updatePassword(user.username, validatedData.newPassword);
+      
+      if (!updatedUser) {
+        return res.status(500).json({ error: "비밀번호 변경에 실패했습니다" });
+      }
+
+      // mustChangePassword를 false로 업데이트
+      await storage.updateUserMustChangePassword(user.id, false);
+
+      console.log(`[FORCE CHANGE PASSWORD] User ${user.username} changed password successfully`);
+      
+      res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다" });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Force change password error:", error);
+      res.status(500).json({ error: "비밀번호 변경 중 오류가 발생했습니다" });
     }
   });
 
