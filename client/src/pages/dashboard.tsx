@@ -6,6 +6,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useIdleTimeout } from "@/hooks/use-idle-timeout";
 import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight, X, Mail, Loader2 } from "lucide-react";
 import logoIcon from "@assets/Vector_1762589710900.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -30,6 +31,9 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'reception' | 'pending' | 'insurance' | 'partner'>('reception');
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("홈");
+  
+  // 30분 비활동 시 자동 로그아웃
+  useIdleTimeout();
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const pdfContentRef = useRef<HTMLDivElement>(null);

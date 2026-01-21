@@ -199,9 +199,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         if (validatedData.rememberMe) {
-          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30일
         } else {
-          req.session.cookie.maxAge = 24 * 60 * 60 * 1000;
+          req.session.cookie.maxAge = 30 * 60 * 1000; // 30분
         }
 
         // Force session save and then respond
