@@ -7157,23 +7157,35 @@ export class DbStorage implements IStorage {
   }
 
   // Unit Price Override methods (D값 관리)
+  // Raw SQL + text 캐스팅으로 Neon 드라이버 타입 캐싱 문제 우회
   async getAllUnitPriceOverrides(): Promise<UnitPriceOverride[]> {
-    return await db
-      .select()
-      .from(unitPriceOverrides)
-      .orderBy(asc(unitPriceOverrides.category), asc(unitPriceOverrides.workName));
+    const result = await db.execute(sql`
+      SELECT id, category, work_name as "workName", labor_item as "laborItem", 
+             standard_work_quantity::text as "standardWorkQuantity", 
+             created_at as "createdAt", updated_at as "updatedAt"
+      FROM unit_price_overrides
+      ORDER BY category, work_name
+    `);
+    return result.rows.map((row: any) => ({
+      ...row,
+      standardWorkQuantity: parseFloat(row.standardWorkQuantity)
+    })) as UnitPriceOverride[];
   }
 
   async getUnitPriceOverride(category: string, workName: string, laborItem: string): Promise<UnitPriceOverride | null> {
-    const [override] = await db
-      .select()
-      .from(unitPriceOverrides)
-      .where(and(
-        eq(unitPriceOverrides.category, category),
-        eq(unitPriceOverrides.workName, workName),
-        eq(unitPriceOverrides.laborItem, laborItem)
-      ));
-    return override || null;
+    const result = await db.execute(sql`
+      SELECT id, category, work_name as "workName", labor_item as "laborItem", 
+             standard_work_quantity::text as "standardWorkQuantity", 
+             created_at as "createdAt", updated_at as "updatedAt"
+      FROM unit_price_overrides
+      WHERE category = ${category} AND work_name = ${workName} AND labor_item = ${laborItem}
+    `);
+    if (result.rows.length === 0) return null;
+    const row = result.rows[0] as any;
+    return {
+      ...row,
+      standardWorkQuantity: parseFloat(row.standardWorkQuantity)
+    } as UnitPriceOverride;
   }
 
   async upsertUnitPriceOverride(data: InsertUnitPriceOverride): Promise<UnitPriceOverride> {
@@ -7186,7 +7198,7 @@ export class DbStorage implements IStorage {
     });
     console.log("[upsertUnitPriceOverride] Existing:", existing);
     
-    // Raw SQL을 사용하여 Drizzle 타입 캐싱 문제 우회 (real 타입 소수점 지원)
+    // Raw SQL + text 캐스팅으로 Neon 드라이버 타입 캐싱 문제 우회
     if (existing) {
       const result = await db.execute(sql`
         UPDATE unit_price_overrides 
@@ -7194,21 +7206,29 @@ export class DbStorage implements IStorage {
             updated_at = NOW()
         WHERE id = ${existing.id}
         RETURNING id, category, work_name as "workName", labor_item as "laborItem", 
-                  standard_work_quantity as "standardWorkQuantity", 
+                  standard_work_quantity::text as "standardWorkQuantity", 
                   created_at as "createdAt", updated_at as "updatedAt"
       `);
       console.log("[upsertUnitPriceOverride] UPDATE result:", result);
-      return result.rows[0] as UnitPriceOverride;
+      const row = result.rows[0] as any;
+      return {
+        ...row,
+        standardWorkQuantity: parseFloat(row.standardWorkQuantity)
+      } as UnitPriceOverride;
     } else {
       const result = await db.execute(sql`
         INSERT INTO unit_price_overrides (category, work_name, labor_item, standard_work_quantity, created_at, updated_at)
         VALUES (${data.category}, ${data.workName}, ${data.laborItem}, ${data.standardWorkQuantity}::real, NOW(), NOW())
         RETURNING id, category, work_name as "workName", labor_item as "laborItem", 
-                  standard_work_quantity as "standardWorkQuantity", 
+                  standard_work_quantity::text as "standardWorkQuantity", 
                   created_at as "createdAt", updated_at as "updatedAt"
       `);
       console.log("[upsertUnitPriceOverride] INSERT result:", result);
-      return result.rows[0] as UnitPriceOverride;
+      const row = result.rows[0] as any;
+      return {
+        ...row,
+        standardWorkQuantity: parseFloat(row.standardWorkQuantity)
+      } as UnitPriceOverride;
     }
   }
 
