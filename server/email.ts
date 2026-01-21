@@ -215,7 +215,7 @@ FLOXN 플랫폼 계정이 생성되었습니다.
 ■ 로그인 안내
 ━━━━━━━━━━━━━━━━━━━━
 아래 주소에서 로그인하실 수 있습니다.
-https://peulrogseun-aqaqaq4561.replit.app
+https://www.floxn.co.kr/
 
 로그인 후 반드시 비밀번호를 변경해 주세요.
 
