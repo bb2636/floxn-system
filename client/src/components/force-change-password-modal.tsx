@@ -185,7 +185,7 @@ export function ForceChangePasswordModal({
             <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
               <p className="font-medium mb-1">비밀번호 조건:</p>
               <ul className="list-disc list-inside space-y-0.5">
-                <li>8자 이상</li>
+                <li>6자 이상</li>
                 <li>영문자 포함</li>
                 <li>숫자 포함</li>
               </ul>
