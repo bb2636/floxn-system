@@ -2902,10 +2902,10 @@ export default function AdminSettings() {
                                 return null;
                               }
                               
-                              // 숫자인 경우 반올림해서 표시
+                              // 숫자인 경우 소수점 한자리까지 표시 (두자리 이상은 반올림)
                               let displayValue = cell;
-                              if (typeof cell === 'number' && !Number.isInteger(cell)) {
-                                displayValue = Math.round(cell);
+                              if (typeof cell === 'number') {
+                                displayValue = Number(cell.toFixed(1));
                               }
                               
                               const rowspan = cellMerge?.rowspan || 1;
@@ -2913,15 +2913,19 @@ export default function AdminSettings() {
                               // 일위대가 탭에서 기준작업량(D) 컬럼인 경우 편집 가능하게 렌더링
                               const isEditableDColumn = dbTab === "일위대가" && cellIdx === dValueColIndex && dValueColIndex !== -1;
                               const isAdmin = user?.role === "관리자";
-                              const originalDValue = typeof cell === 'number' ? Math.round(cell) : cell;
+                              // 소수점 한자리로 반올림해서 표시
+                              const originalDValue = typeof cell === 'number' ? Number(cell.toFixed(1)) : cell;
                               const overriddenDValue = overridesMap.get(overrideKey);
                               const hasOverride = overriddenDValue !== undefined;
                               const currentEditValue = editedDValues[overrideKey];
                               
                               if (isEditableDColumn && isAdmin && laborItem) {
+                                // 소수점 한자리로 표시
+                                const formattedOverride = hasOverride ? Number(Number(overriddenDValue).toFixed(1)).toString() : '';
+                                const formattedOriginal = originalDValue?.toString() || '';
                                 const inputValue = currentEditValue !== undefined 
                                   ? currentEditValue 
-                                  : (hasOverride ? overriddenDValue.toString() : (originalDValue?.toString() || ''));
+                                  : (hasOverride ? formattedOverride : formattedOriginal);
                                 
                                 return (
                                   <td
@@ -2951,7 +2955,9 @@ export default function AdminSettings() {
                                           }));
                                         }}
                                         onBlur={(e) => {
-                                          const newValue = parseFloat(e.target.value);
+                                          const rawValue = parseFloat(e.target.value);
+                                          // 소수점 한자리로 반올림해서 저장
+                                          const newValue = Math.round(rawValue * 10) / 10;
                                           if (!isNaN(newValue) && newValue > 0) {
                                             saveDValueMutation.mutate({
                                               category,
