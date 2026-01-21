@@ -7198,11 +7198,13 @@ export class DbStorage implements IStorage {
     });
     console.log("[upsertUnitPriceOverride] Existing:", existing);
     
-    // Raw SQL + text 캐스팅으로 Neon 드라이버 타입 캐싱 문제 우회
+    // Raw SQL + 문자열 변환으로 Drizzle 파라미터 타입 추론 문제 우회
+    const quantityStr = String(data.standardWorkQuantity);
+    
     if (existing) {
       const result = await db.execute(sql`
         UPDATE unit_price_overrides 
-        SET standard_work_quantity = ${data.standardWorkQuantity}::real, 
+        SET standard_work_quantity = ${quantityStr}::real, 
             updated_at = NOW()
         WHERE id = ${existing.id}
         RETURNING id, category, work_name as "workName", labor_item as "laborItem", 
@@ -7218,7 +7220,7 @@ export class DbStorage implements IStorage {
     } else {
       const result = await db.execute(sql`
         INSERT INTO unit_price_overrides (category, work_name, labor_item, standard_work_quantity, created_at, updated_at)
-        VALUES (${data.category}, ${data.workName}, ${data.laborItem}, ${data.standardWorkQuantity}::real, NOW(), NOW())
+        VALUES (${data.category}, ${data.workName}, ${data.laborItem}, ${quantityStr}::real, NOW(), NOW())
         RETURNING id, category, work_name as "workName", labor_item as "laborItem", 
                   standard_work_quantity::text as "standardWorkQuantity", 
                   created_at as "createdAt", updated_at as "updatedAt"
