@@ -181,7 +181,7 @@ function drawTextCharByChar(
   y: number,
   font: PDFFont,
   size: number,
-  color: { r: number; g: number; b: number }
+  color: { r: number; g: number; b: number },
 ): void {
   if (!text) return;
 
@@ -207,12 +207,7 @@ function drawTextCharByChar(
       }
 
       // ✅ 핵심 보정 구간
-      if (
-        char === "-" ||
-        char === "–" ||
-        char === "—" ||
-        char === "−"
-      ) {
+      if (char === "-" || char === "–" || char === "—" || char === "−") {
         // 하이픈 폭 강제 축소 (pdf-lib + 한글폰트 버그 대응)
         charWidth = charWidth * 0.55;
       }
@@ -223,7 +218,6 @@ function drawTextCharByChar(
     }
   }
 }
-
 
 function wrapText(
   text: string,
@@ -544,19 +538,39 @@ function drawPaginatedTable(
 
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
     const row = rows[rowIndex];
-    
+
     // 페이지 하단을 넘어가면 새 페이지 생성
     if (currentY - rowHeight < pageBottomY) {
       page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
       currentY = A4_HEIGHT - MARGIN;
-      
+
       // 헤더 행이 있으면 새 페이지에 헤더 먼저 그리기
       if (headerRow) {
-        currentY = drawTableRow(page, headerRow, x, currentY, fonts, fontSize, headerBgColor, rowHeight, borderWidth);
+        currentY = drawTableRow(
+          page,
+          headerRow,
+          x,
+          currentY,
+          fonts,
+          fontSize,
+          headerBgColor,
+          rowHeight,
+          borderWidth,
+        );
       }
     }
-    
-    currentY = drawTableRow(page, row, x, currentY, fonts, fontSize, headerBgColor, rowHeight, borderWidth);
+
+    currentY = drawTableRow(
+      page,
+      row,
+      x,
+      currentY,
+      fonts,
+      fontSize,
+      headerBgColor,
+      rowHeight,
+      borderWidth,
+    );
   }
 
   return { page, y: currentY };
@@ -606,9 +620,7 @@ function drawTableRow(
     const cellText = normalizeText(cell.text || "");
 
     const isNegative =
-      cell.align === "right" &&
-      cellText.startsWith("-") &&
-      cellText.length > 1;
+      cell.align === "right" && cellText.startsWith("-") && cellText.length > 1;
     const displayText = isNegative ? cellText.substring(1) : cellText;
     const minusSign = isNegative ? "-" : "";
 
@@ -626,7 +638,11 @@ function drawTableRow(
 
     let textX = cellX + padding;
     if (cell.align === "center") {
-      const fullWidth = measureTextWidthAdjusted(cellText, font, actualFontSize);
+      const fullWidth = measureTextWidthAdjusted(
+        cellText,
+        font,
+        actualFontSize,
+      );
       textX = cellX + (cell.width - fullWidth) / 2;
     } else if (cell.align === "right") {
       textX = cellX + cell.width - textWidth - rightPadding;
@@ -637,13 +653,39 @@ function drawTableRow(
     try {
       if (isNegative) {
         const minusX = textX - minusWidth - 2;
-        drawTextCharByChar(page, minusSign, minusX, textY, font, actualFontSize, defaultColor);
-        drawTextCharByChar(page, displayText, textX, textY, font, actualFontSize, defaultColor);
+        drawTextCharByChar(
+          page,
+          minusSign,
+          minusX,
+          textY,
+          font,
+          actualFontSize,
+          defaultColor,
+        );
+        drawTextCharByChar(
+          page,
+          displayText,
+          textX,
+          textY,
+          font,
+          actualFontSize,
+          defaultColor,
+        );
       } else {
-        drawTextCharByChar(page, cellText, textX, textY, font, actualFontSize, defaultColor);
+        drawTextCharByChar(
+          page,
+          cellText,
+          textX,
+          textY,
+          font,
+          actualFontSize,
+          defaultColor,
+        );
       }
     } catch (e) {
-      console.warn(`[pdf-lib] Table cell text failed: "${cellText.substring(0, 10)}..."`);
+      console.warn(
+        `[pdf-lib] Table cell text failed: "${cellText.substring(0, 10)}..."`,
+      );
     }
 
     cellX += cell.width;
@@ -2001,7 +2043,7 @@ async function renderEvidencePages(
               textY,
               fonts.bold,
               pdfFontSize,
-              { r: 1, g: 1, b: 1 }
+              { r: 1, g: 1, b: 1 },
             );
           } catch {}
 
@@ -3147,7 +3189,7 @@ async function renderEstimatePage(
           align: "right",
         },
         {
-          text: quantity > 0 ? quantity.toFixed(2) : "-",
+          text: quantity > 0 ? quantity.toFixed(1) : "-",
           width: 45,
           align: "center",
         },
@@ -3428,7 +3470,7 @@ async function renderEstimatePage(
 
   const totalTableRowHeight = 18;
   const totalTableHeight = totalRows.length * totalTableRowHeight;
-  
+
   drawTable(page, {
     x: A4_WIDTH - MARGIN - 270,
     y,
@@ -3443,7 +3485,10 @@ async function renderEstimatePage(
   const disclaimerText =
     "상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.";
   const disclaimerSize = 9;
-  const disclaimerWidth = fonts.regular.widthOfTextAtSize(disclaimerText, disclaimerSize);
+  const disclaimerWidth = fonts.regular.widthOfTextAtSize(
+    disclaimerText,
+    disclaimerSize,
+  );
   drawText(page, {
     x: (A4_WIDTH - disclaimerWidth) / 2,
     y: disclaimerY,
