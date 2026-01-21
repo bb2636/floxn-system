@@ -2,14 +2,14 @@ import { useLocation } from "wouter";
 
 const menuItems = [
   {
-    title: "통계",
-    url: "/statistics",
-    testId: "submenu-statistics",
-  },
-  {
     title: "정산 조회",
     url: "/settlements",
     testId: "submenu-settlement-inquiry",
+  },
+  {
+    title: "통계",
+    url: "/statistics",
+    testId: "submenu-statistics",
   },
 ];
 
@@ -35,7 +35,7 @@ export function AppSidebarStatistics() {
             color: "rgba(12, 12, 12, 0.5)",
           }}
         >
-          통계 및 정산
+          정산 및 통계
         </span>
       </div>
       {/* Menu Items */}
