@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, bigint, serial, timestamp, json, unique, doublePrecision, numeric, real } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, bigint, serial, timestamp, json, unique, doublePrecision, numeric, real, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -26,6 +26,7 @@ export const users = pgTable("users", {
   serviceRegions: text("service_regions").array(),
   attachments: text("attachments").array(),
   status: text("status").notNull().default("active"), // "active" | "deleted"
+  mustChangePassword: boolean("must_change_password").notNull().default(true), // 최초 로그인 시 비밀번호 변경 필요 여부
   createdAt: text("created_at").notNull(),
 });
 
