@@ -163,7 +163,6 @@ export default function Login() {
           }}
         />
       </div>
-
       {/* Header */}
       <header 
         className="relative w-full h-[89px] px-8 flex items-center gap-2"
@@ -179,7 +178,6 @@ export default function Login() {
         />
         <div className="text-2xl font-bold text-gray-900">FLOXN</div>
       </header>
-
       {/* Main Content */}
       <div className="relative flex gap-0 px-8 py-0 max-w-[1856px] mx-auto">
         {/* Left Panel - Illustration */}
@@ -374,9 +372,7 @@ export default function Login() {
                               fontSize: '14px',
                               lineHeight: '17.92px',
                             }}
-                          >
-                            자동로그인
-                          </Label>
+                          >아이디저장</Label>
                         </div>
                       </FormItem>
                     )}
@@ -414,7 +410,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-
       <ForceChangePasswordModal
         open={showForceChangePassword}
         onSuccess={handlePasswordChangeSuccess}
