@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -19,12 +19,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { ForceChangePasswordModal } from "@/components/force-change-password-modal";
 import loginIllustration from "@assets/Vector_1762217883452.png";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [showForceChangePassword, setShowForceChangePassword] = useState(false);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -60,21 +62,29 @@ export default function Login() {
     mutationFn: async (data: LoginInput) => {
       return await apiRequest("POST", "/api/login", data);
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data: any, variables) => {
       if (variables.rememberMe) {
         localStorage.setItem("rememberMe", "true");
       } else {
         localStorage.removeItem("rememberMe");
       }
 
-      toast({
-        title: "로그인 성공",
-        description: "환영합니다!",
-      });
+      if (data.mustChangePassword === true) {
+        toast({
+          title: "비밀번호 변경 필요",
+          description: "임시 비밀번호를 변경해주세요.",
+        });
+        setShowForceChangePassword(true);
+      } else {
+        toast({
+          title: "로그인 성공",
+          description: "환영합니다!",
+        });
 
-      setTimeout(() => {
-        setLocation("/dashboard");
-      }, 500);
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 500);
+      }
     },
     onError: (error: any) => {
       const errorMessage = error?.error || "로그인에 실패했습니다. 다시 시도해주세요.";
@@ -89,6 +99,22 @@ export default function Login() {
 
   const onSubmit = async (data: LoginInput) => {
     loginMutation.mutate(data);
+  };
+
+  const handlePasswordChangeSuccess = () => {
+    setShowForceChangePassword(false);
+    toast({
+      title: "로그인 성공",
+      description: "환영합니다!",
+    });
+    setTimeout(() => {
+      setLocation("/dashboard");
+    }, 500);
+  };
+
+  const handleLogoutFromModal = () => {
+    setShowForceChangePassword(false);
+    form.reset();
   };
 
   return (
@@ -383,6 +409,12 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      <ForceChangePasswordModal
+        open={showForceChangePassword}
+        onSuccess={handlePasswordChangeSuccess}
+        onLogout={handleLogoutFromModal}
+      />
     </div>
   );
 }
