@@ -3254,9 +3254,10 @@ export default function AdminSettings() {
                         if (isMasterDataCategory(selectedCategory)) {
                           const categoryKey = MASTER_DATA_CATEGORIES[selectedCategory];
                           const currentCount = getCategoryCount(selectedCategory);
+                          const timestamp = Date.now();
                           createMasterDataMutation.mutate({
                             category: categoryKey,
-                            value: "",
+                            value: `(새 항목 ${timestamp})`,
                             isActive: "true",
                             displayOrder: currentCount,
                           });
