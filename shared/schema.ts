@@ -69,7 +69,8 @@ export const forceChangePasswordSchema = z.object({
   newPassword: z.string()
     .min(6, "비밀번호는 6자 이상이어야 합니다")
     .regex(/[A-Za-z]/, "비밀번호에 영문자가 포함되어야 합니다")
-    .regex(/[0-9]/, "비밀번호에 숫자가 포함되어야 합니다"),
+    .regex(/[0-9]/, "비밀번호에 숫자가 포함되어야 합니다")
+    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, "비밀번호에 특수문자가 포함되어야 합니다"),
   confirmPassword: z.string().min(1, "비밀번호 확인을 입력해주세요"),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "새 비밀번호가 일치하지 않습니다",
