@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, bigint, serial, timestamp, json, unique, doublePrecision, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, bigint, serial, timestamp, json, unique, doublePrecision, numeric, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -961,7 +961,7 @@ export const unitPriceOverrides = pgTable("unit_price_overrides", {
   category: text("category").notNull(), // 공종
   workName: text("work_name").notNull(), // 공사명
   laborItem: text("labor_item").notNull(), // 노임항목
-  standardWorkQuantity: integer("standard_work_quantity").notNull().default(100), // 기준작업량(D값)
+  standardWorkQuantity: real("standard_work_quantity").notNull().default(100), // 기준작업량(D값) - 소수점 지원
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
