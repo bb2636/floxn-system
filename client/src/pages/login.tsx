@@ -64,7 +64,8 @@ export default function Login() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginInput) => {
-      return await apiRequest("POST", "/api/login", data);
+      const response = await apiRequest("POST", "/api/login", data);
+      return await response.json();
     },
     onSuccess: (data: any, variables) => {
       if (variables.rememberMe) {
