@@ -728,7 +728,7 @@ export const laborCosts = pgTable("labor_costs", {
   priceStandard: text("price_standard").notNull(), // 단가기준: 인, 일, 시간 등
   unit: text("unit").notNull(), // 단위: 일, 시간, ㎡ 등
   standardPrice: integer("standard_price").notNull(), // 기준가(원) = 노임단가(E)
-  standardWorkQuantity: integer("standard_work_quantity").notNull().default(100), // 기준작업량(D값), 일위대가 = E/D
+  standardWorkQuantity: real("standard_work_quantity").notNull().default(100), // 기준작업량(D값), 일위대가 = E/D - 소수점 지원
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
