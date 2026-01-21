@@ -65,8 +65,12 @@ import { compressPdf, isPdfFile, compressPdfForEmail } from "./pdf-compression";
 // - 피해자 정보가 없는 경우: victimAddress = insuredAddress, victimAddressDetail = insuredAddressDetail
 // - 피해자 정보가 있는 경우: victimAddress = insuredAddress, victimAddressDetail = 사용자 입력값 유지
 function setVictimAddressForRecoveryCase(caseData: any): void {
-  const hasVictimInfo = !!(caseData.victimName || caseData.victimContact || caseData.victimAddressDetail);
-  
+  const hasVictimInfo = !!(
+    caseData.victimName ||
+    caseData.victimContact ||
+    caseData.victimAddressDetail
+  );
+
   if (!hasVictimInfo) {
     // 피해자 정보 없음: 피보험자 주소 전체 복사
     caseData.victimAddress = caseData.insuredAddress || "";
@@ -581,26 +585,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const users = await storage.getAllUsers();
-      
+
       // 관리자: 전체 정보 (비밀번호 제외)
       if (req.session.userRole === "관리자") {
-        const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+        const usersWithoutPasswords = users.map(
+          ({ password, ...user }) => user,
+        );
         return res.json(usersWithoutPasswords);
       }
-      
+
       // 협력사/기타: 기본 정보만 제공 (담당자 조회용)
-      const basicUsers = users.map(({ 
-        id, name, username, phone, role, company, department, position 
-      }) => ({
-        id,
-        name,
-        username,
-        phone,
-        role,
-        company,
-        department,
-        position,
-      }));
+      const basicUsers = users.map(
+        ({
+          id,
+          name,
+          username,
+          phone,
+          role,
+          company,
+          department,
+          position,
+        }) => ({
+          id,
+          name,
+          username,
+          phone,
+          role,
+          company,
+          department,
+          position,
+        }),
+      );
       res.json(basicUsers);
     } catch (error) {
       console.error("Get users error:", error);
@@ -755,7 +770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUser = await storage.updateUser(userId, validatedData);
 
       if (!updatedUser) {
-        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+        return res.status(404).json({ error: "사용자를 찾을  a� 없습니다" });
       }
 
       const { password, ...userWithoutPassword } = updatedUser;
@@ -920,9 +935,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("  - assessorTeam:", validatedData.assessorTeam);
       console.log("  - assessorContact:", validatedData.assessorContact);
       console.log("  - investigatorTeam:", validatedData.investigatorTeam);
-      console.log("  - investigatorDepartment:", validatedData.investigatorDepartment);
-      console.log("  - investigatorTeamName:", validatedData.investigatorTeamName);
-      console.log("  - investigatorContact:", validatedData.investigatorContact);
+      console.log(
+        "  - investigatorDepartment:",
+        validatedData.investigatorDepartment,
+      );
+      console.log(
+        "  - investigatorTeamName:",
+        validatedData.investigatorTeamName,
+      );
+      console.log(
+        "  - investigatorContact:",
+        validatedData.investigatorContact,
+      );
 
       // Debug: log victim address info for troubleshooting
       console.log("🏠 Victim Address Debug:");
@@ -945,7 +969,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 기존 케이스의 협력업체 정보 확인 (수정 시 변경 여부 판단용)
       let existingPartner: string | null = null;
       if (validatedData.id) {
-        const existingCaseForPartner = await storage.getCaseById(validatedData.id);
+        const existingCaseForPartner = await storage.getCaseById(
+          validatedData.id,
+        );
         if (existingCaseForPartner) {
           existingPartner = existingCaseForPartner.assignedPartner;
         }
@@ -953,9 +979,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 협력사 배정 시 담당자 정보 자동 채우기
       // 협력업체가 변경된 경우 또는 새로 설정된 경우 연락처 자동 업데이트
-      const isPartnerChangedInPost = validatedData.assignedPartner && 
+      const isPartnerChangedInPost =
+        validatedData.assignedPartner &&
         validatedData.assignedPartner !== existingPartner;
-      
+
       if (
         validatedData.assignedPartner &&
         (!validatedData.assignedPartnerManager || isPartnerChangedInPost)
@@ -973,7 +1000,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`,
             );
           }
-          if (partnerUser.phone && (!validatedData.assignedPartnerContact || isPartnerChangedInPost)) {
+          if (
+            partnerUser.phone &&
+            (!validatedData.assignedPartnerContact || isPartnerChangedInPost)
+          ) {
             (validatedData as any).assignedPartnerContact = partnerUser.phone;
             console.log(
               `[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`,
@@ -1185,16 +1215,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 createdCases.push(updatedCase);
 
                 // 피해세대 케이스가 이미 존재하는지 확인
-                const existingVictimCases = await storage.getCasesByPrefix(existingPrefix, validatedData.id);
+                const existingVictimCases = await storage.getCasesByPrefix(
+                  existingPrefix,
+                  validatedData.id,
+                );
                 const hasExistingVictimCase = existingVictimCases.some(
-                  (c) => c.caseNumber && c.caseNumber !== newCaseNumber && !c.caseNumber.endsWith('-0')
+                  (c) =>
+                    c.caseNumber &&
+                    c.caseNumber !== newCaseNumber &&
+                    !c.caseNumber.endsWith("-0"),
                 );
 
                 if (!hasExistingVictimCase) {
                   // 피해세대 케이스가 없으면 새로 생성
                   const nextSuffix =
                     await storage.getNextVictimSuffix(existingPrefix);
-                  const recoveryData = JSON.parse(JSON.stringify(validatedData));
+                  const recoveryData = JSON.parse(
+                    JSON.stringify(validatedData),
+                  );
                   setVictimAddressForRecoveryCase(recoveryData);
                   const recoveryCase = await storage.createCase({
                     ...recoveryData,
@@ -2109,25 +2147,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 협력사 배정 시 담당자 정보 자동 채우기
       // assignedPartner가 변경된 경우 새 협력업체의 담당자/연락처로 업데이트
       // 클라이언트에서 partnerChanged 플래그도 확인
-      const isPartnerChangedByValue = updateData.assignedPartner && 
+      const isPartnerChangedByValue =
+        updateData.assignedPartner &&
         updateData.assignedPartner !== existingCase.assignedPartner;
-      const isPartnerChangedByFlag = updateData.partnerChanged === true || updateData.partnerChanged === "true";
-      const isPartnerChanged = isPartnerChangedByValue || isPartnerChangedByFlag;
-      
-      console.log(`[Partner Check] Case: ${existingCase.caseNumber}, isPartnerChangedByValue: ${isPartnerChangedByValue}, isPartnerChangedByFlag: ${isPartnerChangedByFlag}, isPartnerChanged: ${isPartnerChanged}, existingPartner: "${existingCase.assignedPartner}", newPartner: "${updateData.assignedPartner}", progressStatus: "${existingCase.progressStatus}"`);
-      
+      const isPartnerChangedByFlag =
+        updateData.partnerChanged === true ||
+        updateData.partnerChanged === "true";
+      const isPartnerChanged =
+        isPartnerChangedByValue || isPartnerChangedByFlag;
+
+      console.log(
+        `[Partner Check] Case: ${existingCase.caseNumber}, isPartnerChangedByValue: ${isPartnerChangedByValue}, isPartnerChangedByFlag: ${isPartnerChangedByFlag}, isPartnerChanged: ${isPartnerChanged}, existingPartner: "${existingCase.assignedPartner}", newPartner: "${updateData.assignedPartner}", progressStatus: "${existingCase.progressStatus}"`,
+      );
+
       // 협력사가 변경되었고 기존 진행상태가 "접수완료"가 아니면 진행상태 및 관련 데이터 초기화
       // progressStatus가 null/undefined인 경우는 초기화하지 않음 (아직 진행된 단계가 없음)
-      const hasProgress = existingCase.progressStatus && existingCase.progressStatus !== "접수완료";
-      
-      console.log(`[Partner Check] hasProgress: ${hasProgress}, progressStatus type: ${typeof existingCase.progressStatus}, value: "${existingCase.progressStatus}"`);
-      
+      const hasProgress =
+        existingCase.progressStatus &&
+        existingCase.progressStatus !== "접수완료";
+
+      console.log(
+        `[Partner Check] hasProgress: ${hasProgress}, progressStatus type: ${typeof existingCase.progressStatus}, value: "${existingCase.progressStatus}"`,
+      );
+
       if (isPartnerChanged && hasProgress) {
         console.log(
           `[Partner Changed] Resetting progressStatus from "${existingCase.progressStatus}" to "접수완료" for case: ${existingCase.caseNumber}`,
         );
         updateData.progressStatus = "접수완료";
-        
+
         // 기존 협력사가 진행한 모든 데이터 초기화 (견적서, 증빙자료, 도면 등)
         await storage.resetCaseFieldSurveyData(id);
         console.log(
@@ -2138,11 +2186,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           `[Partner Changed] Partner changed but no reset needed - progressStatus: "${existingCase.progressStatus}" for case: ${existingCase.caseNumber}`,
         );
       }
-      
+
       // partnerChanged 플래그는 DB에 저장하지 않음
       delete updateData.partnerChanged;
-      
-      if (updateData.assignedPartner && (!updateData.assignedPartnerManager || isPartnerChanged)) {
+
+      if (
+        updateData.assignedPartner &&
+        (!updateData.assignedPartnerManager || isPartnerChanged)
+      ) {
         const partnerCompanyName = updateData.assignedPartner;
         // 해당 회사명을 가진 협력사 사용자 찾기
         const partnerUser = allUsers.find(
@@ -2156,7 +2207,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               `[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`,
             );
           }
-          if (partnerUser.phone && (!updateData.assignedPartnerContact || isPartnerChanged)) {
+          if (
+            partnerUser.phone &&
+            (!updateData.assignedPartnerContact || isPartnerChanged)
+          ) {
             updateData.assignedPartnerContact = partnerUser.phone;
             console.log(
               `[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`,
@@ -3311,7 +3365,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Check authorization (관리자만 가능)
     if (req.session.userRole !== "관리자") {
-      console.log("[APPROVE-REPORT] Auth failed - not 관리자, role:", req.session.userRole);
+      console.log(
+        "[APPROVE-REPORT] Auth failed - not 관리자, role:",
+        req.session.userRole,
+      );
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
     }
 
@@ -3329,7 +3386,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { decision, approvalComment } = parsed.data;
-      console.log("[APPROVE-REPORT] Parsed data:", { decision, approvalComment });
+      console.log("[APPROVE-REPORT] Parsed data:", {
+        decision,
+        approvalComment,
+      });
 
       // 케이스 확인
       const existingCase = await storage.getCaseById(caseId);
@@ -3338,11 +3398,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      console.log("[APPROVE-REPORT] Existing case status:", existingCase.status);
+      console.log(
+        "[APPROVE-REPORT] Existing case status:",
+        existingCase.status,
+      );
 
       // 현장정보제출 상태만 보고서 승인 가능 (이메일 전송 후 상태)
       if (existingCase.status !== "현장정보제출") {
-        console.log("[APPROVE-REPORT] Status check failed - current status:", existingCase.status);
+        console.log(
+          "[APPROVE-REPORT] Status check failed - current status:",
+          existingCase.status,
+        );
         return res.status(400).json({
           error: "현장정보제출 상태인 보고서만 승인할 수 있습니다",
         });
@@ -3435,7 +3501,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (userRole === "관리자") {
         delete (fieldData as any).status;
         delete (fieldData as any).fieldSurveyStatus;
-        console.log(`[Field Survey] Admin user - status and fieldSurveyStatus fields ignored to preserve existing state`);
+        console.log(
+          `[Field Survey] Admin user - status and fieldSurveyStatus fields ignored to preserve existing state`,
+        );
       }
 
       const updatedCase = await storage.updateCaseFieldSurvey(
@@ -3670,7 +3738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session.userRole;
     const userId = req.session.userId;
     console.log("[MY-PERMISSIONS] Request:", { userId, userRole });
-    
+
     if (!userRole) {
       return res
         .status(400)
@@ -3683,7 +3751,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const individualKey = `관리자_${userId}`;
         const individualPermission =
           await storage.getRolePermission(individualKey);
-        console.log("[MY-PERMISSIONS] Individual check:", { individualKey, found: !!individualPermission });
+        console.log("[MY-PERMISSIONS] Individual check:", {
+          individualKey,
+          found: !!individualPermission,
+        });
         if (individualPermission) {
           return res.json(individualPermission);
         }
@@ -3691,7 +3762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fall back to role-based permissions
       const permission = await storage.getRolePermission(userRole);
-      
+
       if (!permission) {
         // If no permissions set for this role, return empty permissions
         return res.json(null);
@@ -5344,22 +5415,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 케이스 접미사에 따라 주소 결정: -0은 피보험자 주소, -1 이상은 피해자 주소
         const suffixMatch = (c.caseNumber || "").match(/-(\d+)$/);
         const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
-        
+
         let fullAddress: string;
         if (suffix === 0) {
           // 손해방지(-0): 피보험자 주소 + 상세주소
-          fullAddress = [c.insuredAddress, c.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+          fullAddress =
+            [c.insuredAddress, c.insuredAddressDetail]
+              .filter(Boolean)
+              .join(" ") || "-";
         } else {
           // 피해세대(-1, -2, ...): 피해자 주소 + 상세주소 (없으면 피보험자 주소로 대체)
-          const victimAddr = [c.victimAddress, c.victimAddressDetail].filter(Boolean).join(" ");
+          const victimAddr = [c.victimAddress, c.victimAddressDetail]
+            .filter(Boolean)
+            .join(" ");
           if (victimAddr) {
             fullAddress = victimAddr;
           } else {
             // 피해자 주소가 없으면 피보험자 주소로 대체
-            fullAddress = [c.insuredAddress, c.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+            fullAddress =
+              [c.insuredAddress, c.insuredAddressDetail]
+                .filter(Boolean)
+                .join(" ") || "-";
           }
         }
-        
+
         return {
           id: c.id,
           caseNumber: c.caseNumber,
@@ -5582,7 +5661,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get latest estimate
   app.get("/api/estimates/:caseId/latest", async (req, res) => {
     if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+      return res.status(401).json({ error: "인증되  � 않은 사용자입니다" });
     }
 
     try {
@@ -5840,12 +5919,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updated);
     } catch (error: any) {
       console.error("Update master data error:", error);
-      
+
       // Handle unique constraint violation
-      if (error?.code === "23505" || error?.message?.includes("unique constraint")) {
-        return res.status(400).json({ error: "동일한 값이 이미 존재합니다. 다른 값을 입력해주세요." });
+      if (
+        error?.code === "23505" ||
+        error?.message?.includes("unique constraint")
+      ) {
+        return res
+          .status(400)
+          .json({
+            error: "동일한 값이 이미 존재합니다. 다른 값을 입력해주세요.",
+          });
       }
-      
+
       res
         .status(500)
         .json({ error: "기준정보를 수정하는 중 오류가 발생했습니다" });
@@ -8422,9 +8508,9 @@ FLOXN`;
       );
 
       // 모든 케이스가 선견적요청인지 확인 (모두 선견적요청이면 주소 표시 안함)
-      const allPreEstimateRequest = allRelatedCases.length > 0 && allRelatedCases.every(
-        (c) => c.recoveryType === "선견적요청",
-      );
+      const allPreEstimateRequest =
+        allRelatedCases.length > 0 &&
+        allRelatedCases.every((c) => c.recoveryType === "선견적요청");
       console.log(
         `[Invoice PDF] allPreEstimateRequest: ${allPreEstimateRequest}`,
       );
@@ -8612,7 +8698,7 @@ FLOXN`;
         const getAddressForCase = (caseItem: any): string => {
           const caseNum = caseItem.caseNumber || "";
           const suffix = caseNum.split("-").pop() || "";
-          
+
           if (suffix === "0") {
             // 손해방지비용 케이스: insuredAddressDetail만 사용
             const address = caseItem.insuredAddress || "";
@@ -8873,9 +8959,13 @@ FLOXN`;
             doc: any;
             buffer: Buffer;
             headerText: string;
-            headerInfo: { accidentNo: string; address: string; category: string };
+            headerInfo: {
+              accidentNo: string;
+              address: string;
+              category: string;
+            };
           }[] = [];
-          
+
           // 테이블 형태 헤더 그리기 헬퍼 함수 (현장출동보고서 스타일)
           const drawTableHeader = (
             page: any,
@@ -8883,13 +8973,17 @@ FLOXN`;
             y: number,
             width: number,
             height: number,
-            headerInfo: { accidentNo: string; address: string; category: string },
+            headerInfo: {
+              accidentNo: string;
+              address: string;
+              category: string;
+            },
           ) => {
             // 열 너비 비율 (사고번호: 30%, 주소: 45%, 카테고리: 25%)
-            const col1Width = width * 0.30;
+            const col1Width = width * 0.3;
             const col2Width = width * 0.45;
             const col3Width = width * 0.25;
-            
+
             // 배경 (진한 회색 - 현장출동보고서 스타일)
             page.drawRectangle({
               x: x,
@@ -8900,7 +8994,7 @@ FLOXN`;
               borderColor: rgb(0.3, 0.3, 0.3),
               borderWidth: 0.5,
             });
-            
+
             // 열 구분선
             page.drawLine({
               start: { x: x + col1Width, y: y },
@@ -8914,54 +9008,86 @@ FLOXN`;
               color: rgb(0.4, 0.4, 0.4),
               thickness: 0.5,
             });
-            
+
             // 텍스트 (흰색 - 어두운 배경에 맞춤)
             const textY = y + (height - 9) / 2;
             const textColor = rgb(1, 1, 1);
             const textSize = 8;
-            
+
             // 정규화 적용 (ASCII '-' 유지)
-            const normalizedAccidentNo = normalizeHeaderIdentifier(headerInfo.accidentNo);
-            const normalizedAddress = normalizeHeaderIdentifier(headerInfo.address || "-");
-            const normalizedCategory = normalizeHeaderIdentifier(headerInfo.category);
-            
+            const normalizedAccidentNo = normalizeHeaderIdentifier(
+              headerInfo.accidentNo,
+            );
+            const normalizedAddress = normalizeHeaderIdentifier(
+              headerInfo.address || "-",
+            );
+            const normalizedCategory = normalizeHeaderIdentifier(
+              headerInfo.category,
+            );
+
             // 사고번호 정규화 결과 charCode 로그 (공백 문자 검증)
-            console.log("[Invoice Header] accidentNo RAW:", headerInfo.accidentNo);
-            console.log("[Invoice Header] accidentNo NORM:", normalizedAccidentNo);
+            console.log(
+              "[Invoice Header] accidentNo RAW:",
+              headerInfo.accidentNo,
+            );
+            console.log(
+              "[Invoice Header] accidentNo NORM:",
+              normalizedAccidentNo,
+            );
             console.log(
               "[Invoice Header] accidentNo CODES:",
-              Array.from(normalizedAccidentNo).map((c) => c.charCodeAt(0).toString(16).padStart(4, "0")),
+              Array.from(normalizedAccidentNo).map((c) =>
+                c.charCodeAt(0).toString(16).padStart(4, "0"),
+              ),
             );
-            
+
             // 하이픈 간격 보정 함수 (사고번호, 주소 공용)
             const drawTextTight = (text: string, startX: number) => {
-              if (!text || !text.includes('-')) {
-                page.drawText(text || '', { x: startX, y: textY, size: textSize, font, color: textColor });
+              if (!text || !text.includes("-")) {
+                page.drawText(text || "", {
+                  x: startX,
+                  y: textY,
+                  size: textSize,
+                  font,
+                  color: textColor,
+                });
                 return;
               }
               const offset = textSize * 0.06;
-              const parts = text.split('-');
+              const parts = text.split("-");
               let cursorX = startX;
-              const hyphenWidth = font.widthOfTextAtSize('-', textSize);
-              
+              const hyphenWidth = font.widthOfTextAtSize("-", textSize);
+
               for (let i = 0; i < parts.length; i++) {
                 if (parts[i]) {
-                  page.drawText(parts[i], { x: cursorX, y: textY, size: textSize, font, color: textColor });
+                  page.drawText(parts[i], {
+                    x: cursorX,
+                    y: textY,
+                    size: textSize,
+                    font,
+                    color: textColor,
+                  });
                   cursorX += font.widthOfTextAtSize(parts[i], textSize);
                 }
                 if (i < parts.length - 1) {
-                  page.drawText('-', { x: cursorX, y: textY, size: textSize, font, color: textColor });
+                  page.drawText("-", {
+                    x: cursorX,
+                    y: textY,
+                    size: textSize,
+                    font,
+                    color: textColor,
+                  });
                   cursorX += hyphenWidth - offset;
                 }
               }
             };
-            
+
             // 사고번호
             drawTextTight(normalizedAccidentNo, x + 5);
-            
+
             // 주소 (하이픈 간격 보정 적용)
             drawTextTight(normalizedAddress, x + col1Width + 5);
-            
+
             // 카테고리
             page.drawText(normalizedCategory, {
               x: x + col1Width + col2Width + 5,
@@ -9113,7 +9239,7 @@ FLOXN`;
             const fullAddress = caseAddressMap[doc.caseId] || "";
             const docCategory = doc.category || "기타";
             const headerText = `[${accidentNo}] ${fullAddress} - ${docCategory}`;
-            
+
             // 테이블 형태 헤더 정보 (현장출동보고서 스타일)
             const headerInfo = {
               accidentNo: `사고번호 ${accidentNo}`,
@@ -9143,11 +9269,15 @@ FLOXN`;
                 for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
                   const srcPage = attachedPdf.getPage(pageIdx);
                   const { width, height } = srcPage.getSize();
-                  
+
                   // 새 페이지 생성 (헤더 + 간격 공간 추가)
-                  const totalHeaderSpace = MARGIN + HEADER_HEIGHT + PDF_HEADER_GAP;
-                  const newPage = mergedPdf.addPage([width, height + totalHeaderSpace]);
-                  
+                  const totalHeaderSpace =
+                    MARGIN + HEADER_HEIGHT + PDF_HEADER_GAP;
+                  const newPage = mergedPdf.addPage([
+                    width,
+                    height + totalHeaderSpace,
+                  ]);
+
                   // 원본 PDF 페이지를 embed하여 아래쪽에 배치
                   const embeddedPage = await mergedPdf.embedPage(srcPage);
                   newPage.drawPage(embeddedPage, { x: 0, y: 0, width, height });
@@ -9195,7 +9325,12 @@ FLOXN`;
                   .jpeg({ quality: 60, mozjpeg: true })
                   .toBuffer();
 
-                pendingImages.push({ doc, buffer: imageBuffer, headerText, headerInfo });
+                pendingImages.push({
+                  doc,
+                  buffer: imageBuffer,
+                  headerText,
+                  headerInfo,
+                });
                 console.log(
                   `[Invoice PDF] Queued image: ${doc.fileName} - ${doc.category}`,
                 );
@@ -9563,7 +9698,7 @@ FLOXN`;
         const getAddressForCase = (caseItem: any): string => {
           const caseNum = caseItem.caseNumber || "";
           const suffix = caseNum.split("-").pop() || "";
-          
+
           if (suffix === "0") {
             // 손해방지비용 케이스: insuredAddressDetail만 사용
             const address = caseItem.insuredAddress || "";
@@ -9803,9 +9938,13 @@ FLOXN`;
             doc: any;
             buffer: Buffer;
             headerText: string;
-            headerInfo: { accidentNo: string; address: string; category: string };
+            headerInfo: {
+              accidentNo: string;
+              address: string;
+              category: string;
+            };
           }[] = [];
-          
+
           // 테이블 형태 헤더 그리기 헬퍼 함수 (현장출동보고서 스타일)
           const drawTableHeader = (
             page: any,
@@ -9813,13 +9952,17 @@ FLOXN`;
             y: number,
             width: number,
             height: number,
-            headerInfo: { accidentNo: string; address: string; category: string },
+            headerInfo: {
+              accidentNo: string;
+              address: string;
+              category: string;
+            },
           ) => {
             // 열 너비 비율 (사고번호: 30%, 주소: 45%, 카테고리: 25%)
-            const col1Width = width * 0.30;
+            const col1Width = width * 0.3;
             const col2Width = width * 0.45;
             const col3Width = width * 0.25;
-            
+
             // 배경 (진한 회색 - 현장출동보고서 스타일)
             page.drawRectangle({
               x: x,
@@ -9830,7 +9973,7 @@ FLOXN`;
               borderColor: rgb(0.3, 0.3, 0.3),
               borderWidth: 0.5,
             });
-            
+
             // 열 구분선
             page.drawLine({
               start: { x: x + col1Width, y: y },
@@ -9844,54 +9987,86 @@ FLOXN`;
               color: rgb(0.4, 0.4, 0.4),
               thickness: 0.5,
             });
-            
-            // 텍스트 (흰색 - 어두운 배경에 맞춤)
+
+            // 텍스트 (s��색 - 어두운 배경에 맞춤)
             const textY = y + (height - 9) / 2;
             const textColor = rgb(1, 1, 1);
             const textSize = 8;
-            
+
             // 정규화 적용 (ASCII '-' 유지)
-            const normalizedAccidentNo = normalizeHeaderIdentifier(headerInfo.accidentNo);
-            const normalizedAddress = normalizeHeaderIdentifier(headerInfo.address || "-");
-            const normalizedCategory = normalizeHeaderIdentifier(headerInfo.category);
-            
+            const normalizedAccidentNo = normalizeHeaderIdentifier(
+              headerInfo.accidentNo,
+            );
+            const normalizedAddress = normalizeHeaderIdentifier(
+              headerInfo.address || "-",
+            );
+            const normalizedCategory = normalizeHeaderIdentifier(
+              headerInfo.category,
+            );
+
             // 사고번호 정규화 결과 charCode 로그 (공백 문자 검증)
-            console.log("[Invoice Header] accidentNo RAW:", headerInfo.accidentNo);
-            console.log("[Invoice Header] accidentNo NORM:", normalizedAccidentNo);
+            console.log(
+              "[Invoice Header] accidentNo RAW:",
+              headerInfo.accidentNo,
+            );
+            console.log(
+              "[Invoice Header] accidentNo NORM:",
+              normalizedAccidentNo,
+            );
             console.log(
               "[Invoice Header] accidentNo CODES:",
-              Array.from(normalizedAccidentNo).map((c) => c.charCodeAt(0).toString(16).padStart(4, "0")),
+              Array.from(normalizedAccidentNo).map((c) =>
+                c.charCodeAt(0).toString(16).padStart(4, "0"),
+              ),
             );
-            
+
             // 하이픈 간격 보정 함수 (사고번호, 주소 공용)
             const drawTextTight = (text: string, startX: number) => {
-              if (!text || !text.includes('-')) {
-                page.drawText(text || '', { x: startX, y: textY, size: textSize, font, color: textColor });
+              if (!text || !text.includes("-")) {
+                page.drawText(text || "", {
+                  x: startX,
+                  y: textY,
+                  size: textSize,
+                  font,
+                  color: textColor,
+                });
                 return;
               }
               const offset = textSize * 0.06;
-              const parts = text.split('-');
+              const parts = text.split("-");
               let cursorX = startX;
-              const hyphenWidth = font.widthOfTextAtSize('-', textSize);
-              
+              const hyphenWidth = font.widthOfTextAtSize("-", textSize);
+
               for (let i = 0; i < parts.length; i++) {
                 if (parts[i]) {
-                  page.drawText(parts[i], { x: cursorX, y: textY, size: textSize, font, color: textColor });
+                  page.drawText(parts[i], {
+                    x: cursorX,
+                    y: textY,
+                    size: textSize,
+                    font,
+                    color: textColor,
+                  });
                   cursorX += font.widthOfTextAtSize(parts[i], textSize);
                 }
                 if (i < parts.length - 1) {
-                  page.drawText('-', { x: cursorX, y: textY, size: textSize, font, color: textColor });
+                  page.drawText("-", {
+                    x: cursorX,
+                    y: textY,
+                    size: textSize,
+                    font,
+                    color: textColor,
+                  });
                   cursorX += hyphenWidth - offset;
                 }
               }
             };
-            
+
             // 사고번호
             drawTextTight(normalizedAccidentNo, x + 5);
-            
+
             // 주소 (하이픈 간격 보정 적용)
             drawTextTight(normalizedAddress, x + col1Width + 5);
-            
+
             // 카테고리
             page.drawText(normalizedCategory, {
               x: x + col1Width + col2Width + 5,
@@ -10043,7 +10218,7 @@ FLOXN`;
             const fullAddress = caseAddressMap[doc.caseId] || "";
             const docCategory = doc.category || "기타";
             const headerText = `[${accidentNo}] ${fullAddress} - ${docCategory}`;
-            
+
             // 테이블 형태 헤더 정보 (현장출동보고서 스타일)
             const headerInfo = {
               accidentNo: `사고번호 ${accidentNo}`,
@@ -10072,11 +10247,15 @@ FLOXN`;
                 for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
                   const srcPage = sourcePdf.getPage(pageIdx);
                   const { width, height } = srcPage.getSize();
-                  
+
                   // 새 페이지 생성 (헤더 + 간격 공간 추가)
-                  const totalHeaderSpace = MARGIN + HEADER_HEIGHT + PDF_HEADER_GAP;
-                  const newPage = mergedPdf.addPage([width, height + totalHeaderSpace]);
-                  
+                  const totalHeaderSpace =
+                    MARGIN + HEADER_HEIGHT + PDF_HEADER_GAP;
+                  const newPage = mergedPdf.addPage([
+                    width,
+                    height + totalHeaderSpace,
+                  ]);
+
                   // 원본 PDF 페이지를 embed하여 아래쪽에 배치
                   const embeddedPage = await mergedPdf.embedPage(srcPage);
                   newPage.drawPage(embeddedPage, { x: 0, y: 0, width, height });
@@ -10125,7 +10304,12 @@ FLOXN`;
                   .jpeg({ quality: 60, mozjpeg: true })
                   .toBuffer();
 
-                pendingImages.push({ doc, buffer: imageBuffer, headerText, headerInfo });
+                pendingImages.push({
+                  doc,
+                  buffer: imageBuffer,
+                  headerText,
+                  headerInfo,
+                });
                 console.log(
                   `[Invoice Email] Queued image: ${doc.fileName} - ${doc.category}`,
                 );
@@ -11240,18 +11424,29 @@ FLOXN 드림`;
       // ========== 첨부파일 준비 (단일 PDF) ==========
       // 파일명 우선순위: 사고번호 > 증권번호 > 접수번호
       // 스키마 필드: insuranceAccidentNo(사고번호), insurancePolicyNo(증권번호), caseNumber(접수번호)
-      console.log(`[send-field-report-email-v2] 파일명 생성 데이터 - insuranceAccidentNo: "${caseData.insuranceAccidentNo}", insurancePolicyNo: "${caseData.insurancePolicyNo}", caseNumber: "${caseData.caseNumber}"`);
+      console.log(
+        `[send-field-report-email-v2] 파일명 생성 데이터 - insuranceAccidentNo: "${caseData.insuranceAccidentNo}", insurancePolicyNo: "${caseData.insurancePolicyNo}", caseNumber: "${caseData.caseNumber}"`,
+      );
       const accidentNo =
-        caseData.insuranceAccidentNo || caseData.insurancePolicyNo || caseData.caseNumber || "UNKNOWN";
-      console.log(`[send-field-report-email-v2] 선택된 accidentNo: "${accidentNo}"`);
-      
+        caseData.insuranceAccidentNo ||
+        caseData.insurancePolicyNo ||
+        caseData.caseNumber ||
+        "UNKNOWN";
+      console.log(
+        `[send-field-report-email-v2] 선택된 accidentNo: "${accidentNo}"`,
+      );
+
       // -0 (손해방지/피보험자) 건: 피보험자 상세주소 사용
       // -1 이상 (피해자 복구) 건: 피해자 상세주소 사용
-      const isLossPreventionCase = /-0$/.test(caseData.caseNumber || '');
+      const isLossPreventionCase = /-0$/.test(caseData.caseNumber || "");
       const detailAddress = isLossPreventionCase
-        ? (caseData.insuredAddressDetail || caseData.insuredAddress || "")
-        : (caseData.victimAddressDetail || caseData.victimAddress || caseData.insuredAddressDetail || caseData.insuredAddress || "");
-      
+        ? caseData.insuredAddressDetail || caseData.insuredAddress || ""
+        : caseData.victimAddressDetail ||
+          caseData.victimAddress ||
+          caseData.insuredAddressDetail ||
+          caseData.insuredAddress ||
+          "";
+
       // 파일명에 사용할 수 없는 특수문자 제거
       const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, "_");
       const mainFileName = safeDetailAddress
@@ -11734,7 +11929,7 @@ Front·Line·Ops·Xpert·Net
 
       // 심사자: 이름과 연락처 모두 있을 때만 표시
       if (
-        assessorTeam && 
+        assessorTeam &&
         assessorTeam !== "-" &&
         typeof assessorContact === "string" &&
         /^[0-9]+$/.test(assessorContact)
@@ -11743,10 +11938,10 @@ Front·Line·Ops·Xpert·Net
           `심사자 : ${assessorTeam}  연락처 ${assessorContact}`,
         );
       }
-      
+
       // 조사자: 이름과 연락처 모두 있을 때만 표시
       if (
-        investigatorTeamName && 
+        investigatorTeamName &&
         investigatorTeamName !== "-" &&
         typeof investigatorContact === "string" &&
         /^[0-9]+$/.test(investigatorContact)
@@ -11760,10 +11955,14 @@ Front·Line·Ops·Xpert·Net
       const insuredFullAddress = [accidentLocation, accidentLocationDetail]
         .filter(Boolean)
         .join(" ");
-      
+
       let fullAddress = insuredFullAddress;
       // 피해자 상세주소가 있고, "-"가 아니면 콤마로 구분하여 추가
-      if (victimAddressDetail && victimAddressDetail !== "-" && victimAddressDetail.trim()) {
+      if (
+        victimAddressDetail &&
+        victimAddressDetail !== "-" &&
+        victimAddressDetail.trim()
+      ) {
         if (fullAddress) {
           fullAddress = `${fullAddress}, ${victimAddressDetail}`;
         } else {
@@ -12218,17 +12417,30 @@ https://www.floxn.co.kr/
         const caseNumber = caseData.caseNumber || "";
         const suffixMatch = caseNumber.match(/-(\d+)$/);
         const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
-        
+
         if (suffix === 0) {
           // 손해방지(-0): 피보험자 주소 + 상세주소
-          return [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+          return (
+            [caseData.insuredAddress, caseData.insuredAddressDetail]
+              .filter(Boolean)
+              .join(" ") || "-"
+          );
         } else {
           // 피해세대(-1, -2, ...): 피해자 주소 + 상세주소 (없으면 피보험자 주소로 대체)
-          const victimAddr = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
+          const victimAddr = [
+            caseData.victimAddress,
+            caseData.victimAddressDetail,
+          ]
+            .filter(Boolean)
+            .join(" ");
           if (victimAddr) {
             return victimAddr;
           }
-          return [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+          return (
+            [caseData.insuredAddress, caseData.insuredAddressDetail]
+              .filter(Boolean)
+              .join(" ") || "-"
+          );
         }
       };
 
@@ -12274,7 +12486,7 @@ https://www.floxn.co.kr/
         // 심사자: 이름과 연락처 모두 있을 때만 표시
         if (caseData.assessorId && caseData.assessorContact) {
           msgLines.push(
-            `심사자 : ${caseData.assessorId}  연락처 ${caseData.assessorContact}`,
+            `심사자 : ${caseData.assessorTeam}  연락처 ${caseData.assessorContact}`,
           );
         }
 
@@ -12476,7 +12688,7 @@ https://www.floxn.co.kr/
       // KST 오늘 날짜
       const kstNow = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
       const constructionCompletionDateStr = kstNow.toISOString().split("T")[0];
-      
+
       const updatedCase = await storage.updateCase(caseId, {
         status: "청구자료제출(복구)",
         constructionCompletionDate: constructionCompletionDateStr, // 복구완료일 설정
@@ -12499,8 +12711,7 @@ https://www.floxn.co.kr/
         ? allCases.filter(
             (c) =>
               c.insuranceAccidentNo === accidentNo &&
-              (c.status === "직접복구" ||
-                c.status === "청구자료제출(복구)"),
+              (c.status === "직접복구" || c.status === "청구자료제출(복구)"),
           )
         : [updatedCase];
 
@@ -12524,8 +12735,7 @@ https://www.floxn.co.kr/
           // 현재 제출한 케이스 정보 사용 (updatedCase)
           const submittedCase = updatedCase;
           const addressMain =
-            submittedCase.victimAddress ||
-            submittedCase.insuredAddress;
+            submittedCase.victimAddress || submittedCase.insuredAddress;
           const addressDetail =
             submittedCase.victimAddressDetail ||
             submittedCase.insuredAddressDetail;
@@ -12964,14 +13174,18 @@ https://www.floxn.co.kr/
       const caseData = await storage.getCaseById(payload.caseId);
       const accidentNo =
         caseData?.insuranceAccidentNo || caseData?.caseNumber || payload.caseId;
-      
+
       // -0 (손해방지/피보험자) 건: 피보험자 상세주소 사용
       // -1 이상 (피해자 복구) 건: 피해자 상세주소 사용
-      const isLossPreventionCase = /-0$/.test(caseData?.caseNumber || '');
+      const isLossPreventionCase = /-0$/.test(caseData?.caseNumber || "");
       const detailAddress = isLossPreventionCase
-        ? (caseData?.insuredAddressDetail || caseData?.insuredAddress || "")
-        : (caseData?.victimAddressDetail || caseData?.victimAddress || caseData?.insuredAddressDetail || caseData?.insuredAddress || "");
-      
+        ? caseData?.insuredAddressDetail || caseData?.insuredAddress || ""
+        : caseData?.victimAddressDetail ||
+          caseData?.victimAddress ||
+          caseData?.insuredAddressDetail ||
+          caseData?.insuredAddress ||
+          "";
+
       const safeDetailAddress = detailAddress.replace(/[<>:"/\\|?*]/g, "_");
       const filename = safeDetailAddress
         ? `현장출동보고서 _${accidentNo} (${safeDetailAddress}).pdf`
