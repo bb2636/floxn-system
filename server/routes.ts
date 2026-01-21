@@ -11932,7 +11932,8 @@ Front·Line·Ops·Xpert·Net
         assessorTeam &&
         assessorTeam !== "-" &&
         typeof assessorContact === "string" &&
-        /^[0-9]+$/.test(assessorContact)
+        assessorContact !== "-" &&
+        /[0-9]/.test(assessorContact)
       ) {
         messageLines.push(
           `심사자 : ${assessorTeam}  연락처 ${assessorContact}`,
@@ -11944,7 +11945,8 @@ Front·Line·Ops·Xpert·Net
         investigatorTeamName &&
         investigatorTeamName !== "-" &&
         typeof investigatorContact === "string" &&
-        /^[0-9]+$/.test(investigatorContact)
+        investigatorContact !== "-" &&
+        /[0-9]/.test(investigatorContact)
       ) {
         messageLines.push(
           `조사자 : ${investigatorTeamName}  연락처 ${investigatorContact}`,
