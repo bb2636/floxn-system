@@ -13253,6 +13253,82 @@ https://www.floxn.co.kr/
     }
   });
 
+  // ========== 견적서 제외 항목 API (철거공사 노무비 삭제 영속화) ==========
+  
+  // 케이스별 제외 항목 조회
+  app.get("/api/cases/:caseId/estimate-exclusions", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "로그인이 필요합니다" });
+      }
+      
+      const { caseId } = req.params;
+      const { type } = req.query;
+      
+      const exclusionType = (type as string) || 'demolition_auto_labor';
+      const exclusions = await storage.getEstimateExclusions(caseId, exclusionType);
+      
+      res.json(exclusions);
+    } catch (error) {
+      console.error("Get estimate exclusions error:", error);
+      res.status(500).json({ error: "제외 항목 조회 중 오류가 발생했습니다" });
+    }
+  });
+  
+  // 제외 항목 추가 (삭제 클릭 시 즉시 호출)
+  app.post("/api/cases/:caseId/estimate-exclusions", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "로그인이 필요합니다" });
+      }
+      
+      const { caseId } = req.params;
+      const { exclusionType, deletionKey } = req.body;
+      
+      if (!exclusionType || !deletionKey) {
+        return res.status(400).json({ error: "exclusionType과 deletionKey가 필요합니다" });
+      }
+      
+      console.log(`[Exclusion] Adding: caseId=${caseId}, type=${exclusionType}, key=${deletionKey}`);
+      
+      const exclusion = await storage.addEstimateExclusion({
+        caseId,
+        exclusionType,
+        deletionKey,
+      });
+      
+      res.json(exclusion);
+    } catch (error) {
+      console.error("Add estimate exclusion error:", error);
+      res.status(500).json({ error: "제외 항목 추가 중 오류가 발생했습니다" });
+    }
+  });
+  
+  // 제외 항목 삭제 (제외 해제)
+  app.delete("/api/cases/:caseId/estimate-exclusions", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "로그인이 필요합니다" });
+      }
+      
+      const { caseId } = req.params;
+      const { exclusionType, deletionKey } = req.body;
+      
+      if (!exclusionType || !deletionKey) {
+        return res.status(400).json({ error: "exclusionType과 deletionKey가 필요합니다" });
+      }
+      
+      console.log(`[Exclusion] Removing: caseId=${caseId}, type=${exclusionType}, key=${deletionKey}`);
+      
+      const removed = await storage.removeEstimateExclusion(caseId, exclusionType, deletionKey);
+      
+      res.json({ success: removed });
+    } catch (error) {
+      console.error("Remove estimate exclusion error:", error);
+      res.status(500).json({ error: "제외 항목 삭제 중 오류가 발생했습니다" });
+    }
+  });
+
   // 임시 관리자 엔드포인트: 초기 견적금액 백필 (GET으로 변경하여 브라우저에서 호출 가능)
   app.get("/api/admin/backfill-initial-estimates", async (req, res) => {
     try {
