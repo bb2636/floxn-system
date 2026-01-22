@@ -993,5 +993,26 @@ export const insertUnitPriceOverrideSchema = createInsertSchema(unitPriceOverrid
 export type UnitPriceOverride = typeof unitPriceOverrides.$inferSelect;
 export type InsertUnitPriceOverride = z.infer<typeof insertUnitPriceOverrideSchema>;
 
+// 견적서 제외 항목 테이블 (철거공사 자동 생성 노무비 등)
+// 사용자가 삭제(제외)한 항목을 영속적으로 저장하여 재마운트/새로고침 후에도 부활 방지
+export const estimateExclusions = pgTable("estimate_exclusions", {
+  id: serial("id").primaryKey(),
+  caseId: text("case_id").notNull(), // 케이스 ID
+  exclusionType: text("exclusion_type").notNull(), // 'demolition_auto_labor' 등
+  deletionKey: text("deletion_key").notNull(), // 'matchedWorkName|detailItem' 형식
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  // unique constraint: 케이스+타입+키 조합은 유일해야 함
+  unqKey: unique().on(table.caseId, table.exclusionType, table.deletionKey),
+}));
+
+export const insertEstimateExclusionSchema = createInsertSchema(estimateExclusions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type EstimateExclusion = typeof estimateExclusions.$inferSelect;
+export type InsertEstimateExclusion = z.infer<typeof insertEstimateExclusionSchema>;
+
 // Chat models for AI integration
 export * from "./models/chat";
