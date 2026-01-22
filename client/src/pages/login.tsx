@@ -27,6 +27,7 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showForceChangePassword, setShowForceChangePassword] = useState(false);
+  const [saveUsername, setSaveUsername] = useState(false);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -56,6 +57,12 @@ export default function Login() {
 
     checkSession();
 
+    const savedUsername = localStorage.getItem("savedUsername");
+    if (savedUsername) {
+      form.setValue("username", savedUsername);
+      setSaveUsername(true);
+    }
+
     const savedRememberMe = localStorage.getItem("rememberMe");
     if (savedRememberMe === "true") {
       form.setValue("rememberMe", true);
@@ -72,6 +79,12 @@ export default function Login() {
         localStorage.setItem("rememberMe", "true");
       } else {
         localStorage.removeItem("rememberMe");
+      }
+
+      if (saveUsername) {
+        localStorage.setItem("savedUsername", variables.username);
+      } else {
+        localStorage.removeItem("savedUsername");
       }
 
       if (data.mustChangePassword === true) {
@@ -350,33 +363,23 @@ export default function Login() {
                     )}
                   />
 
-                  {/* Remember Me Checkbox */}
-                  <FormField
-                    control={form.control}
-                    name="rememberMe"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center gap-1">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              data-testid="checkbox-remember-me"
-                            />
-                          </FormControl>
-                          <Label
-                            htmlFor="rememberMe"
-                            className="cursor-pointer font-medium"
-                            style={{
-                              color: '#686A6E',
-                              fontSize: '14px',
-                              lineHeight: '17.92px',
-                            }}
-                          >아이디저장</Label>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                  {/* Save Username Checkbox */}
+                  <div className="flex items-center gap-1">
+                    <Checkbox
+                      checked={saveUsername}
+                      onCheckedChange={(checked) => setSaveUsername(!!checked)}
+                      data-testid="checkbox-save-username"
+                    />
+                    <Label
+                      className="cursor-pointer font-medium"
+                      style={{
+                        color: '#686A6E',
+                        fontSize: '14px',
+                        lineHeight: '17.92px',
+                      }}
+                      onClick={() => setSaveUsername(!saveUsername)}
+                    >아이디저장</Label>
+                  </div>
                 </div>
 
                 {/* Submit Button */}
