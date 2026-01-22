@@ -2062,7 +2062,15 @@ export default function FieldEstimate() {
         return;
       }
       // 수동 삭제된 철거공사 행은 재생성하지 않음
-      if (deletedDemolitionKeys.has(entry.key)) {
+      // deletedDemolitionKeys는 sourceRowId|workName|detailItem 형식으로 저장됨
+      // entry.key는 workName|detailItem 형식이므로, 삭제된 키에서 workName|detailItem 부분 추출하여 비교
+      const isDeletedByUser = Array.from(deletedDemolitionKeys).some(deletedKey => {
+        const parts = deletedKey.split('|');
+        // sourceRowId|workName|detailItem → workName|detailItem 추출
+        const workNameDetailKey = parts.length >= 3 ? `${parts[1]}|${parts[2]}` : deletedKey;
+        return workNameDetailKey === entry.key;
+      });
+      if (isDeletedByUser) {
         return;
       }
       missingEntries.push(entry);
