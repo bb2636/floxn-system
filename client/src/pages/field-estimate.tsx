@@ -594,6 +594,7 @@ export default function FieldEstimate() {
     setSelectedRows(new Set());
     setSelectedLaborRows(new Set());
     setSelectedMaterialRows(new Set());
+    setDeletedDemolitionKeys(new Set()); // 철거공사 삭제 키 초기화
     
     // Query 캐시 무효화 (새 케이스 데이터 강제 로드)
     queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId, "latest"] });
