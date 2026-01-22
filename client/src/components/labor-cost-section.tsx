@@ -105,7 +105,6 @@ export interface LaborCostRow {
   includeInEstimate: boolean; // 경비여부 - checkbox
   request: string; // 요청 - editable input
   amount: number; // 금액 - calculated
-  isManuallyDeleted?: boolean; // 수동 삭제된 철거공사 행 (UI에서 숨김, Reconcile에서 스킵)
 }
 
 interface LaborCostSectionProps {
