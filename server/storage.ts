@@ -300,6 +300,7 @@ export interface IStorage {
     laborCostData?: any | null,
     materialCostData?: any | null,
     vatIncluded?: boolean,
+    deletedDemolitionKeys?: string[] | null,
   ): Promise<{ estimate: Estimate; rows: EstimateRow[] }>;
   getLatestEstimate(
     caseId: string,
@@ -2407,6 +2408,7 @@ export class MemStorage implements IStorage {
     laborCostData?: any | null,
     materialCostData?: any | null,
     vatIncluded?: boolean,
+    deletedDemolitionKeys?: string[] | null,
   ): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
     throw new Error("Estimate methods not implemented in MemStorage");
   }
@@ -5268,6 +5270,7 @@ export class DbStorage implements IStorage {
     laborCostData: any | null = null,
     materialCostData: any | null = null,
     vatIncluded: boolean = true,
+    deletedDemolitionKeys: string[] | null = null,
   ): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
     return await db.transaction(async (tx) => {
       // 1. 현재 최대 버전 조회 (row-level locking으로 동시성 제어)
@@ -5298,6 +5301,7 @@ export class DbStorage implements IStorage {
           createdBy: userId,
           laborCostData: Array.isArray(laborCostData) ? laborCostData : null,
           materialCostData: enrichedMaterialCostData,
+          deletedDemolitionKeys: deletedDemolitionKeys || null,
         })
         .returning();
 

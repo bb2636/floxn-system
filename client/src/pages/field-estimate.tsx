@@ -2384,6 +2384,11 @@ export default function FieldEstimate() {
         if (materialData?.vatIncluded !== undefined) {
           setVatIncluded(materialData.vatIncluded);
         }
+        
+        // 삭제된 철거공사 키 목록 복원
+        if (latestEstimate.estimate?.deletedDemolitionKeys && Array.isArray(latestEstimate.estimate.deletedDemolitionKeys)) {
+          setDeletedDemolitionKeys(new Set(latestEstimate.estimate.deletedDemolitionKeys));
+        }
       } else if (latestEstimate.estimate?.materialCostData) {
         // 노무비 데이터는 없지만 자재비 데이터만 있는 경우
         const materialData = latestEstimate.estimate.materialCostData;
@@ -2407,6 +2412,11 @@ export default function FieldEstimate() {
         // VAT 포함/별도 옵션 복원
         if (materialData?.vatIncluded !== undefined) {
           setVatIncluded(materialData.vatIncluded);
+        }
+        
+        // 삭제된 철거공사 키 목록 복원
+        if (latestEstimate.estimate?.deletedDemolitionKeys && Array.isArray(latestEstimate.estimate.deletedDemolitionKeys)) {
+          setDeletedDemolitionKeys(new Set(latestEstimate.estimate.deletedDemolitionKeys));
         }
       }
 
@@ -3725,6 +3735,7 @@ export default function FieldEstimate() {
         materialCostData,
         totalAmount: estimateSummary.total, // 견적 총액 전송
         vatIncluded, // VAT 포함/별도 옵션
+        deletedDemolitionKeys: Array.from(deletedDemolitionKeys), // 삭제된 철거공사 키 목록
       });
     },
     onSuccess: () => {
