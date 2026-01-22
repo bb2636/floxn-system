@@ -69,6 +69,9 @@ import {
   type UnitPriceOverride,
   type InsertUnitPriceOverride,
   unitPriceOverrides,
+  type EstimateExclusion,
+  type InsertEstimateExclusion,
+  estimateExclusions,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
@@ -418,6 +421,10 @@ export interface IStorage {
   getInvoiceByCaseGroupPrefix(caseGroupPrefix: string): Promise<Invoice | null>;
   getAllInvoices(): Promise<Invoice[]>;
   getApprovedInvoices(): Promise<Invoice[]>;
+  // Estimate exclusions methods (철거공사 노무비 삭제 영속화)
+  getEstimateExclusions(caseId: string, exclusionType: string): Promise<EstimateExclusion[]>;
+  addEstimateExclusion(data: InsertEstimateExclusion): Promise<EstimateExclusion>;
+  removeEstimateExclusion(caseId: string, exclusionType: string, deletionKey: string): Promise<boolean>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -2770,6 +2777,18 @@ export class MemStorage implements IStorage {
 
   async getApprovedInvoices(): Promise<Invoice[]> {
     throw new Error("getApprovedInvoices not implemented in MemStorage");
+  }
+
+  async getEstimateExclusions(caseId: string, exclusionType: string): Promise<EstimateExclusion[]> {
+    throw new Error("getEstimateExclusions not implemented in MemStorage");
+  }
+
+  async addEstimateExclusion(data: InsertEstimateExclusion): Promise<EstimateExclusion> {
+    throw new Error("addEstimateExclusion not implemented in MemStorage");
+  }
+
+  async removeEstimateExclusion(caseId: string, exclusionType: string, deletionKey: string): Promise<boolean> {
+    throw new Error("removeEstimateExclusion not implemented in MemStorage");
   }
 }
 
@@ -7291,6 +7310,53 @@ export class DbStorage implements IStorage {
       results.push(result);
     }
     return results;
+  }
+
+  // Estimate Exclusions methods (철거공사 노무비 삭제 영속화)
+  async getEstimateExclusions(caseId: string, exclusionType: string): Promise<EstimateExclusion[]> {
+    return await db
+      .select()
+      .from(estimateExclusions)
+      .where(and(
+        eq(estimateExclusions.caseId, caseId),
+        eq(estimateExclusions.exclusionType, exclusionType)
+      ))
+      .orderBy(asc(estimateExclusions.createdAt));
+  }
+
+  async addEstimateExclusion(data: InsertEstimateExclusion): Promise<EstimateExclusion> {
+    // Upsert: 이미 존재하면 무시, 없으면 추가
+    const existing = await db
+      .select()
+      .from(estimateExclusions)
+      .where(and(
+        eq(estimateExclusions.caseId, data.caseId),
+        eq(estimateExclusions.exclusionType, data.exclusionType),
+        eq(estimateExclusions.deletionKey, data.deletionKey)
+      ))
+      .limit(1);
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    
+    const [result] = await db
+      .insert(estimateExclusions)
+      .values(data)
+      .returning();
+    return result;
+  }
+
+  async removeEstimateExclusion(caseId: string, exclusionType: string, deletionKey: string): Promise<boolean> {
+    const result = await db
+      .delete(estimateExclusions)
+      .where(and(
+        eq(estimateExclusions.caseId, caseId),
+        eq(estimateExclusions.exclusionType, exclusionType),
+        eq(estimateExclusions.deletionKey, deletionKey)
+      ))
+      .returning();
+    return result.length > 0;
   }
 }
 
