@@ -5514,7 +5514,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         materialCostData,
         totalAmount,
         vatIncluded,
-        deletedDemolitionKeys,
       } = req.body;
 
       if (!rows || !Array.isArray(rows)) {
@@ -5653,7 +5652,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         laborCostData || null,
         materialCostData || null,
         vatIncluded ?? true, // VAT 포함/별도 옵션
-        deletedDemolitionKeys || null, // 삭제된 철거공사 키 목록
       );
 
       // 견적 총액을 케이스에 항상 업데이트 (최신 견적금액 유지)
