@@ -715,11 +715,14 @@ export default function FieldEstimate() {
     if (selectedLaborRows.size === 0) return;
     
     // 삭제할 철거공사 행의 키를 추적 (재생성 방지)
-    // 키 형식: matchedWorkName|detailItem (Reconcile useEffect와 동일)
     const newDeletedKeys = new Set<string>();
     laborCostRows.forEach(row => {
       if (selectedLaborRows.has(row.id) && row.category === '철거공사' && row.isLinkedFromRecovery) {
-        const key = `${row.workName || ''}|${row.detailItem || ''}`;
+        // 키 형식: sourceRowId|matchedWorkName|detailItem
+        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
+          ? row.sourceAreaRowId.replace('demolition-', '')
+          : row.sourceAreaRowId || '';
+        const key = `${actualSourceRowId}|${row.workName || ''}|${row.detailItem || ''}`;
         newDeletedKeys.add(key);
       }
     });
@@ -739,11 +742,13 @@ export default function FieldEstimate() {
     const deletedRows = laborCostRows.filter(r => !newRowIds.has(r.id));
     
     // 삭제된 철거공사 행의 키 추적
-    // 키 형식: matchedWorkName|detailItem (Reconcile useEffect와 동일)
     const newDeletedKeys = new Set<string>();
     deletedRows.forEach(row => {
       if (row.category === '철거공사' && row.isLinkedFromRecovery) {
-        const key = `${row.workName || ''}|${row.detailItem || ''}`;
+        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
+          ? row.sourceAreaRowId.replace('demolition-', '')
+          : row.sourceAreaRowId || '';
+        const key = `${actualSourceRowId}|${row.workName || ''}|${row.detailItem || ''}`;
         newDeletedKeys.add(key);
         console.log('[철거공사 삭제 추적] 키:', key);
       }
