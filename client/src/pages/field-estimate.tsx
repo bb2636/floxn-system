@@ -330,6 +330,27 @@ export default function FieldEstimate() {
     return (str || '').trim().toLowerCase().replace(/\s+/g, '');
   };
 
+  // 철거공사 필요한 공사명 목록 (컴포넌트 레벨 - 삭제 추적 및 reconcile에서 공통 사용)
+  const DEMOLITION_WORK_NAMES = ['합판', '석고보드', '도배', '마루', '장판'];
+  
+  // 정규화된 공사명 → 원본 DEMOLITION_WORK_NAMES 매핑 함수
+  const matchDemolitionWorkName = (workName: string): string | null => {
+    const normalized = normalizeForMatch(workName);
+    for (const name of DEMOLITION_WORK_NAMES) {
+      const normalizedTarget = normalizeForMatch(name);
+      if (normalized.includes(normalizedTarget) || normalizedTarget === normalized) {
+        return name;
+      }
+    }
+    return null;
+  };
+
+  // 철거공사 노무비 삭제 키 생성 함수 (통일된 형식: matchedWorkName|detailItem)
+  const makeDemolitionDeletionKey = (workName: string, detailItem: string): string => {
+    const matchedWorkName = matchDemolitionWorkName(workName) || workName || '';
+    return `${matchedWorkName}|${detailItem || ''}`;
+  };
+
   // 노무비 카탈로그 조회 (from excel_data)
   const { data: laborCatalog = [], isLoading: isLoadingLaborCatalog } = useQuery<LaborCatalogItem[]>({
     queryKey: ['/api/labor-catalog'],
@@ -710,25 +731,44 @@ export default function FieldEstimate() {
   };
 
   // 선택된 노무비 행 삭제 (철거공사 행은 삭제 키 추적하여 재생성 방지)
-  const deleteSelectedLaborRows = () => {
+  const deleteSelectedLaborRows = async () => {
     if (isReadOnly) return;
     if (selectedLaborRows.size === 0) return;
     
-    // 삭제할 철거공사 행의 키를 추적 (재생성 방지)
+    // 삭제할 철거공사 행의 키를 추적 (재생성 방지) - 통일된 키 형식 사용
     const newDeletedKeys = new Set<string>();
+    const keysToSave: string[] = [];
+    
     laborCostRows.forEach(row => {
       if (selectedLaborRows.has(row.id) && row.category === '철거공사' && row.isLinkedFromRecovery) {
-        // 키 형식: sourceRowId|matchedWorkName|detailItem
-        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
-          ? row.sourceAreaRowId.replace('demolition-', '')
-          : row.sourceAreaRowId || '';
-        const key = `${actualSourceRowId}|${row.workName || ''}|${row.detailItem || ''}`;
+        // 통일된 키 형식: matchedWorkName|detailItem
+        const key = makeDemolitionDeletionKey(row.workName || '', row.detailItem || '');
         newDeletedKeys.add(key);
+        keysToSave.push(key);
       }
     });
     
     if (newDeletedKeys.size > 0) {
       setDeletedDemolitionKeys(prev => new Set([...Array.from(prev), ...Array.from(newDeletedKeys)]));
+      
+      // DB에 영속화 (케이스 ID가 있는 경우)
+      const currentCaseId = estimateCase?.id || selectedCaseId;
+      if (currentCaseId) {
+        keysToSave.forEach(async (key) => {
+          try {
+            await apiRequest(`/api/cases/${currentCaseId}/estimate-exclusions`, {
+              method: 'POST',
+              body: JSON.stringify({
+                exclusionType: 'demolition_auto_labor',
+                deletionKey: key,
+              }),
+            });
+            console.log('[철거공사 삭제 영속화] 저장:', key);
+          } catch (err) {
+            console.error('[철거공사 삭제 영속화] 오류:', err);
+          }
+        });
+      }
     }
     
     setLaborCostRows(prev => prev.filter(row => !selectedLaborRows.has(row.id)));
@@ -741,21 +781,41 @@ export default function FieldEstimate() {
     const newRowIds = new Set(newRows.map(r => r.id));
     const deletedRows = laborCostRows.filter(r => !newRowIds.has(r.id));
     
-    // 삭제된 철거공사 행의 키 추적
+    // 삭제된 철거공사 행의 키 추적 - 통일된 키 형식 사용
     const newDeletedKeys = new Set<string>();
+    const keysToSave: string[] = [];
+    
     deletedRows.forEach(row => {
       if (row.category === '철거공사' && row.isLinkedFromRecovery) {
-        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
-          ? row.sourceAreaRowId.replace('demolition-', '')
-          : row.sourceAreaRowId || '';
-        const key = `${actualSourceRowId}|${row.workName || ''}|${row.detailItem || ''}`;
+        // 통일된 키 형식: matchedWorkName|detailItem
+        const key = makeDemolitionDeletionKey(row.workName || '', row.detailItem || '');
         newDeletedKeys.add(key);
-        console.log('[철거공사 삭제 추적] 키:', key);
+        keysToSave.push(key);
+        console.log('[철거공사 삭제 추적] 통일 키:', key);
       }
     });
     
     if (newDeletedKeys.size > 0) {
       setDeletedDemolitionKeys(prev => new Set([...Array.from(prev), ...Array.from(newDeletedKeys)]));
+      
+      // DB에 영속화 (케이스 ID가 있는 경우)
+      const currentCaseId = estimateCase?.id || selectedCaseId;
+      if (currentCaseId) {
+        keysToSave.forEach(async (key) => {
+          try {
+            await apiRequest(`/api/cases/${currentCaseId}/estimate-exclusions`, {
+              method: 'POST',
+              body: JSON.stringify({
+                exclusionType: 'demolition_auto_labor',
+                deletionKey: key,
+              }),
+            });
+            console.log('[철거공사 삭제 영속화] 저장:', key);
+          } catch (err) {
+            console.error('[철거공사 삭제 영속화] 오류:', err);
+          }
+        });
+      }
     }
     
     setLaborCostRows(sortLaborRowsByCategory(newRows));
