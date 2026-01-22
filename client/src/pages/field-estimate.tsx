@@ -2423,6 +2423,11 @@ export default function FieldEstimate() {
         }
       }
 
+      // 삭제된 철거공사 키 복원
+      if (latestEstimate.estimate?.deletedDemolitionKeys && Array.isArray(latestEstimate.estimate.deletedDemolitionKeys)) {
+        setDeletedDemolitionKeys(new Set(latestEstimate.estimate.deletedDemolitionKeys));
+      }
+
       // Hydration 완료 표시 (노무비-자재비 동기화 활성화)
       isHydratedRef.current = true;
       setIsHydratedState(true);
@@ -3738,6 +3743,7 @@ export default function FieldEstimate() {
         materialCostData,
         totalAmount: estimateSummary.total, // 견적 총액 전송
         vatIncluded, // VAT 포함/별도 옵션
+        deletedDemolitionKeys: Array.from(deletedDemolitionKeys), // 삭제된 철거공사 키 목록
       });
     },
     onSuccess: () => {

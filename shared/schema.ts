@@ -688,6 +688,7 @@ export const estimates = pgTable("estimates", {
   createdBy: varchar("created_by").notNull().references(() => users.id),
   laborCostData: json("labor_cost_data"), // 노무비 데이터 (JSON)
   materialCostData: json("material_cost_data"), // 자재비 데이터 (JSON)
+  deletedDemolitionKeys: json("deleted_demolition_keys").$type<string[]>(), // 삭제된 철거공사 키 목록
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
