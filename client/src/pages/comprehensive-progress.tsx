@@ -1842,11 +1842,19 @@ export default function ComprehensiveProgress() {
                         }}
                         data-testid={`button-field-survey-${caseItem.id}`}
                       >
-                        {caseItem.status === "직접복구" ||
-                        caseItem.status === "청구자료제출(복구)" ||
-                        caseItem.status?.includes("직접복구")
-                          ? "청구자료 입력"
-                          : "현장조사 입력"}
+                        {caseItem.status === "청구자료제출(복구)" ||
+                        caseItem.status === "선견적요청" ||
+                        caseItem.status === "출동비청구(선견적)" ||
+                        caseItem.status === "청구" ||
+                        caseItem.status === "입금대기" ||
+                        caseItem.status === "입금완료" ||
+                        caseItem.status === "정산완료" ||
+                        caseItem.status === "종결"
+                          ? "자료보기"
+                          : caseItem.status === "직접복구" ||
+                            caseItem.status?.includes("직접복구")
+                            ? "청구자료 입력"
+                            : "현장조사 입력"}
                       </div>
                     )}
                     <div>
