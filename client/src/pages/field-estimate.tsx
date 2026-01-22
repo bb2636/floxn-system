@@ -709,56 +709,48 @@ export default function FieldEstimate() {
     setLaborCostRows(prev => [...prev, newLaborRow]);
   };
 
-  // 선택된 노무비 행 삭제 (철거공사 행은 삭제 키 추적하여 재생성 방지)
+  // 선택된 노무비 행 삭제 (철거공사 행은 isManuallyDeleted로 숨김 처리하여 재생성 방지)
   const deleteSelectedLaborRows = () => {
     if (isReadOnly) return;
     if (selectedLaborRows.size === 0) return;
     
-    // 삭제할 철거공사 행의 키를 추적 (재생성 방지)
-    const newDeletedKeys = new Set<string>();
-    laborCostRows.forEach(row => {
-      if (selectedLaborRows.has(row.id) && row.category === '철거공사' && row.isLinkedFromRecovery) {
-        // 키 형식: sourceRowId|matchedWorkName|detailItem
-        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
-          ? row.sourceAreaRowId.replace('demolition-', '')
-          : row.sourceAreaRowId || '';
-        const key = `${actualSourceRowId}|${row.workName || ''}|${row.detailItem || ''}`;
-        newDeletedKeys.add(key);
+    setLaborCostRows(prev => prev.map(row => {
+      if (selectedLaborRows.has(row.id)) {
+        // 철거공사 연동 행은 완전 삭제 대신 숨김 처리 (재생성 방지)
+        if (row.category === '철거공사' && row.isLinkedFromRecovery) {
+          console.log('[철거공사 숨김 처리]', row.workName, row.detailItem);
+          return { ...row, isManuallyDeleted: true };
+        }
+        // 일반 행은 완전 삭제 (filter로 처리)
+        return null as any;
       }
-    });
-    
-    if (newDeletedKeys.size > 0) {
-      setDeletedDemolitionKeys(prev => new Set([...Array.from(prev), ...Array.from(newDeletedKeys)]));
-    }
-    
-    setLaborCostRows(prev => prev.filter(row => !selectedLaborRows.has(row.id)));
+      return row;
+    }).filter(Boolean)); // null 제거
     setSelectedLaborRows(new Set());
   };
 
-  // 노무비 행 변경 핸들러 (LaborCostSection에서 - 버튼으로 삭제 시 철거공사 키 추적)
+  // 노무비 행 변경 핸들러 (LaborCostSection에서 - 버튼으로 삭제 시 철거공사는 숨김 처리)
   const handleLaborRowsChange = (newRows: LaborCostRow[]) => {
     // 삭제된 행 감지 (현재 행에서 새 행에 없는 것 = 삭제된 행)
     const newRowIds = new Set(newRows.map(r => r.id));
-    const deletedRows = laborCostRows.filter(r => !newRowIds.has(r.id));
+    const deletedRows = laborCostRows.filter(r => !newRowIds.has(r.id) && !r.isManuallyDeleted);
     
-    // 삭제된 철거공사 행의 키 추적
-    const newDeletedKeys = new Set<string>();
+    // 기존 isManuallyDeleted: true 행 보존
+    const existingDeletedRows = laborCostRows.filter(r => r.isManuallyDeleted);
+    
+    // 삭제된 철거공사 연동 행은 isManuallyDeleted로 숨김 처리 (재생성 방지)
+    const newlyHiddenRows: LaborCostRow[] = [];
     deletedRows.forEach(row => {
       if (row.category === '철거공사' && row.isLinkedFromRecovery) {
-        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
-          ? row.sourceAreaRowId.replace('demolition-', '')
-          : row.sourceAreaRowId || '';
-        const key = `${actualSourceRowId}|${row.workName || ''}|${row.detailItem || ''}`;
-        newDeletedKeys.add(key);
-        console.log('[철거공사 삭제 추적] 키:', key);
+        console.log('[철거공사 숨김 처리 - 버튼]', row.workName, row.detailItem);
+        newlyHiddenRows.push({ ...row, isManuallyDeleted: true });
       }
     });
     
-    if (newDeletedKeys.size > 0) {
-      setDeletedDemolitionKeys(prev => new Set([...Array.from(prev), ...Array.from(newDeletedKeys)]));
-    }
+    // 새 행 + 기존 숨김 행 + 새로 숨긴 행 합치기
+    const finalRows = [...newRows, ...existingDeletedRows, ...newlyHiddenRows];
     
-    setLaborCostRows(sortLaborRowsByCategory(newRows));
+    setLaborCostRows(sortLaborRowsByCategory(finalRows));
   };
 
   // 복구면적 산출표에서 노무비로 동기화 (일위대가DB 기반 자동 생성)
@@ -1990,6 +1982,7 @@ export default function FieldEstimate() {
         const matchedWorkName = matchDemolitionWorkName(row.workName || '') || row.workName || '';
         const key = `${matchedWorkName}|${row.detailItem || ''}`;
         
+        // isManuallyDeleted: true인 행도 "이미 존재"하는 것으로 처리 (재생성 방지)
         existingDemolitionMap.set(key, {
           id: row.id,
           matchedWorkName,
@@ -1997,8 +1990,8 @@ export default function FieldEstimate() {
           isLinkedFromRecovery: row.isLinkedFromRecovery || false,
         });
         
-        // 수동 생성 행 키 추적 (보호용)
-        if (!row.isLinkedFromRecovery) {
+        // 수동 생성 행 키 추적 (보호용) - isManuallyDeleted도 포함하여 보호
+        if (!row.isLinkedFromRecovery || row.isManuallyDeleted) {
           manualDemolitionKeys.add(key);
         }
       }
@@ -2061,18 +2054,7 @@ export default function FieldEstimate() {
       if (existingDemolitionMap.has(entry.key)) {
         return;
       }
-      // 수동 삭제된 철거공사 행은 재생성하지 않음
-      // deletedDemolitionKeys는 sourceRowId|workName|detailItem 형식으로 저장됨
-      // entry.key는 workName|detailItem 형식이므로, 삭제된 키에서 workName|detailItem 부분 추출하여 비교
-      const isDeletedByUser = Array.from(deletedDemolitionKeys).some(deletedKey => {
-        const parts = deletedKey.split('|');
-        // sourceRowId|workName|detailItem → workName|detailItem 추출
-        const workNameDetailKey = parts.length >= 3 ? `${parts[1]}|${parts[2]}` : deletedKey;
-        return workNameDetailKey === entry.key;
-      });
-      if (isDeletedByUser) {
-        return;
-      }
+      // isManuallyDeleted 행은 manualDemolitionKeys에 포함되어 위에서 이미 스킵됨
       missingEntries.push(entry);
     });
     
@@ -2081,7 +2063,8 @@ export default function FieldEstimate() {
     const orphanedIds: string[] = [];
     
     laborCostRows.forEach(row => {
-      if (row.isLinkedFromRecovery && row.category === '철거공사') {
+      // isManuallyDeleted인 행은 고아 행 감지에서 제외 (사용자 수동 삭제 보호)
+      if (row.isLinkedFromRecovery && row.category === '철거공사' && !row.isManuallyDeleted) {
         // 동일한 표준화 로직 사용 (matchedWorkName|detailItem 기준)
         const matchedWorkName = matchDemolitionWorkName(row.workName || '') || row.workName || '';
         const key = `${matchedWorkName}|${row.detailItem || ''}`;
@@ -2201,7 +2184,7 @@ export default function FieldEstimate() {
         return [...updatedRows, ...newDemolitionRows];
       });
     });
-  }, [rows, laborCostRows, mergedIlwidaegaCatalog, deletedDemolitionKeys, laborRateTiers]); // laborCostRows, 노임단가 비율 포함
+  }, [rows, laborCostRows, mergedIlwidaegaCatalog, laborRateTiers]); // laborCostRows, 노임단가 비율 포함
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
@@ -5429,17 +5412,18 @@ export default function FieldEstimate() {
               
               {/* 노무비 테이블 - 노무비 탭과 동일한 LaborCostSection 사용 */}
               <LaborCostSection
-                rows={laborCostRows}
+                rows={laborCostRows.filter(r => !r.isManuallyDeleted)}
                 onRowsChange={handleLaborRowsChange}
                 catalog={laborCatalog}
                 ilwidaegaCatalog={mergedIlwidaegaCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
                 onSelectAll={() => {
-                  if (selectedLaborRows.size === laborCostRows.length) {
+                  const visibleRows = laborCostRows.filter(r => !r.isManuallyDeleted);
+                  if (selectedLaborRows.size === visibleRows.length) {
                     setSelectedLaborRows(new Set());
                   } else {
-                    setSelectedLaborRows(new Set(laborCostRows.map(r => r.id)));
+                    setSelectedLaborRows(new Set(visibleRows.map(r => r.id)));
                   }
                 }}
                 isLoading={isLoadingLaborCatalog}
@@ -5951,17 +5935,18 @@ export default function FieldEstimate() {
               
               {/* 노무비 테이블 컴포넌트 - 새로운 프롬프트 기반 UI */}
               <LaborCostSection
-                rows={laborCostRows}
+                rows={laborCostRows.filter(r => !r.isManuallyDeleted)}
                 onRowsChange={handleLaborRowsChange}
                 catalog={laborCatalog}
                 ilwidaegaCatalog={mergedIlwidaegaCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
                 onSelectAll={() => {
-                  if (selectedLaborRows.size === laborCostRows.length) {
+                  const visibleRows = laborCostRows.filter(r => !r.isManuallyDeleted);
+                  if (selectedLaborRows.size === visibleRows.length) {
                     setSelectedLaborRows(new Set());
                   } else {
-                    setSelectedLaborRows(new Set(laborCostRows.map(r => r.id)));
+                    setSelectedLaborRows(new Set(visibleRows.map(r => r.id)));
                   }
                 }}
                 isLoading={isLoadingLaborCatalog}
