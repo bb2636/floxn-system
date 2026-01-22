@@ -147,6 +147,7 @@ export default function FieldEstimate() {
   const [materialRows, setMaterialRows] = useState<MaterialRow[]>([]);
   const [selectedMaterialRows, setSelectedMaterialRows] = useState<Set<string>>(new Set());
   const [deletedDemolitionKeys, setDeletedDemolitionKeys] = useState<Set<string>>(new Set()); // 수동 삭제된 철거공사 키 추적
+  const [exclusionsLoaded, setExclusionsLoaded] = useState(false); // exclusions 로드 완료 여부
   const [vatIncluded, setVatIncluded] = useState(true); // VAT 포함 여부
   const [estimateCase, setEstimateCase] = useState<Case | null>(null); // 견적서용 선택된 케이스
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false); // 케이스 검색 모달
@@ -164,8 +165,12 @@ export default function FieldEstimate() {
     const currentCaseId = estimateCase?.id || selectedCaseId;
     if (!currentCaseId) {
       setDeletedDemolitionKeys(new Set());
+      setExclusionsLoaded(false);
       return;
     }
+    
+    // 케이스 변경 시 먼저 로드 상태 리셋
+    setExclusionsLoaded(false);
     
     const loadExclusions = async () => {
       try {
@@ -175,11 +180,21 @@ export default function FieldEstimate() {
         if (response.ok) {
           const exclusions = await response.json();
           const keys = new Set<string>(exclusions.map((e: { deletionKey: string }) => e.deletionKey));
-          console.log('[철거공사 exclusions 로드]', keys.size, '개:', Array.from(keys));
+          // [증거 2] LOADED_EXCLUSION_KEYS
+          console.log('LOADED_EXCLUSION_KEYS', { 
+            caseId: currentCaseId, 
+            keys: Array.from(keys), 
+            count: keys.size 
+          });
           setDeletedDemolitionKeys(keys);
+          setExclusionsLoaded(true);
+        } else {
+          // 오류 시에도 로드 완료 처리 (빈 상태)
+          setExclusionsLoaded(true);
         }
       } catch (err) {
         console.error('[철거공사 exclusions 로드 오류]', err);
+        setExclusionsLoaded(true); // 오류 시에도 로드 완료 처리
       }
     };
     
@@ -808,6 +823,7 @@ export default function FieldEstimate() {
     // 삭제된 철거공사 행의 키 추적 - 통일된 키 형식 사용
     const newDeletedKeys = new Set<string>();
     const keysToSave: string[] = [];
+    const currentCaseId = estimateCase?.id || selectedCaseId;
     
     deletedRows.forEach(row => {
       if (row.category === '철거공사' && row.isLinkedFromRecovery) {
@@ -815,7 +831,12 @@ export default function FieldEstimate() {
         const key = makeDemolitionDeletionKey(row.workName || '', row.detailItem || '');
         newDeletedKeys.add(key);
         keysToSave.push(key);
-        console.log('[철거공사 삭제 추적] 통일 키:', key);
+        // [증거 1] SAVE_EXCLUSION_KEY - 삭제 클릭 시
+        console.log('SAVE_EXCLUSION_KEY', { 
+          caseId: currentCaseId, 
+          exclusion_type: 'demolition_auto_labor', 
+          deletion_key: key 
+        });
       }
     });
     
@@ -823,17 +844,21 @@ export default function FieldEstimate() {
       setDeletedDemolitionKeys(prev => new Set([...Array.from(prev), ...Array.from(newDeletedKeys)]));
       
       // DB에 영속화 (케이스 ID가 있는 경우)
-      const currentCaseId = estimateCase?.id || selectedCaseId;
       if (currentCaseId) {
         keysToSave.forEach(async (key) => {
           try {
-            await apiRequest('POST', `/api/cases/${currentCaseId}/estimate-exclusions`, {
+            const response = await apiRequest('POST', `/api/cases/${currentCaseId}/estimate-exclusions`, {
               exclusionType: 'demolition_auto_labor',
               deletionKey: key,
             });
-            console.log('[철거공사 삭제 영속화] 저장:', key);
+            console.log('SAVE_EXCLUSION_KEY_DB_RESPONSE', { 
+              caseId: currentCaseId, 
+              deletion_key: key, 
+              success: true,
+              response
+            });
           } catch (err) {
-            console.error('[철거공사 삭제 영속화] 오류:', err);
+            console.error('SAVE_EXCLUSION_KEY_DB_ERROR', { caseId: currentCaseId, deletion_key: key, error: err });
           }
         });
       }
@@ -1997,11 +2022,25 @@ export default function FieldEstimate() {
       return;
     }
     
+    // [타이밍 가드] exclusions 로드 완료 전에는 건너뛰기 (부활 방지)
+    if (!exclusionsLoaded) {
+      console.log('RECONCILE_WAITING_EXCLUSIONS', { exclusionsLoaded: false });
+      demolitionPendingRef.current = false;
+      return;
+    }
+    
     // 일위대가 카탈로그가 로드되지 않았으면 대기 (오버라이드 적용된 값 사용)
     if (!mergedIlwidaegaCatalog || mergedIlwidaegaCatalog.length === 0) {
       demolitionPendingRef.current = false;
       return;
     }
+    
+    // [증거 3] RECONCILE_START - Reconcile 시작 시
+    console.log('RECONCILE_START', { 
+      exclusionsLoaded: true, 
+      excludedCount: deletedDemolitionKeys.size, 
+      sampleExcluded: Array.from(deletedDemolitionKeys).slice(0, 5) 
+    });
     
     // DEMOLITION_WORK_NAMES와 matchDemolitionWorkName은 컴포넌트 레벨에 정의됨 (중복 제거)
     
@@ -2130,6 +2169,8 @@ export default function FieldEstimate() {
       }
       // 수동 삭제된 철거공사 행은 재생성하지 않음
       if (deletedDemolitionKeys.has(entry.key)) {
+        // [증거 3] SKIP_CREATE_DEMOLITION_LABOR - 삭제된 키로 인해 생성 스킵
+        console.log('SKIP_CREATE_DEMOLITION_LABOR', { deletion_key: entry.key });
         return;
       }
       missingEntries.push(entry);
@@ -2260,7 +2301,7 @@ export default function FieldEstimate() {
         return [...updatedRows, ...newDemolitionRows];
       });
     });
-  }, [rows, laborCostRows, mergedIlwidaegaCatalog, deletedDemolitionKeys, laborRateTiers]); // laborCostRows, 노임단가 비율 포함
+  }, [rows, laborCostRows, mergedIlwidaegaCatalog, deletedDemolitionKeys, exclusionsLoaded, laborRateTiers]); // laborCostRows, 노임단가 비율, exclusionsLoaded 포함
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
