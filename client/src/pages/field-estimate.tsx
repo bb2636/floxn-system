@@ -158,6 +158,33 @@ export default function FieldEstimate() {
     const rawCaseId = localStorage.getItem('selectedFieldSurveyCaseId');
     return (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : '';
   });
+
+  // 케이스 변경 시 DB에서 삭제된 철거공사 키 로드 (영속화된 데이터)
+  useEffect(() => {
+    const currentCaseId = estimateCase?.id || selectedCaseId;
+    if (!currentCaseId) {
+      setDeletedDemolitionKeys(new Set());
+      return;
+    }
+    
+    const loadExclusions = async () => {
+      try {
+        const response = await fetch(`/api/cases/${currentCaseId}/estimate-exclusions?type=demolition_auto_labor`, {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const exclusions = await response.json();
+          const keys = new Set<string>(exclusions.map((e: { deletionKey: string }) => e.deletionKey));
+          console.log('[철거공사 exclusions 로드]', keys.size, '개:', Array.from(keys));
+          setDeletedDemolitionKeys(keys);
+        }
+      } catch (err) {
+        console.error('[철거공사 exclusions 로드 오류]', err);
+      }
+    };
+    
+    loadExclusions();
+  }, [selectedCaseId, estimateCase?.id]);
   
 
   // localStorage 변경 감지 (현장입력에서 케이스 선택 시)
@@ -756,12 +783,9 @@ export default function FieldEstimate() {
       if (currentCaseId) {
         keysToSave.forEach(async (key) => {
           try {
-            await apiRequest(`/api/cases/${currentCaseId}/estimate-exclusions`, {
-              method: 'POST',
-              body: JSON.stringify({
-                exclusionType: 'demolition_auto_labor',
-                deletionKey: key,
-              }),
+            await apiRequest('POST', `/api/cases/${currentCaseId}/estimate-exclusions`, {
+              exclusionType: 'demolition_auto_labor',
+              deletionKey: key,
             });
             console.log('[철거공사 삭제 영속화] 저장:', key);
           } catch (err) {
@@ -803,12 +827,9 @@ export default function FieldEstimate() {
       if (currentCaseId) {
         keysToSave.forEach(async (key) => {
           try {
-            await apiRequest(`/api/cases/${currentCaseId}/estimate-exclusions`, {
-              method: 'POST',
-              body: JSON.stringify({
-                exclusionType: 'demolition_auto_labor',
-                deletionKey: key,
-              }),
+            await apiRequest('POST', `/api/cases/${currentCaseId}/estimate-exclusions`, {
+              exclusionType: 'demolition_auto_labor',
+              deletionKey: key,
             });
             console.log('[철거공사 삭제 영속화] 저장:', key);
           } catch (err) {
@@ -1982,21 +2003,7 @@ export default function FieldEstimate() {
       return;
     }
     
-    // 철거공사 필요한 공사명 목록 (일위대가DB 철거공사에 있는 공사명과 매칭)
-    // 반자틀은 철거공사 자동 연동 제외
-    const DEMOLITION_WORK_NAMES = ['합판', '석고보드', '도배', '마루', '장판'];
-    
-    // 정규화된 공사명 → 원본 DEMOLITION_WORK_NAMES 매핑 함수
-    const matchDemolitionWorkName = (workName: string): string | null => {
-      const normalized = normalizeForMatch(workName);
-      for (const name of DEMOLITION_WORK_NAMES) {
-        const normalizedTarget = normalizeForMatch(name);
-        if (normalized.includes(normalizedTarget) || normalizedTarget === normalized) {
-          return name; // 항상 DEMOLITION_WORK_NAMES의 표준 이름 반환
-        }
-      }
-      return null;
-    };
+    // DEMOLITION_WORK_NAMES와 matchDemolitionWorkName은 컴포넌트 레벨에 정의됨 (중복 제거)
     
     // 1. 복구면적 산출표에서 철거공사가 필요한 모든 행 추출 (일반 노무비와 동일하게 공사명별 합산)
     // 같은 공사명은 복구면적을 합산하여 1개 entry만 생성
