@@ -2919,6 +2919,13 @@ export class DbStorage implements IStorage {
           const defaultPermissions = JSON.parse(roleData.permissions);
           let needsUpdate = false;
           
+          // 레거시 카테고리 "통계 및 정산" 삭제 (이름이 "정산 및 통계"로 변경됨)
+          if ("통계 및 정산" in existingPermissions) {
+            delete existingPermissions["통계 및 정산"];
+            needsUpdate = true;
+            console.log(`[Essential Permissions] Removed legacy category "통계 및 정산" from ${roleData.roleName}`);
+          }
+          
           // 기본 카테고리 중 없는 것만 추가
           for (const category of Object.keys(defaultPermissions)) {
             if (!(category in existingPermissions)) {
