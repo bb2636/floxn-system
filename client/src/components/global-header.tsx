@@ -53,7 +53,8 @@ export function GlobalHeader() {
     if (location === "/dashboard" || location === "/mobile-home") return "홈";
     if (location === "/intake") return "접수하기";
     if (location === "/comprehensive-progress") return "종합진행관리";
-    if (location.startsWith("/statistics") || location === "/settlements") return "정산 및 통계";
+    if (location.startsWith("/statistics") || location === "/settlements")
+      return "정산 및 통계";
     if (location === "/admin-settings") return "관리자 설정";
     return "";
   };
@@ -71,40 +72,40 @@ export function GlobalHeader() {
   if (isMobileRoute) {
     return (
       <>
-        <header 
+        <header
           className="flex relative w-full bg-white"
           style={{
-            borderBottom: '1px solid #E5E7EB',
+            borderBottom: "1px solid #E5E7EB",
           }}
         >
-          <div 
+          <div
             className="flex items-center justify-between w-full"
             style={{
-              height: '58px',
-              padding: '0px 20px',
+              height: "58px",
+              padding: "0px 20px",
             }}
           >
             {/* Logo */}
-            <div 
+            <div
               className="flex items-center gap-2"
               style={{
-                filter: 'drop-shadow(0px 0px 20px #DBE9F5)',
+                filter: "drop-shadow(0px 0px 20px #DBE9F5)",
               }}
             >
-              <img 
-                src={logoIcon} 
-                alt="FLOXN Logo" 
+              <img
+                src={logoIcon}
+                alt="FLOXN Logo"
                 style={{
-                  width: '28px',
-                  height: '26px',
+                  width: "28px",
+                  height: "26px",
                 }}
               />
               <span
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
+                  fontFamily: "Pretendard",
+                  fontSize: "18px",
                   fontWeight: 700,
-                  color: '#0C0C0C',
+                  color: "#0C0C0C",
                 }}
               >
                 FLOXN
@@ -117,31 +118,31 @@ export function GlobalHeader() {
               className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100/50 transition-colors"
               data-testid="button-mobile-profile"
             >
-              <div 
+              <div
                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-[#008FED]"
-                style={{ background: 'rgba(0, 143, 237, 0.2)' }}
+                style={{ background: "rgba(0, 143, 237, 0.2)" }}
               >
                 {user.name ? user.name.charAt(0) : "U"}
               </div>
               <div className="flex items-center gap-1">
-                <span 
+                <span
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
                     fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.7)',
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.7)",
                   }}
                 >
                   {user.username}
                 </span>
-                <span 
+                <span
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
                     fontWeight: 500,
-                    letterSpacing: '-0.01em',
-                    color: 'rgba(12, 12, 12, 0.4)',
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.4)",
                   }}
                 >
                   {user.position || user.role || "사용자"}
@@ -162,41 +163,41 @@ export function GlobalHeader() {
   return (
     <>
       {/* Mobile Header (viewport responsive) */}
-      <header 
+      <header
         className="lg:hidden flex relative w-full bg-white"
         style={{
-          borderBottom: '1px solid #E5E7EB',
+          borderBottom: "1px solid #E5E7EB",
         }}
       >
         {/* Logo and User Profile */}
-        <div 
+        <div
           className="flex items-center justify-between w-full"
           style={{
-            height: '58px',
-            padding: '0px 20px',
+            height: "58px",
+            padding: "0px 20px",
           }}
         >
           {/* Logo */}
-          <div 
+          <div
             className="flex items-center gap-2"
             style={{
-              filter: 'drop-shadow(0px 0px 20px #DBE9F5)',
+              filter: "drop-shadow(0px 0px 20px #DBE9F5)",
             }}
           >
-            <img 
-              src={logoIcon} 
-              alt="FLOXN Logo" 
+            <img
+              src={logoIcon}
+              alt="FLOXN Logo"
               style={{
-                width: '28px',
-                height: '26px',
+                width: "28px",
+                height: "26px",
               }}
             />
             <span
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '18px',
+                fontFamily: "Pretendard",
+                fontSize: "18px",
                 fontWeight: 700,
-                color: '#0C0C0C',
+                color: "#0C0C0C",
               }}
             >
               FLOXN
@@ -209,31 +210,31 @@ export function GlobalHeader() {
             className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100/50 transition-colors"
             data-testid="button-mobile-profile"
           >
-            <div 
+            <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-[#008FED]"
-              style={{ background: 'rgba(0, 143, 237, 0.2)' }}
+              style={{ background: "rgba(0, 143, 237, 0.2)" }}
             >
               {user.name ? user.name.charAt(0) : "U"}
             </div>
             <div className="flex items-center gap-1">
-              <span 
+              <span
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
                   fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.7)',
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.7)",
                 }}
               >
                 {user.username}
               </span>
-              <span 
+              <span
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
                   fontWeight: 500,
-                  letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.4)',
+                  letterSpacing: "-0.01em",
+                  color: "rgba(12, 12, 12, 0.4)",
                 }}
               >
                 {user.position || user.role || "사용자"}
@@ -244,19 +245,15 @@ export function GlobalHeader() {
       </header>
 
       {/* Desktop Header */}
-      <header 
+      <header
         className="hidden lg:flex relative w-full h-[89px] px-8 items-center justify-between bg-white"
         style={{
-          borderBottom: '1px solid #E5E7EB',
+          borderBottom: "1px solid #E5E7EB",
         }}
       >
         {/* Logo */}
         <div className="flex items-center gap-2 w-[260px]">
-          <img 
-            src={logoIcon} 
-            alt="FLOXN Logo" 
-            className="w-6 h-6"
-          />
+          <img src={logoIcon} alt="FLOXN Logo" className="w-6 h-6" />
           <div className="text-2xl font-bold text-gray-900">FLOXN</div>
         </div>
 
@@ -277,16 +274,19 @@ export function GlobalHeader() {
                   } else if (item.name === "관리자 설정") {
                     setLocation("/admin-settings");
                   } else if (item.name === "정산 및 통계") {
-                    setLocation("/statistics");
+                    setLocation("/settlements");
                   }
                 }}
                 className="px-6 py-3 rounded-lg transition-colors"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
+                  fontFamily: "Pretendard",
+                  fontSize: "18px",
                   fontWeight: activeMenu === item.name ? 600 : 500,
-                  letterSpacing: '-0.02em',
-                  color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+                  letterSpacing: "-0.02em",
+                  color:
+                    activeMenu === item.name
+                      ? "#0C0C0C"
+                      : "rgba(12, 12, 12, 0.5)",
                 }}
                 data-testid={`menu-${item.name}`}
               >
@@ -302,32 +302,32 @@ export function GlobalHeader() {
           className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100/50 transition-colors cursor-pointer"
           data-testid="button-open-mypage"
         >
-          <div 
+          <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-[#008FED]"
-            style={{ background: 'rgba(0, 143, 237, 0.2)' }}
+            style={{ background: "rgba(0, 143, 237, 0.2)" }}
           >
             {user.name ? user.name.charAt(0) : "U"}
           </div>
           <div className="flex items-center gap-2">
-            <span 
+            <span
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '15px',
+                fontFamily: "Pretendard",
+                fontSize: "15px",
                 fontWeight: 600,
-                letterSpacing: '-0.02em',
-                color: 'rgba(12, 12, 12, 0.7)',
+                letterSpacing: "-0.02em",
+                color: "rgba(12, 12, 12, 0.7)",
               }}
               data-testid="user-info"
             >
               {user.username}
             </span>
-            <span 
+            <span
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '15px',
+                fontFamily: "Pretendard",
+                fontSize: "15px",
                 fontWeight: 500,
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.4)',
+                letterSpacing: "-0.01em",
+                color: "rgba(12, 12, 12, 0.4)",
               }}
               data-testid="user-position"
             >
