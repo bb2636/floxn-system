@@ -97,16 +97,20 @@ const formatAmount = (amount: string | number | null | undefined): string => {
 
 // SMS 자동 발송을 위한 수신자 기본 설정
 const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
-  접수완료: { partner: true, manager: true, assessorInvestigator: true },
-  현장정보입력: { partner: false, manager: true, assessorInvestigator: false },
+  접수완료: { partner: true, manager: false, assessorInvestigator: false },
+  현장정보입력: { partner: false, manager: false, assessorInvestigator: false },
   반려: { partner: true, manager: false, assessorInvestigator: false },
   승인반려: { partner: true, manager: false, assessorInvestigator: false },
   현장정보제출: { partner: false, manager: false, assessorInvestigator: true },
-  복구요청: { partner: true, manager: false, assessorInvestigator: false },
-  직접복구: { partner: true, manager: true, assessorInvestigator: false },
-  미복구: { partner: true, manager: true, assessorInvestigator: false },
-  청구자료제출: { partner: false, manager: true, assessorInvestigator: false },
-  "출동비청구(선견적)": { partner: false, manager: true, assessorInvestigator: false },
+  복구요청: { partner: false, manager: false, assessorInvestigator: false },
+  직접복구: { partner: false, manager: false, assessorInvestigator: false },
+  미복구: { partner: false, manager: false, assessorInvestigator: false },
+  청구자료제출: { partner: false, manager: false, assessorInvestigator: false },
+  "출동비청구(선견적)": {
+    partner: false,
+    manager: true,
+    assessorInvestigator: false,
+  },
   청구: { partner: false, manager: false, assessorInvestigator: true },
   "결정금액/수수료": {
     partner: true,
@@ -154,7 +158,8 @@ const getStatusColor = (status: string | null | undefined) => {
   if (status === "1차승인") return "#008FED"; // 파란색
   if (status === "복구요청(2차승인)") return "#00C853"; // 초록색
   if (status === "접수취소" || status === "반려") return "#ED1C00"; // 빨간색
-  if (status === "입금완료" || status === "정산완료" || status === "종결") return "#4CAF50"; // 완료 초록색
+  if (status === "입금완료" || status === "정산완료" || status === "종결")
+    return "#4CAF50"; // 완료 초록색
   return "rgba(12, 12, 12, 0.7)"; // 기본 회색
 };
 
@@ -203,11 +208,7 @@ export default function ComprehensiveProgress() {
     if (!allCases) return false;
 
     // 해당 케이스가 "청구" 또는 청구자료제출 관련 상태인 경우에만 체크
-    const claimStatuses = [
-      "청구",
-      "청구자료제출(복구)",
-      "출동비청구(선견적)",
-    ];
+    const claimStatuses = ["청구", "청구자료제출(복구)", "출동비청구(선견적)"];
 
     // 현재 케이스가 청구 상태가 아니면 버튼 숨김
     if (!claimStatuses.includes(caseItem.status || "")) {
@@ -466,7 +467,7 @@ export default function ComprehensiveProgress() {
         updatedCaseData = context.targetCase;
       }
 
-      // 백그라운드 refetch로 전체 데이터 동기화
+      // 백F��라운드 refetch로 전체 데이터 동기화
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
 
       // SMS 자동 발송 (Dialog 없이 바로 발송) - 추가 정보가 필요없는 상태에 사용
@@ -748,7 +749,10 @@ export default function ComprehensiveProgress() {
   // 진행상태 옵션 - CASE_STATUSES와 동일하게 + 전체 옵션
   const statusOptions = [
     { name: "전체", key: "all" },
-    ...CASE_STATUSES.map((status) => ({ name: getStatusDisplayText(status), key: status })),
+    ...CASE_STATUSES.map((status) => ({
+      name: getStatusDisplayText(status),
+      key: status,
+    })),
   ];
 
   // 진행상태 필터링 + 협력사 필터링 (모든 케이스 표시)
@@ -1591,38 +1595,46 @@ export default function ComprehensiveProgress() {
                       {caseItem.insuredName || "-"}
                     </div>
                     {(() => {
-                      const caseNumberSuffix = caseItem.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
+                      const caseNumberSuffix =
+                        caseItem.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
                       const suffixNum = parseInt(caseNumberSuffix);
                       const isInsuredCase = suffixNum === 0;
                       const isAdditionalVictim = suffixNum >= 2;
-                      
+
                       let addressText: string;
                       if (isInsuredCase) {
                         // -0 케이스 (손해방지): 피보험자 주소 + 피보험자 상세주소
-                        addressText = [
-                          caseItem.insuredAddress,
-                          caseItem.insuredAddressDetail,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || "-";
+                        addressText =
+                          [
+                            caseItem.insuredAddress,
+                            caseItem.insuredAddressDetail,
+                          ]
+                            .filter(Boolean)
+                            .join(" ") || "-";
                       } else {
                         // -1, -2, -3 등 피해세대 케이스: 피해자 주소 + 피해자 상세주소 (없으면 피보험자 주소로 대체)
                         const victimAddr = [
                           caseItem.victimAddress,
                           caseItem.victimAddressDetail,
-                        ].filter(Boolean).join(" ");
-                        
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
+
                         if (victimAddr) {
                           addressText = victimAddr;
                         } else {
                           // 피해자 주소가 없으면 피보험자 주소로 대체
-                          addressText = [
-                            caseItem.insuredAddress,
-                            caseItem.insuredAddressDetail,
-                          ].filter(Boolean).join(" ") || "-";
+                          addressText =
+                            [
+                              caseItem.insuredAddress,
+                              caseItem.insuredAddressDetail,
+                            ]
+                              .filter(Boolean)
+                              .join(" ") || "-";
                         }
                       }
-                      const fontSize = addressText.length > 40 ? "11px" : "13px";
+                      const fontSize =
+                        addressText.length > 40 ? "11px" : "13px";
                       return (
                         <div
                           style={{
@@ -1852,7 +1864,7 @@ export default function ComprehensiveProgress() {
                         caseItem.status === "종결"
                           ? "자료보기"
                           : caseItem.status === "직접복구" ||
-                            caseItem.status?.includes("직접복구")
+                              caseItem.status?.includes("직접복구")
                             ? "청구자료 입력"
                             : "현장조사 입력"}
                       </div>
@@ -2405,7 +2417,6 @@ export default function ComprehensiveProgress() {
                                   : selectedCase.assessorId || "-"}
                               </div>
                             </div>
-
                           </div>
 
                           {/* 보고서 열람 버튼 - 항상 표시 */}
