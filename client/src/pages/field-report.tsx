@@ -776,8 +776,8 @@ export default function FieldReport() {
           stage: "현장정보제출",
           recipients: {
             partner: false,
-            manager: true,
-            assessorInvestigator: false,
+            manager: false,
+            assessorInvestigator: true,
           },
         });
         toast({
