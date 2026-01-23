@@ -54,7 +54,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   청구자료제출: { partner: false, manager: false, assessorInvestigator: false },
   "출동비청구(선견적)": {
     partner: false,
-    manager: true,
+    manager: false,
     assessorInvestigator: false,
   },
   청구: { partner: false, manager: false, assessorInvestigator: true },
