@@ -2,10 +2,10 @@ import nodemailer from 'nodemailer';
 
 const SMTP_CONFIGS = {
   hiworks: {
-    host: 'smtps.hiworks.com',
-    port: 465,
+    host: process.env.SMTP_HOST || 'smtps.hiworks.com',
+    port: parseInt(process.env.SMTP_PORT || '465'),
     secure: true,
-    user: 'hjlee@floxn.co.kr',
+    user: process.env.SMTP_USER || 'master@floxn.co.kr',
   },
   gmail: {
     host: 'smtp.gmail.com',
@@ -29,10 +29,10 @@ function getSmtpConfig() {
 let transporter: nodemailer.Transporter | null = null;
 
 export function initializeEmailTransporter(): void {
-  const password = process.env.MAIL_APP_PASSWORD;
+  const password = process.env.SMTP_PASSWORD || process.env.MAIL_APP_PASSWORD;
   
   if (!password) {
-    console.warn('[Email] MAIL_APP_PASSWORD not set - email sending will be disabled');
+    console.warn('[Email] SMTP_PASSWORD not set - email sending will be disabled');
     return;
   }
 
@@ -91,9 +91,9 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
   const { provider, config } = getSmtpConfig();
   
   if (!transporter) {
-    const password = process.env.MAIL_APP_PASSWORD;
+    const password = process.env.SMTP_PASSWORD || process.env.MAIL_APP_PASSWORD;
     if (!password) {
-      return { success: false, error: 'MAIL_APP_PASSWORD not configured' };
+      return { success: false, error: 'SMTP_PASSWORD not configured' };
     }
     
     console.log('[Email] Creating transporter on-demand...');
