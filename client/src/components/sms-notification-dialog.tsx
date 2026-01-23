@@ -43,23 +43,31 @@ interface RecipientConfig {
 }
 
 const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
-  "접수완료": { partner: true, manager: true, assessorInvestigator: true },
-  "현장정보입력": { partner: false, manager: true, assessorInvestigator: false },
-  "반려": { partner: true, manager: false, assessorInvestigator: false },
-  "승인반려": { partner: true, manager: false, assessorInvestigator: false },
-  "현장정보제출": { partner: false, manager: false, assessorInvestigator: true },
-  "복구요청": { partner: true, manager: false, assessorInvestigator: false },
-  "직접복구": { partner: true, manager: true, assessorInvestigator: false },
-  "미복구": { partner: true, manager: true, assessorInvestigator: false },
-  "청구자료제출": { partner: false, manager: true, assessorInvestigator: false },
-  "출동비청구(선견적)": { partner: false, manager: true, assessorInvestigator: false },
-  "청구": { partner: false, manager: false, assessorInvestigator: true },
-  "결정금액/수수료": { partner: true, manager: false, assessorInvestigator: false },
-  "접수취소": { partner: false, manager: false, assessorInvestigator: true },
-  "입금완료": { partner: true, manager: true, assessorInvestigator: false },
-  "부분입금": { partner: true, manager: true, assessorInvestigator: false },
-  "정산완료": { partner: true, manager: true, assessorInvestigator: false },
-  "선견적요청": { partner: true, manager: true, assessorInvestigator: false },
+  접수완료: { partner: true, manager: false, assessorInvestigator: false },
+  현장정보입력: { partner: false, manager: false, assessorInvestigator: false },
+  반려: { partner: true, manager: false, assessorInvestigator: false },
+  승인반려: { partner: true, manager: false, assessorInvestigator: false },
+  현장정보제출: { partner: false, manager: false, assessorInvestigator: true },
+  복구요청: { partner: false, manager: false, assessorInvestigator: false },
+  직접복구: { partner: false, manager: false, assessorInvestigator: false },
+  미복구: { partner: false, manager: false, assessorInvestigator: false },
+  청구자료제출: { partner: false, manager: false, assessorInvestigator: false },
+  "출동비청구(선견적)": {
+    partner: false,
+    manager: true,
+    assessorInvestigator: false,
+  },
+  청구: { partner: false, manager: false, assessorInvestigator: true },
+  "결정금액/수수료": {
+    partner: true,
+    manager: false,
+    assessorInvestigator: false,
+  },
+  접수취소: { partner: false, manager: false, assessorInvestigator: true },
+  입금완료: { partner: true, manager: true, assessorInvestigator: false },
+  부분입금: { partner: true, manager: true, assessorInvestigator: false },
+  정산완료: { partner: true, manager: true, assessorInvestigator: false },
+  선견적요청: { partner: true, manager: true, assessorInvestigator: false },
 };
 
 interface SmsNotificationDialogProps {
@@ -89,13 +97,17 @@ export function SmsNotificationDialog({
 }: SmsNotificationDialogProps) {
   const { toast } = useToast();
   const [recipients, setRecipients] = useState<RecipientConfig>(
-    STAGE_RECIPIENT_DEFAULTS[stage]
+    STAGE_RECIPIENT_DEFAULTS[stage],
   );
   const [additionalMessage, setAdditionalMessage] = useState("");
   const [cancelReason, setCancelReason] = useState(initialCancelReason);
-  const [recoveryAmount, setRecoveryAmount] = useState<number | undefined>(initialRecoveryAmount);
+  const [recoveryAmount, setRecoveryAmount] = useState<number | undefined>(
+    initialRecoveryAmount,
+  );
   const [feeRate, setFeeRate] = useState<number | undefined>(initialFeeRate);
-  const [paymentAmount, setPaymentAmount] = useState<number | undefined>(initialPaymentAmount);
+  const [paymentAmount, setPaymentAmount] = useState<number | undefined>(
+    initialPaymentAmount,
+  );
 
   useEffect(() => {
     if (open) {
@@ -106,21 +118,37 @@ export function SmsNotificationDialog({
       setFeeRate(initialFeeRate);
       setPaymentAmount(initialPaymentAmount);
     }
-  }, [open, stage, initialCancelReason, initialRecoveryAmount, initialFeeRate, initialPaymentAmount]);
+  }, [
+    open,
+    stage,
+    initialCancelReason,
+    initialRecoveryAmount,
+    initialFeeRate,
+    initialPaymentAmount,
+  ]);
 
   const sendNotificationMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/send-stage-notification", {
-        caseId: caseData.id,
-        stage,
-        recipients,
-        additionalMessage: additionalMessage || undefined,
-        cancelReason: stage === "접수취소" ? cancelReason : undefined,
-        recoveryAmount: stage === "결정금액/수수료" ? recoveryAmount : undefined,
-        feeRate: stage === "결정금액/수수료" ? feeRate : undefined,
-        paymentAmount: stage === "결정금액/수수료" ? paymentAmount : undefined,
-        previousStatus: (stage === "반려" || stage === "승인반려") ? previousStatus : undefined,
-      });
+      const response = await apiRequest(
+        "POST",
+        "/api/send-stage-notification",
+        {
+          caseId: caseData.id,
+          stage,
+          recipients,
+          additionalMessage: additionalMessage || undefined,
+          cancelReason: stage === "접수취소" ? cancelReason : undefined,
+          recoveryAmount:
+            stage === "결정금액/수수료" ? recoveryAmount : undefined,
+          feeRate: stage === "결정금액/수수료" ? feeRate : undefined,
+          paymentAmount:
+            stage === "결정금액/수수료" ? paymentAmount : undefined,
+          previousStatus:
+            stage === "반려" || stage === "승인반려"
+              ? previousStatus
+              : undefined,
+        },
+      );
       return response;
     },
     onSuccess: (data: any) => {
@@ -141,7 +169,11 @@ export function SmsNotificationDialog({
   });
 
   const handleSend = () => {
-    if (!recipients.partner && !recipients.manager && !recipients.assessorInvestigator) {
+    if (
+      !recipients.partner &&
+      !recipients.manager &&
+      !recipients.assessorInvestigator
+    ) {
       toast({
         title: "수신자 선택 필요",
         description: "최소 1명의 수신자를 선택해주세요.",
@@ -154,8 +186,10 @@ export function SmsNotificationDialog({
 
   const getStageDisplayName = () => {
     switch (stage) {
-      case "결정금액/수수료": return "결정금액 및 수수료 안내";
-      default: return stage;
+      case "결정금액/수수료":
+        return "결정금액 및 수수료 안내";
+      default:
+        return stage;
     }
   };
 
@@ -172,61 +206,80 @@ export function SmsNotificationDialog({
     const caseNumber = caseData.caseNumber || "";
     const suffixMatch = caseNumber.match(/-(\d+)$/);
     const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
-    
+
     if (suffix === 0) {
       // 손해방지(-0): 피보험자 주소 + 상세주소
-      return [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+      return (
+        [caseData.insuredAddress, caseData.insuredAddressDetail]
+          .filter(Boolean)
+          .join(" ") || "-"
+      );
     } else {
       // 피해세대(-1, -2, ...): 피해자 주소 + 상세주소 (없으면 피보험자 주소로 대체)
-      const victimAddr = [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(" ");
+      const victimAddr = [caseData.victimAddress, caseData.victimAddressDetail]
+        .filter(Boolean)
+        .join(" ");
       if (victimAddr) {
         return victimAddr;
       }
-      return [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-";
+      return (
+        [caseData.insuredAddress, caseData.insuredAddressDetail]
+          .filter(Boolean)
+          .join(" ") || "-"
+      );
     }
   };
 
   const getMessagePreview = () => {
     if (stage === "접수완료") {
       const lines: string[] = [];
-      
+
       if (caseData.caseNumber) lines.push(`접수번호 : ${caseData.caseNumber}`);
-      if (caseData.insuranceCompany) lines.push(`보험사 : ${caseData.insuranceCompany}`);
-      if (caseData.insurancePolicyNo) lines.push(`증권번호 : ${caseData.insurancePolicyNo}`);
-      if (caseData.insuranceAccidentNo) lines.push(`사고번호 : ${caseData.insuranceAccidentNo}`);
-      
+      if (caseData.insuranceCompany)
+        lines.push(`보험사 : ${caseData.insuranceCompany}`);
+      if (caseData.insurancePolicyNo)
+        lines.push(`증권번호 : ${caseData.insurancePolicyNo}`);
+      if (caseData.insuranceAccidentNo)
+        lines.push(`사고번호 : ${caseData.insuranceAccidentNo}`);
+
       // 피보험자 라인: 이름 또는 연락처가 있을 때만 표시
       if (caseData.insuredName || caseData.insuredContact) {
         const insuredParts = [];
         if (caseData.insuredName) insuredParts.push(caseData.insuredName);
-        if (caseData.insuredContact) insuredParts.push(`연락처 ${caseData.insuredContact}`);
+        if (caseData.insuredContact)
+          insuredParts.push(`연락처 ${caseData.insuredContact}`);
         lines.push(`피보험자 : ${insuredParts.join("  ")}`);
       }
-      
+
       // 피해자 라인: 이름 또는 연락처가 있을 때만 표시
       if (caseData.victimName || caseData.victimContact) {
         const victimParts = [];
         if (caseData.victimName) victimParts.push(caseData.victimName);
-        if (caseData.victimContact) victimParts.push(`연락처 ${caseData.victimContact}`);
+        if (caseData.victimContact)
+          victimParts.push(`연락처 ${caseData.victimContact}`);
         lines.push(`피해자 : ${victimParts.join("  ")}`);
       }
-      
+
       // 심사자 라인: 이름과 연락처가 있을 때만 표시 (assessorTeam 또는 assessorId 사용)
       const assessorName = caseData.assessorTeam || caseData.assessorId;
       if (assessorName && caseData.assessorContact) {
-        lines.push(`심사자 : ${assessorName}  연락처 ${caseData.assessorContact}`);
+        lines.push(
+          `심사자 : ${assessorName}  연락처 ${caseData.assessorContact}`,
+        );
       }
-      
+
       // 조사자 라인: 이름과 연락처가 있을 때만 표시
       if (caseData.investigatorTeamName && caseData.investigatorContact) {
-        lines.push(`조사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`);
+        lines.push(
+          `조사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`,
+        );
       }
-      
+
       lines.push(`사고장소 : ${getFullAddress()}`);
-      
+
       const requestScope = getRequestScope();
       if (requestScope !== "기타") lines.push(`의뢰범위 : ${requestScope}`);
-      
+
       return lines.join("\n");
     } else if (stage === "접수취소") {
       return `접수번호 : ${caseData.caseNumber || "-"}
@@ -249,7 +302,9 @@ export function SmsNotificationDialog({
 수수료 : 최종금액의 ${feeRate || "-"}%
 지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
     } else if (stage === "반려" || stage === "승인반려") {
-      const rejectionStatus = previousStatus ? `${previousStatus}에서 반려` : "반려";
+      const rejectionStatus = previousStatus
+        ? `${previousStatus}에서 반려`
+        : "반려";
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
 증권번호 : ${caseData.insurancePolicyNo || "-"}
@@ -280,7 +335,9 @@ export function SmsNotificationDialog({
 
         <div className="space-y-4">
           <div className="bg-muted/50 p-4 rounded-md">
-            <Label className="text-sm font-medium mb-2 block">메시지 미리보기</Label>
+            <Label className="text-sm font-medium mb-2 block">
+              메시지 미리보기
+            </Label>
             <pre className="text-xs whitespace-pre-wrap font-mono bg-background p-3 rounded border">
               &lt;{getStageDisplayName()} 알림&gt;{"\n\n"}
               {getMessagePreview()}
@@ -308,36 +365,48 @@ export function SmsNotificationDialog({
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="recoveryAmount" className="text-sm">복구금액</Label>
+                  <Label htmlFor="recoveryAmount" className="text-sm">
+                    복구금액
+                  </Label>
                   <Input
                     id="recoveryAmount"
                     type="number"
                     placeholder="0"
                     value={recoveryAmount || ""}
-                    onChange={(e) => setRecoveryAmount(Number(e.target.value) || undefined)}
+                    onChange={(e) =>
+                      setRecoveryAmount(Number(e.target.value) || undefined)
+                    }
                     data-testid="input-recovery-amount"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="feeRate" className="text-sm">수수료율 (%)</Label>
+                  <Label htmlFor="feeRate" className="text-sm">
+                    수수료율 (%)
+                  </Label>
                   <Input
                     id="feeRate"
                     type="number"
                     placeholder="0"
                     value={feeRate || ""}
-                    onChange={(e) => setFeeRate(Number(e.target.value) || undefined)}
+                    onChange={(e) =>
+                      setFeeRate(Number(e.target.value) || undefined)
+                    }
                     data-testid="input-fee-rate"
                   />
                 </div>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="paymentAmount" className="text-sm">지급금액</Label>
+                <Label htmlFor="paymentAmount" className="text-sm">
+                  지급금액
+                </Label>
                 <Input
                   id="paymentAmount"
                   type="number"
                   placeholder="0"
                   value={paymentAmount || ""}
-                  onChange={(e) => setPaymentAmount(Number(e.target.value) || undefined)}
+                  onChange={(e) =>
+                    setPaymentAmount(Number(e.target.value) || undefined)
+                  }
                   data-testid="input-payment-amount"
                 />
               </div>
@@ -407,7 +476,10 @@ export function SmsNotificationDialog({
                   id="assessorInvestigator"
                   checked={recipients.assessorInvestigator}
                   onCheckedChange={(checked) =>
-                    setRecipients((prev) => ({ ...prev, assessorInvestigator: !!checked }))
+                    setRecipients((prev) => ({
+                      ...prev,
+                      assessorInvestigator: !!checked,
+                    }))
                   }
                   data-testid="checkbox-assessor-investigator"
                 />
