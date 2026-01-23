@@ -99,10 +99,10 @@ const formatAmount = (amount: string | number | null | undefined): string => {
 const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   접수완료: { partner: true, manager: false, assessorInvestigator: false },
   현장정보입력: { partner: false, manager: false, assessorInvestigator: false },
-  반려: { partner: true, manager: false, assessorInvestigator: false },
-  승인반려: { partner: true, manager: false, assessorInvestigator: false },
+  반려: { partner: false, manager: false, assessorInvestigator: false },
+  승인반려: { partner: false, manager: false, assessorInvestigator: false },
   현장정보제출: { partner: false, manager: false, assessorInvestigator: true },
-  복구요청: { partner: false, manager: false, assessorInvestigator: false },
+  복구요청: { partner: true, manager: false, assessorInvestigator: false },
   직접복구: { partner: false, manager: false, assessorInvestigator: false },
   미복구: { partner: false, manager: false, assessorInvestigator: false },
   청구자료제출: { partner: false, manager: false, assessorInvestigator: false },
@@ -467,7 +467,7 @@ export default function ComprehensiveProgress() {
         updatedCaseData = context.targetCase;
       }
 
-      // 백F��라운드 refetch로 전체 데이터 동기화
+      // ro�F��라운드 refetch로 전체 데이터 동기화
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
 
       // SMS 자동 발송 (Dialog 없이 바로 발송) - 추가 정보가 필요없는 상태에 사용
@@ -478,12 +478,6 @@ export default function ComprehensiveProgress() {
       ) => {
         try {
           const recipients = STAGE_RECIPIENT_DEFAULTS[stage];
-          
-          // recipients가 모두 false인 경우 API 호출하지 않음
-          if (!recipients.partner && !recipients.manager && !recipients.assessorInvestigator) {
-            return;
-          }
-          
           const payload: {
             caseId: string;
             stage: NotificationStage;
