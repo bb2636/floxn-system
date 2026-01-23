@@ -1692,7 +1692,7 @@ export default function FieldReport() {
               data-testid="textarea-review-comment"
               value={reviewComment}
               onChange={(e) => setReviewComment(e.target.value.slice(0, 800))}
-              placeholder="검<�� 의견을 입력해주세요"
+              placeholder="검토 의견을 입력해주세요"
               className="resize-none"
               rows={4}
               style={{
