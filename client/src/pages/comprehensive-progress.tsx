@@ -478,6 +478,12 @@ export default function ComprehensiveProgress() {
       ) => {
         try {
           const recipients = STAGE_RECIPIENT_DEFAULTS[stage];
+          
+          // recipients가 모두 false인 경우 API 호출하지 않음
+          if (!recipients.partner && !recipients.manager && !recipients.assessorInvestigator) {
+            return;
+          }
+          
           const payload: {
             caseId: string;
             stage: NotificationStage;
