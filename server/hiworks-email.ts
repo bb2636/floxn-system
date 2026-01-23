@@ -141,8 +141,9 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
       console.log('[Email] ==============================================');
     }
     
+    const fromAddress = process.env.SMTP_FROM || config.user;
     const mailOptions: nodemailer.SendMailOptions = {
-      from: `"FLOXN" <${config.user}>`,
+      from: `"FLOXN" <${fromAddress}>`,
       to: options.to,
       subject: options.subject,
       text: options.text,
