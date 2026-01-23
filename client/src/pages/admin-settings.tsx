@@ -6879,6 +6879,7 @@ export default function AdminSettings() {
                             <option value="카카오뱅크">카카오뱅크</option>
                             <option value="토스뱅크">토스뱅크</option>
                             <option value="MG새마을금고">MG새마을금고</option>
+                            <option value="광주은행">광주은행</option>
                           </select>
                           <ChevronDown
                             size={22}
