@@ -933,6 +933,14 @@ export default function FieldEstimate() {
         if (matchingCatalogItems.length > 0) {
           // 일위대가DB에서 매칭된 모든 노임항목으로 행 생성
           matchingCatalogItems.forEach((catalogItem, idx) => {
+            // 삭제된 노무비인지 체크 (sourceAreaRowId 기반)
+            const detailItem = catalogItem.노임항목 || '';
+            const deletionKey = makeLinkedLaborDeletionKey(sourceAreaRowId, workType, workName, detailItem);
+            if (deletedLinkedLaborKeys.has(deletionKey)) {
+              console.log('SKIP_SYNC_LABOR_DELETED', { sourceAreaRowId, category: workType, workName, detailItem });
+              return; // 삭제된 행은 재생성하지 않음
+            }
+            
             // 기준작업량 가져오기
             const standardWorkQty = catalogItem.기준작업량 || 0;
             // 수량 계산: 복구면적 ÷ 기준작업량
@@ -980,16 +988,22 @@ export default function FieldEstimate() {
             });
           });
         } else {
-          // 일위대가DB에 없으면 빈 행 생성 (수동 입력용)
-          newLaborRows.push(createBlankLaborRow({
-            sourceAreaRowId,
-            isLinkedFromRecovery: true,
-            place: combinedPlace,
-            position: combinedPosition,
-            category: workType,
-            workName: workName,
-            damageArea: totalArea,
-          }));
+          // 삭제된 노무비인지 체크 (빈 행용)
+          const deletionKey = makeLinkedLaborDeletionKey(sourceAreaRowId, workType, workName, '');
+          if (deletedLinkedLaborKeys.has(deletionKey)) {
+            console.log('SKIP_SYNC_LABOR_BLANK_DELETED', { sourceAreaRowId, category: workType, workName });
+          } else {
+            // 일위대가DB에 없으면 빈 행 생성 (수동 입력용)
+            newLaborRows.push(createBlankLaborRow({
+              sourceAreaRowId,
+              isLinkedFromRecovery: true,
+              place: combinedPlace,
+              position: combinedPosition,
+              category: workType,
+              workName: workName,
+              damageArea: totalArea,
+            }));
+          }
         }
         
         // 철거공사는 별도 Reconcile useEffect에서 자동 생성됨 (중복 방지)
