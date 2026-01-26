@@ -3130,7 +3130,7 @@ async function renderEstimatePage(
     { text: "적용단가(원)", width: 65, isHeader: true, align: "center" },
     { text: "수량(인)", width: 45, isHeader: true, align: "center" },
     { text: "합계(원)", width: 70, isHeader: true, align: "center" },
-    { text: "경비(원)", width: 50, isHeader: true, align: "center" },
+    { text: "경비 여부", width: 50, isHeader: true, align: "center" },
     { text: "비고", width: 55, isHeader: true, align: "center" },
   ];
 
@@ -3195,9 +3195,9 @@ async function renderEstimatePage(
         },
         { text: formatNumber(amount), width: 70, align: "right" },
         {
-          text: expense > 0 ? formatNumber(expense) : "-",
+          text: row.includeInEstimate ? "부" : "여",
           width: 50,
-          align: "right",
+          align: "center",
         },
         { text: row.request || row.note || "-", width: 55, align: "left" },
       ]);
