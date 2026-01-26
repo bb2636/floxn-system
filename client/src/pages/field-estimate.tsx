@@ -2045,8 +2045,8 @@ export default function FieldEstimate() {
     // [증거 3] RECONCILE_START - Reconcile 시작 시
     console.log('RECONCILE_START', { 
       exclusionsLoaded: true, 
-      excludedCount: deletedDemolitionKeys.size, 
-      sampleExcluded: Array.from(deletedDemolitionKeys).slice(0, 5) 
+      excludedCount: deletedLinkedLaborKeys.size, 
+      sampleExcluded: Array.from(deletedLinkedLaborKeys).slice(0, 5) 
     });
     
     // DEMOLITION_WORK_NAMES와 matchDemolitionWorkName은 컴포넌트 레벨에 정의됨 (중복 제거)
@@ -2174,10 +2174,19 @@ export default function FieldEstimate() {
       if (existingDemolitionMap.has(entry.key)) {
         return;
       }
-      // 수동 삭제된 철거공사 행은 재생성하지 않음
-      if (deletedDemolitionKeys.has(entry.key)) {
+      // 수동 삭제된 철거공사 행은 재생성하지 않음 (sourceRowId 기반 체크)
+      // 모든 sourceRowIds가 삭제 목록에 있으면 건너뛰기, 하나라도 없으면 생성
+      const allSourceRowsDeleted = entry.sourceRowIds.every(srcId => {
+        const deletionKey = makeLinkedLaborDeletionKey(srcId, '철거공사', entry.matchedWorkName, entry.detailItem);
+        return deletedLinkedLaborKeys.has(deletionKey);
+      });
+      if (allSourceRowsDeleted && entry.sourceRowIds.length > 0) {
         // [증거 3] SKIP_CREATE_DEMOLITION_LABOR - 삭제된 키로 인해 생성 스킵
-        console.log('SKIP_CREATE_DEMOLITION_LABOR', { deletion_key: entry.key });
+        console.log('SKIP_CREATE_DEMOLITION_LABOR', { 
+          sourceRowIds: entry.sourceRowIds, 
+          matchedWorkName: entry.matchedWorkName, 
+          detailItem: entry.detailItem 
+        });
         return;
       }
       missingEntries.push(entry);
@@ -2308,7 +2317,7 @@ export default function FieldEstimate() {
         return [...updatedRows, ...newDemolitionRows];
       });
     });
-  }, [rows, laborCostRows, mergedIlwidaegaCatalog, deletedDemolitionKeys, exclusionsLoaded, laborRateTiers]); // laborCostRows, 노임단가 비율, exclusionsLoaded 포함
+  }, [rows, laborCostRows, mergedIlwidaegaCatalog, deletedLinkedLaborKeys, exclusionsLoaded, laborRateTiers]); // laborCostRows, 노임단가 비율, exclusionsLoaded 포함
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
