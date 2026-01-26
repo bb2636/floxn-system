@@ -788,11 +788,50 @@ export default function FieldEstimate() {
     
     laborCostRows.forEach(row => {
       // 모든 isLinkedFromRecovery 행에 대해 삭제 키 추적 (철거공사 + 다른 공사명)
-      if (selectedLaborRows.has(row.id) && row.isLinkedFromRecovery && row.sourceAreaRowId) {
-        // sourceAreaRowId 포함 키 형식: sourceAreaRowId|category|workName|detailItem
-        const key = makeLinkedLaborDeletionKey(row.sourceAreaRowId, row.category || '', row.workName || '', row.detailItem || '');
-        newDeletedKeys.add(key);
-        keysToSave.push(key);
+      if (selectedLaborRows.has(row.id) && row.isLinkedFromRecovery) {
+        const processedKeys = new Set<string>();
+        
+        // 철거공사인 경우: sourceAreaRowId에서 ID 추출 (demolition-row1,row2 형식)
+        if (row.category === '철거공사' && row.sourceAreaRowId) {
+          // sourceAreaRowId = "demolition-row1Id,row2Id,row3Id"
+          const rawId = row.sourceAreaRowId.replace('demolition-', '');
+          const sourceRowIds = rawId.split(',').filter(Boolean);
+          
+          sourceRowIds.forEach(srcId => {
+            const key = makeLinkedLaborDeletionKey(srcId, row.category || '', row.workName || '', row.detailItem || '');
+            if (!processedKeys.has(key)) {
+              processedKeys.add(key);
+              newDeletedKeys.add(key);
+              keysToSave.push(key);
+            }
+          });
+        } else {
+          // 일반 노무비: 복구면적 행에서 같은 workType/workName 찾기
+          const relatedAreaRows = rows.filter(areaRow => 
+            normalizeForMatch(areaRow.workType || '') === normalizeForMatch(row.category || '') &&
+            normalizeForMatch(areaRow.workName || '') === normalizeForMatch(row.workName || '')
+          );
+          
+          // 관련 복구면적 행들의 ID로 삭제 키 저장
+          relatedAreaRows.forEach(areaRow => {
+            const key = makeLinkedLaborDeletionKey(areaRow.id, row.category || '', row.workName || '', row.detailItem || '');
+            if (!processedKeys.has(key)) {
+              processedKeys.add(key);
+              newDeletedKeys.add(key);
+              keysToSave.push(key);
+            }
+          });
+          
+          // 저장된 sourceAreaRowId도 처리 (관련 복구면적 행에 없는 경우 대비)
+          if (row.sourceAreaRowId) {
+            const key = makeLinkedLaborDeletionKey(row.sourceAreaRowId, row.category || '', row.workName || '', row.detailItem || '');
+            if (!processedKeys.has(key)) {
+              processedKeys.add(key);
+              newDeletedKeys.add(key);
+              keysToSave.push(key);
+            }
+          }
+        }
       }
     });
     
@@ -833,16 +872,57 @@ export default function FieldEstimate() {
     
     deletedRows.forEach(row => {
       // 모든 isLinkedFromRecovery 행에 대해 삭제 키 추적 (철거공사 + 다른 공사명)
-      if (row.isLinkedFromRecovery && row.sourceAreaRowId) {
-        // sourceAreaRowId 포함 키 형식: sourceAreaRowId|category|workName|detailItem
-        const key = makeLinkedLaborDeletionKey(row.sourceAreaRowId, row.category || '', row.workName || '', row.detailItem || '');
-        newDeletedKeys.add(key);
-        keysToSave.push(key);
-        // [증거 1] SAVE_EXCLUSION_KEY - 삭제 클릭 시
+      if (row.isLinkedFromRecovery) {
+        const processedKeys = new Set<string>();
+        
+        // 철거공사인 경우: sourceAreaRowId에서 ID 추출 (demolition-row1,row2 형식)
+        if (row.category === '철거공사' && row.sourceAreaRowId) {
+          // sourceAreaRowId = "demolition-row1Id,row2Id,row3Id"
+          const rawId = row.sourceAreaRowId.replace('demolition-', '');
+          const sourceRowIds = rawId.split(',').filter(Boolean);
+          
+          sourceRowIds.forEach(srcId => {
+            const key = makeLinkedLaborDeletionKey(srcId, row.category || '', row.workName || '', row.detailItem || '');
+            if (!processedKeys.has(key)) {
+              processedKeys.add(key);
+              newDeletedKeys.add(key);
+              keysToSave.push(key);
+            }
+          });
+        } else {
+          // 일반 노무비: 복구면적 행에서 같은 workType/workName 찾기
+          const relatedAreaRows = rows.filter(areaRow => 
+            normalizeForMatch(areaRow.workType || '') === normalizeForMatch(row.category || '') &&
+            normalizeForMatch(areaRow.workName || '') === normalizeForMatch(row.workName || '')
+          );
+          
+          // 관련 복구면적 행들의 ID로 삭제 키 저장
+          relatedAreaRows.forEach(areaRow => {
+            const key = makeLinkedLaborDeletionKey(areaRow.id, row.category || '', row.workName || '', row.detailItem || '');
+            if (!processedKeys.has(key)) {
+              processedKeys.add(key);
+              newDeletedKeys.add(key);
+              keysToSave.push(key);
+            }
+          });
+          
+          // 저장된 sourceAreaRowId도 처리 (관련 복구면적 행에 없는 경우 대비)
+          if (row.sourceAreaRowId) {
+            const key = makeLinkedLaborDeletionKey(row.sourceAreaRowId, row.category || '', row.workName || '', row.detailItem || '');
+            if (!processedKeys.has(key)) {
+              processedKeys.add(key);
+              newDeletedKeys.add(key);
+              keysToSave.push(key);
+            }
+          }
+        }
+        
+        // [증거 1] SAVE_EXCLUSION_KEY - 삭제 클릭 시 (모든 관련 키 로깅)
         console.log('SAVE_EXCLUSION_KEY', { 
           caseId: currentCaseId, 
           exclusion_type: 'linked_labor_deletion', 
-          deletion_key: key 
+          deletion_keys: Array.from(processedKeys),
+          count: processedKeys.size
         });
       }
     });
@@ -933,12 +1013,17 @@ export default function FieldEstimate() {
         if (matchingCatalogItems.length > 0) {
           // 일위대가DB에서 매칭된 모든 노임항목으로 행 생성
           matchingCatalogItems.forEach((catalogItem, idx) => {
-            // 삭제된 노무비인지 체크 (sourceAreaRowId 기반)
+            // 삭제된 노무비인지 체크 - ALL sourceAreaRowIds가 삭제되어야만 skip
+            // 여러 복구면적 행이 merge된 경우, 모든 행이 삭제되어야만 재생성 안 함
             const detailItem = catalogItem.노임항목 || '';
-            const deletionKey = makeLinkedLaborDeletionKey(sourceAreaRowId, workType, workName, detailItem);
-            if (deletedLinkedLaborKeys.has(deletionKey)) {
-              console.log('SKIP_SYNC_LABOR_DELETED', { sourceAreaRowId, category: workType, workName, detailItem });
-              return; // 삭제된 행은 재생성하지 않음
+            const allSourceAreaRowIds = workNameData.areaRows.map(r => r.id);
+            const allDeleted = allSourceAreaRowIds.length > 0 && allSourceAreaRowIds.every(areaRowId => {
+              const key = makeLinkedLaborDeletionKey(areaRowId, workType, workName, detailItem);
+              return deletedLinkedLaborKeys.has(key);
+            });
+            if (allDeleted) {
+              console.log('SKIP_SYNC_LABOR_DELETED', { sourceAreaRowIds: allSourceAreaRowIds, category: workType, workName, detailItem });
+              return; // 모든 원본 행이 삭제된 경우에만 재생성하지 않음
             }
             
             // 기준작업량 가져오기
@@ -988,10 +1073,14 @@ export default function FieldEstimate() {
             });
           });
         } else {
-          // 삭제된 노무비인지 체크 (빈 행용)
-          const deletionKey = makeLinkedLaborDeletionKey(sourceAreaRowId, workType, workName, '');
-          if (deletedLinkedLaborKeys.has(deletionKey)) {
-            console.log('SKIP_SYNC_LABOR_BLANK_DELETED', { sourceAreaRowId, category: workType, workName });
+          // 삭제된 노무비인지 체크 (빈 행용) - ALL sourceAreaRowIds가 삭제되어야만 skip
+          const allSourceAreaRowIds = workNameData.areaRows.map(r => r.id);
+          const allDeleted = allSourceAreaRowIds.length > 0 && allSourceAreaRowIds.every(areaRowId => {
+            const key = makeLinkedLaborDeletionKey(areaRowId, workType, workName, '');
+            return deletedLinkedLaborKeys.has(key);
+          });
+          if (allDeleted) {
+            console.log('SKIP_SYNC_LABOR_BLANK_DELETED', { sourceAreaRowIds: allSourceAreaRowIds, category: workType, workName });
           } else {
             // 일위대가DB에 없으면 빈 행 생성 (수동 입력용)
             newLaborRows.push(createBlankLaborRow({
