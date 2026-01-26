@@ -244,9 +244,9 @@ export default function FieldEstimate() {
     let hasDuplicates = false;
     
     for (const row of linkedRows) {
-      // 철거공사/가설공사 행은 sourceAreaRowId를 포함하여 각 복구면적 행별로 개별 관리
-      // 이렇게 하면 같은 공사명이라도 다른 복구면적 행에서 생성된 경우 중복으로 간주하지 않음
-      const needsSourceRowKey = (row.category === '철거공사' || row.category === '가설공사') && row.sourceAreaRowId;
+      // 철거공사 행만 sourceAreaRowId를 포함하여 각 복구면적 행별로 개별 관리
+      // 가설공사(건축물현장정리)는 다른 공사명처럼 면적 합산되어야 하므로 제외
+      const needsSourceRowKey = row.category === '철거공사' && row.sourceAreaRowId;
       const key = needsSourceRowKey
         ? `${row.sourceAreaRowId}|${row.category}|${row.workName}|${row.detailItem}`
         : `${row.category}|${row.workName}|${row.detailItem}`;
@@ -268,8 +268,8 @@ export default function FieldEstimate() {
     const deduplicatedRows = laborCostRows.filter(row => {
       if (!row.isLinkedFromRecovery) return true; // 수동 행은 유지
       
-      // 철거공사/가설공사 행은 sourceAreaRowId 포함 키 사용
-      const needsSourceRowKey = (row.category === '철거공사' || row.category === '가설공사') && row.sourceAreaRowId;
+      // 철거공사 행만 sourceAreaRowId 포함 키 사용 (가설공사는 합산되어야 하므로 제외)
+      const needsSourceRowKey = row.category === '철거공사' && row.sourceAreaRowId;
       const key = needsSourceRowKey
         ? `${row.sourceAreaRowId}|${row.category}|${row.workName}|${row.detailItem}`
         : `${row.category}|${row.workName}|${row.detailItem}`;
