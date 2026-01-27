@@ -3828,9 +3828,12 @@ export default function FieldReport() {
                       const containerWidth = 800;
                       const containerHeight = 600;
 
-                      // 콘텐츠 크기 계산 (패딩 추가)
-                      const contentWidth = maxX - Math.min(minX, 0) + 60;
-                      const contentHeight = maxY - Math.min(minY, 0) + 40;
+                      // 콘텐츠 크기 계산 (패딩 추가) - minX/minY 기준으로 정규화
+                      const contentWidth = maxX - minX + 60;
+                      const contentHeight = maxY - minY + 40;
+                      // 모든 요소 좌표에서 뺄 오프셋 (0 기준 정규화용)
+                      const normalizeX = minX;
+                      const normalizeY = minY;
 
                       // 스케일 계산 (전체가 보이도록 축소)
                       const scaleX = containerWidth / contentWidth;
@@ -3875,8 +3878,8 @@ export default function FieldReport() {
                                 alt={`도면 이미지 ${img.id}`}
                                 style={{
                                   position: "absolute",
-                                  left: `${img.x * DISPLAY_SCALE}px`,
-                                  top: `${img.y * DISPLAY_SCALE}px`,
+                                  left: `${img.x * DISPLAY_SCALE - normalizeX}px`,
+                                  top: `${img.y * DISPLAY_SCALE - normalizeY}px`,
                                   width: `${img.width * DISPLAY_SCALE}px`,
                                   height: `${img.height * DISPLAY_SCALE}px`,
                                   userSelect: "none",
@@ -3891,8 +3894,8 @@ export default function FieldReport() {
                                 key={rect.id}
                                 style={{
                                   position: "absolute",
-                                  left: `${rect.x * DISPLAY_SCALE}px`,
-                                  top: `${rect.y * DISPLAY_SCALE}px`,
+                                  left: `${rect.x * DISPLAY_SCALE - normalizeX}px`,
+                                  top: `${rect.y * DISPLAY_SCALE - normalizeY}px`,
                                   width: `${rect.width * DISPLAY_SCALE}px`,
                                   height: `${rect.height * DISPLAY_SCALE}px`,
                                   border: "1px solid #0C0C0C",
@@ -3960,8 +3963,8 @@ export default function FieldReport() {
                                 key={area.id}
                                 style={{
                                   position: "absolute",
-                                  left: `${area.x * DISPLAY_SCALE}px`,
-                                  top: `${area.y * DISPLAY_SCALE}px`,
+                                  left: `${area.x * DISPLAY_SCALE - normalizeX}px`,
+                                  top: `${area.y * DISPLAY_SCALE - normalizeY}px`,
                                   width: `${area.width * DISPLAY_SCALE}px`,
                                   height: `${area.height * DISPLAY_SCALE}px`,
                                   border: "2px dashed #9E9E9E",
@@ -3978,8 +3981,8 @@ export default function FieldReport() {
                                 key={marker.id}
                                 style={{
                                   position: "absolute",
-                                  left: `${marker.x * DISPLAY_SCALE}px`,
-                                  top: `${marker.y * DISPLAY_SCALE}px`,
+                                  left: `${marker.x * DISPLAY_SCALE - normalizeX}px`,
+                                  top: `${marker.y * DISPLAY_SCALE - normalizeY}px`,
                                   width: "24px",
                                   height: "24px",
                                   transform: `translate(-50%, -50%) scale(${1 / fitScale})`,
