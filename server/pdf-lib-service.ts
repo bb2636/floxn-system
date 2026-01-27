@@ -1746,79 +1746,105 @@ async function renderDrawingPage(
         color: { r: 0.6, g: 0.6, b: 0.6 },
       });
     }
-  } else if (
-    drawingData &&
-    drawingData.uploadedImages &&
-    drawingData.uploadedImages.length > 0
-  ) {
-    // canvasImage가 없으면 기존 방식으로 첫 번째 업로드 이미지 사용
-    console.log("[pdf-lib] 분기: uploadedImages 사용 (첫 번째 업로드 이미지)");
+  } else if (drawingData && (drawingData as any).canvasImage) {
+    // Fallback: 첨부 이미지 없이 사각형만 그린 경우 canvasImage 사용 (기존 크롭 방식)
+    console.log("[pdf-lib] 분기: canvasImage fallback 사용 (사각형만 있는 도면)");
+    const canvasImage = (drawingData as any).canvasImage;
     try {
-      const mainImage = drawingData.uploadedImages[0];
-      if (mainImage.src) {
-        let imageData: Buffer;
+      let imageData: Buffer;
 
-        if (mainImage.src.startsWith("data:image/")) {
-          const base64Data = mainImage.src.split(",")[1];
-          imageData = Buffer.from(base64Data, "base64");
-        } else {
-          imageData = Buffer.from(mainImage.src, "base64");
-        }
-
-        // Determine image type and embed
-        let embeddedImage;
-        const srcLower = mainImage.src.toLowerCase();
-        if (srcLower.includes("image/png") || srcLower.includes(".png")) {
-          embeddedImage = await pdfDoc.embedPng(imageData);
-        } else {
-          // Convert to JPEG using sharp if needed
-          const processedBuffer = await sharp(imageData)
-            .jpeg({ quality: 85 })
-            .toBuffer();
-          embeddedImage = await pdfDoc.embedJpg(processedBuffer);
-        }
-
-        const imgDims = embeddedImage.scale(1);
-        const maxWidth = drawingAreaWidth - 5; // 패딩 더 축소
-        const maxHeight = drawingAreaHeight - 5; // 패딩 더 축소
-
-        const scaleX = maxWidth / imgDims.width;
-        const scaleY = maxHeight / imgDims.height;
-        // 영역에 맞게 최대한 확대하되, 5배까지 확대 (원본이 너무 작을 경우 대비)
-        const baseScale = Math.min(scaleX, scaleY);
-        const scale = Math.min(baseScale, 5.0); //    대 5배까지 확대
-
-        // 도면 크기를 영역의 95% 이상 채우도록 보장
-        let drawWidth = imgDims.width * scale;
-        let drawHeight = imgDims.height * scale;
-
-        // 영역 대비 너무 작으면 추가 확대 (영역의 95% 이상 채우도록)
-        const minAreaRatio = 0.95;
-        const currentWidthRatio = drawWidth / maxWidth;
-        const currentHeightRatio = drawHeight / maxHeight;
-        const currentMaxRatio = Math.max(currentWidthRatio, currentHeightRatio);
-
-        if (currentMaxRatio < minAreaRatio) {
-          const additionalScale = minAreaRatio / currentMaxRatio;
-          drawWidth *= additionalScale;
-          drawHeight *= additionalScale;
-        }
-
-        const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
-        const drawY =
-          y - drawingAreaHeight + (drawingAreaHeight - drawHeight) / 2;
-
-        page.drawImage(embeddedImage, {
-          x: drawX,
-          y: drawY,
-          width: drawWidth,
-          height: drawHeight,
-        });
-
-        console.log("[pdf-lib] 도면 이미지 삽입 완료 (업로드 이미지, 확대됨)");
+      if (canvasImage.startsWith("data:image/")) {
+        const base64Data = canvasImage.split(",")[1];
+        imageData = Buffer.from(base64Data, "base64");
+      } else {
+        imageData = Buffer.from(canvasImage, "base64");
       }
+
+      console.log(`[pdf-lib] canvasImage 처리 시작...`);
+
+      const originalMeta = await sharp(imageData).metadata();
+      console.log(
+        `[pdf-lib] 원본 크기: ${originalMeta.width}x${originalMeta.height}`,
+      );
+
+      // 자동 크롭 적용
+      let processedImageData = imageData;
+      try {
+        const flattenedBuffer = await sharp(imageData)
+          .flatten({ background: { r: 255, g: 255, b: 255 } })
+          .png()
+          .toBuffer();
+
+        const trimmedBuffer = await sharp(flattenedBuffer)
+          .trim({
+            background: "#ffffff",
+            threshold: 50,
+          })
+          .extend({
+            top: 30,
+            bottom: 30,
+            left: 30,
+            right: 30,
+            background: { r: 255, g: 255, b: 255 },
+          })
+          .png()
+          .toBuffer();
+
+        const trimmedMeta = await sharp(trimmedBuffer).metadata();
+        console.log(
+          `[pdf-lib] 크롭 후 크기: ${trimmedMeta.width}x${trimmedMeta.height}`,
+        );
+
+        if (
+          trimmedMeta.width &&
+          trimmedMeta.height &&
+          trimmedMeta.width > 100 &&
+          trimmedMeta.height > 100
+        ) {
+          processedImageData = trimmedBuffer;
+          console.log(`[pdf-lib] 자동 크롭 적용됨`);
+        }
+      } catch (trimErr) {
+        console.log(`[pdf-lib] 자동 크롭 실패, 원본 사용:`, trimErr);
+      }
+
+      const embeddedImage = await pdfDoc.embedPng(processedImageData);
+
+      const maxWidth = drawingAreaWidth - 10;
+      const maxHeight = drawingAreaHeight - 10;
+
+      const imgDims = embeddedImage.scale(1);
+
+      const scaleX = maxWidth / imgDims.width;
+      const scaleY = maxHeight / imgDims.height;
+      const scale = Math.min(scaleX, scaleY);
+
+      let drawWidth = imgDims.width * scale;
+      let drawHeight = imgDims.height * scale;
+
+      console.log(
+        `[pdf-lib] PDF 영역: ${maxWidth}x${maxHeight}, 이미지: ${imgDims.width}x${imgDims.height}`,
+      );
+      console.log(
+        `[pdf-lib] 도면 표시 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)}, scale: ${scale.toFixed(3)}`,
+      );
+
+      const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
+      const drawY =
+        y - drawingAreaHeight + (drawingAreaHeight - drawHeight) / 2;
+
+      page.drawImage(embeddedImage, {
+        x: drawX,
+        y: drawY,
+        width: drawWidth,
+        height: drawHeight,
+      });
+
+      console.log(
+        `[pdf-lib] canvasImage 도면 삽입 완료 (크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)})`,
+      );
     } catch (err) {
-      console.error("[pdf-lib] 도면 이미지 삽입 실패:", err);
+      console.error("[pdf-lib] canvasImage 도면 삽입 실패:", err);
       drawText(page, {
         x: MARGIN + drawingAreaWidth / 2 - 50,
         y: y - drawingAreaHeight / 2,
