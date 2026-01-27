@@ -391,10 +391,17 @@ export default function FieldEstimate() {
   // 연동된 노무비 삭제 키 생성 함수 (sourceAreaRowId 포함 형식)
   // 형식: sourceAreaRowId|category|workName|detailItem
   const makeLinkedLaborDeletionKey = (sourceAreaRowId: string, category: string, workName: string, detailItem: string): string => {
-    // 철거공사의 경우 workName을 표준화
+    // 철거공사의 경우 workName을 표준화하고, sourceRowId 제외 (ID가 저장마다 변경되므로)
+    // 철거공사: "철거공사|matchedWorkName|detailItem" 형식
+    // 일반 노무비: "sourceRowId|category|workName|detailItem" 형식
     const normalizedWorkName = category === '철거공사' 
       ? (matchDemolitionWorkName(workName) || workName || '')
       : (workName || '');
+    
+    if (category === '철거공사') {
+      // 철거공사는 sourceRowId 제외 (복구면적 행 ID가 저장마다 변경되므로)
+      return `철거공사|${normalizedWorkName}|${detailItem || ''}`;
+    }
     return `${sourceAreaRowId || ''}|${category || ''}|${normalizedWorkName}|${detailItem || ''}`;
   };
 
