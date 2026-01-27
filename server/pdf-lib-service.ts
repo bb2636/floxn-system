@@ -1648,14 +1648,10 @@ async function renderDrawingPage(
               embeddedImage = await pdfDoc.embedJpg(processedBuffer);
             }
             
-            // 원본 이미지 크기로 종횡비 계산
-            const imgDims = embeddedImage.scale(1);
-            const originalAspectRatio = imgDims.width / imgDims.height;
-            
-            // 저장된 width를 기준으로 원본 비율에 맞게 height 계산
+            // 저장된 크기 그대로 사용 (마커 좌표와 일치해야 함)
             const pdfX = toPdfX(img.x);
             const pdfWidth = toPdfSize(img.width);
-            const pdfHeight = pdfWidth / originalAspectRatio; // 원본 비율 적용
+            const pdfHeight = toPdfSize(img.height);
             const pdfY = toPdfY(img.y) - pdfHeight; // PDF Y는 아래에서 위로
             
             page.drawImage(embeddedImage, {
@@ -1665,7 +1661,7 @@ async function renderDrawingPage(
               height: pdfHeight,
             });
             
-            console.log(`[pdf-lib] 이미지 렌더링: x=${pdfX.toFixed(1)}, y=${pdfY.toFixed(1)}, w=${pdfWidth.toFixed(1)}, h=${pdfHeight.toFixed(1)}, origAR=${originalAspectRatio.toFixed(3)}`);
+            console.log(`[pdf-lib] 이미지 렌더링: x=${pdfX.toFixed(1)}, y=${pdfY.toFixed(1)}, w=${pdfWidth.toFixed(1)}, h=${pdfHeight.toFixed(1)}, stored: ${img.width.toFixed(1)}x${img.height.toFixed(1)}`);
           } catch (imgErr) {
             console.error(`[pdf-lib] 이미지 렌더링 실패:`, imgErr);
           }
