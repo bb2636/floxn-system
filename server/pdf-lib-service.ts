@@ -1579,16 +1579,8 @@ async function renderDrawingPage(
         });
       }
       
-      // leakMarkers 경계 (마커는 점이므로 작은 영역 추가)
-      const markerRadius = 300; // mm 단위 마커 반경
-      if (Array.isArray(drawingData.leakMarkers)) {
-        drawingData.leakMarkers.forEach((marker: any) => {
-          minX = Math.min(minX, marker.x - markerRadius);
-          minY = Math.min(minY, marker.y - markerRadius);
-          maxX = Math.max(maxX, marker.x + markerRadius);
-          maxY = Math.max(maxY, marker.y + markerRadius);
-        });
-      }
+      // leakMarkers는 경계 계산에서 제외 - 이미지/사각형 위에 오버레이되므로
+      // 마커를 경계에 포함시키면 상대적 위치가 틀어짐
       
       // 경계가 유효한지 확인
       if (minX === Infinity || minY === Infinity || maxX === 0 || maxY === 0) {
