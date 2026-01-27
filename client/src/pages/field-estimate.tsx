@@ -2279,10 +2279,25 @@ export default function FieldEstimate() {
       }
       // 수동 삭제된 철거공사 행은 재생성하지 않음 (sourceRowId 기반 체크)
       // 모든 sourceRowIds가 삭제 목록에 있으면 건너뛰기, 하나라도 없으면 생성
+      const deletionKeyChecks: { srcId: string; key: string; exists: boolean }[] = [];
       const allSourceRowsDeleted = entry.sourceRowIds.every(srcId => {
         const deletionKey = makeLinkedLaborDeletionKey(srcId, '철거공사', entry.matchedWorkName, entry.detailItem);
-        return deletedLinkedLaborKeys.has(deletionKey);
+        const exists = deletedLinkedLaborKeys.has(deletionKey);
+        deletionKeyChecks.push({ srcId, key: deletionKey, exists });
+        return exists;
       });
+      
+      // [디버그] 삭제 키 체크 결과 로깅
+      console.log('DEMOLITION_DELETION_KEY_CHECK', {
+        matchedWorkName: entry.matchedWorkName,
+        detailItem: entry.detailItem,
+        sourceRowIds: entry.sourceRowIds,
+        checks: deletionKeyChecks,
+        allDeleted: allSourceRowsDeleted,
+        deletedKeysCount: deletedLinkedLaborKeys.size,
+        deletedKeysSample: Array.from(deletedLinkedLaborKeys).slice(0, 10)
+      });
+      
       if (allSourceRowsDeleted && entry.sourceRowIds.length > 0) {
         // [증거 3] SKIP_CREATE_DEMOLITION_LABOR - 삭제된 키로 인해 생성 스킵
         console.log('SKIP_CREATE_DEMOLITION_LABOR', { 
