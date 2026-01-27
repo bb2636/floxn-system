@@ -3426,6 +3426,12 @@ export default function FieldEstimate() {
   const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string, repairArea?: number) => {
     if (!workType || !workName) return;
     
+    // 삭제 키가 로드되기 전에는 노무비 생성하지 않음 (삭제한 노무비가 재생성되는 것 방지)
+    if (!exclusionsLoaded) {
+      console.log('[일위대가 연동] 삭제 키 미로드 - 대기:', workType, workName);
+      return;
+    }
+    
     // 중복 호출 방지: 같은 공종+공사명에 대한 동기화가 진행 중이면 건너뛰기
     const materialSyncKey = `${workType}|${workName}`;
     if (materialSyncInProgressRef.current.has(materialSyncKey)) {
