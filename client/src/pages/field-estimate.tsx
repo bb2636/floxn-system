@@ -3590,6 +3590,14 @@ export default function FieldEstimate() {
           // 복구면적 = 전달받은 repairArea (현재 행의 값)
           const currentRepairArea = repairArea || 0;
           
+          // 삭제된 노무비인지 체크 (사용자가 삭제한 행은 재생성하지 않음)
+          const detailItem = catalogItem.노임항목 || '';
+          const deletionKey = makeLinkedLaborDeletionKey(sourceRowId, workType, workName, detailItem);
+          if (deletedLinkedLaborKeys.has(deletionKey)) {
+            console.log('[일위대가 연동] 삭제된 노무비 스킵:', workType, workName, detailItem, 'key:', deletionKey);
+            return; // 삭제된 노무비 - 재생성 안 함
+          }
+          
           // 중복 체크: 같은 공종+공사명+노임항목 행이 이미 있으면 건너뛰기
           const existingRow = filteredRows.find(r => 
             r.isLinkedFromRecovery && 
@@ -3633,6 +3641,13 @@ export default function FieldEstimate() {
       } else {
         // 일위대가DB에 없으면 빈 행 생성 (수동 입력용)
         const currentRepairArea = repairArea || 0;
+        
+        // 삭제된 노무비인지 체크 (사용자가 삭제한 행은 재생성하지 않음)
+        const deletionKey = makeLinkedLaborDeletionKey(sourceRowId, workType, workName, '');
+        if (deletedLinkedLaborKeys.has(deletionKey)) {
+          console.log('[일위대가 연동] 삭제된 노무비 스킵 (DB 매칭 없음):', workType, workName);
+          return filteredRows; // 삭제된 노무비 - 재생성 안 함
+        }
         
         // 중복 체크: 이미 같은 공종+공사명 행이 있으면 건너뛰기
         const existingRow = filteredRows.find(r => 
