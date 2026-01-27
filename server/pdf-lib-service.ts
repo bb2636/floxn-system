@@ -1572,12 +1572,34 @@ async function renderDrawingPage(
         console.log(`[pdf-lib] 원본 이미지 크기: ${origWidth}x${origHeight}`);
         console.log(`[pdf-lib] 캔버스 이미지 위치: (${mainImage.x}, ${mainImage.y}), 크기: ${mainImage.width}x${mainImage.height}`);
 
-        // 캔버스 좌표를 원본 이미지 좌표로 변환하는 스케일 계산
-        // 캔버스에서 이미지가 표시되는 크기 대비 원본 이미지 크기
-        const canvasScaleX = origWidth / mainImage.width;
-        const canvasScaleY = origHeight / mainImage.height;
-
-        console.log(`[pdf-lib] 좌표 변환 스케일: X=${canvasScaleX.toFixed(6)}, Y=${canvasScaleY.toFixed(6)}`);
+        // ============================================
+        // objectFit: "contain" 보정 로직
+        // 프론트엔드에서 이미지가 objectFit: "contain"으로 표시되므로
+        // 영역과 이미지 비율이 다르면 여백이 생김
+        // 마커 좌표는 영역 기준으로 저장되므로 여백을 보정해야 함
+        // ============================================
+        
+        const areaRatio = mainImage.width / mainImage.height;
+        const imageRatio = origWidth / origHeight;
+        
+        let displayWidth: number, displayHeight: number, offsetX: number, offsetY: number;
+        
+        if (imageRatio > areaRatio) {
+          // 이미지가 더 넓음 - 너비에 맞춤
+          displayWidth = mainImage.width;
+          displayHeight = mainImage.width / imageRatio;
+          offsetX = 0;
+          offsetY = (mainImage.height - displayHeight) / 2;
+        } else {
+          // 이미지가 더 높음 (또는 같음) - 높이에 맞춤
+          displayHeight = mainImage.height;
+          displayWidth = mainImage.height * imageRatio;
+          offsetX = (mainImage.width - displayWidth) / 2;
+          offsetY = 0;
+        }
+        
+        console.log(`[pdf-lib] 영역 비율: ${areaRatio.toFixed(4)}, 이미지 비율: ${imageRatio.toFixed(4)}`);
+        console.log(`[pdf-lib] objectFit 보정: displaySize=${displayWidth.toFixed(2)}x${displayHeight.toFixed(2)}, offset=(${offsetX.toFixed(2)}, ${offsetY.toFixed(2)})`);
 
         // SVG 오버레이 생성 (마커와 사각형을 합성)
         const overlays: { input: Buffer; top: number; left: number }[] = [];
@@ -1587,22 +1609,25 @@ async function renderDrawingPage(
         console.log(`[pdf-lib] 누수 마커 개수: ${leakMarkers.length}`);
         
         // 고정 마커 크기 (프론트엔드와 동일한 비율 유지)
-        // 프론트엔드: 원 반지름 10px / 이미지 화면 너비 * 100%
-        // 원본 이미지에서 동일한 비율 적용
         const markerRadius = Math.max(8, Math.round(Math.min(origWidth, origHeight) * 0.015));
         const markerSize = markerRadius * 2 + 4;
-        const markerCenterOffset = markerRadius + 2; // SVG 내에서 원의 중심 위치
+        const markerCenterOffset = markerRadius + 2;
         
         for (const marker of leakMarkers) {
-          // 캔버스 좌표를 원본 이미지 좌표로 변환 (부동소수점 정밀도 유지)
-          const imgXPrecise = (marker.x - mainImage.x) * canvasScaleX;
-          const imgYPrecise = (marker.y - mainImage.y) * canvasScaleY;
+          // objectFit: "contain" 여백 보정
+          // 마커의 이미지 내 실제 위치 계산 (영역 기준 → 이미지 기준)
+          const markerInImageX = marker.x - mainImage.x - offsetX;
+          const markerInImageY = marker.y - mainImage.y - offsetY;
+          
+          // 원본 이미지 좌표로 변환
+          const imgXPrecise = markerInImageX * (origWidth / displayWidth);
+          const imgYPrecise = markerInImageY * (origHeight / displayHeight);
           
           // 상대 위치 비율 확인 (디버깅용)
-          const relativeX = (marker.x - mainImage.x) / mainImage.width;
-          const relativeY = (marker.y - mainImage.y) / mainImage.height;
+          const relativeX = markerInImageX / displayWidth;
+          const relativeY = markerInImageY / displayHeight;
           
-          console.log(`[pdf-lib] 마커 상대위치: (${(relativeX * 100).toFixed(2)}%, ${(relativeY * 100).toFixed(2)}%)`);
+          console.log(`[pdf-lib] 마커 상대위치 (보정 후): (${(relativeX * 100).toFixed(2)}%, ${(relativeY * 100).toFixed(2)}%)`);
           console.log(`[pdf-lib] 마커 변환: 캔버스(${marker.x.toFixed(2)}, ${marker.y.toFixed(2)}) → 이미지(${imgXPrecise.toFixed(2)}, ${imgYPrecise.toFixed(2)})`);
           
           // 최종 좌표 반올림 (sharp.composite은 정수만 허용)
@@ -1630,6 +1655,8 @@ async function renderDrawingPage(
             });
             
             console.log(`[pdf-lib] 마커 SVG 배치: left=${overlayLeft}, top=${overlayTop}, 크기=${markerSize}x${markerSize}`);
+          } else {
+            console.log(`[pdf-lib] 마커 범위 벗어남: (${imgX}, ${imgY}) - 스킵`);
           }
         }
 
@@ -1638,11 +1665,14 @@ async function renderDrawingPage(
         console.log(`[pdf-lib] 사각형 개수: ${rectangles.length}`);
         
         for (const rect of rectangles) {
-          // 캔버스 좌표를 원본 이미지 좌표로 변환
-          const imgX = Math.round((rect.x - mainImage.x) * canvasScaleX);
-          const imgY = Math.round((rect.y - mainImage.y) * canvasScaleY);
-          const imgWidth = Math.round(rect.width * canvasScaleX);
-          const imgHeight = Math.round(rect.height * canvasScaleY);
+          // objectFit: "contain" 여백 보정
+          const rectInImageX = rect.x - mainImage.x - offsetX;
+          const rectInImageY = rect.y - mainImage.y - offsetY;
+          
+          const imgX = Math.round(rectInImageX * (origWidth / displayWidth));
+          const imgY = Math.round(rectInImageY * (origHeight / displayHeight));
+          const imgWidth = Math.round(rect.width * (origWidth / displayWidth));
+          const imgHeight = Math.round(rect.height * (origHeight / displayHeight));
           
           // 이미지 범위와 겹치는 부분이 있는지 확인
           if (imgX + imgWidth > 0 && imgX < origWidth && imgY + imgHeight > 0 && imgY < origHeight) {
@@ -1669,11 +1699,14 @@ async function renderDrawingPage(
         console.log(`[pdf-lib] 사고 범위 개수: ${accidentAreas.length}`);
         
         for (const area of accidentAreas) {
-          // 캔버스 좌표를 원본 이미지 좌표로 변환
-          const imgX = Math.round((area.x - mainImage.x) * canvasScaleX);
-          const imgY = Math.round((area.y - mainImage.y) * canvasScaleY);
-          const imgWidth = Math.round(area.width * canvasScaleX);
-          const imgHeight = Math.round(area.height * canvasScaleY);
+          // objectFit: "contain" 여백 보정
+          const areaInImageX = area.x - mainImage.x - offsetX;
+          const areaInImageY = area.y - mainImage.y - offsetY;
+          
+          const imgX = Math.round(areaInImageX * (origWidth / displayWidth));
+          const imgY = Math.round(areaInImageY * (origHeight / displayHeight));
+          const imgWidth = Math.round(area.width * (origWidth / displayWidth));
+          const imgHeight = Math.round(area.height * (origHeight / displayHeight));
           
           // 이미지 범위와 겹치는 부분이 있는지 확인
           if (imgX + imgWidth > 0 && imgX < origWidth && imgY + imgHeight > 0 && imgY < origHeight) {
