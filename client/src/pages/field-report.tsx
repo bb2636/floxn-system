@@ -3972,15 +3972,18 @@ export default function FieldReport() {
                             ))}
 
                             {/* 누수 마커 - 항상 맨 위 (z-index: 100) */}
+                            {/* 부모의 scale(fitScale) 변환을 상쇄하기 위해 역스케일 적용 */}
                             {drawing.leakMarkers?.map((marker) => (
                               <div
                                 key={marker.id}
                                 style={{
                                   position: "absolute",
-                                  left: `${marker.x * DISPLAY_SCALE - 12}px`,
-                                  top: `${marker.y * DISPLAY_SCALE - 12}px`,
+                                  left: `${marker.x * DISPLAY_SCALE}px`,
+                                  top: `${marker.y * DISPLAY_SCALE}px`,
                                   width: "24px",
                                   height: "24px",
+                                  transform: `translate(-50%, -50%) scale(${1 / fitScale})`,
+                                  transformOrigin: "center",
                                   zIndex: 100,
                                 }}
                               >
