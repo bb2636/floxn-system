@@ -3882,6 +3882,7 @@ export default function FieldReport() {
                                   top: `${img.y * DISPLAY_SCALE - normalizeY}px`,
                                   width: `${img.width * DISPLAY_SCALE}px`,
                                   height: `${img.height * DISPLAY_SCALE}px`,
+                                  objectFit: "contain",
                                   userSelect: "none",
                                   zIndex: 1,
                                 }}
