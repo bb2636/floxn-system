@@ -1577,6 +1577,8 @@ async function renderDrawingPage(
         const canvasScaleX = origWidth / mainImage.width;
         const canvasScaleY = origHeight / mainImage.height;
 
+        console.log(`[pdf-lib] 좌표 변환 스케일: X=${canvasScaleX.toFixed(6)}, Y=${canvasScaleY.toFixed(6)}`);
+
         // SVG 오버레이 생성 (마커와 사각형을 합성)
         const overlays: { input: Buffer; top: number; left: number }[] = [];
 
@@ -1584,32 +1586,50 @@ async function renderDrawingPage(
         const leakMarkers = (drawingData as any).leakMarkers || [];
         console.log(`[pdf-lib] 누수 마커 개수: ${leakMarkers.length}`);
         
+        // 고정 마커 크기 (프론트엔드와 동일한 비율 유지)
+        // 프론트엔드: 원 반지름 10px / 이미지 화면 너비 * 100%
+        // 원본 이미지에서 동일한 비율 적용
+        const markerRadius = Math.max(8, Math.round(Math.min(origWidth, origHeight) * 0.015));
+        const markerSize = markerRadius * 2 + 4;
+        const markerCenterOffset = markerRadius + 2; // SVG 내에서 원의 중심 위치
+        
         for (const marker of leakMarkers) {
-          // 캔버스 좌표를 원본 이미지 좌표로 변환
-          const imgX = Math.round((marker.x - mainImage.x) * canvasScaleX);
-          const imgY = Math.round((marker.y - mainImage.y) * canvasScaleY);
+          // 캔버스 좌표를 원본 이미지 좌표로 변환 (부동소수점 정밀도 유지)
+          const imgXPrecise = (marker.x - mainImage.x) * canvasScaleX;
+          const imgYPrecise = (marker.y - mainImage.y) * canvasScaleY;
+          
+          // 상대 위치 비율 확인 (디버깅용)
+          const relativeX = (marker.x - mainImage.x) / mainImage.width;
+          const relativeY = (marker.y - mainImage.y) / mainImage.height;
+          
+          console.log(`[pdf-lib] 마커 상대위치: (${(relativeX * 100).toFixed(2)}%, ${(relativeY * 100).toFixed(2)}%)`);
+          console.log(`[pdf-lib] 마커 변환: 캔버스(${marker.x.toFixed(2)}, ${marker.y.toFixed(2)}) → 이미지(${imgXPrecise.toFixed(2)}, ${imgYPrecise.toFixed(2)})`);
+          
+          // 최종 좌표 반올림 (sharp.composite은 정수만 허용)
+          const imgX = Math.round(imgXPrecise);
+          const imgY = Math.round(imgYPrecise);
           
           // 이미지 범위 내에 있는지 확인
           if (imgX >= 0 && imgX < origWidth && imgY >= 0 && imgY < origHeight) {
-            // 마커 크기 (원본 이미지 기준)
-            const markerRadius = Math.round(Math.min(origWidth, origHeight) * 0.015); // 이미지 크기의 1.5%
-            const markerSize = markerRadius * 2 + 4;
-            
-            // 빨간 원 마커 SVG
+            // 빨간 원 마커 SVG (채워진 원)
             const markerSvg = Buffer.from(`
               <svg width="${markerSize}" height="${markerSize}">
-                <circle cx="${markerRadius + 2}" cy="${markerRadius + 2}" r="${markerRadius}" 
-                        fill="none" stroke="#FF0000" stroke-width="3"/>
+                <circle cx="${markerCenterOffset}" cy="${markerCenterOffset}" r="${markerRadius}" 
+                        fill="#E53935" stroke="#B71C1C" stroke-width="2"/>
               </svg>
             `);
             
+            // 마커 중심이 imgX, imgY에 오도록 배치
+            const overlayLeft = Math.max(0, imgX - markerCenterOffset);
+            const overlayTop = Math.max(0, imgY - markerCenterOffset);
+            
             overlays.push({
               input: markerSvg,
-              top: Math.max(0, imgY - markerRadius - 2),
-              left: Math.max(0, imgX - markerRadius - 2),
+              top: overlayTop,
+              left: overlayLeft,
             });
             
-            console.log(`[pdf-lib] 마커 추가: 캔버스(${marker.x}, ${marker.y}) → 이미지(${imgX}, ${imgY})`);
+            console.log(`[pdf-lib] 마커 SVG 배치: left=${overlayLeft}, top=${overlayTop}, 크기=${markerSize}x${markerSize}`);
           }
         }
 
