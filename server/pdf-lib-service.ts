@@ -1545,120 +1545,197 @@ async function renderDrawingPage(
     );
   }
 
-  // 안전하게 canvasImage 접근 (DB 컬럼이 없을 수 있음)
-  const canvasImage = drawingData ? (drawingData as any).canvasImage : null;
-
-  // 캔버스 이미지가 있으면 우선 사용 (전체 도면 스냅샷)
-  if (drawingData && canvasImage) {
-    console.log("[pdf-lib] 분기: canvasImage 사용 (캔버스 스냅샷)");
+  // 새 방식: 원본 이미지에 마커/사각형을 직접 합성 (크롭으로 인한 마커 위치 이동 문제 해결)
+  if (
+    drawingData &&
+    drawingData.uploadedImages &&
+    drawingData.uploadedImages.length > 0
+  ) {
+    console.log("[pdf-lib] 분기: 원본 이미지 + 마커/사각형 합성 방식");
     try {
-      let imageData: Buffer;
+      const mainImage = drawingData.uploadedImages[0];
+      if (mainImage.src) {
+        let imageData: Buffer;
 
-      if (canvasImage.startsWith("data:image/")) {
-        const base64Data = canvasImage.split(",")[1];
-        imageData = Buffer.from(base64Data, "base64");
-      } else {
-        imageData = Buffer.from(canvasImage, "base64");
-      }
+        if (mainImage.src.startsWith("data:image/")) {
+          const base64Data = mainImage.src.split(",")[1];
+          imageData = Buffer.from(base64Data, "base64");
+        } else {
+          imageData = Buffer.from(mainImage.src, "base64");
+        }
 
-      // 도면 이미지를 PDF 영역에 꽉 채우도록 강제 스케일업
-      console.log(`[pdf-lib] 도면 이미지 처리 시작...`);
+        // 원본 이미지 메타데이터 가져오기
+        const originalMeta = await sharp(imageData).metadata();
+        const origWidth = originalMeta.width || 1;
+        const origHeight = originalMeta.height || 1;
+        
+        console.log(`[pdf-lib] 원본 이미지 크기: ${origWidth}x${origHeight}`);
+        console.log(`[pdf-lib] 캔버스 이미지 위치: (${mainImage.x}, ${mainImage.y}), 크기: ${mainImage.width}x${mainImage.height}`);
 
-      const originalMeta = await sharp(imageData).metadata();
-      console.log(
-        `[pdf-lib] 원본 크기: ${originalMeta.width}x${originalMeta.height}`,
-      );
+        // 캔버스 좌표를 원본 이미지 좌표로 변환하는 스케일 계산
+        // 캔버스에서 이미지가 표시되는 크기 대비 원본 이미지 크기
+        const canvasScaleX = origWidth / mainImage.width;
+        const canvasScaleY = origHeight / mainImage.height;
 
-      // 도면 이미지를 자동 크롭(trim)하여 실제 내용만 추출
-      // 흰색 배경을 제거하고 실제 도면 내용만 크게 표시
-      let processedImageData = imageData;
-      try {
-        // 먼저 이미지를 불투명 흰색 배경으로 평탄화
-        const flattenedBuffer = await sharp(imageData)
-          .flatten({ background: { r: 255, g: 255, b: 255 } })
-          .png()
-          .toBuffer();
+        // SVG 오버레이 생성 (마커와 사각형을 합성)
+        const overlays: { input: Buffer; top: number; left: number }[] = [];
 
-        // 흰색 배경 트림 (높은 threshold로 약간의 회색/그림자도 포함)
-        const trimmedBuffer = await sharp(flattenedBuffer)
-          .trim({
-            background: "#ffffff",
-            threshold: 50, // 높은 threshold로 더 공격적인 트림
-          })
-          .extend({
-            top: 30,
-            bottom: 30,
-            left: 30,
-            right: 30,
-            background: { r: 255, g: 255, b: 255 },
-          })
-          .png()
-          .toBuffer();
+        // 누수 마커 합성
+        const leakMarkers = (drawingData as any).leakMarkers || [];
+        console.log(`[pdf-lib] 누수 마커 개수: ${leakMarkers.length}`);
+        
+        for (const marker of leakMarkers) {
+          // 캔버스 좌표를 원본 이미지 좌표로 변환
+          const imgX = Math.round((marker.x - mainImage.x) * canvasScaleX);
+          const imgY = Math.round((marker.y - mainImage.y) * canvasScaleY);
+          
+          // 이미지 범위 내에 있는지 확인
+          if (imgX >= 0 && imgX < origWidth && imgY >= 0 && imgY < origHeight) {
+            // 마커 크기 (원본 이미지 기준)
+            const markerRadius = Math.round(Math.min(origWidth, origHeight) * 0.015); // 이미지 크기의 1.5%
+            const markerSize = markerRadius * 2 + 4;
+            
+            // 빨간 원 마커 SVG
+            const markerSvg = Buffer.from(`
+              <svg width="${markerSize}" height="${markerSize}">
+                <circle cx="${markerRadius + 2}" cy="${markerRadius + 2}" r="${markerRadius}" 
+                        fill="none" stroke="#FF0000" stroke-width="3"/>
+              </svg>
+            `);
+            
+            overlays.push({
+              input: markerSvg,
+              top: Math.max(0, imgY - markerRadius - 2),
+              left: Math.max(0, imgX - markerRadius - 2),
+            });
+            
+            console.log(`[pdf-lib] 마커 추가: 캔버스(${marker.x}, ${marker.y}) → 이미지(${imgX}, ${imgY})`);
+          }
+        }
 
-        const trimmedMeta = await sharp(trimmedBuffer).metadata();
+        // 사각형 합성
+        const rectangles = drawingData.rectangles || [];
+        console.log(`[pdf-lib] 사각형 개수: ${rectangles.length}`);
+        
+        for (const rect of rectangles) {
+          // 캔버스 좌표를 원본 이미지 좌표로 변환
+          const imgX = Math.round((rect.x - mainImage.x) * canvasScaleX);
+          const imgY = Math.round((rect.y - mainImage.y) * canvasScaleY);
+          const imgWidth = Math.round(rect.width * canvasScaleX);
+          const imgHeight = Math.round(rect.height * canvasScaleY);
+          
+          // 이미지 범위와 겹치는 부분이 있는지 확인
+          if (imgX + imgWidth > 0 && imgX < origWidth && imgY + imgHeight > 0 && imgY < origHeight) {
+            // 사각형 SVG (파란색 테두리)
+            const rectSvg = Buffer.from(`
+              <svg width="${imgWidth}" height="${imgHeight}">
+                <rect x="1" y="1" width="${imgWidth - 2}" height="${imgHeight - 2}" 
+                      fill="rgba(59, 130, 246, 0.1)" stroke="#3B82F6" stroke-width="2"/>
+              </svg>
+            `);
+            
+            overlays.push({
+              input: rectSvg,
+              top: Math.max(0, imgY),
+              left: Math.max(0, imgX),
+            });
+            
+            console.log(`[pdf-lib] 사각형 추가: 캔버스(${rect.x}, ${rect.y}) → 이미지(${imgX}, ${imgY}), 크기: ${imgWidth}x${imgHeight}`);
+          }
+        }
+
+        // 사고 범위 합성
+        const accidentAreas = (drawingData as any).accidentAreas || [];
+        console.log(`[pdf-lib] 사고 범위 개수: ${accidentAreas.length}`);
+        
+        for (const area of accidentAreas) {
+          // 캔버스 좌표를 원본 이미지 좌표로 변환
+          const imgX = Math.round((area.x - mainImage.x) * canvasScaleX);
+          const imgY = Math.round((area.y - mainImage.y) * canvasScaleY);
+          const imgWidth = Math.round(area.width * canvasScaleX);
+          const imgHeight = Math.round(area.height * canvasScaleY);
+          
+          // 이미지 범위와 겹치는 부분이 있는지 확인
+          if (imgX + imgWidth > 0 && imgX < origWidth && imgY + imgHeight > 0 && imgY < origHeight) {
+            // 사고 범위 SVG (빨간색 테두리, 투명 배경)
+            const areaSvg = Buffer.from(`
+              <svg width="${imgWidth}" height="${imgHeight}">
+                <rect x="1" y="1" width="${imgWidth - 2}" height="${imgHeight - 2}" 
+                      fill="rgba(239, 68, 68, 0.1)" stroke="#EF4444" stroke-width="2" stroke-dasharray="8,4"/>
+              </svg>
+            `);
+            
+            overlays.push({
+              input: areaSvg,
+              top: Math.max(0, imgY),
+              left: Math.max(0, imgX),
+            });
+            
+            console.log(`[pdf-lib] 사고범위 추가: 캔버스(${area.x}, ${area.y}) → 이미지(${imgX}, ${imgY}), 크기: ${imgWidth}x${imgHeight}`);
+          }
+        }
+
+        // 오버레이 합성
+        let compositeBuffer: Buffer;
+        if (overlays.length > 0) {
+          console.log(`[pdf-lib] 총 ${overlays.length}개 오버레이 합성 중...`);
+          compositeBuffer = await sharp(imageData)
+            .composite(overlays)
+            .png()
+            .toBuffer();
+        } else {
+          compositeBuffer = imageData;
+        }
+
+        // PNG/JPG에 따라 임베드
+        let embeddedImage;
+        const srcLower = mainImage.src.toLowerCase();
+        if (srcLower.includes("image/png") || srcLower.includes(".png")) {
+          embeddedImage = await pdfDoc.embedPng(compositeBuffer);
+        } else {
+          const jpegBuffer = await sharp(compositeBuffer)
+            .jpeg({ quality: 90 })
+            .toBuffer();
+          embeddedImage = await pdfDoc.embedJpg(jpegBuffer);
+        }
+
+        // PDF 영역에 맞게 스케일링
+        const imgDims = embeddedImage.scale(1);
+        const maxWidth = drawingAreaWidth - 10;
+        const maxHeight = drawingAreaHeight - 10;
+
+        const scaleX = maxWidth / imgDims.width;
+        const scaleY = maxHeight / imgDims.height;
+        const scale = Math.min(scaleX, scaleY);
+
+        let drawWidth = imgDims.width * scale;
+        let drawHeight = imgDims.height * scale;
+
         console.log(
-          `[pdf-lib] 크롭 후 크기: ${trimmedMeta.width}x${trimmedMeta.height}`,
+          `[pdf-lib] PDF 영역: ${maxWidth}x${maxHeight}, 합성 이미지: ${imgDims.width}x${imgDims.height}`,
+        );
+        console.log(
+          `[pdf-lib] 도면 표시 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)}, scale: ${scale.toFixed(3)}`,
         );
 
-        // 크롭된 이미지가 너무 작지 않은 경우에만 사용
-        if (
-          trimmedMeta.width &&
-          trimmedMeta.height &&
-          trimmedMeta.width > 100 &&
-          trimmedMeta.height > 100
-        ) {
-          processedImageData = trimmedBuffer;
-          console.log(`[pdf-lib] 자동 크롭 적용됨`);
-        } else {
-          console.log(
-            `[pdf-lib] 크롭 결과가 너무 작아 원본 사용: ${trimmedMeta.width}x${trimmedMeta.height}`,
-          );
-        }
-      } catch (trimErr) {
-        console.log(`[pdf-lib] 자동 크롭 실패, 원본 사용:`, trimErr);
+        // 중앙 정렬
+        const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
+        const drawY =
+          y - drawingAreaHeight + (drawingAreaHeight - drawHeight) / 2;
+
+        page.drawImage(embeddedImage, {
+          x: drawX,
+          y: drawY,
+          width: drawWidth,
+          height: drawHeight,
+        });
+
+        console.log(
+          `[pdf-lib] 도면 이미지 삽입 완료 (원본+마커 합성, 최종 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)})`,
+        );
       }
-
-      // PNG 이미지 (html2canvas는 PNG로 출력)
-      const embeddedImage = await pdfDoc.embedPng(processedImageData);
-
-      // 도면 영역 안에 맞도록 스케일링 (프레임을 벗어나지 않도록)
-      const maxWidth = drawingAreaWidth - 10; // 여백 5px씩
-      const maxHeight = drawingAreaHeight - 10;
-
-      const imgDims = embeddedImage.scale(1);
-
-      // 가로/세로 비율을 유지하면서 영역 안에 맞춤
-      const scaleX = maxWidth / imgDims.width;
-      const scaleY = maxHeight / imgDims.height;
-      const scale = Math.min(scaleX, scaleY); // 영역을 벗어나지 않도록 작은 값 사용
-
-      let drawWidth = imgDims.width * scale;
-      let drawHeight = imgDims.height * scale;
-
-      console.log(
-        `[pdf-lib] PDF 영역: ${maxWidth}x${maxHeight}, 원본 이미지: ${imgDims.width}x${imgDims.height}`,
-      );
-      console.log(
-        `[pdf-lib] 도면 표시 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)}, scale: ${scale.toFixed(3)}`,
-      );
-
-      // 중앙 정렬 (넘치는 부분은 잘림)
-      const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
-      const drawY =
-        y - drawingAreaHeight + (drawingAreaHeight - drawHeight) / 2;
-
-      page.drawImage(embeddedImage, {
-        x: drawX,
-        y: drawY,
-        width: drawWidth,
-        height: drawHeight,
-      });
-
-      console.log(
-        `[pdf-lib] 캔버스 도면 이미지 삽입 완료 (영역 채움, 최종 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)})`,
-      );
     } catch (err) {
-      console.error("[pdf-lib] 캔버스 도면 이미지 삽입 실패:", err);
+      console.error("[pdf-lib] 도면 이미지 합성 실패:", err);
       // 실패 시 placeholder 표시
       drawText(page, {
         x: MARGIN + drawingAreaWidth / 2 - 50,
