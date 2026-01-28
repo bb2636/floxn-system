@@ -1911,11 +1911,8 @@ export default function FieldDrawing() {
                   const widthMm = previewWidth / DISPLAY_SCALE;
                   const heightMm = previewHeight / DISPLAY_SCALE;
                   
-                  // 표시 형식: 1000mm 이상이면 m, 아니면 mm
+                  // 항상 mm로 표시
                   const formatDimension = (mm: number) => {
-                    if (mm >= 1000) {
-                      return `${(mm / 1000).toFixed(2)} m`;
-                    }
                     return `${Math.round(mm)} mm`;
                   };
                   
