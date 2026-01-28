@@ -1907,6 +1907,13 @@ export default function FieldDrawing() {
                   const previewWidth = Math.abs(drawCurrent.x - drawStart.x);
                   const previewHeight = Math.abs(drawCurrent.y - drawStart.y);
                   
+                  // 면적 계산 (mm → m²)
+                  // 화면 픽셀 → 실제 mm: 픽셀 / DISPLAY_SCALE
+                  // mm → m: / 1000
+                  const widthMeter = (previewWidth / DISPLAY_SCALE) / 1000;
+                  const heightMeter = (previewHeight / DISPLAY_SCALE) / 1000;
+                  const areaSqm = widthMeter * heightMeter;
+                  
                   return (
                     <div
                       style={{
@@ -1920,7 +1927,30 @@ export default function FieldDrawing() {
                         pointerEvents: "none",
                         zIndex: 100,
                       }}
-                    />
+                    >
+                      {/* 면적 표시 */}
+                      {previewWidth > 30 && previewHeight > 20 && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            background: "rgba(0, 143, 237, 0.9)",
+                            color: "white",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {areaSqm >= 0.01 
+                            ? `${areaSqm.toFixed(2)} m²` 
+                            : `${(areaSqm * 10000).toFixed(1)} cm²`}
+                        </div>
+                      )}
+                    </div>
                   );
                 })()}
 
