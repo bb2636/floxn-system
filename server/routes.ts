@@ -8975,9 +8975,8 @@ FLOXN`;
           ];
           const isTwoPerPageCategory = (category: string): boolean => {
             if (!category) return false;
-            return twoPerPageCategories.some(
-              (c) => category.includes(c) || c.includes(category),
-            );
+            // 정확한 일치만 체크 (부분 포함 체크 제거 - "복구완료확인서"가 "복구완료"에 매칭되는 문제 방지)
+            return twoPerPageCategories.includes(category);
           };
 
           // 헤더 텍스트 정규화 함수 (ASCII '-' 유지, U+2010/U+2212 치환 금지)
@@ -9954,9 +9953,8 @@ FLOXN`;
           ];
           const isTwoPerPageCategory = (category: string): boolean => {
             if (!category) return false;
-            return twoPerPageCategories.some(
-              (c) => category.includes(c) || c.includes(category),
-            );
+            // 정확한 일치만 체크 (부분 포함 체크 제거 - "복구완료확인서"가 "복구완료"에 매칭되는 문제 방지)
+            return twoPerPageCategories.includes(category);
           };
 
           // 헤더 텍스트 정규화 함수 (ASCII '-' 유지, U+2010/U+2212 치환 금지)
