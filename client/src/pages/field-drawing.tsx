@@ -1907,12 +1907,17 @@ export default function FieldDrawing() {
                   const previewWidth = Math.abs(drawCurrent.x - drawStart.x);
                   const previewHeight = Math.abs(drawCurrent.y - drawStart.y);
                   
-                  // 면적 계산 (mm → m²)
-                  // 화면 픽셀 → 실제 mm: 픽셀 / DISPLAY_SCALE
-                  // mm → m: / 1000
-                  const widthMeter = (previewWidth / DISPLAY_SCALE) / 1000;
-                  const heightMeter = (previewHeight / DISPLAY_SCALE) / 1000;
-                  const areaSqm = widthMeter * heightMeter;
+                  // 치수 계산 (화면 픽셀 → 실제 mm)
+                  const widthMm = previewWidth / DISPLAY_SCALE;
+                  const heightMm = previewHeight / DISPLAY_SCALE;
+                  
+                  // 표시 형식: 1000mm 이상이면 m, 아니면 mm
+                  const formatDimension = (mm: number) => {
+                    if (mm >= 1000) {
+                      return `${(mm / 1000).toFixed(2)} m`;
+                    }
+                    return `${Math.round(mm)} mm`;
+                  };
                   
                   return (
                     <div
@@ -1928,26 +1933,44 @@ export default function FieldDrawing() {
                         zIndex: 100,
                       }}
                     >
-                      {/* 면적 표시 */}
-                      {previewWidth > 30 && previewHeight > 20 && (
+                      {/* 가로 치수 표시 (상단 중앙) */}
+                      {previewWidth > 40 && (
                         <div
                           style={{
                             position: "absolute",
-                            top: "50%",
+                            top: "-22px",
                             left: "50%",
-                            transform: "translate(-50%, -50%)",
+                            transform: "translateX(-50%)",
                             background: "rgba(0, 143, 237, 0.9)",
                             color: "white",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            fontSize: "12px",
+                            padding: "2px 6px",
+                            borderRadius: "3px",
+                            fontSize: "11px",
                             fontWeight: "bold",
                             whiteSpace: "nowrap",
                           }}
                         >
-                          {areaSqm >= 0.01 
-                            ? `${areaSqm.toFixed(2)} m²` 
-                            : `${(areaSqm * 10000).toFixed(1)} cm²`}
+                          {formatDimension(widthMm)}
+                        </div>
+                      )}
+                      {/* 세로 치수 표시 (우측 중앙) */}
+                      {previewHeight > 30 && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "50%",
+                            right: "-8px",
+                            transform: "translateY(-50%) translateX(100%)",
+                            background: "rgba(0, 143, 237, 0.9)",
+                            color: "white",
+                            padding: "2px 6px",
+                            borderRadius: "3px",
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {formatDimension(heightMm)}
                         </div>
                       )}
                     </div>
