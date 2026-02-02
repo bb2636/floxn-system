@@ -17,6 +17,7 @@ import {
   ChevronRight,
   GripVertical,
   Lock,
+  Trash2,
 } from "lucide-react";
 import type { LaborRateTier } from "@shared/schema";
 import {
