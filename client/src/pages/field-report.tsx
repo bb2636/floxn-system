@@ -557,6 +557,10 @@ export default function FieldReport() {
   } => {
     const missingDocs: string[] = [];
 
+    // 접수번호가 -0으로 끝나는지 확인 (본건 여부)
+    const caseNumber = caseData?.caseNumber || "";
+    const isPrimaryCase = caseNumber.endsWith("-0");
+
     // 1. 사진 탭 - 현장출동사진 필수
     const hasFieldPhoto = allDocuments.some(
       (doc) => doc.category === "현장출동사진",
@@ -565,20 +569,24 @@ export default function FieldReport() {
       missingDocs.push("현장출동사진");
     }
 
-    // 2. 기본자료 탭 - 보험금 청구서 필수
-    const hasInsuranceClaim = allDocuments.some(
-      (doc) => doc.category === "보험금 청구서",
-    );
-    if (!hasInsuranceClaim) {
-      missingDocs.push("보험금 청구서");
+    // 2. 기본자료 탭 - 보험금 청구서 (본건 -0만 필수, 부건 -1,-2,-3 등은 선택)
+    if (isPrimaryCase) {
+      const hasInsuranceClaim = allDocuments.some(
+        (doc) => doc.category === "보험금 청구서",
+      );
+      if (!hasInsuranceClaim) {
+        missingDocs.push("보험금 청구서");
+      }
     }
 
-    // 3. 기본자료 탭 - 개인정보 동의서 필수
-    const hasPrivacyConsent = allDocuments.some(
-      (doc) => doc.category === "개인정보 동의서(가족용)",
-    );
-    if (!hasPrivacyConsent) {
-      missingDocs.push("개인정보 동의서(가족용)");
+    // 3. 기본자료 탭 - 개인정보 동의서 (본건 -0만 필수, 부건 -1,-2,-3 등은 선택)
+    if (isPrimaryCase) {
+      const hasPrivacyConsent = allDocuments.some(
+        (doc) => doc.category === "개인정보 동의서(가족용)",
+      );
+      if (!hasPrivacyConsent) {
+        missingDocs.push("개인정보 동의서(가족용)");
+      }
     }
 
     // 4. 증빙자료 탭 - 건축물대장 또는 등기부등본 (택1) 필수
