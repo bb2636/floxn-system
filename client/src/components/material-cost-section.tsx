@@ -79,7 +79,12 @@ export function MaterialCostSection({
     if (!workType) return [];
     const matchingItems = catalog.filter(item => item.workType === workType);
     const names = new Set(matchingItems.map(item => item.workName));
-    return Array.from(names).sort();
+    const options = Array.from(names).sort();
+    // 기타 공종인 경우 "직접입력" 옵션 추가
+    if (workType.includes("기타") && !options.includes("직접입력")) {
+      options.push("직접입력");
+    }
+    return options;
   };
 
   // 공종 + 공사명별로 필터링된 자재항목 옵션
@@ -531,42 +536,100 @@ export function MaterialCostSection({
                   
                   {/* 공사명 - 자재비는 연동 행도 수정 가능 */}
                   <td style={{ padding: "0 8px", borderBottom: groupBorderBottom, borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
-                    <Select 
-                      value={row.공사명 || ''} 
-                      onValueChange={(value) => {
-                        console.log('[자재비 공사명 드롭다운] 선택됨:', value, '공종:', row.공종, '연동행:', isLinkedRow);
-                        // 공사명 선택 시 자재항목 초기화
-                        onRowsChange(rows.map(r => 
-                          r.id === row.id 
-                            ? { ...r, 공사명: value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
-                            : r
-                        ));
-                      }}
-                      disabled={!row.공종 || isReadOnly}
-                    >
-                      <SelectTrigger 
-                        className="h-9 border-0" 
-                        style={{ 
-                          fontFamily: "Pretendard", 
-                          fontSize: "14px",
-                          // 연동 행이면 파란색 스타일 적용
-                          ...(isLinkedRow ? {
-                            color: "rgba(59, 130, 246, 0.9)",
-                            background: "rgba(59, 130, 246, 0.08)",
-                            borderRadius: "6px",
-                            border: "1px solid rgba(59, 130, 246, 0.2)",
-                          } : {})
-                        }}
-                        data-testid={`select-공사명-material-${currentGlobalIndex}`}
-                      >
-                        <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workNamesForRow.filter(name => name && name.trim() !== '').map(name => (
-                          <SelectItem key={name} value={name}>{name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {(() => {
+                      const standardOptions = workNamesForRow.filter(opt => opt !== "직접입력");
+                      const isDirectInput = row.공종?.includes("기타") && row.공사명 === "직접입력";
+                      const isCustomValue = row.공종?.includes("기타") && row.공사명 && !standardOptions.includes(row.공사명) && row.공사명 !== "직접입력";
+                      
+                      if (isDirectInput || isCustomValue) {
+                        return (
+                          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                            <Input
+                              value={isDirectInput ? "" : row.공사명}
+                              onChange={(e) => {
+                                onRowsChange(rows.map(r => 
+                                  r.id === row.id 
+                                    ? { ...r, 공사명: e.target.value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                                    : r
+                                ));
+                              }}
+                              className="h-9 border-0"
+                              style={{ 
+                                fontFamily: "Pretendard", 
+                                fontSize: "14px", 
+                                flex: 1,
+                                ...(isLinkedRow ? {
+                                  color: "rgba(59, 130, 246, 0.9)",
+                                  background: "rgba(59, 130, 246, 0.08)",
+                                  borderRadius: "6px",
+                                  border: "1px solid rgba(59, 130, 246, 0.2)",
+                                } : {})
+                              }}
+                              placeholder="공사명 직접 입력"
+                              autoFocus={isDirectInput}
+                              disabled={isReadOnly}
+                              data-testid={`input-공사명-material-${currentGlobalIndex}`}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                onRowsChange(rows.map(r => 
+                                  r.id === row.id 
+                                    ? { ...r, 공사명: '', 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                                    : r
+                                ));
+                              }}
+                              title="초기화"
+                              disabled={isReadOnly}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <Select 
+                          value={row.공사명 || ''} 
+                          onValueChange={(value) => {
+                            console.log('[자재비 공사명 드롭다운] 선택됨:', value, '공종:', row.공종, '연동행:', isLinkedRow);
+                            // 공사명 선택 시 자재항목 초기화
+                            onRowsChange(rows.map(r => 
+                              r.id === row.id 
+                                ? { ...r, 공사명: value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                                : r
+                            ));
+                          }}
+                          disabled={!row.공종 || isReadOnly}
+                        >
+                          <SelectTrigger 
+                            className="h-9 border-0" 
+                            style={{ 
+                              fontFamily: "Pretendard", 
+                              fontSize: "14px",
+                              // 연동 행이면 파란색 스타일 적용
+                              ...(isLinkedRow ? {
+                                color: "rgba(59, 130, 246, 0.9)",
+                                background: "rgba(59, 130, 246, 0.08)",
+                                borderRadius: "6px",
+                                border: "1px solid rgba(59, 130, 246, 0.2)",
+                              } : {})
+                            }}
+                            data-testid={`select-공사명-material-${currentGlobalIndex}`}
+                          >
+                            <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {workNamesForRow.filter(name => name && name.trim() !== '').map(name => (
+                              <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      );
+                    })()}
                   </td>
                   
                   {/* 자재항목 - 자재비는 연동 행도 수정 가능 */}
