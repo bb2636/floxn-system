@@ -418,10 +418,6 @@ export function LaborCostSection({
     const filtered = catalog.filter((item) => item.공종 === category);
     const unique = new Set(filtered.map((item) => item.공사명));
     const options = Array.from(unique);
-    // 기타 공종인 경우 "직접입력" 옵션 추가
-    if (category.includes("기타") && !options.includes("직접입력")) {
-      options.push("직접입력");
-    }
     // 현재 값이 옵션에 없으면 추가
     if (currentValue && !options.includes(currentValue)) {
       options.unshift(currentValue);
@@ -2063,64 +2059,41 @@ export function LaborCostSection({
                         />
                         {row.workName || ""}
                       </div>
-                    ) : (() => {
-                      const standardOptions = getWorkNameOptions(row.category).filter(opt => opt !== "직접입력");
-                      const isDirectInput = row.category?.includes("기타") && row.workName === "직접입력";
-                      const isCustomValue = row.category?.includes("기타") && row.workName && !standardOptions.includes(row.workName) && row.workName !== "직접입력";
-                      
-                      if (isDirectInput || isCustomValue) {
-                        return (
-                          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                            <Input
-                              value={isDirectInput ? "" : row.workName}
-                              onChange={(e) => handleWorkNameChange(row.id, e.target.value)}
-                              className="h-9 border-0"
-                              style={{ fontFamily: "Pretendard", fontSize: "14px", flex: 1 }}
-                              placeholder="공사명 직접 입력"
-                              autoFocus={isDirectInput}
-                              data-testid={`input-workName-labor-${globalIndex}`}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => handleWorkNameChange(row.id, "")}
-                              title="초기화"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        );
-                      }
-                      
-                      return (
-                        <Select
-                          value={row.workName || undefined}
-                          onValueChange={(value) => handleWorkNameChange(row.id, value)}
-                          disabled={!row.category}
+                    ) : row.category?.includes("기타") ? (
+                      <Input
+                        value={row.workName || ""}
+                        onChange={(e) => handleWorkNameChange(row.id, e.target.value)}
+                        className="h-9 border-0"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                        placeholder="공사명 직접 입력"
+                        data-testid={`input-workName-labor-${globalIndex}`}
+                      />
+                    ) : (
+                      <Select
+                        value={row.workName || undefined}
+                        onValueChange={(value) => handleWorkNameChange(row.id, value)}
+                        disabled={!row.category}
+                      >
+                        <SelectTrigger
+                          className="h-9 border-0"
+                          style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                          data-testid={`select-workName-labor-${globalIndex}`}
                         >
-                          <SelectTrigger
-                            className="h-9 border-0"
-                            style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                            data-testid={`select-workName-labor-${globalIndex}`}
-                          >
-                            <SelectValue placeholder="공사명 선택">
-                              {row.workName || "공사명 선택"}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getWorkNameOptions(row.category, row.workName)
-                              .filter((opt) => opt && opt.trim() !== "")
-                              .map((opt) => (
-                                <SelectItem key={opt} value={opt}>
-                                  {opt}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      );
-                    })()}
+                          <SelectValue placeholder="공사명 선택">
+                            {row.workName || "공사명 선택"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getWorkNameOptions(row.category, row.workName)
+                            .filter((opt) => opt && opt.trim() !== "")
+                            .map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </td>
 
                   {/* 노임항목 - 연동 행은 잠금 표시 */}
