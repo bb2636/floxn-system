@@ -901,14 +901,13 @@ export default function FieldDocuments() {
   const validateClaimDocuments = (): { valid: boolean; missingDocs: string[] } => {
     const missingDocs: string[] = [];
     
-    // 청구자료 단계 필수 서류 목록
+    // 청구자료 단계 필수 서류 목록 (부가세 청구자료는 선택)
     const requiredCategories = [
       "수리중 사진",
       "복구완료 사진",
       "위임장",
       "도급계약서",
-      "복구완료확인서",
-      "부가세 청구자료"
+      "복구완료확인서"
     ];
     
     for (const category of requiredCategories) {
@@ -1176,7 +1175,7 @@ export default function FieldDocuments() {
                 return (
                   <div className="text-left">
                     <div className="font-semibold mb-1">필수 서류 안내</div>
-                    <div>• 청구 단계: 위임장, 도급계약서, 복구완료확인서, 부가세 청구자료 모두 필수</div>
+                    <div>• 청구 단계: 위임장, 도급계약서, 복구완료확인서 필수 (부가세 청구자료는 선택)</div>
                   </div>
                 );
               default:
