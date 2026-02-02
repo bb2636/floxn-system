@@ -603,7 +603,7 @@ export function MaterialCostSection({
                         onChange={(e) => {
                           onRowsChange(rows.map(r => 
                             r.id === row.id 
-                              ? { ...r, 자재항목: e.target.value, 자재: e.target.value }
+                              ? { ...r, 자재항목: e.target.value, 자재: e.target.value, 단위: r.단위 || 'm²' }
                               : r
                           ));
                         }}
