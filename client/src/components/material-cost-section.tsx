@@ -597,10 +597,35 @@ export function MaterialCostSection({
                   
                   {/* 자재항목 - 자재비는 연동 행도 수정 가능 */}
                   <td style={{ padding: "0 8px", borderBottom: groupBorderBottom, borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
-                    <Select 
+                    {row.공종?.includes("기타") ? (
+                      <Input
+                        value={row.자재항목 || ""}
+                        onChange={(e) => {
+                          onRowsChange(rows.map(r => 
+                            r.id === row.id 
+                              ? { ...r, 자재항목: e.target.value, 자재: e.target.value }
+                              : r
+                          ));
+                        }}
+                        className="h-9 border-0"
+                        style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px",
+                          ...(isLinkedRow ? {
+                            color: "rgba(59, 130, 246, 0.9)",
+                            background: "rgba(59, 130, 246, 0.08)",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(59, 130, 246, 0.2)",
+                          } : {})
+                        }}
+                        placeholder="자재항목 직접 입력"
+                        disabled={isReadOnly}
+                        data-testid={`input-자재항목-${currentGlobalIndex}`}
+                      />
+                    ) : (
+                      <Select 
                         value={materialItem} 
                         onValueChange={(value) => {
-                          // 연동 행이라도 자재항목은 변경 가능
                           const catalogItems = catalog.filter(item =>
                             item.workType === row.공종 &&
                             item.workName === row.공사명 &&
@@ -629,7 +654,6 @@ export function MaterialCostSection({
                                   updated.기준단가 = price;
                                   updated.isManualPriceEntry = false;
                                 }
-                                // 합계 재계산
                                 const qty = (updated.수량m2 || 0) + (updated.수량EA || 0);
                                 updated.수량 = qty;
                                 updated.합계 = Math.round(updated.단가 * qty);
@@ -648,7 +672,6 @@ export function MaterialCostSection({
                           style={{ 
                             fontFamily: "Pretendard", 
                             fontSize: "14px",
-                            // 연동 행이면 파란색 스타일 적용
                             ...(isLinkedRow ? {
                               color: "rgba(59, 130, 246, 0.9)",
                               background: "rgba(59, 130, 246, 0.08)",
@@ -666,6 +689,7 @@ export function MaterialCostSection({
                           ))}
                         </SelectContent>
                       </Select>
+                    )}
                   </td>
                   
                   {/* 단가 - 모든 행에서 편집 가능 */}
