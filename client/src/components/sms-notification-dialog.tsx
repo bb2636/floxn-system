@@ -384,9 +384,11 @@ export function SmsNotificationDialog({
               {caseData.receptionDate
                 ? new Date(caseData.receptionDate).toLocaleDateString("ko-KR")
                 : "-"}{" "}
-              | 처리담당: {caseData.assignedPartner || "-"} | 의뢰일:
-              {caseData.assignmentDate || "-"}| 긴급여부:{" "}
-              {caseData.isEmergency ? "긴급" : "-"}
+              | 처리담당: {caseData.assignedPartner || "-"} | 의뢰일:{" "}
+              {caseData.assignmentDate
+                ? new Date(caseData.assignmentDate).toLocaleDateString("ko-KR")
+                : "-"}{" "}
+              | 긴급여부: {caseData.urgency || "-"}
             </div>
           </div>
 
