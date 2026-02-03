@@ -12806,8 +12806,8 @@ https://www.floxn.co.kr/
       const pdfDoc = await PDFDocument.create();
       pdfDoc.registerFontkit(fontkit);
 
-      // 한글 폰트 로드 (Pretendard OTF 형식 사용)
-      const fontPath = path.join(process.cwd(), "server", "fonts", "Pretendard-Regular.otf");
+      // 한글 폰트 로드 (Pretendard TTF 형식 사용 - pdf-lib 호환성)
+      const fontPath = path.join(process.cwd(), "server", "fonts", "Pretendard-Regular.ttf");
       let customFont;
       let boldFont;
       try {
@@ -12815,7 +12815,7 @@ https://www.floxn.co.kr/
         const fontBytes = fs.readFileSync(fontPath);
         console.log("[send-cancellation-email] Font bytes loaded:", fontBytes.length);
         customFont = await pdfDoc.embedFont(fontBytes);
-        const boldFontPath = path.join(process.cwd(), "server", "fonts", "Pretendard-Bold.otf");
+        const boldFontPath = path.join(process.cwd(), "server", "fonts", "Pretendard-SemiBold.ttf");
         if (fs.existsSync(boldFontPath)) {
           const boldFontBytes = fs.readFileSync(boldFontPath);
           boldFont = await pdfDoc.embedFont(boldFontBytes);
