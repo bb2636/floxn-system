@@ -12806,14 +12806,14 @@ https://www.floxn.co.kr/
       const pdfDoc = await PDFDocument.create();
       pdfDoc.registerFontkit(fontkit);
 
-      // 한글 폰트 로드
-      const fontPath = path.join(process.cwd(), "server", "fonts", "NotoSansKR-Regular.ttf");
+      // 한글 폰트 로드 (OTF 형식 사용)
+      const fontPath = path.join(process.cwd(), "server", "fonts", "NotoSansKR-Regular.otf");
       let customFont;
       let boldFont;
       try {
         const fontBytes = fs.readFileSync(fontPath);
         customFont = await pdfDoc.embedFont(fontBytes);
-        const boldFontPath = path.join(process.cwd(), "server", "fonts", "NotoSansKR-Bold-google.ttf");
+        const boldFontPath = path.join(process.cwd(), "server", "fonts", "NotoSansKR-Bold.otf");
         if (fs.existsSync(boldFontPath)) {
           const boldFontBytes = fs.readFileSync(boldFontPath);
           boldFont = await pdfDoc.embedFont(boldFontBytes);
