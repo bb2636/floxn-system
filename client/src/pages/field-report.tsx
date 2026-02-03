@@ -3129,50 +3129,52 @@ export default function FieldReport() {
               {/* 관리자만 다운로드/이메일 버튼 표시 */}
               {isAdmin && (
                 <div className="flex items-center gap-3">
-                  {/* 이메일 전송 버튼: 항상 표시 */}
-                  <button
-                    onClick={() => {
-                      setPdfDialogMode("email");
-                      setShowPdfDialog(true);
-                    }}
-                    className="flex items-center gap-2 px-4 py-3"
-                    style={{
-                      background: "#FDFDFD",
-                      boxShadow: "2px 4px 30px #BDD1F0",
-                      borderRadius: "10px",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                    data-testid="button-email-report"
-                  >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-                        stroke="#008FED"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <polyline
-                        points="22,6 12,13 2,6"
-                        stroke="#008FED"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "18px",
-                        fontWeight: 600,
-                        letterSpacing: "-0.02em",
-                        color: "#008FED",
+                  {/* 이메일 전송 버튼: 1차승인(심사 승인) 이후에만 표시 */}
+                  {caseData?.reviewDecision === "승인" && (
+                    <button
+                      onClick={() => {
+                        setPdfDialogMode("email");
+                        setShowPdfDialog(true);
                       }}
+                      className="flex items-center gap-2 px-4 py-3"
+                      style={{
+                        background: "#FDFDFD",
+                        boxShadow: "2px 4px 30px #BDD1F0",
+                        borderRadius: "10px",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                      data-testid="button-email-report"
                     >
-                      이메일 전송
-                    </span>
-                  </button>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                          stroke="#008FED"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <polyline
+                          points="22,6 12,13 2,6"
+                          stroke="#008FED"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "18px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.02em",
+                          color: "#008FED",
+                        }}
+                      >
+                        이메일 전송
+                      </span>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setPdfDialogMode("download");
@@ -4765,51 +4767,53 @@ export default function FieldReport() {
                             다운로드
                           </span>
                         </button>
-                        {/* 이메일 전송 버튼: 항상 표시 */}
-                        <button
-                          onClick={() => {
-                            setPdfDialogMode("email");
-                            setShowPdfDialog(true);
-                          }}
-                          className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
-                          style={{
-                            background: "rgba(0, 143, 237, 0.1)",
-                            border: "1px solid rgba(0, 143, 237, 0.3)",
-                          }}
-                          data-testid="button-email-estimate"
-                        >
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <path
-                              d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-                              stroke="#008FED"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M22 6l-10 7L2 6"
-                              stroke="#008FED"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              fontWeight: 600,
-                              color: "#008FED",
+                        {/* 이메일 전송 버튼: 1차승인(심사 승인) 이후에만 표시 */}
+                        {caseData?.reviewDecision === "승인" && (
+                          <button
+                            onClick={() => {
+                              setPdfDialogMode("email");
+                              setShowPdfDialog(true);
                             }}
+                            className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
+                            style={{
+                              background: "rgba(0, 143, 237, 0.1)",
+                              border: "1px solid rgba(0, 143, 237, 0.3)",
+                            }}
+                            data-testid="button-email-estimate"
                           >
-                            이메일 전송
-                          </span>
-                        </button>
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <path
+                                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                                stroke="#008FED"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M22 6l-10 7L2 6"
+                                stroke="#008FED"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                color: "#008FED",
+                              }}
+                            >
+                              이메일 전송
+                            </span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
