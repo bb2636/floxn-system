@@ -12702,7 +12702,7 @@ https://www.floxn.co.kr/
 
   // POST /api/send-cancellation-email - 접수취소 이메일 발송
   const cancellationEmailSchema = z.object({
-    caseId: z.number(),
+    caseId: z.string(),
     cancelReason: z.string().optional(),
     recipients: z.object({
       sendToAssessor: z.boolean().default(false),

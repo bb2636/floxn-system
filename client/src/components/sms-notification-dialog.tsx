@@ -185,7 +185,7 @@ export function SmsNotificationDialog({
         "POST",
         "/api/send-cancellation-email",
         {
-          caseId: Number(caseData.id),
+          caseId: caseData.id,
           cancelReason: cancelReason || undefined,
           recipients: {
             sendToAssessor,
