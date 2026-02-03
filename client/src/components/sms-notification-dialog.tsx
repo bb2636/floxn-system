@@ -108,7 +108,7 @@ export function SmsNotificationDialog({
   const [paymentAmount, setPaymentAmount] = useState<number | undefined>(
     initialPaymentAmount,
   );
-  
+
   // 접수취소 수신자 선택 상태
   const [sendToAssessor, setSendToAssessor] = useState(false);
   const [sendToInvestigator, setSendToInvestigator] = useState(false);
@@ -533,7 +533,7 @@ export function SmsNotificationDialog({
             />
           </div>
 
-          {/* 수신자 선택 */}
+          {/* 수신자 이메일 */}
           <div style={{ margin: "0 24px 20px 24px" }}>
             <div
               style={{
@@ -544,19 +544,16 @@ export function SmsNotificationDialog({
                 marginBottom: "12px",
               }}
             >
-              수신자 선택
+              수신자 이메일
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {/* 심사사 */}
-              <div
+              {/* 심사자 이메일 */}
+              <label
                 style={{
                   display: "flex",
-                  alignItems: "flex-start",
-                  gap: "12px",
-                  padding: "12px 16px",
-                  border: "1px solid #E5E7EB",
-                  borderRadius: "8px",
-                  background: "#FFFFFF",
+                  alignItems: "center",
+                  gap: "8px",
+                  cursor: caseData.assessorEmail ? "pointer" : "default",
                 }}
               >
                 <Checkbox
@@ -566,54 +563,26 @@ export function SmsNotificationDialog({
                   disabled={!caseData.assessorEmail}
                   data-testid="checkbox-assessor-recipient"
                 />
-                <div style={{ flex: 1 }}>
-                  {caseData.assessorEmail ? (
-                    <>
-                      <div
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#0C0C0C",
-                        }}
-                      >
-                        심사사 ({caseData.assessorTeam || caseData.assessorId || "담당자"})
-                      </div>
-                      <div
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "13px",
-                          color: "#666666",
-                          marginTop: "2px",
-                        }}
-                      >
-                        {caseData.assessorEmail}
-                      </div>
-                    </>
-                  ) : (
-                    <div
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "#999999",
-                      }}
-                    >
-                      심사자 정보없음
-                    </div>
-                  )}
-                </div>
-              </div>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: caseData.assessorEmail ? "#0C0C0C" : "#999999",
+                  }}
+                >
+                  {caseData.assessorEmail
+                    ? `심사자 이메일: ${caseData.assessorEmail}`
+                    : "심사자 정보없음"}
+                </span>
+              </label>
 
-              {/* 조사사 */}
-              <div
+              {/* 조사자 이메일 */}
+              <label
                 style={{
                   display: "flex",
-                  alignItems: "flex-start",
-                  gap: "12px",
-                  padding: "12px 16px",
-                  border: "1px solid #E5E7EB",
-                  borderRadius: "8px",
-                  background: "#FFFFFF",
+                  alignItems: "center",
+                  gap: "8px",
+                  cursor: caseData.investigatorEmail ? "pointer" : "default",
                 }}
               >
                 <Checkbox
@@ -623,90 +592,32 @@ export function SmsNotificationDialog({
                   disabled={!caseData.investigatorEmail}
                   data-testid="checkbox-investigator-recipient"
                 />
-                <div style={{ flex: 1 }}>
-                  {caseData.investigatorEmail ? (
-                    <>
-                      <div
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#0C0C0C",
-                        }}
-                      >
-                        조사사 ({caseData.investigatorTeam || caseData.investigatorTeamName || "담당자"})
-                      </div>
-                      <div
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "13px",
-                          color: "#666666",
-                          marginTop: "2px",
-                        }}
-                      >
-                        {caseData.investigatorEmail}
-                      </div>
-                    </>
-                  ) : (
-                    <div
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "#999999",
-                      }}
-                    >
-                      조사자 정보없음
-                    </div>
-                  )}
-                </div>
-              </div>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: caseData.investigatorEmail ? "#0C0C0C" : "#999999",
+                  }}
+                >
+                  {caseData.investigatorEmail
+                    ? `조사자 이메일: ${caseData.investigatorEmail}`
+                    : "조사자 정보없음"}
+                </span>
+              </label>
 
-              {/* 직접 입력 */}
-              <div
+              {/* 보험사 이메일 직접 입력 */}
+              <Input
+                type="email"
+                placeholder="보험사 이메일 주소를 입력해주세요"
+                value={manualEmail}
+                onChange={(e) => setManualEmail(e.target.value)}
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                  padding: "12px 16px",
-                  border: "1px solid #E5E7EB",
-                  borderRadius: "8px",
-                  background: "#FFFFFF",
+                  marginTop: "4px",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
                 }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <Checkbox
-                    id="manual-recipient"
-                    checked={sendToManual}
-                    onCheckedChange={(checked) => setSendToManual(checked === true)}
-                    data-testid="checkbox-manual-recipient"
-                  />
-                  <div
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      color: "#0C0C0C",
-                    }}
-                  >
-                    직접 입력
-                  </div>
-                </div>
-                {sendToManual && (
-                  <Input
-                    type="email"
-                    placeholder="이메일 주소를 입력해주세요"
-                    value={manualEmail}
-                    onChange={(e) => setManualEmail(e.target.value)}
-                    style={{
-                      marginLeft: "28px",
-                      width: "calc(100% - 28px)",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                    }}
-                    data-testid="input-manual-email"
-                  />
-                )}
-              </div>
+                data-testid="input-manual-email"
+              />
             </div>
           </div>
 
