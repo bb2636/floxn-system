@@ -12848,6 +12848,46 @@ https://www.floxn.co.kr/
         return s.trim();
       };
 
+      // 하이픈 간격 보정하여 텍스트 그리기 (현장출동보고서와 동일 방식)
+      const drawTextTight = (
+        text: string,
+        startX: number,
+        textY: number,
+        textSize: number,
+        font: any,
+        textColor: any
+      ) => {
+        const normalizedText = normalizeText(text);
+        if (!normalizedText) return;
+        const offset = textSize * 0.06;
+        const parts = normalizedText.split("-");
+        let cursorX = startX;
+        const hyphenWidth = font.widthOfTextAtSize("-", textSize);
+
+        for (let i = 0; i < parts.length; i++) {
+          if (parts[i]) {
+            page.drawText(parts[i], {
+              x: cursorX,
+              y: textY,
+              size: textSize,
+              font,
+              color: textColor,
+            });
+            cursorX += font.widthOfTextAtSize(parts[i], textSize);
+          }
+          if (i < parts.length - 1) {
+            page.drawText("-", {
+              x: cursorX,
+              y: textY,
+              size: textSize,
+              font,
+              color: textColor,
+            });
+            cursorX += hyphenWidth - offset;
+          }
+        }
+      };
+
       // ========== 제목: 접수취소 안내 ==========
       const titleText = "접수취소 안내";
       const titleWidth = boldFont.widthOfTextAtSize(titleText, 22);
@@ -12896,24 +12936,24 @@ https://www.floxn.co.kr/
       page.drawText("사고번호(증권번호)", { x: margin + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       // 셀 1-2
       page.drawRectangle({ x: margin + col1Width, y: yPos - rowHeight, width: col2Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(normalizeText(accidentNo), { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      drawTextTight(accidentNo, margin + col1Width + 5, yPos - 20, 10, customFont, rgb(0, 0, 0));
       // 셀 1-3
       page.drawRectangle({ x: margin + col1Width + col2Width, y: yPos - rowHeight, width: col3Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page.drawText("수임일자", { x: margin + col1Width + col2Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       // 셀 1-4
       page.drawRectangle({ x: margin + col1Width + col2Width + col3Width, y: yPos - rowHeight, width: col4Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(receptionDateStr, { x: margin + col1Width + col2Width + col3Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      drawTextTight(receptionDateStr, margin + col1Width + col2Width + col3Width + 5, yPos - 20, 10, customFont, rgb(0, 0, 0));
       yPos -= rowHeight;
 
       // Row 2: 피보험자명 | value | 취소일자 | value
       page.drawRectangle({ x: margin, y: yPos - rowHeight, width: col1Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page.drawText("피보험자명", { x: margin + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       page.drawRectangle({ x: margin + col1Width, y: yPos - rowHeight, width: col2Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(normalizeText(insuredName), { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      drawTextTight(insuredName, margin + col1Width + 5, yPos - 20, 10, customFont, rgb(0, 0, 0));
       page.drawRectangle({ x: margin + col1Width + col2Width, y: yPos - rowHeight, width: col3Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page.drawText("취소일자", { x: margin + col1Width + col2Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       page.drawRectangle({ x: margin + col1Width + col2Width + col3Width, y: yPos - rowHeight, width: col4Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(normalizeText(dateStr), { x: margin + col1Width + col2Width + col3Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      drawTextTight(dateStr, margin + col1Width + col2Width + col3Width + 5, yPos - 20, 10, customFont, rgb(0, 0, 0));
       yPos -= rowHeight;
 
       // Row 3: 취소사유 (full width)
