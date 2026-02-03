@@ -384,7 +384,7 @@ export function SmsNotificationDialog({
               {caseData.receptionDate
                 ? new Date(caseData.receptionDate).toLocaleDateString("ko-KR")
                 : "-"}{" "}
-              | 처리담당: {caseData.managerName || "-"} | 의뢰일:{" "}
+              | 처리담당: {caseData.assignedPartner || "-"} | 의뢰일:{" "}
               {caseData.requestDate
                 ? new Date(caseData.requestDate).toLocaleDateString("ko-KR")
                 : "-"}{" "}
