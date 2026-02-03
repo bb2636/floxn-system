@@ -12700,6 +12700,175 @@ https://www.floxn.co.kr/
     }
   });
 
+  // POST /api/send-cancellation-email - 접수취소 이메일 발송
+  const cancellationEmailSchema = z.object({
+    caseId: z.number(),
+    cancelReason: z.string().optional(),
+    recipients: z.object({
+      sendToAssessor: z.boolean().default(false),
+      sendToInvestigator: z.boolean().default(false),
+      manualEmail: z.string().optional(),
+    }),
+  });
+
+  app.post("/api/send-cancellation-email", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const currentUser = await storage.getUser(req.session.userId);
+    if (!currentUser) {
+      return res.status(401).json({ error: "사용자를 찾을 수 없습니다" });
+    }
+
+    if (!["관리자", "협력사"].includes(currentUser.role)) {
+      return res.status(403).json({ error: "이메일 발송 권한이 없습니다" });
+    }
+
+    try {
+      const validatedData = cancellationEmailSchema.parse(req.body);
+      const { caseId, cancelReason, recipients } = validatedData;
+
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      const emailRecipients: string[] = [];
+      
+      if (recipients.sendToAssessor && caseData.assessorEmail) {
+        emailRecipients.push(caseData.assessorEmail);
+      }
+      if (recipients.sendToInvestigator && caseData.investigatorEmail) {
+        emailRecipients.push(caseData.investigatorEmail);
+      }
+      if (recipients.manualEmail && recipients.manualEmail.trim()) {
+        emailRecipients.push(recipients.manualEmail.trim());
+      }
+
+      if (emailRecipients.length === 0) {
+        return res.status(400).json({ error: "수신자 이메일이 선택되지 않았습니다" });
+      }
+
+      const subjectIdentifier = caseData.insuranceAccidentNo || caseData.insurancePolicyNo || caseData.caseNumber || "-";
+      const subject = `[FLOXN] 접수취소- ${subjectIdentifier}`;
+
+      const today = new Date();
+      const kstDate = new Date(today.getTime() + 9 * 60 * 60 * 1000);
+      const dateStr = `${kstDate.getFullYear()}.${String(kstDate.getMonth() + 1).padStart(2, "0")}.${String(kstDate.getDate()).padStart(2, "0")}`;
+
+      const accidentNo = caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-";
+      const caseNumber = caseData.caseNumber || "-";
+      const insuredName = caseData.insuredName || "-";
+
+      const htmlContent = `
+        <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 3px solid #DAA520;">
+          <h2 style="color: #333; text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">접수취소 안내드립니다.</h2>
+          
+          <p style="color: #333; line-height: 1.8; margin-bottom: 20px;">
+            안녕하세요.<br/>
+            아래 내용의 <strong>접수취소</strong> 안내드립니다.
+          </p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr>
+              <td style="background: #F5F5DC; padding: 10px 15px; border: 1px solid #ccc; width: 35%; font-weight: bold;">사고번호(증권번호)</td>
+              <td style="padding: 10px 15px; border: 1px solid #ccc;">${accidentNo}</td>
+            </tr>
+            <tr>
+              <td style="background: #87CEEB; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold; text-decoration: line-through;">접수번호</td>
+              <td style="padding: 10px 15px; border: 1px solid #ccc;">${caseNumber}</td>
+            </tr>
+            <tr>
+              <td style="background: #FFE4B5; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">피보험자명</td>
+              <td style="padding: 10px 15px; border: 1px solid #ccc;">${insuredName}</td>
+            </tr>
+            <tr>
+              <td style="background: #F5F5DC; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">취소사유</td>
+              <td style="padding: 10px 15px; border: 1px solid #ccc;">${cancelReason || "-"}</td>
+            </tr>
+            <tr>
+              <td style="background: #F5F5DC; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">발송일</td>
+              <td style="padding: 10px 15px; border: 1px solid #ccc;">${dateStr}</td>
+            </tr>
+          </table>
+          
+          <p style="color: #333; line-height: 1.8; margin: 20px 0;">
+            감사합니다.
+          </p>
+          
+          <div style="border-top: 1px solid #e0e0e0; padding-top: 16px; margin-top: 24px;">
+            <p style="font-size: 14px; font-weight: bold; color: #333; margin: 0 0 8px 0;">FLOXN</p>
+            <p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">Front Line Ops Xpert Net</p>
+            <p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">주식회사 플록슨(FLOXN Co., Ltd.)</p>
+            <p style="font-size: 12px; color: #666; margin: 0;">서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호</p>
+          </div>
+        </div>
+      `;
+
+      const textContent = `접수취소 안내드립니다.
+
+안녕하세요.
+아래 내용의 접수취소 사유를 송부드립니다.
+
+- 사고번호(증권번호): ${accidentNo}
+- 접수번호: ${caseNumber}
+- 피보험자명: ${insuredName}
+- 취소사유: ${cancelReason || "-"}
+- 발송일: ${dateStr}
+
+감사합니다.
+FLOXN`;
+
+      const results: { email: string; success: boolean; error?: string }[] = [];
+
+      for (const email of emailRecipients) {
+        try {
+          const result = await sendEmailWithAttachment({
+            to: email,
+            subject,
+            text: textContent,
+            html: htmlContent,
+            attachments: [],
+          });
+
+          if (result.success) {
+            console.log(`[send-cancellation-email] Email sent to: ${email}`);
+            results.push({ email, success: true });
+          } else {
+            console.error(`[send-cancellation-email] Failed to send to ${email}:`, result.error);
+            results.push({ email, success: false, error: result.error });
+          }
+        } catch (sendError: any) {
+          console.error(`[send-cancellation-email] Error sending to ${email}:`, sendError);
+          results.push({ email, success: false, error: sendError?.message || "발송 실패" });
+        }
+      }
+
+      const successCount = results.filter((r) => r.success).length;
+      const failCount = results.filter((r) => !r.success).length;
+
+      res.json({
+        success: successCount > 0,
+        message: `${successCount}건 이메일 발송 완료${failCount > 0 ? `, ${failCount}건 실패` : ""}`,
+        results,
+      });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        console.error("[send-cancellation-email] Validation error:", error.errors);
+        return res.status(400).json({
+          error: "요청 데이터가 올바르지 않습니다",
+          details: error.errors,
+        });
+      }
+      console.error("[send-cancellation-email] Error:", error);
+      res.status(500).json({
+        error: "이메일 발송에 실패했습니다",
+        details: error instanceof Error ? error.message : "알 수 없는 오류",
+      });
+    }
+  });
+
   // POST /api/submit-claim-documents - 청구자료 제출 (해당 케이스 1건만 상태 변경 + 모든 관련 케이스가 제출 완료 시 SMS 발송)
   app.post("/api/submit-claim-documents", async (req, res) => {
     if (!req.session?.userId) {

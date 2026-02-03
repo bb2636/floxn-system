@@ -179,6 +179,40 @@ export function SmsNotificationDialog({
     },
   });
 
+  const sendCancellationEmailMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest(
+        "POST",
+        "/api/send-cancellation-email",
+        {
+          caseId: caseData.id,
+          cancelReason: cancelReason || undefined,
+          recipients: {
+            sendToAssessor,
+            sendToInvestigator,
+            manualEmail: manualEmail.trim() || undefined,
+          },
+        },
+      );
+      return response;
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "이메일 발송 완료",
+        description: data.message || "접수취소 이메일이 발송되었습니다.",
+      });
+      onOpenChange(false);
+      onSuccess?.();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "이메일 발송 실패",
+        description: error?.message || "이메일 발송에 실패했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSend = () => {
     if (
       !recipients.partner &&
@@ -636,22 +670,32 @@ export function SmsNotificationDialog({
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={sendNotificationMutation.isPending}
+              disabled={sendCancellationEmailMutation.isPending}
               data-testid="button-cancel-notification"
               style={{ minWidth: "80px" }}
             >
               취소
             </Button>
             <Button
-              onClick={handleSend}
-              disabled={sendNotificationMutation.isPending}
+              onClick={() => {
+                if (!sendToAssessor && !sendToInvestigator && !manualEmail.trim()) {
+                  toast({
+                    title: "수신자 선택 필요",
+                    description: "최소 1명의 수신자를 선택해주세요.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                sendCancellationEmailMutation.mutate();
+              }}
+              disabled={sendCancellationEmailMutation.isPending}
               data-testid="button-send-notification"
               style={{
                 minWidth: "100px",
                 background: "#008FED",
               }}
             >
-              {sendNotificationMutation.isPending ? (
+              {sendCancellationEmailMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   발송 중...
