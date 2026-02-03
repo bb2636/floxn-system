@@ -12774,6 +12774,31 @@ https://www.floxn.co.kr/
       const caseNumber = caseData.caseNumber || "-";
       const insuredName = caseData.insuredName || "-";
 
+      // 로고 파일 로드
+      let logoBuffer: Buffer | null = null;
+      try {
+        const logoPath = path.join(
+          process.cwd(),
+          "attached_assets",
+          "floxn_logo_email.png",
+        );
+        if (fs.existsSync(logoPath)) {
+          logoBuffer = fs.readFileSync(logoPath);
+          console.log(
+            `[send-cancellation-email] Logo loaded: ${logoBuffer.length} bytes`,
+          );
+        } else {
+          console.warn(
+            `[send-cancellation-email] Logo file not found: ${logoPath}`,
+          );
+        }
+      } catch (logoError) {
+        console.warn(
+          `[send-cancellation-email] Failed to load logo:`,
+          logoError,
+        );
+      }
+
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333; text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">접수취소 안내드립니다.</h2>
@@ -12807,7 +12832,7 @@ https://www.floxn.co.kr/
           </p>
           
           <div style="border-top: 1px solid #e0e0e0; padding-top: 16px; margin-top: 24px;">
-            <p style="font-size: 14px; font-weight: bold; color: #333; margin: 0 0 8px 0;">FLOXN</p>
+            ${logoBuffer ? '<img src="cid:floxn-logo" alt="FLOXN" style="height: 24px; margin-bottom: 8px;">' : '<p style="font-size: 14px; font-weight: bold; color: #333; margin: 0 0 8px 0;">FLOXN</p>'}
             <p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">Front Line Ops Xpert Net</p>
             <p style="font-size: 12px; color: #666; margin: 0 0 4px 0;">주식회사 플록슨(FLOXN Co., Ltd.)</p>
             <p style="font-size: 12px; color: #666; margin: 0;">서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호</p>
@@ -12831,6 +12856,23 @@ FLOXN`;
 
       const results: { email: string; success: boolean; error?: string }[] = [];
 
+      // 로고 첨부파일 준비
+      const attachments: Array<{
+        filename: string;
+        content: Buffer;
+        contentType: string;
+        cid?: string;
+      }> = [];
+
+      if (logoBuffer) {
+        attachments.push({
+          filename: "floxn_logo.png",
+          content: logoBuffer,
+          contentType: "image/png",
+          cid: "floxn-logo",
+        });
+      }
+
       for (const email of emailRecipients) {
         try {
           const result = await sendEmailWithAttachment({
@@ -12838,7 +12880,7 @@ FLOXN`;
             subject,
             text: textContent,
             html: htmlContent,
-            attachments: [],
+            attachments,
           });
 
           if (result.success) {
