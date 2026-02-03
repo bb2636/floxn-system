@@ -108,6 +108,12 @@ export function SmsNotificationDialog({
   const [paymentAmount, setPaymentAmount] = useState<number | undefined>(
     initialPaymentAmount,
   );
+  
+  // 접수취소 수신자 선택 상태
+  const [sendToAssessor, setSendToAssessor] = useState(false);
+  const [sendToInvestigator, setSendToInvestigator] = useState(false);
+  const [sendToManual, setSendToManual] = useState(false);
+  const [manualEmail, setManualEmail] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -117,6 +123,11 @@ export function SmsNotificationDialog({
       setRecoveryAmount(initialRecoveryAmount);
       setFeeRate(initialFeeRate);
       setPaymentAmount(initialPaymentAmount);
+      // 접수취소 수신자 선택 초기화
+      setSendToAssessor(false);
+      setSendToInvestigator(false);
+      setSendToManual(false);
+      setManualEmail("");
     }
   }, [
     open,
@@ -384,9 +395,11 @@ export function SmsNotificationDialog({
               {caseData.receptionDate
                 ? new Date(caseData.receptionDate).toLocaleDateString("ko-KR")
                 : "-"}{" "}
-              | 처리담당: {caseData.assignedPartner || "-"} | 의뢰일:
-              {caseData.assignmentDate || "-"}| 긴급여부:{" "}
-              {caseData.isEmergency ? "긴급" : "-"}
+              | 처리담당: {caseData.assignedPartner || "-"} | 의뢰일:{" "}
+              {caseData.assignmentDate
+                ? new Date(caseData.assignmentDate).toLocaleDateString("ko-KR")
+                : "-"}{" "}
+              | 긴급여부: {caseData.urgency || "-"}
             </div>
           </div>
 
@@ -518,6 +531,183 @@ export function SmsNotificationDialog({
               }}
               data-testid="textarea-cancel-reason"
             />
+          </div>
+
+          {/* 수신자 선택 */}
+          <div style={{ margin: "0 24px 20px 24px" }}>
+            <div
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#0C0C0C",
+                marginBottom: "12px",
+              }}
+            >
+              수신자 선택
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {/* 심사사 */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "12px",
+                  padding: "12px 16px",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "8px",
+                  background: "#FFFFFF",
+                }}
+              >
+                <Checkbox
+                  id="assessor-recipient"
+                  checked={sendToAssessor}
+                  onCheckedChange={(checked) => setSendToAssessor(checked === true)}
+                  disabled={!caseData.assessorEmail}
+                  data-testid="checkbox-assessor-recipient"
+                />
+                <div style={{ flex: 1 }}>
+                  {caseData.assessorEmail ? (
+                    <>
+                      <div
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        심사사 ({caseData.assessorTeam || caseData.assessorId || "담당자"})
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "13px",
+                          color: "#666666",
+                          marginTop: "2px",
+                        }}
+                      >
+                        {caseData.assessorEmail}
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        color: "#999999",
+                      }}
+                    >
+                      심사자 정보없음
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 조사사 */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "12px",
+                  padding: "12px 16px",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "8px",
+                  background: "#FFFFFF",
+                }}
+              >
+                <Checkbox
+                  id="investigator-recipient"
+                  checked={sendToInvestigator}
+                  onCheckedChange={(checked) => setSendToInvestigator(checked === true)}
+                  disabled={!caseData.investigatorEmail}
+                  data-testid="checkbox-investigator-recipient"
+                />
+                <div style={{ flex: 1 }}>
+                  {caseData.investigatorEmail ? (
+                    <>
+                      <div
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        조사사 ({caseData.investigatorTeam || caseData.investigatorTeamName || "담당자"})
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "13px",
+                          color: "#666666",
+                          marginTop: "2px",
+                        }}
+                      >
+                        {caseData.investigatorEmail}
+                      </div>
+                    </>
+                  ) : (
+                    <div
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        color: "#999999",
+                      }}
+                    >
+                      조사자 정보없음
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 직접 입력 */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  padding: "12px 16px",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "8px",
+                  background: "#FFFFFF",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <Checkbox
+                    id="manual-recipient"
+                    checked={sendToManual}
+                    onCheckedChange={(checked) => setSendToManual(checked === true)}
+                    data-testid="checkbox-manual-recipient"
+                  />
+                  <div
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    직접 입력
+                  </div>
+                </div>
+                {sendToManual && (
+                  <Input
+                    type="email"
+                    placeholder="이메일 주소를 입력해주세요"
+                    value={manualEmail}
+                    onChange={(e) => setManualEmail(e.target.value)}
+                    style={{
+                      marginLeft: "28px",
+                      width: "calc(100% - 28px)",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                    }}
+                    data-testid="input-manual-email"
+                  />
+                )}
+              </div>
+            </div>
           </div>
 
           {/* 버튼 */}
