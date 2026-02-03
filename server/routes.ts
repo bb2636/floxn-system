@@ -12805,7 +12805,7 @@ https://www.floxn.co.kr/
           
           <p style="color: #333; line-height: 1.8; margin-bottom: 20px;">
             안녕하세요.<br/>
-            아래 내용의 <strong>접수취소</strong> 안내드립니다.
+            아래 내용의 <strong>접수취소</strong> 사유를 첨부하여 송부드립니다.
           </p>
           
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -12828,7 +12828,7 @@ https://www.floxn.co.kr/
           </table>
           
           <p style="color: #333; line-height: 1.8; margin: 20px 0;">
-            감사합니다.
+            첨부된 PDF 파일을 확인해주시길 바랍니다. 감사합니다.
           </p>
           
           <div style="border-top: 1px solid #e0e0e0; padding-top: 16px; margin-top: 24px;">
