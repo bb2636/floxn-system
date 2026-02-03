@@ -12799,6 +12799,191 @@ https://www.floxn.co.kr/
         );
       }
 
+      // ========== PDF 생성 ==========
+      const { PDFDocument, rgb, StandardFonts } = await import("pdf-lib");
+      const fontkit = (await import("@pdf-lib/fontkit")).default;
+
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.registerFontkit(fontkit);
+
+      // 한글 폰트 로드
+      const fontPath = path.join(process.cwd(), "attached_assets", "NotoSansKR-Regular.ttf");
+      let customFont;
+      let boldFont;
+      try {
+        const fontBytes = fs.readFileSync(fontPath);
+        customFont = await pdfDoc.embedFont(fontBytes);
+        const boldFontPath = path.join(process.cwd(), "attached_assets", "NotoSansKR-Bold.ttf");
+        if (fs.existsSync(boldFontPath)) {
+          const boldFontBytes = fs.readFileSync(boldFontPath);
+          boldFont = await pdfDoc.embedFont(boldFontBytes);
+        } else {
+          boldFont = customFont;
+        }
+      } catch (fontError) {
+        console.warn("[send-cancellation-email] Font load error, using Helvetica:", fontError);
+        customFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      }
+
+      const page = pdfDoc.addPage([595, 842]); // A4 size
+      const { width, height } = page.getSize();
+      const margin = 50;
+      let yPos = height - margin;
+
+      // 제목: 접수취소 안내
+      const titleText = "접수취소 안내";
+      const titleWidth = boldFont.widthOfTextAtSize(titleText, 24);
+      page.drawText(titleText, {
+        x: (width - titleWidth) / 2,
+        y: yPos,
+        size: 24,
+        font: boldFont,
+        color: rgb(0, 0, 0),
+      });
+      yPos -= 15;
+
+      // 제목 아래 선
+      page.drawLine({
+        start: { x: margin, y: yPos },
+        end: { x: width - margin, y: yPos },
+        thickness: 2,
+        color: rgb(0.8, 0.6, 0.2), // 황금색 선
+      });
+      yPos -= 40;
+
+      // 수신 정보
+      const insuranceCompany = caseData.insuranceCompany || "-";
+      page.drawText("수    신  :", { x: margin, y: yPos, size: 12, font: boldFont, color: rgb(0.6, 0.4, 0.2) });
+      page.drawText(insuranceCompany, { x: margin + 80, y: yPos, size: 12, font: customFont, color: rgb(0.8, 0.4, 0.2) });
+      yPos -= 25;
+
+      // 사고번호(증권번호) / 수임일자
+      page.drawText("사고번호", { x: margin, y: yPos, size: 11, font: boldFont, color: rgb(0.6, 0.4, 0.2) });
+      page.drawText("(증권번호)  :", { x: margin, y: yPos - 12, size: 11, font: boldFont, color: rgb(0.6, 0.4, 0.2) });
+      page.drawText(accidentNo, { x: margin + 80, y: yPos - 6, size: 11, font: customFont, color: rgb(0, 0, 0) });
+
+      // 수임일자 (receptionDate)
+      let receptionDateStr = "-";
+      if (caseData.receptionDate) {
+        const rd = new Date(caseData.receptionDate);
+        receptionDateStr = `${rd.getFullYear()}.${String(rd.getMonth() + 1).padStart(2, "0")}.${String(rd.getDate()).padStart(2, "0")}`;
+      }
+      page.drawText("수임일자  :", { x: 320, y: yPos - 6, size: 11, font: boldFont, color: rgb(0.6, 0.4, 0.2) });
+      page.drawText(receptionDateStr, { x: 400, y: yPos - 6, size: 11, font: customFont, color: rgb(0, 0, 0) });
+      yPos -= 40;
+
+      // 피보험자명
+      page.drawText("피보험자명 :", { x: margin, y: yPos, size: 11, font: boldFont, color: rgb(0, 0, 0) });
+      page.drawText(insuredName, { x: margin + 80, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
+      yPos -= 25;
+
+      // 취소일자
+      page.drawText("취소일자  :", { x: margin, y: yPos, size: 11, font: boldFont, color: rgb(0.6, 0.4, 0.2) });
+      page.drawText(dateStr, { x: margin + 80, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
+      yPos -= 40;
+
+      // 테이블 헤더: 접수취소 사유를 첨부하여 송부드립니다
+      const tableWidth = width - margin * 2;
+      const headerHeight = 30;
+      page.drawRectangle({
+        x: margin,
+        y: yPos - headerHeight,
+        width: tableWidth,
+        height: headerHeight,
+        color: rgb(0.95, 0.95, 0.9),
+        borderColor: rgb(0.7, 0.7, 0.7),
+        borderWidth: 1,
+      });
+      const headerText = "접수취소 사유를 첨부하여 송부드립니다";
+      page.drawText(headerText, {
+        x: margin + 10,
+        y: yPos - 20,
+        size: 11,
+        font: boldFont,
+        color: rgb(0, 0, 0),
+      });
+      yPos -= headerHeight;
+
+      // 취소사유 테이블 (라벨 + 내용)
+      const labelWidth = 80;
+      const contentWidth = tableWidth - labelWidth;
+      const reasonText = cancelReason || "-";
+      
+      // 취소사유 텍스트 줄바꿈 처리
+      const maxCharsPerLine = 60;
+      const reasonLines: string[] = [];
+      let remainingText = reasonText;
+      while (remainingText.length > 0) {
+        if (remainingText.length <= maxCharsPerLine) {
+          reasonLines.push(remainingText);
+          break;
+        }
+        reasonLines.push(remainingText.substring(0, maxCharsPerLine));
+        remainingText = remainingText.substring(maxCharsPerLine);
+      }
+      
+      const lineHeight = 18;
+      const reasonRowHeight = Math.max(60, reasonLines.length * lineHeight + 20);
+
+      // 취소사유 라벨 셀
+      page.drawRectangle({
+        x: margin,
+        y: yPos - reasonRowHeight,
+        width: labelWidth,
+        height: reasonRowHeight,
+        color: rgb(0.97, 0.97, 0.95),
+        borderColor: rgb(0.7, 0.7, 0.7),
+        borderWidth: 1,
+      });
+      page.drawText("취소사유", {
+        x: margin + 15,
+        y: yPos - reasonRowHeight / 2 - 5,
+        size: 11,
+        font: boldFont,
+        color: rgb(0, 0, 0),
+      });
+
+      // 취소사유 내용 셀
+      page.drawRectangle({
+        x: margin + labelWidth,
+        y: yPos - reasonRowHeight,
+        width: contentWidth,
+        height: reasonRowHeight,
+        borderColor: rgb(0.7, 0.7, 0.7),
+        borderWidth: 1,
+      });
+      
+      // 취소사유 텍스트 그리기
+      let textY = yPos - 20;
+      for (const line of reasonLines) {
+        page.drawText(line, {
+          x: margin + labelWidth + 10,
+          y: textY,
+          size: 10,
+          font: customFont,
+          color: rgb(0, 0, 0),
+        });
+        textY -= lineHeight;
+      }
+      yPos -= reasonRowHeight;
+
+      // 하단 여백
+      yPos -= 30;
+
+      // Footer: FLOXN., Inc
+      page.drawText("FLOXN., Inc", {
+        x: (width - boldFont.widthOfTextAtSize("FLOXN., Inc", 10)) / 2,
+        y: margin,
+        size: 10,
+        font: boldFont,
+        color: rgb(0.4, 0.4, 0.4),
+      });
+
+      const pdfBytes = await pdfDoc.save();
+      const pdfBuffer = Buffer.from(pdfBytes);
+      console.log(`[send-cancellation-email] PDF generated: ${pdfBuffer.length} bytes`);
+
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333; text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">접수취소 안내드립니다.</h2>
@@ -12856,7 +13041,7 @@ FLOXN`;
 
       const results: { email: string; success: boolean; error?: string }[] = [];
 
-      // 로고 첨부파일 준비
+      // 첨부파일 준비 (PDF + 로고)
       const attachments: Array<{
         filename: string;
         content: Buffer;
@@ -12864,6 +13049,15 @@ FLOXN`;
         cid?: string;
       }> = [];
 
+      // PDF 첨부
+      const pdfFilename = `접수취소안내_${accidentNo.replace(/[^a-zA-Z0-9가-힣-]/g, "_")}_${dateStr.replace(/\./g, "")}.pdf`;
+      attachments.push({
+        filename: pdfFilename,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      });
+
+      // 로고 첨부 (이메일 본문용)
       if (logoBuffer) {
         attachments.push({
           filename: "floxn_logo.png",
