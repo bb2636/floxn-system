@@ -381,8 +381,8 @@ export function SmsNotificationDialog({
               }}
             >
               접수일:{" "}
-              {caseData.receiptDate
-                ? new Date(caseData.receiptDate).toLocaleDateString("ko-KR")
+              {caseData.receptionDate
+                ? new Date(caseData.receptionDate).toLocaleDateString("ko-KR")
                 : "-"}{" "}
               | 처리담당: {caseData.managerName || "-"} | 의뢰일:{" "}
               {caseData.requestDate
