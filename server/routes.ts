@@ -6153,7 +6153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // OLD FORMAT: 공종, 공사명(품명), 세부공사, 세부항목, 인, 수량, 무게, 천장, 벽체, 바닥, 길이, 비고
+        // OLD FORMAT: 공종, 공사명(품d��), 세부공사, 세부항목, 인, 수량, 무게, 천장, 벽체, 바닥, 길이, 비고
         let prevCategory: string | null = null;
         let prevWorkName: string | null = null;
         let prevDetailWork: string | null = null;
@@ -10199,7 +10199,7 @@ FLOXN`;
                 // 실제 배치된 이미지 개수만큼 스킵
                 i += actualCount;
               } else {
-                // 1장/페이지 레이us�웃
+                // 1장/페이mo� 레이us�웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
 
                 // 헤더 그리기 - 테이블 형태 (현장출동보고서 스타일)
@@ -12785,19 +12785,19 @@ https://www.floxn.co.kr/
           
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr>
-              <td style="background: #F5F5DC; padding: 10px 15px; border: 1px solid #ccc; width: 35%; font-weight: bold;">사고번호(증권번호)</td>
+              <td style="background: #f8f8f8; padding: 10px 15px; border: 1px solid #ccc; width: 35%; font-weight: bold;">사고번호(증권번호)</td>
               <td style="padding: 10px 15px; border: 1px solid #ccc;">${accidentNo}</td>
             </tr>
             <tr>
-              <td style="background: #FFE4B5; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">피보험자명</td>
+              <td style="background: #f8f8f8; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">피보험자명</td>
               <td style="padding: 10px 15px; border: 1px solid #ccc;">${insuredName}</td>
             </tr>
             <tr>
-              <td style="background: #F5F5DC; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">취소사유</td>
+              <td style="background: #f8f8f8; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">취소사유</td>
               <td style="padding: 10px 15px; border: 1px solid #ccc;">${cancelReason || "-"}</td>
             </tr>
             <tr>
-              <td style="background: #F5F5DC; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">발송일</td>
+              <td style="background: #f8f8f8; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">발송일</td>
               <td style="padding: 10px 15px; border: 1px solid #ccc;">${dateStr}</td>
             </tr>
           </table>
