@@ -12780,7 +12780,7 @@ https://www.floxn.co.kr/
         const logoPath = path.join(
           process.cwd(),
           "attached_assets",
-          "floxn_logo_email.png",
+          "logo_1767744300048.png",
         );
         if (fs.existsSync(logoPath)) {
           logoBuffer = fs.readFileSync(logoPath);
