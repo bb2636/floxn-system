@@ -200,6 +200,10 @@ export default function ComprehensiveProgress() {
     null,
   );
 
+  // 접수취소 확인 다이얼로그 상태
+  const [cancelConfirmDialogOpen, setCancelConfirmDialogOpen] = useState(false);
+  const [cancelTargetCase, setCancelTargetCase] = useState<CaseWithLatestProgress | null>(null);
+
   // 청구하기 버튼 표시 조건: 연관된 모든 케이스가 "청구" 상태인 경우에만 버튼 표시
   const canShowClaimButton = (
     caseItem: CaseWithLatestProgress,
@@ -864,6 +868,16 @@ export default function ComprehensiveProgress() {
   const handleStatusChange = (caseId: string, status: string) => {
     // 자동 전환이 필요한 상태인지 확인
     const targetStatus = STATUS_AUTO_TRANSITION[status] || status;
+
+    // 접수취소인 경우 확인 팝업 먼저 표시
+    if (targetStatus === "접수취소") {
+      const targetCase = cases?.find(c => c.id === caseId);
+      if (targetCase) {
+        setCancelTargetCase(targetCase);
+        setCancelConfirmDialogOpen(true);
+      }
+      return;
+    }
 
     // 관리자는 모든 상태 변경 가능
     if (user?.role === "관리자") {
@@ -3494,6 +3508,43 @@ export default function ComprehensiveProgress() {
           }}
         />
       )}
+
+      {/* 접수취소 확인 다이얼로그 */}
+      <AlertDialog open={cancelConfirmDialogOpen} onOpenChange={setCancelConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>접수 취소 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              [{cancelTargetCase?.accidentNumber || cancelTargetCase?.caseNumber}] 건을 접수 취소 하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setCancelConfirmDialogOpen(false);
+                setCancelTargetCase(null);
+              }}
+              data-testid="button-cancel-cancellation"
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (cancelTargetCase) {
+                  // 확인 다이얼로그 닫기
+                  setCancelConfirmDialogOpen(false);
+                  // 상태를 접수취소로 변경 (onSuccess에서 자동으로 사유 입력 다이얼로그 표시)
+                  updateStatusMutation.mutate({ caseId: cancelTargetCase.id, status: "접수취소" });
+                  setCancelTargetCase(null);
+                }
+              }}
+              data-testid="button-confirm-cancellation"
+            >
+              확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
