@@ -2383,6 +2383,30 @@ export default function FieldReport() {
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
 
+                    // 다운로드 성공 시 케이스 상태를 "현장정보제출"로 변경
+                    try {
+                      await apiRequest(
+                        "PATCH",
+                        `/api/cases/${selectedCaseId}`,
+                        {
+                          status: "현장정보제출",
+                        },
+                      );
+                      // 케이스 데이터 새로고침
+                      queryClient.invalidateQueries({
+                        queryKey: [
+                          "/api/field-surveys",
+                          selectedCaseId,
+                          "report",
+                        ],
+                      });
+                      queryClient.invalidateQueries({
+                        queryKey: ["/api/cases"],
+                      });
+                    } catch (statusError) {
+                      console.error("상태 업데이트 오류:", statusError);
+                    }
+
                     setShowPdfDialog(false);
                     toast({
                       title: "PDF 다운로드 완료",
