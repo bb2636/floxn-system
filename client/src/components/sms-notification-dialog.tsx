@@ -323,6 +323,202 @@ export function SmsNotificationDialog({
     }
   };
 
+  // 접수취소 전용 UI
+  if (stage === "접수취소") {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md" style={{ padding: 0, overflow: "hidden" }}>
+          {/* 헤더 */}
+          <div style={{ 
+            padding: "20px 24px", 
+            borderBottom: "1px solid #E5E7EB",
+            background: "#FFFFFF"
+          }}>
+            <DialogTitle style={{ 
+              fontFamily: "Pretendard", 
+              fontSize: "18px", 
+              fontWeight: 700,
+              color: "#0C0C0C",
+              margin: 0
+            }}>
+              접수취소 이메일 보험사 통지하기
+            </DialogTitle>
+          </div>
+
+          {/* 케이스 정보 */}
+          <div style={{ 
+            margin: "16px 24px",
+            background: "#F5F5F5",
+            borderRadius: "8px",
+            padding: "16px"
+          }}>
+            <div style={{ 
+              fontFamily: "Pretendard", 
+              fontSize: "14px", 
+              fontWeight: 600,
+              color: "#0C0C0C",
+              marginBottom: "8px"
+            }}>
+              {caseData.insuranceCompany || "보험사"} {caseData.insuranceAccidentNo || caseData.caseNumber}
+            </div>
+            <div style={{ 
+              fontFamily: "Pretendard", 
+              fontSize: "12px",
+              color: "#666666"
+            }}>
+              접수일: {caseData.receiptDate ? new Date(caseData.receiptDate).toLocaleDateString("ko-KR") : "-"} | 처리담당: {caseData.managerName || "-"} | 의뢰일: {caseData.requestDate ? new Date(caseData.requestDate).toLocaleDateString("ko-KR") : "-"} | 긴급여부: {caseData.isEmergency ? "긴급" : "-"}
+            </div>
+          </div>
+
+          {/* 정보 테이블 */}
+          <div style={{ margin: "0 24px 16px 24px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+              <tbody>
+                <tr>
+                  <td style={{ 
+                    padding: "10px 12px", 
+                    background: "rgba(0, 143, 237, 0.1)", 
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                    width: "40%",
+                    border: "1px solid #E5E7EB"
+                  }}>
+                    사고번호(증권번호)
+                  </td>
+                  <td style={{ 
+                    padding: "10px 12px", 
+                    background: "#FFFFFF",
+                    border: "1px solid #E5E7EB"
+                  }}>
+                    {caseData.insuranceAccidentNo || "-"} ({caseData.insurancePolicyNo || "-"})
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ 
+                    padding: "10px 12px", 
+                    background: "rgba(0, 143, 237, 0.1)", 
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                    border: "1px solid #E5E7EB"
+                  }}>
+                    접수번호
+                  </td>
+                  <td style={{ 
+                    padding: "10px 12px", 
+                    background: "#FFFFFF",
+                    border: "1px solid #E5E7EB"
+                  }}>
+                    {caseData.caseNumber || "-"}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ 
+                    padding: "10px 12px", 
+                    background: "rgba(0, 143, 237, 0.1)", 
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                    border: "1px solid #E5E7EB"
+                  }}>
+                    피보험자명
+                  </td>
+                  <td style={{ 
+                    padding: "10px 12px", 
+                    background: "#FFFFFF",
+                    border: "1px solid #E5E7EB"
+                  }}>
+                    {caseData.insuredName || "-"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* 취소사유 입력 */}
+          <div style={{ margin: "0 24px 20px 24px" }}>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              marginBottom: "8px"
+            }}>
+              <span style={{ 
+                fontFamily: "Pretendard", 
+                fontSize: "14px", 
+                fontWeight: 600,
+                color: "#0C0C0C"
+              }}>
+                취소사유 입력
+              </span>
+              <span style={{ 
+                fontFamily: "Pretendard", 
+                fontSize: "12px",
+                color: "#999999"
+              }}>
+                {cancelReason.length}/800
+              </span>
+            </div>
+            <Textarea
+              placeholder="검토 의견을 입력해주세요"
+              value={cancelReason}
+              onChange={(e) => {
+                if (e.target.value.length <= 800) {
+                  setCancelReason(e.target.value);
+                }
+              }}
+              style={{ 
+                minHeight: "100px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                resize: "none"
+              }}
+              data-testid="textarea-cancel-reason"
+            />
+          </div>
+
+          {/* 버튼 */}
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "flex-end", 
+            gap: "8px",
+            padding: "16px 24px",
+            borderTop: "1px solid #E5E7EB",
+            background: "#FAFAFA"
+          }}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={sendNotificationMutation.isPending}
+              data-testid="button-cancel-notification"
+              style={{ minWidth: "80px" }}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSend}
+              disabled={sendNotificationMutation.isPending}
+              data-testid="button-send-notification"
+              style={{ 
+                minWidth: "100px",
+                background: "#008FED"
+              }}
+            >
+              {sendNotificationMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  발송 중...
+                </>
+              ) : (
+                <>
+                  이메일 발송
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -344,22 +540,6 @@ export function SmsNotificationDialog({
               {additionalMessage && `\n\n추가사항 : ${additionalMessage}`}
             </pre>
           </div>
-
-          {stage === "접수취소" && (
-            <div className="space-y-2">
-              <Label htmlFor="cancelReason" className="text-sm font-medium">
-                취소 사유 *
-              </Label>
-              <Textarea
-                id="cancelReason"
-                placeholder="취소 사유를 입력해주세요"
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                className="min-h-[80px]"
-                data-testid="textarea-cancel-reason"
-              />
-            </div>
-          )}
 
           {stage === "결정금액/수수료" && (
             <div className="space-y-3">
