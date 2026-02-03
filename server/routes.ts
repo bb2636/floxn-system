@@ -12833,6 +12833,11 @@ https://www.floxn.co.kr/
       const margin = 50;
       let yPos = height - margin;
 
+      // 하이픈을 엔대시로 변환하여 공백 문제 해결
+      const sanitizeHyphen = (text: string): string => {
+        return text.replace(/-/g, "\u2013");
+      };
+
       // ========== 제목: 접수취소 안내 ==========
       const titleText = "접수취소 안내";
       const titleWidth = boldFont.widthOfTextAtSize(titleText, 22);
@@ -12869,10 +12874,10 @@ https://www.floxn.co.kr/
       const col4Width = tableWidth - col1Width - col2Width - col3Width; // 나머지
 
       // 수임일자
-      let receptionDateStr = "-";
+      let receptionDateStr = "\u2013";
       if (caseData.receptionDate) {
         const rd = new Date(caseData.receptionDate);
-        receptionDateStr = `${rd.getFullYear()}-${String(rd.getMonth() + 1).padStart(2, "0")}-${String(rd.getDate()).padStart(2, "0")}`;
+        receptionDateStr = `${rd.getFullYear()}\u2013${String(rd.getMonth() + 1).padStart(2, "0")}\u2013${String(rd.getDate()).padStart(2, "0")}`;
       }
 
       // Row 1: 사고번호(증권번호) | value | 수임일자 | value
@@ -12881,7 +12886,7 @@ https://www.floxn.co.kr/
       page.drawText("사고번호(증권번호)", { x: margin + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       // 셀 1-2
       page.drawRectangle({ x: margin + col1Width, y: yPos - rowHeight, width: col2Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(accidentNo, { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText(sanitizeHyphen(accidentNo), { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       // 셀 1-3
       page.drawRectangle({ x: margin + col1Width + col2Width, y: yPos - rowHeight, width: col3Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page.drawText("수임일자", { x: margin + col1Width + col2Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
@@ -12894,15 +12899,15 @@ https://www.floxn.co.kr/
       page.drawRectangle({ x: margin, y: yPos - rowHeight, width: col1Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page.drawText("피보험자명", { x: margin + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       page.drawRectangle({ x: margin + col1Width, y: yPos - rowHeight, width: col2Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(insuredName, { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText(sanitizeHyphen(insuredName), { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       page.drawRectangle({ x: margin + col1Width + col2Width, y: yPos - rowHeight, width: col3Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page.drawText("취소일자", { x: margin + col1Width + col2Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       page.drawRectangle({ x: margin + col1Width + col2Width + col3Width, y: yPos - rowHeight, width: col4Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(dateStr, { x: margin + col1Width + col2Width + col3Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText(sanitizeHyphen(dateStr), { x: margin + col1Width + col2Width + col3Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       yPos -= rowHeight;
 
       // Row 3: 취소사유 (full width)
-      const reasonText = cancelReason || "-";
+      const reasonText = sanitizeHyphen(cancelReason || "\u2013");
       const maxCharsPerLine = 70;
       const reasonLines: string[] = [];
       let remainingText = reasonText;
