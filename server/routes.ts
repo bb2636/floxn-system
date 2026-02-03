@@ -217,9 +217,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             req.sessionID,
           );
           const { password, ...userWithoutPassword } = user;
-          console.log("[LOGIN] Response data:", { 
-            userId: userWithoutPassword.id, 
-            mustChangePassword: userWithoutPassword.mustChangePassword 
+          console.log("[LOGIN] Response data:", {
+            userId: userWithoutPassword.id,
+            mustChangePassword: userWithoutPassword.mustChangePassword,
           });
           res.json(userWithoutPassword);
         });
@@ -264,14 +264,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = forceChangePasswordSchema.parse(req.body);
       const user = await storage.getUser(req.session.userId);
-      
+
       if (!user) {
         return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       }
 
       // 비밀번호 업데이트
-      const updatedUser = await storage.updatePassword(user.username, validatedData.newPassword);
-      
+      const updatedUser = await storage.updatePassword(
+        user.username,
+        validatedData.newPassword,
+      );
+
       if (!updatedUser) {
         return res.status(500).json({ error: "비밀번호 변경에 실패했습니다" });
       }
@@ -279,9 +282,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // mustChangePassword를 false로 업데이트
       await storage.updateUserMustChangePassword(user.id, false);
 
-      console.log(`[FORCE CHANGE PASSWORD] User ${user.username} changed password successfully`);
-      
-      res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다" });
+      console.log(
+        `[FORCE CHANGE PASSWORD] User ${user.username} changed password successfully`,
+      );
+
+      res.json({
+        success: true,
+        message: "비밀번호가 성공적으로 변경되었습니다",
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
@@ -2806,7 +2814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "현장정보제출",
         "복구요청(2차승인)",
         "직접복구",
-        "선견적요청",
+        "선 ��적요청",
         "청구자료제출(복구)",
         "출동비청구(선견적)",
         "청구",
@@ -3746,7 +3754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/role-permissions/:roleName", async (req, res) => {
     // Check authentication
     if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+      return res.status(401).json({ error: "인증되지 않은 사 ��자입니다" });
     }
 
     // Check admin authorization
@@ -5966,11 +5974,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error?.code === "23505" ||
         error?.message?.includes("unique constraint")
       ) {
-        return res
-          .status(400)
-          .json({
-            error: "동일한 값이 이미 존재합니다. 다른 값을 입력해주세요.",
-          });
+        return res.status(400).json({
+          error: "동일한 값이 이미 존재합니다. 다른 값을 입력해주세요.",
+        });
       }
 
       res
@@ -9566,7 +9572,7 @@ FLOXN`;
           getCaseSuffix(a.caseNumber || "") - getCaseSuffix(b.caseNumber || ""),
       );
 
-      // 선견적요청 건이 하나라도 있는지 확인 (있으면 출동비 청구 불가)
+      // 선견ca�요청 건이 하나라도 있는지 확인 (있으면 출동비 청구 불가)
       const hasPreEstimateRequest = allCases.some(
         (c) => c.recoveryType === "선견적요청",
       );
@@ -10193,7 +10199,7 @@ FLOXN`;
                 // 실제 배치된 이미지 개수만큼 스킵
                 i += actualCount;
               } else {
-                // 1장/페이지 레이아웃
+                // 1장/페이지 레이us�웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
 
                 // 헤더 그리기 - 테이블 형태 (현장출동보고서 스타일)
@@ -11053,7 +11059,7 @@ FLOXN
       console.error("Generate document URLs error:", error);
       res
         .status(500)
-        .json({ error: "증빙자료 URL 생성 중 오류가 발생했습니다" });
+        .json({ error: "o��빙자료 URL 생성 중 오류가 발생했습니다" });
     }
   });
 
@@ -11504,7 +11510,7 @@ FLOXN 드림`;
         },
       ];
 
-      // ========== 첨부파일 용량 검증 ==========
+      // ========== 첨부파일 용량 검  � ==========
       let totalBytes = 0;
       console.log(`[send-field-report-email-v2] ===== 첨부파일 상세 =====`);
       for (const att of attachments) {
@@ -12735,7 +12741,7 @@ https://www.floxn.co.kr/
       }
 
       const emailRecipients: string[] = [];
-      
+
       if (recipients.sendToAssessor && caseData.assessorEmail) {
         emailRecipients.push(caseData.assessorEmail);
       }
@@ -12747,22 +12753,29 @@ https://www.floxn.co.kr/
       }
 
       if (emailRecipients.length === 0) {
-        return res.status(400).json({ error: "수신자 이메일이 선택되지 않았습니다" });
+        return res
+          .status(400)
+          .json({ error: "수신자 이메일이 선택되지 않았습니다" });
       }
 
-      const subjectIdentifier = caseData.insuranceAccidentNo || caseData.insurancePolicyNo || caseData.caseNumber || "-";
+      const subjectIdentifier =
+        caseData.insuranceAccidentNo ||
+        caseData.insurancePolicyNo ||
+        caseData.caseNumber ||
+        "-";
       const subject = `[FLOXN] 접수취소- ${subjectIdentifier}`;
 
       const today = new Date();
       const kstDate = new Date(today.getTime() + 9 * 60 * 60 * 1000);
       const dateStr = `${kstDate.getFullYear()}.${String(kstDate.getMonth() + 1).padStart(2, "0")}.${String(kstDate.getDate()).padStart(2, "0")}`;
 
-      const accidentNo = caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-";
+      const accidentNo =
+        caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-";
       const caseNumber = caseData.caseNumber || "-";
       const insuredName = caseData.insuredName || "-";
 
       const htmlContent = `
-        <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 3px solid #DAA520;">
+        <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333; text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px;">접수취소 안내드립니다.</h2>
           
           <p style="color: #333; line-height: 1.8; margin-bottom: 20px;">
@@ -12774,10 +12787,6 @@ https://www.floxn.co.kr/
             <tr>
               <td style="background: #F5F5DC; padding: 10px 15px; border: 1px solid #ccc; width: 35%; font-weight: bold;">사고번호(증권번호)</td>
               <td style="padding: 10px 15px; border: 1px solid #ccc;">${accidentNo}</td>
-            </tr>
-            <tr>
-              <td style="background: #87CEEB; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold; text-decoration: line-through;">접수번호</td>
-              <td style="padding: 10px 15px; border: 1px solid #ccc;">${caseNumber}</td>
             </tr>
             <tr>
               <td style="background: #FFE4B5; padding: 10px 15px; border: 1px solid #ccc; font-weight: bold;">피보험자명</td>
@@ -12836,12 +12845,22 @@ FLOXN`;
             console.log(`[send-cancellation-email] Email sent to: ${email}`);
             results.push({ email, success: true });
           } else {
-            console.error(`[send-cancellation-email] Failed to send to ${email}:`, result.error);
+            console.error(
+              `[send-cancellation-email] Failed to send to ${email}:`,
+              result.error,
+            );
             results.push({ email, success: false, error: result.error });
           }
         } catch (sendError: any) {
-          console.error(`[send-cancellation-email] Error sending to ${email}:`, sendError);
-          results.push({ email, success: false, error: sendError?.message || "발송 실패" });
+          console.error(
+            `[send-cancellation-email] Error sending to ${email}:`,
+            sendError,
+          );
+          results.push({
+            email,
+            success: false,
+            error: sendError?.message || "발송 실패",
+          });
         }
       }
 
@@ -12855,7 +12874,10 @@ FLOXN`;
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        console.error("[send-cancellation-email] Validation error:", error.errors);
+        console.error(
+          "[send-cancellation-email] Validation error:",
+          error.errors,
+        );
         return res.status(400).json({
           error: "요청 데이터가 올바르지 않습니다",
           details: error.errors,
@@ -12921,16 +12943,18 @@ FLOXN`;
         ? allCases.filter(
             (c) =>
               c.insuranceAccidentNo === accidentNo &&
-              (c.status === "직접복구" || 
-               c.status === "청구자료제출(복구)" || 
-               c.status === "선견적요청" || 
-               c.status === "출동비청구(선견적)"),
+              (c.status === "직접복구" ||
+                c.status === "청구자료제출(복구)" ||
+                c.status === "선견적요청" ||
+                c.status === "출동비청구(선견적)"),
           )
         : [updatedCase];
 
       // 3. 모든 관련 케이스가 청구자료제출 또는 출동비청구 상태인지 확인
       const allSubmitted = relatedCases.every(
-        (c) => c.status === "청구자료제출(복구)" || c.status === "출동비청구(선견적)",
+        (c) =>
+          c.status === "청구자료제출(복구)" ||
+          c.status === "출동비청구(선견적)",
       );
       let smsSent = false;
 
@@ -13421,74 +13445,89 @@ FLOXN`;
   });
 
   // ========== 견적서 제외 항목 API (철거공사 노무비 삭제 영속화) ==========
-  
+
   // 케이스별 제외 항목 조회
   app.get("/api/cases/:caseId/estimate-exclusions", async (req, res) => {
     try {
       if (!req.session?.userId) {
         return res.status(401).json({ error: "로그인이 필요합니다" });
       }
-      
+
       const { caseId } = req.params;
       const { type } = req.query;
-      
-      const exclusionType = (type as string) || 'demolition_auto_labor';
-      const exclusions = await storage.getEstimateExclusions(caseId, exclusionType);
-      
+
+      const exclusionType = (type as string) || "demolition_auto_labor";
+      const exclusions = await storage.getEstimateExclusions(
+        caseId,
+        exclusionType,
+      );
+
       res.json(exclusions);
     } catch (error) {
       console.error("Get estimate exclusions error:", error);
       res.status(500).json({ error: "제외 항목 조회 중 오류가 발생했습니다" });
     }
   });
-  
+
   // 제외 항목 추가 (삭제 클릭 시 즉시 호출)
   app.post("/api/cases/:caseId/estimate-exclusions", async (req, res) => {
     try {
       if (!req.session?.userId) {
         return res.status(401).json({ error: "로그인이 필요합니다" });
       }
-      
+
       const { caseId } = req.params;
       const { exclusionType, deletionKey } = req.body;
-      
+
       if (!exclusionType || !deletionKey) {
-        return res.status(400).json({ error: "exclusionType과 deletionKey가 필요합니다" });
+        return res
+          .status(400)
+          .json({ error: "exclusionType과 deletionKey가 필요합니다" });
       }
-      
-      console.log(`[Exclusion] Adding: caseId=${caseId}, type=${exclusionType}, key=${deletionKey}`);
-      
+
+      console.log(
+        `[Exclusion] Adding: caseId=${caseId}, type=${exclusionType}, key=${deletionKey}`,
+      );
+
       const exclusion = await storage.addEstimateExclusion({
         caseId,
         exclusionType,
         deletionKey,
       });
-      
+
       res.json(exclusion);
     } catch (error) {
       console.error("Add estimate exclusion error:", error);
       res.status(500).json({ error: "제외 항목 추가 중 오류가 발생했습니다" });
     }
   });
-  
+
   // 제외 항목 삭제 (제외 해제)
   app.delete("/api/cases/:caseId/estimate-exclusions", async (req, res) => {
     try {
       if (!req.session?.userId) {
         return res.status(401).json({ error: "로그인이 필요합니다" });
       }
-      
+
       const { caseId } = req.params;
       const { exclusionType, deletionKey } = req.body;
-      
+
       if (!exclusionType || !deletionKey) {
-        return res.status(400).json({ error: "exclusionType과 deletionKey가 필요합니다" });
+        return res
+          .status(400)
+          .json({ error: "exclusionType과 deletionKey가 필요합니다" });
       }
-      
-      console.log(`[Exclusion] Removing: caseId=${caseId}, type=${exclusionType}, key=${deletionKey}`);
-      
-      const removed = await storage.removeEstimateExclusion(caseId, exclusionType, deletionKey);
-      
+
+      console.log(
+        `[Exclusion] Removing: caseId=${caseId}, type=${exclusionType}, key=${deletionKey}`,
+      );
+
+      const removed = await storage.removeEstimateExclusion(
+        caseId,
+        exclusionType,
+        deletionKey,
+      );
+
       res.json({ success: removed });
     } catch (error) {
       console.error("Remove estimate exclusion error:", error);
