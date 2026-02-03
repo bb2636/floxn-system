@@ -12833,9 +12833,19 @@ https://www.floxn.co.kr/
       const margin = 50;
       let yPos = height - margin;
 
-      // 하이픈을 엔대시로 변환하여 공백 문제 해결
-      const sanitizeHyphen = (text: string): string => {
-        return text.replace(/-/g, "\u2013");
+      // 헤더 텍스트 정규화 함수 (ASCII '-' 유지, U+2010/U+2212 치환 금지)
+      const normalizeText = (text: string): string => {
+        if (!text) return "";
+        let s = String(text);
+        // 1) 유니코드 공백을 일반 공백으로 통일 (NBSP, zero-width 등)
+        s = s.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ");
+        // 2) 대시류(en dash, em dash, minus)만 ASCII '-'로 통일
+        s = s.replace(/[–—−]/g, "-");
+        // 3) 코드 패턴([A-Za-z0-9]) 사이 하이픈에서만 공백 제거
+        s = s.replace(/([A-Za-z0-9])\s*-\s*([A-Za-z0-9])/g, "$1-$2");
+        // 4) 연속 공백 축소
+        s = s.replace(/ {2,}/g, " ");
+        return s.trim();
       };
 
       // ========== 제목: 접수취소 안내 ==========
@@ -12874,10 +12884,10 @@ https://www.floxn.co.kr/
       const col4Width = tableWidth - col1Width - col2Width - col3Width; // 나머지
 
       // 수임일자
-      let receptionDateStr = "\u2013";
+      let receptionDateStr = "-";
       if (caseData.receptionDate) {
         const rd = new Date(caseData.receptionDate);
-        receptionDateStr = `${rd.getFullYear()}\u2013${String(rd.getMonth() + 1).padStart(2, "0")}\u2013${String(rd.getDate()).padStart(2, "0")}`;
+        receptionDateStr = `${rd.getFullYear()}-${String(rd.getMonth() + 1).padStart(2, "0")}-${String(rd.getDate()).padStart(2, "0")}`;
       }
 
       // Row 1: 사고번호(증권번호) | value | 수임일자 | value
@@ -12886,7 +12896,7 @@ https://www.floxn.co.kr/
       page.drawText("사고번호(증권번호)", { x: margin + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       // 셀 1-2
       page.drawRectangle({ x: margin + col1Width, y: yPos - rowHeight, width: col2Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(sanitizeHyphen(accidentNo), { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText(normalizeText(accidentNo), { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       // 셀 1-3
       page.drawRectangle({ x: margin + col1Width + col2Width, y: yPos - rowHeight, width: col3Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page.drawText("수임일자", { x: margin + col1Width + col2Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
@@ -12899,15 +12909,15 @@ https://www.floxn.co.kr/
       page.drawRectangle({ x: margin, y: yPos - rowHeight, width: col1Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page.drawText("피보험자명", { x: margin + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       page.drawRectangle({ x: margin + col1Width, y: yPos - rowHeight, width: col2Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(sanitizeHyphen(insuredName), { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText(normalizeText(insuredName), { x: margin + col1Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       page.drawRectangle({ x: margin + col1Width + col2Width, y: yPos - rowHeight, width: col3Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
       page.drawText("취소일자", { x: margin + col1Width + col2Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       page.drawRectangle({ x: margin + col1Width + col2Width + col3Width, y: yPos - rowHeight, width: col4Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText(sanitizeHyphen(dateStr), { x: margin + col1Width + col2Width + col3Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText(normalizeText(dateStr), { x: margin + col1Width + col2Width + col3Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
       yPos -= rowHeight;
 
       // Row 3: 취소사유 (full width)
-      const reasonText = sanitizeHyphen(cancelReason || "\u2013");
+      const reasonText = normalizeText(cancelReason || "-");
       const maxCharsPerLine = 70;
       const reasonLines: string[] = [];
       let remainingText = reasonText;
