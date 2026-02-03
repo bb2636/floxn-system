@@ -12807,23 +12807,23 @@ https://www.floxn.co.kr/
       pdfDoc.registerFontkit(fontkit);
 
       // 한글 폰트 로드
-      const fontPath = path.join(process.cwd(), "attached_assets", "NotoSansKR-Regular.ttf");
+      const fontPath = path.join(process.cwd(), "server", "fonts", "NotoSansKR-Regular.ttf");
       let customFont;
       let boldFont;
       try {
         const fontBytes = fs.readFileSync(fontPath);
         customFont = await pdfDoc.embedFont(fontBytes);
-        const boldFontPath = path.join(process.cwd(), "attached_assets", "NotoSansKR-Bold.ttf");
+        const boldFontPath = path.join(process.cwd(), "server", "fonts", "NotoSansKR-Bold-google.ttf");
         if (fs.existsSync(boldFontPath)) {
           const boldFontBytes = fs.readFileSync(boldFontPath);
           boldFont = await pdfDoc.embedFont(boldFontBytes);
         } else {
           boldFont = customFont;
         }
+        console.log("[send-cancellation-email] Korean fonts loaded successfully");
       } catch (fontError) {
-        console.warn("[send-cancellation-email] Font load error, using Helvetica:", fontError);
-        customFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-        boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        console.error("[send-cancellation-email] Font load error:", fontError);
+        throw new Error("한글 폰트 로드 실패");
       }
 
       const page = pdfDoc.addPage([595, 842]); // A4 size
