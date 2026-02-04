@@ -2814,7 +2814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "현장정보제출",
         "복구요청(2차승인)",
         "직접복구",
-        "선 ��적요청",
+        "선견적요청",
         "청구자료제출(복구)",
         "출동비청구(선견적)",
         "청구",
@@ -6153,7 +6153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       } else {
-        // OLD FORMAT: 공종, 공사명(품d��), 세부공사, 세부항목, 인, 수량, 무게, 천장, 벽체, 바닥, 길이, 비고
+        // OLD FORMAT: 공종, 공사명(품d�d��), 세부공사, 세부항목, 인, 수량, 무게, 천장, 벽체, 바닥, 길이, 비고
         let prevCategory: string | null = null;
         let prevWorkName: string | null = null;
         let prevDetailWork: string | null = null;
@@ -10199,7 +10199,7 @@ FLOXN`;
                 // 실제 배치된 이미지 개수만큼 스킵
                 i += actualCount;
               } else {
-                // 1장/페 ��mo� 레이us�웃
+                // 1장/페 � ��mo� 레이us�웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
 
                 // 헤더 그리기 - 테이블 형태 (현장출동보고서 스타일)
@@ -11934,7 +11934,7 @@ Front·Line·Ops·Xpert·Net
         });
       }
 
-      // 전화번호 정규화 (하이픈 및 공백 제거, 숫자만 추출)
+      // 전OL�번호 정규화 (하이픈 및 공백 제거, 숫자만 추출)
       const normalizedTo = to.replace(/[^0-9]/g, "");
       const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
 
@@ -13156,7 +13156,7 @@ https://www.floxn.co.kr/
 
       // ========== 본문 텍스트 ==========
       yPos -= 30;
-      page.drawText("상기 건에 대하여 접수취소 사유를 첨부하여 송부드립니다", {
+      page.drawText("상기 건에 대하여 접수취소 사유를 첨부하여 송.��드립or�다", {
         x: margin,
         y: yPos,
         size: 11,
@@ -13220,6 +13220,30 @@ https://www.floxn.co.kr/
         x: companyInfoX + 70,
         y: yPos,
         size: 11,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
+
+      // ========== 하단 푸터: 가로선 + FLOXN., Inc ==========
+      const footerY = 60;
+      const lineStartX = margin + 50;
+      const lineEndX = width - margin - 50;
+      
+      // 가로선
+      page.drawLine({
+        start: { x: lineStartX, y: footerY },
+        end: { x: lineEndX, y: footerY },
+        thickness: 1,
+        color: rgb(0, 0, 0),
+      });
+      
+      // FLOXN., Inc 텍스트 (중앙 정렬)
+      const footerText = "FLOXN., Inc";
+      const footerTextWidth = customFont.widthOfTextAtSize(footerText, 10);
+      page.drawText(footerText, {
+        x: (width - footerTextWidth) / 2,
+        y: footerY - 18,
+        size: 10,
         font: customFont,
         color: rgb(0, 0, 0),
       });
