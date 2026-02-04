@@ -13177,55 +13177,8 @@ https://www.floxn.co.kr/
       });
       yPos -= 60;
 
-      // ========== 하단 회사 정보 ==========
-      const companyInfoX = width - margin - 150;
-      page.drawText("회 사 명 :", {
-        x: companyInfoX,
-        y: yPos,
-        size: 11,
-        font: customFont,
-        color: rgb(0, 0, 0),
-      });
-      page.drawText("FLOXN", {
-        x: companyInfoX + 70,
-        y: yPos,
-        size: 11,
-        font: customFont,
-        color: rgb(0, 0, 0),
-      });
-      yPos -= 20;
-      page.drawText("담 당 자 :", {
-        x: companyInfoX,
-        y: yPos,
-        size: 11,
-        font: customFont,
-        color: rgb(0, 0, 0),
-      });
-      page.drawText("-", {
-        x: companyInfoX + 70,
-        y: yPos,
-        size: 11,
-        font: customFont,
-        color: rgb(0, 0, 0),
-      });
-      yPos -= 20;
-      page.drawText("연 락 처 :", {
-        x: companyInfoX,
-        y: yPos,
-        size: 11,
-        font: customFont,
-        color: rgb(0, 0, 0),
-      });
-      page.drawText("-", {
-        x: companyInfoX + 70,
-        y: yPos,
-        size: 11,
-        font: customFont,
-        color: rgb(0, 0, 0),
-      });
-
       // ========== 하단 푸터: 가로선 + FLOXN., Inc ==========
-      const footerY = 60;
+      const footerY = yPos - 30;
       const lineStartX = margin + 50;
       const lineEndX = width - margin - 50;
       
