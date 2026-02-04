@@ -10199,7 +10199,7 @@ FLOXN`;
                 // 실제 배치된 이미지 개수만큼 스킵
                 i += actualCount;
               } else {
-                // 1장/페이mo� 레이us�웃
+                // 1장/페 ��mo� 레이us�웃
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
 
                 // 헤더 그리기 - 테이블 형태 (현장출동보고서 스타일)
@@ -12807,22 +12807,37 @@ https://www.floxn.co.kr/
       pdfDoc.registerFontkit(fontkit);
 
       // 한글 폰트 로드 (Pretendard TTF 형식 사용 - pdf-lib 호환성)
-      const fontPath = path.join(process.cwd(), "server", "fonts", "Pretendard-Regular.ttf");
+      const fontPath = path.join(
+        process.cwd(),
+        "server",
+        "fonts",
+        "Pretendard-Regular.ttf",
+      );
       let customFont;
       let boldFont;
       try {
         console.log("[send-cancellation-email] Loading font from:", fontPath);
         const fontBytes = fs.readFileSync(fontPath);
-        console.log("[send-cancellation-email] Font bytes loaded:", fontBytes.length);
+        console.log(
+          "[send-cancellation-email] Font bytes loaded:",
+          fontBytes.length,
+        );
         customFont = await pdfDoc.embedFont(fontBytes);
-        const boldFontPath = path.join(process.cwd(), "server", "fonts", "Pretendard-SemiBold.ttf");
+        const boldFontPath = path.join(
+          process.cwd(),
+          "server",
+          "fonts",
+          "Pretendard-SemiBold.ttf",
+        );
         if (fs.existsSync(boldFontPath)) {
           const boldFontBytes = fs.readFileSync(boldFontPath);
           boldFont = await pdfDoc.embedFont(boldFontBytes);
         } else {
           boldFont = customFont;
         }
-        console.log("[send-cancellation-email] Korean fonts loaded successfully");
+        console.log(
+          "[send-cancellation-email] Korean fonts loaded successfully",
+        );
       } catch (fontError) {
         console.error("[send-cancellation-email] Font load error:", fontError);
         throw new Error("한글 폰트 로드 실패");
@@ -12855,7 +12870,7 @@ https://www.floxn.co.kr/
         textY: number,
         textSize: number,
         font: any,
-        textColor: any
+        textColor: any,
       ) => {
         const normalizedText = normalizeText(text);
         if (!normalizedText) return;
@@ -12902,8 +12917,20 @@ https://www.floxn.co.kr/
 
       // ========== 수신 라인 ==========
       const insuranceCompany = caseData.insuranceCompany || "-";
-      page.drawText("수 신", { x: margin, y: yPos, size: 12, font: customFont, color: rgb(0, 0, 0) });
-      page.drawText(insuranceCompany, { x: margin + 50, y: yPos, size: 12, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText("수 신", {
+        x: margin,
+        y: yPos,
+        size: 12,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
+      page.drawText(insuranceCompany, {
+        x: margin + 50,
+        y: yPos,
+        size: 12,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
       // 밑줄
       const nameWidth = customFont.widthOfTextAtSize(insuranceCompany, 12);
       page.drawLine({
@@ -12912,7 +12939,13 @@ https://www.floxn.co.kr/
         thickness: 0.5,
         color: rgb(0, 0, 0),
       });
-      page.drawText("귀하", { x: width - margin - 30, y: yPos, size: 12, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText("귀하", {
+        x: width - margin - 30,
+        y: yPos,
+        size: 12,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
       yPos -= 30;
 
       // ========== 테이블 ==========
@@ -12920,7 +12953,7 @@ https://www.floxn.co.kr/
       const rowHeight = 30;
       const col1Width = 100; // 사고번호(증권번호)
       const col2Width = 145; // 값
-      const col3Width = 80;  // 수임일자/취소일자
+      const col3Width = 80; // 수임일자/취소일자
       const col4Width = tableWidth - col1Width - col2Width - col3Width; // 나머지
 
       // 수임일자
@@ -12932,28 +12965,136 @@ https://www.floxn.co.kr/
 
       // Row 1: 사고번호(증권번호) | value | 수임일자 | value
       // 셀 1-1
-      page.drawRectangle({ x: margin, y: yPos - rowHeight, width: col1Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText("사고번호(증권번호)", { x: margin + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      page.drawRectangle({
+        x: margin,
+        y: yPos - rowHeight,
+        width: col1Width,
+        height: rowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
+      page.drawText("사고번호(증권번호)", {
+        x: margin + 5,
+        y: yPos - 20,
+        size: 10,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
       // 셀 1-2
-      page.drawRectangle({ x: margin + col1Width, y: yPos - rowHeight, width: col2Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      drawTextTight(accidentNo, margin + col1Width + 5, yPos - 20, 10, customFont, rgb(0, 0, 0));
+      page.drawRectangle({
+        x: margin + col1Width,
+        y: yPos - rowHeight,
+        width: col2Width,
+        height: rowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
+      drawTextTight(
+        accidentNo,
+        margin + col1Width + 5,
+        yPos - 20,
+        10,
+        customFont,
+        rgb(0, 0, 0),
+      );
       // 셀 1-3
-      page.drawRectangle({ x: margin + col1Width + col2Width, y: yPos - rowHeight, width: col3Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText("수임일자", { x: margin + col1Width + col2Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      page.drawRectangle({
+        x: margin + col1Width + col2Width,
+        y: yPos - rowHeight,
+        width: col3Width,
+        height: rowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
+      page.drawText("수임일자", {
+        x: margin + col1Width + col2Width + 5,
+        y: yPos - 20,
+        size: 10,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
       // 셀 1-4
-      page.drawRectangle({ x: margin + col1Width + col2Width + col3Width, y: yPos - rowHeight, width: col4Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      drawTextTight(receptionDateStr, margin + col1Width + col2Width + col3Width + 5, yPos - 20, 10, customFont, rgb(0, 0, 0));
+      page.drawRectangle({
+        x: margin + col1Width + col2Width + col3Width,
+        y: yPos - rowHeight,
+        width: col4Width,
+        height: rowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
+      drawTextTight(
+        receptionDateStr,
+        margin + col1Width + col2Width + col3Width + 5,
+        yPos - 20,
+        10,
+        customFont,
+        rgb(0, 0, 0),
+      );
       yPos -= rowHeight;
 
       // Row 2: 피보험자명 | value | 취소일자 | value
-      page.drawRectangle({ x: margin, y: yPos - rowHeight, width: col1Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText("피보험자명", { x: margin + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
-      page.drawRectangle({ x: margin + col1Width, y: yPos - rowHeight, width: col2Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      drawTextTight(insuredName, margin + col1Width + 5, yPos - 20, 10, customFont, rgb(0, 0, 0));
-      page.drawRectangle({ x: margin + col1Width + col2Width, y: yPos - rowHeight, width: col3Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText("취소일자", { x: margin + col1Width + col2Width + 5, y: yPos - 20, size: 10, font: customFont, color: rgb(0, 0, 0) });
-      page.drawRectangle({ x: margin + col1Width + col2Width + col3Width, y: yPos - rowHeight, width: col4Width, height: rowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      drawTextTight(dateStr, margin + col1Width + col2Width + col3Width + 5, yPos - 20, 10, customFont, rgb(0, 0, 0));
+      page.drawRectangle({
+        x: margin,
+        y: yPos - rowHeight,
+        width: col1Width,
+        height: rowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
+      page.drawText("피보험자명", {
+        x: margin + 5,
+        y: yPos - 20,
+        size: 10,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
+      page.drawRectangle({
+        x: margin + col1Width,
+        y: yPos - rowHeight,
+        width: col2Width,
+        height: rowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
+      drawTextTight(
+        insuredName,
+        margin + col1Width + 5,
+        yPos - 20,
+        10,
+        customFont,
+        rgb(0, 0, 0),
+      );
+      page.drawRectangle({
+        x: margin + col1Width + col2Width,
+        y: yPos - rowHeight,
+        width: col3Width,
+        height: rowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
+      page.drawText("취소일자", {
+        x: margin + col1Width + col2Width + 5,
+        y: yPos - 20,
+        size: 10,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
+      page.drawRectangle({
+        x: margin + col1Width + col2Width + col3Width,
+        y: yPos - rowHeight,
+        width: col4Width,
+        height: rowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
+      drawTextTight(
+        dateStr,
+        margin + col1Width + col2Width + col3Width + 5,
+        yPos - 20,
+        10,
+        customFont,
+        rgb(0, 0, 0),
+      );
       yPos -= rowHeight;
 
       // Row 3: 취소사유 (full width)
@@ -12970,54 +13111,124 @@ https://www.floxn.co.kr/
         remainingText = remainingText.substring(maxCharsPerLine);
       }
       const lineHeight = 16;
-      const reasonRowHeight = Math.max(rowHeight, reasonLines.length * lineHeight + 14);
+      const reasonRowHeight = Math.max(
+        rowHeight,
+        reasonLines.length * lineHeight + 14,
+      );
 
       // 취소사유 라벨 셀
-      page.drawRectangle({ x: margin, y: yPos - reasonRowHeight, width: col1Width, height: reasonRowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
-      page.drawText("취소사유", { x: margin + 5, y: yPos - reasonRowHeight / 2 - 4, size: 10, font: customFont, color: rgb(0, 0, 0) });
+      page.drawRectangle({
+        x: margin,
+        y: yPos - reasonRowHeight,
+        width: col1Width,
+        height: reasonRowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
+      page.drawText("취소사유", {
+        x: margin + 5,
+        y: yPos - reasonRowHeight / 2 - 4,
+        size: 10,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
       // 취소사유 내용 셀
-      page.drawRectangle({ x: margin + col1Width, y: yPos - reasonRowHeight, width: tableWidth - col1Width, height: reasonRowHeight, borderColor: rgb(0, 0, 0), borderWidth: 0.5 });
+      page.drawRectangle({
+        x: margin + col1Width,
+        y: yPos - reasonRowHeight,
+        width: tableWidth - col1Width,
+        height: reasonRowHeight,
+        borderColor: rgb(0, 0, 0),
+        borderWidth: 0.5,
+      });
       let textY = yPos - 18;
       for (const line of reasonLines) {
-        page.drawText(line, { x: margin + col1Width + 5, y: textY, size: 10, font: customFont, color: rgb(0, 0, 0) });
+        page.drawText(line, {
+          x: margin + col1Width + 5,
+          y: textY,
+          size: 10,
+          font: customFont,
+          color: rgb(0, 0, 0),
+        });
         textY -= lineHeight;
       }
       yPos -= reasonRowHeight;
 
       // ========== 본문 텍스트 ==========
       yPos -= 30;
-      page.drawText("상기 건에 대하여 접수취소를 안내드리오니,", { x: margin, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
-      yPos -= 20;
-      page.drawText("확인 부탁드립니다.", { x: margin, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
-      yPos -= 50;
-
-      // ========== 확인 문구 ==========
-      const confirmText = "위 내용이 사실과 다름없음을 확인합니다.";
-      const confirmWidth = boldFont.widthOfTextAtSize(confirmText, 12);
-      page.drawText(confirmText, { x: (width - confirmWidth) / 2, y: yPos, size: 12, font: boldFont, color: rgb(0, 0, 0) });
-      yPos -= 40;
+      page.drawText("상기 건에 대하여 접수취소 사유를 첨부하여 송부드립니다", {
+        x: margin,
+        y: yPos,
+        size: 11,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
 
       // ========== 날짜 ==========
       const now = new Date();
       const koreanDate = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
       const dateWidth = customFont.widthOfTextAtSize(koreanDate, 12);
-      page.drawText(koreanDate, { x: (width - dateWidth) / 2, y: yPos, size: 12, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText(koreanDate, {
+        x: (width - dateWidth) / 2,
+        y: yPos,
+        size: 12,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
       yPos -= 60;
 
       // ========== 하단 회사 정보 ==========
       const companyInfoX = width - margin - 150;
-      page.drawText("회 사 명 :", { x: companyInfoX, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
-      page.drawText("FLOXN", { x: companyInfoX + 70, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText("회 사 명 :", {
+        x: companyInfoX,
+        y: yPos,
+        size: 11,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
+      page.drawText("FLOXN", {
+        x: companyInfoX + 70,
+        y: yPos,
+        size: 11,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
       yPos -= 20;
-      page.drawText("담 당 자 :", { x: companyInfoX, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
-      page.drawText("-", { x: companyInfoX + 70, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText("담 당 자 :", {
+        x: companyInfoX,
+        y: yPos,
+        size: 11,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
+      page.drawText("-", {
+        x: companyInfoX + 70,
+        y: yPos,
+        size: 11,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
       yPos -= 20;
-      page.drawText("연 락 처 :", { x: companyInfoX, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
-      page.drawText("-", { x: companyInfoX + 70, y: yPos, size: 11, font: customFont, color: rgb(0, 0, 0) });
+      page.drawText("연 락 처 :", {
+        x: companyInfoX,
+        y: yPos,
+        size: 11,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
+      page.drawText("-", {
+        x: companyInfoX + 70,
+        y: yPos,
+        size: 11,
+        font: customFont,
+        color: rgb(0, 0, 0),
+      });
 
       const pdfBytes = await pdfDoc.save();
       const pdfBuffer = Buffer.from(pdfBytes);
-      console.log(`[send-cancellation-email] PDF generated: ${pdfBuffer.length} bytes`);
+      console.log(
+        `[send-cancellation-email] PDF generated: ${pdfBuffer.length} bytes`,
+      );
 
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
