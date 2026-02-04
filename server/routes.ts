@@ -13169,7 +13169,7 @@ https://www.floxn.co.kr/
 
       // ========== 본문 텍스트 ==========
       yPos -= 30;
-      page.drawText("상기 건에 대하여 접수취소 사유를 첨부하여 송.��드립or�다", {
+      page.drawText("상기 건에 대하여 접수취소 사유를 첨부하여 송부드립니다.", {
         x: margin,
         y: yPos,
         size: 11,
@@ -13178,6 +13178,7 @@ https://www.floxn.co.kr/
       });
 
       // ========== 날짜 ==========
+      yPos -= 40;
       const now = new Date();
       const koreanDate = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
       const dateWidth = customFont.widthOfTextAtSize(koreanDate, 12);
@@ -13188,7 +13189,7 @@ https://www.floxn.co.kr/
         font: customFont,
         color: rgb(0, 0, 0),
       });
-      yPos -= 60;
+      yPos -= 40;
 
       // ========== 하단 푸터: 가로선 + FLOXN., Inc ==========
       const footerY = yPos - 30;
