@@ -50,4 +50,4 @@ integrations = ["javascript_mem_db:1.0.0", "javascript_database:1.0.0", "javascr
 SMTP_FROM = "master@floxn.co.kr"
 
 [objectStorage]
-defaultBucketID = "replit-objstore-422a3583-1ff6-4c42-a9aa-33acd8a5315a"
+defaultBucketID = "replit-objstore-f2dbc79d-5089-4493-9638-dd0e5fd60b24"
