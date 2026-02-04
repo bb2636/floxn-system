@@ -33,7 +33,8 @@ type NotificationStage =
   | "입금완료"
   | "부분입금"
   | "정산완료"
-  | "선견적요청";
+  | "선견적요청"
+  | "종결";
 
 interface RecipientConfig {
   partner: boolean;
@@ -62,6 +63,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   부분입금: { partner: true, manager: false, assessorInvestigator: false },
   정산완료: { partner: true, manager: true, assessorInvestigator: false },
   선견적요청: { partner: true, manager: true, assessorInvestigator: false },
+  종결: { partner: true, manager: false, assessorInvestigator: false },
 };
 
 interface SmsNotificationDialogProps {
@@ -331,6 +333,17 @@ export function SmsNotificationDialog({
 피보험자 : ${caseData.insuredName || "-"}
 사고장소 : ${getFullAddress()}
 진행상태 : ${rejectionStatus}`;
+    } else if (stage === "종결") {
+      const approvedAmount = caseData.approvedAmount ? Number(caseData.approvedAmount).toLocaleString() : "-";
+      return `접수번호 : ${caseData.caseNumber || "-"}
+보험사 : ${caseData.insuranceCompany || "-"}
+증권번호 : ${caseData.insurancePolicyNo || "-"}
+사고번호 : ${caseData.insuranceAccidentNo || "-"}
+피보험자 : ${caseData.insuredName || "-"}
+사고장소 : ${getFullAddress()}
+
+위 접수건이 종결되었음을 알려드립니다.
+승인금액 : ${approvedAmount}원`;
     } else {
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}

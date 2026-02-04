@@ -12298,12 +12298,12 @@ https://www.floxn.co.kr/
       "청구자료제출",
       "출동비청구(선견적)",
       "청구",
-      "결정금액/수수료",
       "접수취소",
       "입금완료",
       "부분입금",
       "정산완료",
       "선견적요청",
+      "종결",
     ]),
     recipients: z.object({
       partner: z.boolean().default(false),
@@ -12313,10 +12313,6 @@ https://www.floxn.co.kr/
     additionalMessage: z.string().optional(),
     // 접수취소 사유 (접수취소 단계에서만 사용)
     cancelReason: z.string().optional(),
-    // 결정금액/수수료 정보 (결정금액수수료 단계에서만 사용)
-    recoveryAmount: z.number().optional(),
-    feeRate: z.number().optional(),
-    paymentAmount: z.number().optional(),
     // 반려 시 이전 진행상태 (반려 단계에서만 사용)
     previousStatus: z.string().optional(),
   });
@@ -12561,9 +12557,16 @@ https://www.floxn.co.kr/
 
 위 접수건은 접수 취소 되었음을 알려드립니다.
 취소 사유 : ${cancelReason || "-"}`;
-      } else if (stage === "결정금액/수수료") {
-        subject = "결정금액 및 수수료 안내";
-        messageText = `<결정금액 및 수수료안내 알림>
+      } else if (stage === "종결") {
+        // 정산 정보 조회
+        const settlements = await storage.getSettlementsByCaseId(caseId);
+        const latestSettlement = settlements && settlements.length > 0 ? settlements[0] : null;
+        
+        const approvedAmount = caseData.approvedAmount ? Number(caseData.approvedAmount).toLocaleString() : "-";
+        const commission = latestSettlement?.commission || "-";
+        
+        subject = "종결 알림";
+        messageText = `<종결 알림>
 
 접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
@@ -12571,9 +12574,10 @@ https://www.floxn.co.kr/
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
 사고장소 : ${getFullAddress()}
-복구금액 : ${recoveryAmount?.toLocaleString() || "-"}원
-수수료 : 최종금액의 ${feeRate || "-"}%
-지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
+
+위 접수건이 종결되었음을 알려드립니다.
+승인금액 : ${approvedAmount}원
+수수료 : ${commission}`;
       } else if (stage === "반려" || stage === "승인반려") {
         // 심사반려 또는 승인반려 모두 동일한 형식으로 처리
         const rejectionType = stage === "승인반려" ? "승인반려" : "심사반려";

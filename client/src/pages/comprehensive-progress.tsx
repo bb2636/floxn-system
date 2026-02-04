@@ -117,6 +117,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   부분입금: { partner: true, manager: false, assessorInvestigator: false },
   정산완료: { partner: true, manager: true, assessorInvestigator: false },
   선견적요청: { partner: true, manager: true, assessorInvestigator: false },
+  종결: { partner: true, manager: false, assessorInvestigator: false },
 };
 
 // 진행상태 목록 - DB에 저장되는 값
@@ -553,6 +554,7 @@ export default function ComprehensiveProgress() {
           부분입금: "부분입금",
           정산완료: "정산완료",
           접수취소: "접수취소",
+          종결: "종결",
         };
 
         const stage = smsRequiredStages[variables.status];
