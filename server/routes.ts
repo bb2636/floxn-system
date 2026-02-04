@@ -12562,11 +12562,17 @@ https://www.floxn.co.kr/
         const settlements = await storage.getSettlementsByCaseId(caseId);
         const latestSettlement = settlements && settlements.length > 0 ? settlements[0] : null;
         
-        const approvedAmount = caseData.approvedAmount ? Number(caseData.approvedAmount).toLocaleString() : "-";
-        const commission = latestSettlement?.commission || "-";
+        // 지급금액 및 수수료
+        const paymentAmountNum = latestSettlement?.partnerPaymentAmount ? Number(latestSettlement.partnerPaymentAmount) : 0;
+        const commissionNum = latestSettlement?.commission ? Number(latestSettlement.commission) : 0;
+        const totalAmountNum = paymentAmountNum + commissionNum;
         
-        subject = "종결 알림";
-        messageText = `<종결 알림>
+        const paymentAmountStr = paymentAmountNum > 0 ? paymentAmountNum.toLocaleString() : "-";
+        const commissionStr = commissionNum > 0 ? commissionNum.toLocaleString() : "-";
+        const totalAmountStr = totalAmountNum > 0 ? totalAmountNum.toLocaleString() : "-";
+        
+        subject = "종결안내";
+        messageText = `<종결안내>
 
 접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
@@ -12576,8 +12582,9 @@ https://www.floxn.co.kr/
 사고장소 : ${getFullAddress()}
 
 위 접수건이 종결되었음을 알려드립니다.
-승인금액 : ${approvedAmount}원
-수수료 : ${commission}`;
+지급금액 : ${paymentAmountStr}원
+수수료 : ${commissionStr}원
+합계금액 : ${totalAmountStr}원`;
       } else if (stage === "반려" || stage === "승인반려") {
         // 심사반려 또는 승인반려 모두 동일한 형식으로 처리
         const rejectionType = stage === "승인반려" ? "승인반려" : "심사반려";

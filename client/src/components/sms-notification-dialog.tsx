@@ -334,7 +334,8 @@ export function SmsNotificationDialog({
 사고장소 : ${getFullAddress()}
 진행상태 : ${rejectionStatus}`;
     } else if (stage === "종결") {
-      const approvedAmount = caseData.approvedAmount ? Number(caseData.approvedAmount).toLocaleString() : "-";
+      // 종결은 다이얼로그 없이 자동 발송되므로 이 미리보기는 사용되지 않음
+      // 실제 메시지는 백엔드에서 정산 정보를 조회하여 생성됨
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
 증권번호 : ${caseData.insurancePolicyNo || "-"}
@@ -343,7 +344,9 @@ export function SmsNotificationDialog({
 사고장소 : ${getFullAddress()}
 
 위 접수건이 종결되었음을 알려드립니다.
-승인금액 : ${approvedAmount}원`;
+지급금액 : (정산조회 데이터)원
+수수료 : (정산조회 데이터)원
+합계금액 : (지급금액+수수료)원`;
     } else {
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
