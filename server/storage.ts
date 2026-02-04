@@ -4339,9 +4339,8 @@ export class DbStorage implements IStorage {
           dateUpdates.approvedAmount = existingCase.estimateAmount;
         }
         break;
-      case "직접복구":
       case "청구자료제출(복구)":
-        // 직접복구/청구자료제출 시 복구완료일 자동 기록 (기존 값 없을 때만)
+        // 청구자료제출(복구) 시 복구완료일 자동 기록 (기존 값 없을 때만)
         if (!existingCase.constructionCompletionDate) {
           dateUpdates.constructionCompletionDate = currentDate;
         }
