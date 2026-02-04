@@ -482,8 +482,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get environment info
       const isProduction = process.env.REPLIT_DEPLOYMENT === "1";
       const dbUrl = isProduction
-        ? process.env.PROD_DATABASE_URL || process.env.DATABASE_URL
-        : process.env.DEV_DATABASE_URL || process.env.DATABASE_URL;
+        ? process.env.PROD_DATABASE_URL
+        : process.env.DEV_DATABASE_URL;
 
       // Mask the DB URL for security (only show host)
       const maskedDbUrl = dbUrl
