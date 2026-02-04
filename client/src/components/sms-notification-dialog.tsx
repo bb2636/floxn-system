@@ -29,7 +29,6 @@ type NotificationStage =
   | "청구자료제출"
   | "출동비청구(선견적)"
   | "청구"
-  | "결정금액/수수료"
   | "접수취소"
   | "입금완료"
   | "부분입금"
@@ -58,11 +57,6 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
     assessorInvestigator: false,
   },
   청구: { partner: false, manager: false, assessorInvestigator: true },
-  "결정금액/수수료": {
-    partner: true,
-    manager: false,
-    assessorInvestigator: false,
-  },
   접수취소: { partner: false, manager: false, assessorInvestigator: true },
   입금완료: { partner: true, manager: true, assessorInvestigator: false },
   부분입금: { partner: true, manager: true, assessorInvestigator: false },
@@ -149,11 +143,6 @@ export function SmsNotificationDialog({
           recipients,
           additionalMessage: additionalMessage || undefined,
           cancelReason: stage === "접수취소" ? cancelReason : undefined,
-          recoveryAmount:
-            stage === "결정금액/수수료" ? recoveryAmount : undefined,
-          feeRate: stage === "결정금액/수수료" ? feeRate : undefined,
-          paymentAmount:
-            stage === "결정금액/수수료" ? paymentAmount : undefined,
           previousStatus:
             stage === "반려" || stage === "승인반려"
               ? previousStatus
@@ -230,12 +219,7 @@ export function SmsNotificationDialog({
   };
 
   const getStageDisplayName = () => {
-    switch (stage) {
-      case "결정금액/수수료":
-        return "결정금액 및 수수료 안내";
-      default:
-        return stage;
-    }
+    return stage;
   };
 
   // 의뢰범위 계산 (손방/대물)
@@ -336,16 +320,6 @@ export function SmsNotificationDialog({
 
 위 접수건은 접수 취소 되었음을 알려드립니다.
 취소 사유 : ${cancelReason || "-"}`;
-    } else if (stage === "결정금액/수수료") {
-      return `접수번호 : ${caseData.caseNumber || "-"}
-보험사 : ${caseData.insuranceCompany || "-"}
-증권번호 : ${caseData.insurancePolicyNo || "-"}
-사고번호 : ${caseData.insuranceAccidentNo || "-"}
-피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${getFullAddress()}
-복구금액 : ${recoveryAmount?.toLocaleString() || "-"}원
-수수료 : 최종금액의 ${feeRate || "-"}%
-지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
     } else if (stage === "반려" || stage === "승인반려") {
       const rejectionStatus = previousStatus
         ? `${previousStatus}에서 반려`
@@ -731,58 +705,6 @@ export function SmsNotificationDialog({
               {additionalMessage && `\n\n추가사항 : ${additionalMessage}`}
             </pre>
           </div>
-
-          {stage === "결정금액/수수료" && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="recoveryAmount" className="text-sm">
-                    복구금액
-                  </Label>
-                  <Input
-                    id="recoveryAmount"
-                    type="number"
-                    placeholder="0"
-                    value={recoveryAmount || ""}
-                    onChange={(e) =>
-                      setRecoveryAmount(Number(e.target.value) || undefined)
-                    }
-                    data-testid="input-recovery-amount"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="feeRate" className="text-sm">
-                    수수료율 (%)
-                  </Label>
-                  <Input
-                    id="feeRate"
-                    type="number"
-                    placeholder="0"
-                    value={feeRate || ""}
-                    onChange={(e) =>
-                      setFeeRate(Number(e.target.value) || undefined)
-                    }
-                    data-testid="input-fee-rate"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="paymentAmount" className="text-sm">
-                  지급금액
-                </Label>
-                <Input
-                  id="paymentAmount"
-                  type="number"
-                  placeholder="0"
-                  value={paymentAmount || ""}
-                  onChange={(e) =>
-                    setPaymentAmount(Number(e.target.value) || undefined)
-                  }
-                  data-testid="input-payment-amount"
-                />
-              </div>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">추가 메시지 (선택)</Label>

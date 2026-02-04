@@ -112,11 +112,6 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
     assessorInvestigator: false,
   },
   청구: { partner: false, manager: false, assessorInvestigator: true },
-  "결정금액/수수료": {
-    partner: true,
-    manager: false,
-    assessorInvestigator: false,
-  },
   접수취소: { partner: false, manager: false, assessorInvestigator: true },
   입금완료: { partner: true, manager: true, assessorInvestigator: false },
   부분입금: { partner: true, manager: true, assessorInvestigator: false },
@@ -519,10 +514,9 @@ export default function ComprehensiveProgress() {
         }
       };
 
-      // 추가 정보 입력이 필요한 상태 (취소 사유, 결정금액 등)
+      // 추가 정보 입력이 필요한 상태 (취소 사유 등)
       const stagesRequiringDialog: NotificationStage[] = [
         "접수취소",
-        "결정금액/수수료",
       ];
 
       // 미복구 선택 시 자동 전환 알림 (백엔드에서 출동비 청구로 변경됨)
@@ -555,7 +549,6 @@ export default function ComprehensiveProgress() {
           "출동비청구(선견적)": "출동비청구(선견적)",
           청구자료제출: "청구자료제출",
           청구: "청구",
-          "결정금액/수수료": "결정금액/수수료",
           입금완료: "입금완료",
           부분입금: "부분입금",
           정산완료: "정산완료",
@@ -3495,7 +3488,7 @@ export default function ComprehensiveProgress() {
               : [];
         })()}
       />
-      {/* SMS 알림 발송 다이얼로그 - 추가 정보 입력이 필요한 상태에서만 사용 (접수취소, 결정금액/수수료) */}
+      {/* SMS 알림 발송 다이얼로그 - 추가 정보 입력이 필요한 상태에서만 사용 (접수취소) */}
       {smsCaseData && (
         <SmsNotificationDialog
           open={smsDialogOpen}
