@@ -13099,16 +13099,29 @@ https://www.floxn.co.kr/
 
       // Row 3: 취소사유 (full width)
       const reasonText = normalizeText(cancelReason || "-");
-      const maxCharsPerLine = 70;
+      const reasonCellWidth = tableWidth - col1Width - 10; // 셀 내부 패딩 고려
+      const reasonFontSize = 10;
       const reasonLines: string[] = [];
-      let remainingText = reasonText;
-      while (remainingText.length > 0) {
-        if (remainingText.length <= maxCharsPerLine) {
-          reasonLines.push(remainingText);
-          break;
+      
+      // 폰트 너비 기준으로 줄바꿈 계산
+      let currentLine = "";
+      for (const char of reasonText) {
+        const testLine = currentLine + char;
+        const testWidth = customFont.widthOfTextAtSize(testLine, reasonFontSize);
+        if (testWidth > reasonCellWidth) {
+          if (currentLine) {
+            reasonLines.push(currentLine);
+          }
+          currentLine = char;
+        } else {
+          currentLine = testLine;
         }
-        reasonLines.push(remainingText.substring(0, maxCharsPerLine));
-        remainingText = remainingText.substring(maxCharsPerLine);
+      }
+      if (currentLine) {
+        reasonLines.push(currentLine);
+      }
+      if (reasonLines.length === 0) {
+        reasonLines.push("-");
       }
       const lineHeight = 16;
       const reasonRowHeight = Math.max(
