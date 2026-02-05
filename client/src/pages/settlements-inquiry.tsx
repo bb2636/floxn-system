@@ -185,10 +185,10 @@ export default function SettlementsInquiry() {
 
   // Helper function to open Invoice Management Popup
   const handleOpenManagement = (row: SettlementRow) => {
-    // 같은 사고번호의 모든 케이스들 찾기 (row.caseIds 사용)
+    // 같은 사고번호의 모든 케이스들 찾기 (row.caseIds 사용) - 접수취소 건 제외
     const relatedCases = row.caseIds
       .map((caseId) => cases.find((c) => c.id === caseId))
-      .filter((c): c is CaseWithLatestProgress => c !== undefined);
+      .filter((c): c is CaseWithLatestProgress => c !== undefined && c.status !== "접수취소");
 
     // 직접복구 건이 있으면 해당 케이스를 선택, 없으면 첫 번째 케이스
     const directRepairCase = relatedCases.find(
@@ -2702,9 +2702,9 @@ export default function SettlementsInquiry() {
           );
           return invoiceCasePrefix
             ? cases?.filter(
-                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix,
+                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix && c.status !== "접수취소",
               ) || []
-            : invoiceCase
+            : invoiceCase && invoiceCase.status !== "접수취소"
               ? [invoiceCase]
               : [];
         })()}
@@ -2721,9 +2721,9 @@ export default function SettlementsInquiry() {
           );
           return invoiceCasePrefix
             ? cases?.filter(
-                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix,
+                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix && c.status !== "접수취소",
               ) || []
-            : invoiceCase
+            : invoiceCase && invoiceCase.status !== "접수취소"
               ? [invoiceCase]
               : [];
         })()}
