@@ -343,8 +343,9 @@ export interface IStorage {
   // Excel-based materials catalog
   getMaterialsCatalog(): Promise<
     Array<{
-      workType: string; // 공종명
-      materialName: string;
+      workType: string; // 공종
+      workName: string; // 공사명
+      materialName: string; // 자재항목
       specification: string;
       unit: string;
       standardPrice: number | string; // can be "입력" or number
@@ -2496,6 +2497,7 @@ export class MemStorage implements IStorage {
   async getMaterialsCatalog(): Promise<
     Array<{
       workType: string;
+      workName: string;
       materialName: string;
       specification: string;
       unit: string;
@@ -5737,6 +5739,7 @@ export class DbStorage implements IStorage {
   async getMaterialsCatalog(): Promise<
     Array<{
       workType: string;
+      workName: string;
       materialName: string;
       specification: string;
       unit: string;
@@ -5759,16 +5762,25 @@ export class DbStorage implements IStorage {
     const headers = latestExcelData.headers as string[];
     const data = latestExcelData.data as any[][];
 
+    console.log("[getMaterialsCatalog] 자재비 Excel 헤더:", headers);
+
     // Find column indices - flexible matching for various Excel formats
+    // 공종: 첫 번째 컬럼 (공종, 공종명)
     const workTypeIdx = headers.findIndex((h) => h.trim() === "공종" || h.trim() === "공종명" || h.includes("공종"));
-    const materialNameIdx = headers.findIndex((h) => h.includes("자재") || h.includes("공사명"));
+    // 공사명: 두 번째 컬럼 (공사명) - 자재항목보다 먼저 찾기
+    const workNameIdx = headers.findIndex((h) => h.trim() === "공사명" || (h.includes("공사") && !h.includes("자재")));
+    // 자재항목: 세 번째 컬럼 (자재항목, 자재명)
+    const materialNameIdx = headers.findIndex((h) => h.trim() === "자재항목" || h.trim() === "자재명" || h.includes("자재"));
     const specIdx = headers.findIndex((h) => h.includes("규격"));
     const unitIdx = headers.findIndex((h) => h.trim() === "단위" || h.includes("단위"));
     const priceIdx = headers.findIndex((h) => h.trim().includes("단가"));
 
+    console.log("[getMaterialsCatalog] 컬럼 인덱스:", { workTypeIdx, workNameIdx, materialNameIdx, specIdx, unitIdx, priceIdx });
+
     if (materialNameIdx === -1 || unitIdx === -1 || priceIdx === -1) {
       console.error("Missing required columns in excel_data 자재비", { 
         headers, 
+        workNameIdx,
         materialNameIdx, 
         unitIdx, 
         priceIdx 
@@ -5778,11 +5790,13 @@ export class DbStorage implements IStorage {
 
     // Forward-fill processing
     let lastWorkType = "";
+    let lastWorkName = "";
     let lastMaterialName = "";
     let lastSpecification = "";
 
     const catalog: Array<{
       workType: string;
+      workName: string;
       materialName: string;
       specification: string;
       unit: string;
@@ -5796,16 +5810,21 @@ export class DbStorage implements IStorage {
       // Get values with forward-fill
       const workType =
         workTypeIdx !== -1 && row[workTypeIdx]
-          ? row[workTypeIdx]
+          ? String(row[workTypeIdx]).trim()
           : lastWorkType;
-      const materialName = row[materialNameIdx] ?? lastMaterialName;
-      const specification = row[specIdx] ?? lastSpecification;
-      const unit = row[unitIdx];
+      const workName =
+        workNameIdx !== -1 && row[workNameIdx]
+          ? String(row[workNameIdx]).trim()
+          : lastWorkName;
+      const materialName = row[materialNameIdx] ? String(row[materialNameIdx]).trim() : lastMaterialName;
+      const specification = row[specIdx] ? String(row[specIdx]).trim() : lastSpecification;
+      const unit = row[unitIdx] ? String(row[unitIdx]).trim() : "";
       const price = row[priceIdx];
 
       // Skip if essential fields are missing
       if (
         !workType ||
+        !workName ||
         !materialName ||
         !unit ||
         price === undefined ||
@@ -5816,6 +5835,7 @@ export class DbStorage implements IStorage {
 
       // Update last values for forward-fill
       if (workTypeIdx !== -1 && row[workTypeIdx]) lastWorkType = workType;
+      if (workNameIdx !== -1 && row[workNameIdx]) lastWorkName = workName;
       if (row[materialNameIdx]) lastMaterialName = materialName;
       if (row[specIdx] !== null && row[specIdx] !== undefined)
         lastSpecification = specification;
@@ -5831,11 +5851,17 @@ export class DbStorage implements IStorage {
 
       catalog.push({
         workType,
+        workName,
         materialName,
         specification: specification || "-",
         unit,
         standardPrice,
       });
+    }
+
+    console.log("[getMaterialsCatalog] 총 카탈로그 개수:", catalog.length);
+    if (catalog.length > 0) {
+      console.log("[getMaterialsCatalog] 샘플:", catalog.slice(0, 3));
     }
 
     return catalog;
