@@ -10463,9 +10463,10 @@ FLOXN`;
       const assessorName = caseData.assessorTeam || "-";
       const investigatorName = caseData.investigatorTeamName || "-";
 
-      // 동일 사고번호의 모든 접수번호 수집
+      // 동일 사고번호의 모든 접수번호 수집 (접수취소 건 제외)
       const allCaseNumbers =
         allCases
+          .filter((c) => c.status !== "접수취소")
           .map((c) => c.caseNumber)
           .filter(Boolean)
           .join(", ") || "-";
