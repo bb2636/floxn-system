@@ -5759,15 +5759,20 @@ export class DbStorage implements IStorage {
     const headers = latestExcelData.headers as string[];
     const data = latestExcelData.data as any[][];
 
-    // Find column indices
-    const workTypeIdx = headers.findIndex((h) => h === "공종명");
-    const materialNameIdx = headers.findIndex((h) => h === "자재명");
-    const specIdx = headers.findIndex((h) => h === "규격");
-    const unitIdx = headers.findIndex((h) => h === "단위");
-    const priceIdx = headers.findIndex((h) => h === "단가");
+    // Find column indices - flexible matching for various Excel formats
+    const workTypeIdx = headers.findIndex((h) => h.trim() === "공종" || h.trim() === "공종명" || h.includes("공종"));
+    const materialNameIdx = headers.findIndex((h) => h.includes("자재") || h.includes("공사명"));
+    const specIdx = headers.findIndex((h) => h.includes("규격"));
+    const unitIdx = headers.findIndex((h) => h.trim() === "단위" || h.includes("단위"));
+    const priceIdx = headers.findIndex((h) => h.trim().includes("단가"));
 
     if (materialNameIdx === -1 || unitIdx === -1 || priceIdx === -1) {
-      console.error("Missing required columns in excel_data 자재비");
+      console.error("Missing required columns in excel_data 자재비", { 
+        headers, 
+        materialNameIdx, 
+        unitIdx, 
+        priceIdx 
+      });
       return [];
     }
 
