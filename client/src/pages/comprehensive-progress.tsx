@@ -201,6 +201,7 @@ export default function ComprehensiveProgress() {
   const [cancelTargetCase, setCancelTargetCase] = useState<CaseWithLatestProgress | null>(null);
 
   // 청구하기 버튼 표시 조건: 연관된 모든 케이스가 "청구" 상태인 경우에만 버튼 표시
+  // (접수취소 건은 종결된 건으로 간주하여 제외)
   const canShowClaimButton = (
     caseItem: CaseWithLatestProgress,
     allCases: CaseWithLatestProgress[] | undefined,
@@ -224,8 +225,14 @@ export default function ComprehensiveProgress() {
       return prefix === groupPrefix;
     });
 
-    // 연관된 모든 케이스가 청구 관련 상태인지 확인
-    return relatedCases.every((c) => claimStatuses.includes(c.status || ""));
+    // 접수취소 건은 종결된 건으로 간주하여 제외
+    const activeCases = relatedCases.filter((c) => c.status !== "접수취소");
+
+    // 활성 케이스가 없으면 버튼 숨김
+    if (activeCases.length === 0) return false;
+
+    // 활성 케이스만 청구 관련 상태인지 확인
+    return activeCases.every((c) => claimStatuses.includes(c.status || ""));
   };
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
