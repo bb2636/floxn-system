@@ -13297,8 +13297,9 @@ FLOXN`;
         cid?: string;
       }> = [];
 
-      // PDF 첨부
-      const pdfFilename = `접수취소안내_${accidentNo.replace(/[^a-zA-Z0-9가-힣-]/g, "_")}_${dateStr.replace(/\./g, "")}.pdf`;
+      // PDF 첨부 - 파일명: [FLOXN] 접수취소- 사고번호 (사고번호 없으면 증권번호)
+      const filenameId = (caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "unknown").replace(/[^a-zA-Z0-9가-힣-]/g, "_");
+      const pdfFilename = `[FLOXN] 접수취소- ${filenameId}.pdf`;
       attachments.push({
         filename: pdfFilename,
         content: pdfBuffer,
