@@ -1902,7 +1902,7 @@ export default function SettlementsInquiry() {
                             : "rgba(248, 248, 248, 1)",
                       }}
                     >
-                      {row.assignedPartner || "-"}
+                      {row.managerId ? usersByIdMap.get(row.managerId)?.name || "-" : "-"}
                     </td>
                     <td
                       style={{
@@ -1953,7 +1953,7 @@ export default function SettlementsInquiry() {
                             : "rgba(248, 248, 248, 1)",
                       }}
                     >
-                      {row.admin}
+                      {row.assignedPartner || "-"}
                     </td>
                     <td
                       style={{
