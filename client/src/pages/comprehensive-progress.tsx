@@ -3471,9 +3471,9 @@ export default function ComprehensiveProgress() {
           );
           return invoiceCasePrefix
             ? cases?.filter(
-                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix,
+                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix && c.status !== "접수취소",
               ) || []
-            : invoiceCase
+            : invoiceCase && invoiceCase.status !== "접수취소"
               ? [invoiceCase]
               : [];
         })()}
@@ -3490,9 +3490,9 @@ export default function ComprehensiveProgress() {
           );
           return invoiceCasePrefix
             ? cases?.filter(
-                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix,
+                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix && c.status !== "접수취소",
               ) || []
-            : invoiceCase
+            : invoiceCase && invoiceCase.status !== "접수취소"
               ? [invoiceCase]
               : [];
         })()}
