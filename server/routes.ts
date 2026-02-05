@@ -8570,6 +8570,14 @@ FLOXN`;
         const isMainCase = relatedCase.id === caseId;
         const caseSuffix = getCaseSuffix(relatedCase.caseNumber || "");
 
+        // 접수취소 건은 종결된 건으로 인보이스에서 제외
+        if (relatedCase.status === "접수취소") {
+          console.log(
+            `[Invoice PDF] Skipping 접수취소 case: ${relatedCase.caseNumber}`,
+          );
+          continue;
+        }
+
         // 선견적요청 건은 인보이스에서 제외 (금액 합산 안됨)
         if (relatedCase.recoveryType === "선견적요청") {
           console.log(
@@ -8767,7 +8775,7 @@ FLOXN`;
           [caseId]: getAddressForCase(caseData),
         };
 
-        // Get related cases (same insuranceAccidentNo)
+        // Get related cases (same insuranceAccidentNo) - 접수취소 건 제외
         let allDocuments = [...mainDocs];
         if (caseData.insuranceAccidentNo) {
           const relatedCases = await storage.getCasesByAccidentNo(
@@ -8775,8 +8783,11 @@ FLOXN`;
             caseId,
           );
 
+          // 접수취소 건 제외
+          const activeCases = relatedCases.filter((c: any) => c.status !== "접수취소");
+
           // Fetch documents from all related cases and build mapping
-          for (const relatedCase of relatedCases) {
+          for (const relatedCase of activeCases) {
             caseNumberMap[relatedCase.id] = relatedCase.caseNumber || "";
             // Build address for related case (케이스 타입에 따라 주소 선택)
             caseAddressMap[relatedCase.id] = getAddressForCase(relatedCase);
@@ -8787,7 +8798,7 @@ FLOXN`;
             allDocuments = allDocuments.concat(relatedDocs);
           }
           console.log(
-            `[Invoice PDF] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`,
+            `[Invoice PDF] Total documents from ${1 + activeCases.length} cases (excluding 접수취소): ${allDocuments.length}`,
           );
         }
 
@@ -9585,6 +9596,14 @@ FLOXN`;
       for (const relatedCase of allCases) {
         const caseSuffix = getCaseSuffix(relatedCase.caseNumber || "");
 
+        // 접수취소 건은 종결된 건으로 인보이스에서 제외
+        if (relatedCase.status === "접수취소") {
+          console.log(
+            `[send-invoice-email-v2] Skipping 접수취소 case: ${relatedCase.caseNumber}`,
+          );
+          continue;
+        }
+
         // 선견적요청 건은 인보이스에서 제외 (금액 합산 안됨)
         if (relatedCase.recoveryType === "선견적요청") {
           console.log(
@@ -9766,7 +9785,7 @@ FLOXN`;
           [caseId]: getAddressForCase(caseData),
         };
 
-        // Get related cases (same insuranceAccidentNo)
+        // Get related cases (same insuranceAccidentNo) - 접수취소 건 제외
         let allDocuments = [...mainDocs];
         if (caseData.insuranceAccidentNo) {
           const relatedCases = await storage.getCasesByAccidentNo(
@@ -9774,8 +9793,11 @@ FLOXN`;
             caseId,
           );
 
+          // 접수취소 건 제외
+          const activeCases = relatedCases.filter((c: any) => c.status !== "접수취소");
+
           // Fetch documents from all related cases and build mapping
-          for (const relatedCase of relatedCases) {
+          for (const relatedCase of activeCases) {
             caseNumberMap[relatedCase.id] = relatedCase.caseNumber || "";
             // Build address for related case (케이스 타입에 따라 주소 선택)
             caseAddressMap[relatedCase.id] = getAddressForCase(relatedCase);
@@ -9786,7 +9808,7 @@ FLOXN`;
             allDocuments = allDocuments.concat(relatedDocs);
           }
           console.log(
-            `[Invoice Email] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`,
+            `[Invoice Email] Total documents from ${1 + activeCases.length} cases (excluding 접수취소): ${allDocuments.length}`,
           );
         }
 
