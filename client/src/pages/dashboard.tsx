@@ -276,7 +276,8 @@ export default function Dashboard() {
   }, [filteredCasesByTab, user, allUsers]);
 
   const insuranceCompanySummary = useMemo(() => {
-    if (!summaryCases) return [];
+    if (!allCases) return [];
+    const activeCases = allCases.filter(c => c.status !== '작성중');
 
     const companyCounts = new Map<string, {
       name: string;
@@ -286,38 +287,42 @@ export default function Dashboard() {
       partnerUnsettled: number;
     }>();
 
+    const allCompanyNames = new Set<string>();
+    activeCases.forEach(c => allCompanyNames.add(c.insuranceCompany || '미지정'));
+    summaryCases.forEach(c => allCompanyNames.add(c.insuranceCompany || '미지정'));
+
+    allCompanyNames.forEach(name => {
+      companyCounts.set(name, {
+        name,
+        reception: 0,
+        pending: 0,
+        insuranceUnsettled: 0,
+        partnerUnsettled: 0,
+      });
+    });
+
     summaryCases.forEach(c => {
       const companyName = c.insuranceCompany || '미지정';
-      
-      const existing = companyCounts.get(companyName);
-      // 미결건: 청구단계 이전 (청구, 입금완료, 부분입금, 정산완료, 접수취소, 취소 제외)
+      const existing = companyCounts.get(companyName)!;
+      existing.reception++;
+    });
+
+    activeCases.forEach(c => {
+      const companyName = c.insuranceCompany || '미지정';
+      const existing = companyCounts.get(companyName)!;
       const isPending = c.status !== '청구' && c.status !== '입금완료' && c.status !== '부분입금' && 
                         c.status !== '정산완료' && c.status !== '접수취소' && c.status !== '취소';
-      // 보험사 미정산: 완료 상태이면서 insuranceSettlementStatus가 '미정산'이거나 정산 전인 경우
       const insuranceStatus = (c as any).insuranceSettlementStatus;
       const partnerStatus = (c as any).partnerSettlementStatus;
       const isInsuranceUnsettled = c.status === '완료' && (!insuranceStatus || insuranceStatus === '미정산');
-      // 협력사 미정산: 완료 상태이면서 partnerSettlementStatus가 '미정산'이거나 정산 전인 경우
       const isPartnerUnsettled = c.status === '완료' && (!partnerStatus || partnerStatus === '미정산');
-      
-      if (existing) {
-        existing.reception++;
-        if (isPending) existing.pending++;
-        if (isInsuranceUnsettled) existing.insuranceUnsettled++;
-        if (isPartnerUnsettled) existing.partnerUnsettled++;
-      } else {
-        companyCounts.set(companyName, {
-          name: companyName,
-          reception: 1,
-          pending: isPending ? 1 : 0,
-          insuranceUnsettled: isInsuranceUnsettled ? 1 : 0,
-          partnerUnsettled: isPartnerUnsettled ? 1 : 0,
-        });
-      }
+      if (isPending) existing.pending++;
+      if (isInsuranceUnsettled) existing.insuranceUnsettled++;
+      if (isPartnerUnsettled) existing.partnerUnsettled++;
     });
 
     return Array.from(companyCounts.values()).sort((a, b) => b.reception - a.reception);
-  }, [summaryCases]);
+  }, [allCases, summaryCases]);
 
   const insuranceTotals = useMemo(() => {
     return insuranceCompanySummary.reduce((acc, company) => ({
@@ -742,53 +747,8 @@ export default function Dashboard() {
         <div className="grid grid-cols-12 gap-6">
           <section className="col-span-12 lg:col-span-9 space-y-6">
             <div className="col-span-12">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex items-center">
                 <h2 className="text-base font-bold">현황 요약</h2>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
-                      type="button"
-                      data-testid="button-period-selector-summary"
-                    >
-                      <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
-                      {getSummaryPeriodLabel()}
-                      <ChevronDown className="h-4 w-4 text-slate-500" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
-                    <DropdownMenuItem 
-                      onClick={() => handleSummaryPeriodSelect('all')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
-                    >
-                      전체
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleSummaryPeriodSelect('today')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
-                    >
-                      오늘
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleSummaryPeriodSelect('thisMonth')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
-                    >
-                      이번 달
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleSummaryPeriodSelect('lastMonth')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
-                    >
-                      지난달
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleSummaryPeriodSelect('custom')}
-                      className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
-                    >
-                      날짜 선택
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
 
               <div className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-[#DDE3F3]">
@@ -797,7 +757,55 @@ export default function Dashboard() {
                     <thead className="bg-[#F6F7FB] text-slate-600">
                       <tr>
                         <th className="w-[120px] px-4 py-3 text-left font-semibold">분류</th>
-                        <th className="px-4 py-3 text-center font-semibold">접수건</th>
+                        <th className="px-4 py-3 text-center font-semibold">
+                          <div className="inline-flex items-center gap-1">
+                            <span>접수건</span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  className="inline-flex items-center gap-1 rounded-md border border-[#D8DEEF] bg-white/70 px-2 py-0.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-white"
+                                  type="button"
+                                  data-testid="button-period-selector-summary"
+                                >
+                                  {getSummaryPeriodLabel()}
+                                  <ChevronDown className="h-3 w-3 text-slate-400" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
+                                <DropdownMenuItem 
+                                  onClick={() => handleSummaryPeriodSelect('all')}
+                                  className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
+                                >
+                                  전체
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleSummaryPeriodSelect('today')}
+                                  className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
+                                >
+                                  오늘
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleSummaryPeriodSelect('thisMonth')}
+                                  className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                                >
+                                  이번 달
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleSummaryPeriodSelect('lastMonth')}
+                                  className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                                >
+                                  지난달
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleSummaryPeriodSelect('custom')}
+                                  className={`text-sm py-2 px-3 cursor-pointer rounded ${summaryPeriodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
+                                >
+                                  날짜 선택
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </th>
                         <th className="px-4 py-3 text-center font-semibold">미결건</th>
                         <th className="px-4 py-3 text-center font-semibold">보험사 미정산</th>
                         <th className="px-4 py-3 text-center font-semibold">협력사 미정산</th>
