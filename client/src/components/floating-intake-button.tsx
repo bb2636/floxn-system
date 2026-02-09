@@ -31,6 +31,28 @@ export function FloatingIntakeButton() {
     queryKey: ["/api/user"],
   });
 
+  const sendSmsMutation = useMutation({
+    mutationFn: async (data: { subject: string; content: string; recipients: Recipient[] }) => {
+      const res = await apiRequest("POST", "/api/send-custom-sms", data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "문자 발송 완료",
+        description: data.message,
+      });
+      resetSmsForm();
+      setSmsDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "문자 발송 실패",
+        description: error?.message || "문자 발송 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const hiddenPaths = ['/', '/login', '/intake', '/forbidden', '/not-found'];
   if (hiddenPaths.includes(location)) return null;
 
@@ -69,28 +91,6 @@ export function FloatingIntakeButton() {
     setNewRecipientName("");
     setNewRecipientPhone("");
   };
-
-  const sendSmsMutation = useMutation({
-    mutationFn: async (data: { subject: string; content: string; recipients: Recipient[] }) => {
-      const res = await apiRequest("POST", "/api/send-custom-sms", data);
-      return res.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "문자 발송 완료",
-        description: data.message,
-      });
-      resetSmsForm();
-      setSmsDialogOpen(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "문자 발송 실패",
-        description: error?.message || "문자 발송 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
-    },
-  });
 
   const handleSendSms = () => {
     if (!smsSubject.trim()) {
