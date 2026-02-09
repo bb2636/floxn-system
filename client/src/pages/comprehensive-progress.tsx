@@ -200,6 +200,10 @@ export default function ComprehensiveProgress() {
   const [cancelConfirmDialogOpen, setCancelConfirmDialogOpen] = useState(false);
   const [cancelTargetCase, setCancelTargetCase] = useState<CaseWithLatestProgress | null>(null);
 
+  // 상태 변경 확인 다이얼로그 상태
+  const [statusChangeDialogOpen, setStatusChangeDialogOpen] = useState(false);
+  const [statusChangeTarget, setStatusChangeTarget] = useState<{ caseId: string; status: string } | null>(null);
+
   // 청구하기 버튼 표시 조건: 연관된 모든 케이스가 "청구" 상태인 경우에만 버튼 표시
   // (접수취소 건은 종결된 건으로 간주하여 제외)
   const canShowClaimButton = (
@@ -890,18 +894,9 @@ export default function ComprehensiveProgress() {
       return;
     }
 
-    // 관리자는 모든 상태 변경 가능
-    if (user?.role === "관리자") {
-      updateStatusMutation.mutate({ caseId, status: targetStatus });
-      return;
-    }
-
-    // 협력사는 직접복구/선견적요청만 변경 가능 (자동 전환 적용)
+    // 협력사 권한 체크
     if (user?.role === "협력사") {
-      if (PARTNER_ALLOWED_STATUSES.includes(status)) {
-        updateStatusMutation.mutate({ caseId, status: targetStatus });
-        return;
-      } else {
+      if (!PARTNER_ALLOWED_STATUSES.includes(status)) {
         toast({
           title: "권한 없음",
           description:
@@ -910,6 +905,13 @@ export default function ComprehensiveProgress() {
         });
         return;
       }
+    }
+
+    // 관리자 또는 허용된 협력사: 확인 팝업 표시
+    if (user?.role === "관리자" || user?.role === "협력사") {
+      setStatusChangeTarget({ caseId, status: targetStatus });
+      setStatusChangeDialogOpen(true);
+      return;
     }
 
     // 그 외 역할은 상태 변경 불가
@@ -3519,6 +3521,41 @@ export default function ComprehensiveProgress() {
           }}
         />
       )}
+
+      {/* 상태 변경 확인 다이얼로그 */}
+      <AlertDialog open={statusChangeDialogOpen} onOpenChange={setStatusChangeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>상태 변경 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              상태를 <span style={{ fontWeight: 700, color: getStatusColor(statusChangeTarget?.status || "") }}>"{statusChangeTarget?.status}"</span>(으)로 변경하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setStatusChangeDialogOpen(false);
+                setStatusChangeTarget(null);
+              }}
+              data-testid="button-cancel-status-change"
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (statusChangeTarget) {
+                  setStatusChangeDialogOpen(false);
+                  updateStatusMutation.mutate({ caseId: statusChangeTarget.caseId, status: statusChangeTarget.status });
+                  setStatusChangeTarget(null);
+                }
+              }}
+              data-testid="button-confirm-status-change"
+            >
+              확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* 접수취소 확인 다이얼로그 */}
       <AlertDialog open={cancelConfirmDialogOpen} onOpenChange={setCancelConfirmDialogOpen}>
