@@ -1774,7 +1774,7 @@ export default function ComprehensiveProgress() {
                           >
                             {(user?.role === "협력사"
                               ? PARTNER_ALLOWED_STATUSES
-                              : CASE_STATUSES
+                              : (["반려", "직접복구", "선견적요청", "청구", "종결", "접수취소"] as const)
                             ).map((status) => (
                               <DropdownMenuItem
                                 key={status}
