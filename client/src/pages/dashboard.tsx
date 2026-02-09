@@ -752,9 +752,10 @@ export default function Dashboard() {
               </div>
 
               <div className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-[#DDE3F3]">
-                <div className="overflow-visible rounded-xl ring-1 ring-[#E5E7EB]">
+                <div className="relative rounded-xl ring-1 ring-[#E5E7EB]">
+                  <div className="max-h-[380px] overflow-y-auto overflow-x-visible rounded-xl">
                   <table className="w-full text-sm">
-                    <thead className="bg-[#F6F7FB] text-slate-600">
+                    <thead className="bg-[#F6F7FB] text-slate-600 sticky top-0 z-20">
                       <tr>
                         <th className="w-[120px] px-4 py-3 text-left font-semibold">분류</th>
                         <th className="px-4 py-3 text-center font-semibold">
@@ -887,17 +888,20 @@ export default function Dashboard() {
                               </td>
                             </tr>
                           ))}
-                          <tr className="bg-[#FBFCFF]">
-                            <td className="px-4 py-4 text-left font-bold text-slate-900">전체</td>
-                            <td className="px-4 py-4 text-center font-bold">{insuranceTotals.reception}</td>
-                            <td className="px-4 py-4 text-center font-bold">{insuranceTotals.pending}</td>
-                            <td className="px-4 py-4 text-center font-bold">{insuranceTotals.insuranceUnsettled}</td>
-                            <td className="px-4 py-4 text-center font-bold">{insuranceTotals.partnerUnsettled}</td>
-                          </tr>
                         </>
                       )}
                     </tbody>
+                    <tfoot className="sticky bottom-0 z-10">
+                      <tr className="bg-[#FBFCFF] border-t border-[#EEF1F7]">
+                        <td className="px-4 py-4 text-left font-bold text-slate-900">전체</td>
+                        <td className="px-4 py-4 text-center font-bold">{insuranceTotals.reception}</td>
+                        <td className="px-4 py-4 text-center font-bold">{insuranceTotals.pending}</td>
+                        <td className="px-4 py-4 text-center font-bold">{insuranceTotals.insuranceUnsettled}</td>
+                        <td className="px-4 py-4 text-center font-bold">{insuranceTotals.partnerUnsettled}</td>
+                      </tr>
+                    </tfoot>
                   </table>
+                  </div>
                 </div>
               </div>
             </div>
