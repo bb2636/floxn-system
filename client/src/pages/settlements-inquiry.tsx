@@ -475,7 +475,17 @@ export default function SettlementsInquiry() {
               : "-",
         recoveryType: caseItem.recoveryType || null,
         settlementAmount,
-        settlementDate: settlement?.settlementDate || "-",
+        settlementDate: (() => {
+          // 입금내역의 가장 최근 입금일을 표시
+          const entries = (settlement as any)?.depositEntries as any[] | undefined;
+          if (entries && entries.length > 0) {
+            const sorted = [...entries]
+              .filter((e: any) => e.depositDate)
+              .sort((a: any, b: any) => b.depositDate.localeCompare(a.depositDate));
+            if (sorted.length > 0) return sorted[0].depositDate;
+          }
+          return settlement?.settlementDate || "-";
+        })(),
         settlementCommission,
         usageFee,
         settlementDeposit,
