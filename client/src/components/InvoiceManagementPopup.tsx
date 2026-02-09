@@ -168,20 +168,52 @@ const INLINE_COL_BASE: React.CSSProperties = {
   boxSizing: "border-box",
 };
 const DEPOSIT_COLS = {
-  col1: { ...INLINE_COL_BASE, flex: "0 0 120px", width: "120px" } as React.CSSProperties,
-  col2: { ...INLINE_COL_BASE, flex: "0 0 110px", width: "110px" } as React.CSSProperties,
+  col1: {
+    ...INLINE_COL_BASE,
+    flex: "0 0 120px",
+    width: "120px",
+  } as React.CSSProperties,
+  col2: {
+    ...INLINE_COL_BASE,
+    flex: "0 0 110px",
+    width: "110px",
+  } as React.CSSProperties,
   col3: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
   col4: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
-  col5: { ...INLINE_COL_BASE, flex: "0 0 120px", width: "120px" } as React.CSSProperties,
-  col6: { ...INLINE_COL_BASE, flex: 1, borderRight: "none" } as React.CSSProperties,
+  col5: {
+    ...INLINE_COL_BASE,
+    flex: "0 0 120px",
+    width: "120px",
+  } as React.CSSProperties,
+  col6: {
+    ...INLINE_COL_BASE,
+    flex: 1,
+    borderRight: "none",
+  } as React.CSSProperties,
 };
 const PAYMENT_COLS = {
-  col1: { ...INLINE_COL_BASE, flex: "0 0 120px", width: "120px" } as React.CSSProperties,
-  col2: { ...INLINE_COL_BASE, flex: "0 0 110px", width: "110px" } as React.CSSProperties,
+  col1: {
+    ...INLINE_COL_BASE,
+    flex: "0 0 120px",
+    width: "120px",
+  } as React.CSSProperties,
+  col2: {
+    ...INLINE_COL_BASE,
+    flex: "0 0 110px",
+    width: "110px",
+  } as React.CSSProperties,
   col3: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
   col4: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
-  col5: { ...INLINE_COL_BASE, flex: "0 0 120px", width: "120px" } as React.CSSProperties,
-  col6: { ...INLINE_COL_BASE, flex: 1, borderRight: "none" } as React.CSSProperties,
+  col5: {
+    ...INLINE_COL_BASE,
+    flex: "0 0 120px",
+    width: "120px",
+  } as React.CSSProperties,
+  col6: {
+    ...INLINE_COL_BASE,
+    flex: 1,
+    borderRight: "none",
+  } as React.CSSProperties,
 };
 
 export function InvoiceManagementPopup({
@@ -215,9 +247,8 @@ export function InvoiceManagementPopup({
   const [propertyApprovedAmount, setPropertyApprovedAmount] =
     useState<string>("");
   const [deductibleAmount, setDeductibleAmount] = useState<string>("0");
-  const [fieldDispatchCostAmount, setFieldDispatchCostAmount] = useState<string>(
-    FIXED_FIELD_DISPATCH_COST.toString(),
-  );
+  const [fieldDispatchCostAmount, setFieldDispatchCostAmount] =
+    useState<string>(FIXED_FIELD_DISPATCH_COST.toString());
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taxInvoiceDate, setTaxInvoiceDate] = useState<Date | undefined>(
@@ -232,7 +263,9 @@ export function InvoiceManagementPopup({
   const [showApprovalConfirm, setShowApprovalConfirm] = useState(false);
   const [showClosingConfirm, setShowClosingConfirm] = useState(false);
   const [invoiceIssued, setInvoiceIssued] = useState(false);
-  const [closingProcessDate, setClosingProcessDate] = useState<Date | undefined>(undefined);
+  const [closingProcessDate, setClosingProcessDate] = useState<
+    Date | undefined
+  >(undefined);
   const [depositEntries, setDepositEntries] = useState<DepositEntry[]>([]);
   const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>([]);
 
@@ -281,7 +314,11 @@ export function InvoiceManagementPopup({
   }, [baseTotalApprovedAmount, totalApprovedAmountOverride]);
 
   const feeAmount = useMemo(() => {
-    if (settlementCommission !== undefined && settlementCommission > 0 && totalApprovedAmountOverride === null) {
+    if (
+      settlementCommission !== undefined &&
+      settlementCommission > 0 &&
+      totalApprovedAmountOverride === null
+    ) {
       return settlementCommission;
     }
     return Math.round(totalApprovedAmount * 0.077);
@@ -344,7 +381,11 @@ export function InvoiceManagementPopup({
     }
   };
 
-  const handleUpdateDepositEntry = (index: number, field: keyof DepositEntry, value: unknown) => {
+  const handleUpdateDepositEntry = (
+    index: number,
+    field: keyof DepositEntry,
+    value: unknown,
+  ) => {
     const updated = [...depositEntries];
     (updated[index] as Record<string, unknown>)[field] = value;
     updated[index] = { ...updated[index] };
@@ -370,7 +411,11 @@ export function InvoiceManagementPopup({
     }
   };
 
-  const handleUpdatePaymentEntry = (index: number, field: keyof PaymentEntry, value: unknown) => {
+  const handleUpdatePaymentEntry = (
+    index: number,
+    field: keyof PaymentEntry,
+    value: unknown,
+  ) => {
     const updated = [...paymentEntries];
     (updated[index] as Record<string, unknown>)[field] = value;
     updated[index] = { ...updated[index] };
@@ -399,7 +444,11 @@ export function InvoiceManagementPopup({
           if (totalApprovedAmountOverride !== null) {
             updateData.totalApprovedAmount = totalApprovedAmount.toString();
           }
-          await apiRequest("PATCH", `/api/invoices/${existingInvoiceData.id}`, updateData);
+          await apiRequest(
+            "PATCH",
+            `/api/invoices/${existingInvoiceData.id}`,
+            updateData,
+          );
         } else {
           const invoiceType =
             caseData.recoveryType === "선견적요청" ? "선견적요청" : "직접복구";
@@ -479,9 +528,15 @@ export function InvoiceManagementPopup({
       }
 
       const hasTaxInvoiceDate = !!taxInvoiceDate;
-      const taxInvoiceDateStr = taxInvoiceDate ? format(taxInvoiceDate, "yyyy-MM-dd") : null;
+      const taxInvoiceDateStr = taxInvoiceDate
+        ? format(taxInvoiceDate, "yyyy-MM-dd")
+        : null;
 
-      if (settlementStatus === "정산" || settlementStatus === "부분입금" || hasTaxInvoiceDate) {
+      if (
+        settlementStatus === "정산" ||
+        settlementStatus === "부분입금" ||
+        hasTaxInvoiceDate
+      ) {
         let newStatus: string;
         if (hasTaxInvoiceDate) {
           newStatus = "종결";
@@ -541,7 +596,8 @@ export function InvoiceManagementPopup({
               if (hasTaxInvoiceDate && taxInvoiceDateStr) {
                 rcUpdateData.settlementCompletedDate = taxInvoiceDateStr;
               } else if (rc.settlementCompletedDate) {
-                rcUpdateData.settlementCompletedDate = rc.settlementCompletedDate;
+                rcUpdateData.settlementCompletedDate =
+                  rc.settlementCompletedDate;
               }
 
               return apiRequest("PATCH", `/api/cases/${rc.id}`, rcUpdateData);
@@ -573,14 +629,13 @@ export function InvoiceManagementPopup({
       const updatedCount = relatedCases ? relatedCases.length : 1;
       toast({
         title: "저장 완료",
-        description:
-          hasTaxInvoiceDate
-            ? `종결 처리되었습니다. (${updatedCount}건 상태 변경)`
-            : settlementStatus === "정산"
-              ? `정산이 완료되었습니다. (${updatedCount}건 상태 변경)`
-              : settlementStatus === "부분입금"
-                ? `부분입금 처리되었습니다. (${updatedCount}건 상태 변경)`
-                : "정산 정보가 저장되었습니다.",
+        description: hasTaxInvoiceDate
+          ? `종결 처리되었습니다. (${updatedCount}건 상태 변경)`
+          : settlementStatus === "정산"
+            ? `정산이 완료되었습니다. (${updatedCount}건 상태 변경)`
+            : settlementStatus === "부분입금"
+              ? `부분입금 처리되었습니다. (${updatedCount}건 상태 변경)`
+              : "정산 정보가 저장되었습니다.",
       });
 
       onOpenChange(false);
@@ -610,19 +665,16 @@ export function InvoiceManagementPopup({
         0,
       );
 
-      const depositCategory = depositEntries.length > 0
-        ? depositEntries[depositEntries.length - 1].depositCategory || ""
-        : "";
+      const depositCategory =
+        depositEntries.length > 0
+          ? depositEntries[depositEntries.length - 1].depositCategory || ""
+          : "";
 
       if (settlementData && settlementData.id) {
-        await apiRequest(
-          "PATCH",
-          `/api/settlements/${settlementData.id}`,
-          {
-            depositEntries: depositEntries,
-            discount: totalDepositAmount.toString(),
-          },
-        );
+        await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, {
+          depositEntries: depositEntries,
+          discount: totalDepositAmount.toString(),
+        });
       } else {
         await apiRequest("POST", "/api/settlements", {
           caseId: caseData.id,
@@ -661,13 +713,9 @@ export function InvoiceManagementPopup({
       const settlementData = await settlementResponse.json();
 
       if (settlementData && settlementData.id) {
-        await apiRequest(
-          "PATCH",
-          `/api/settlements/${settlementData.id}`,
-          {
-            paymentEntries: paymentEntries,
-          },
-        );
+        await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, {
+          paymentEntries: paymentEntries,
+        });
       } else {
         await apiRequest("POST", "/api/settlements", {
           caseId: caseData.id,
@@ -971,8 +1019,13 @@ export function InvoiceManagementPopup({
                   if (invoiceData.settlementStatus) {
                     loadedSettlementStatus = invoiceData.settlementStatus;
                   }
-                  if (invoiceData.totalApprovedAmount && parseInt(invoiceData.totalApprovedAmount) > 0) {
-                    setTotalApprovedAmountOverride(invoiceData.totalApprovedAmount);
+                  if (
+                    invoiceData.totalApprovedAmount &&
+                    parseInt(invoiceData.totalApprovedAmount) > 0
+                  ) {
+                    setTotalApprovedAmountOverride(
+                      invoiceData.totalApprovedAmount,
+                    );
                   }
                 }
               }
@@ -1208,49 +1261,163 @@ export function InvoiceManagementPopup({
           <div className="flex flex-col gap-5 p-0">
             {/* Section 1: 기본정보 */}
             <div style={{ overflow: "hidden" }}>
-              <div style={SECTION_HEADER_STYLE} data-testid="section-basic-info">
+              <div
+                style={SECTION_HEADER_STYLE}
+                data-testid="section-basic-info"
+              >
                 기본정보
               </div>
               <div style={{ border: "1px solid #E0E0E0", borderTop: "none" }}>
-                <div className="flex" style={{ borderBottom: "1px solid #E0E0E0" }}>
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none" }}>
+                <div
+                  className="flex"
+                  style={{ borderBottom: "1px solid #E0E0E0" }}
+                >
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     보험사
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }} data-testid="text-insurance-company">
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                    data-testid="text-insurance-company"
+                  >
                     {caseData.insuranceCompany || "-"}
                   </div>
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     (보험사) 심사자
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none" }} data-testid="text-assessor">
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderBottom: "none",
+                      borderRight: "none",
+                      borderTop: "none",
+                    }}
+                    data-testid="text-assessor"
+                  >
                     {caseData.assessorId || "-"}
                   </div>
                 </div>
-                <div className="flex" style={{ borderBottom: "1px solid #E0E0E0" }}>
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none" }}>
+                <div
+                  className="flex"
+                  style={{ borderBottom: "1px solid #E0E0E0" }}
+                >
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     사고번호
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }} data-testid="text-accident-no">
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                    data-testid="text-accident-no"
+                  >
                     {caseData.insuranceAccidentNo || "-"}
                   </div>
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     보험사 청구일
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none" }} data-testid="text-invoice-date">
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderBottom: "none",
+                      borderRight: "none",
+                      borderTop: "none",
+                    }}
+                    data-testid="text-invoice-date"
+                  >
                     {caseData.invoicePdfGenerated || "-"}
                   </div>
                 </div>
                 <div className="flex">
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none" }}>
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     협력업체
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }} data-testid="text-partner">
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                    data-testid="text-partner"
+                  >
                     {caseData.assignedPartner || "-"}
                   </div>
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     (플록슨) 담당자
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none" }} data-testid="text-manager">
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderBottom: "none",
+                      borderRight: "none",
+                      borderTop: "none",
+                    }}
+                    data-testid="text-manager"
+                  >
                     {managerName}
                   </div>
                 </div>
@@ -1259,49 +1426,170 @@ export function InvoiceManagementPopup({
 
             {/* Section 2: 청구내역 */}
             <div style={{ overflow: "hidden" }}>
-              <div style={SECTION_HEADER_STYLE} data-testid="section-claim-details">
+              <div
+                style={SECTION_HEADER_STYLE}
+                data-testid="section-claim-details"
+              >
                 청구내역
               </div>
               <div style={{ border: "1px solid #E0E0E0", borderTop: "none" }}>
                 {/* Header row */}
-                <div className="flex" style={{ borderBottom: "1px solid #E0E0E0" }}>
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none" }}>
+                <div
+                  className="flex"
+                  style={{ borderBottom: "1px solid #E0E0E0" }}
+                >
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     청구금액 구분
                   </div>
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     손해방지비용
                   </div>
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     대물비용
                   </div>
-                  <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none" }}>
+                  <div
+                    style={{
+                      ...TABLE_HEADER_CELL_STYLE,
+                      flex: 1,
+                      borderBottom: "none",
+                      borderRight: "none",
+                      borderTop: "none",
+                    }}
+                  >
                     합계
                   </div>
                 </div>
                 {/* Data row */}
-                <div className="flex" style={{ borderBottom: "1px solid #E0E0E0" }}>
-                  <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", background: "#F5F7FA", color: "rgba(12,12,12,0.7)", fontWeight: 600, fontSize: "13px" }}>
-                  </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }} data-testid="text-prevention-amount">
+                <div
+                  className="flex"
+                  style={{ borderBottom: "1px solid #E0E0E0" }}
+                >
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                      borderTop: "none",
+                      background: "#F5F7FA",
+                      color: "rgba(12,12,12,0.7)",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                    }}
+                  ></div>
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                    data-testid="text-prevention-amount"
+                  >
                     {preventionAmount.toLocaleString()}원
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }} data-testid="text-property-amount">
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                    data-testid="text-property-amount"
+                  >
                     {propertyAmount.toLocaleString()}원
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", fontWeight: 600 }} data-testid="text-claim-total">
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderBottom: "none",
+                      borderRight: "none",
+                      borderTop: "none",
+                      fontWeight: 600,
+                    }}
+                    data-testid="text-claim-total"
+                  >
                     {claimTotal.toLocaleString()}원
                   </div>
                 </div>
                 {/* 자기부담금 row */}
-                <div className="flex" style={{ borderBottom: "1px solid #E0E0E0" }}>
-                  <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", background: "#F5F7FA", color: "rgba(12,12,12,0.7)", fontWeight: 600, fontSize: "13px" }}>
+                <div
+                  className="flex"
+                  style={{ borderBottom: "1px solid #E0E0E0" }}
+                >
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                      borderTop: "none",
+                      background: "#F5F7FA",
+                      color: "rgba(12,12,12,0.7)",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                    }}
+                  >
                     자기부담금
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
-                  </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
-                  </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "4px 8px" }}>
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                  ></div>
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                  ></div>
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderBottom: "none",
+                      borderRight: "none",
+                      borderTop: "none",
+                      padding: "4px 8px",
+                    }}
+                  >
                     <div className="flex items-center justify-center gap-1">
                       <Input
                         type="text"
@@ -1335,14 +1623,50 @@ export function InvoiceManagementPopup({
                 </div>
                 {/* 출동비 row */}
                 <div className="flex">
-                  <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", background: "#F5F7FA", color: "rgba(12,12,12,0.7)", fontWeight: 600, fontSize: "13px" }}>
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      width: "120px",
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderLeft: "none",
+                      borderTop: "none",
+                      background: "#F5F7FA",
+                      color: "rgba(12,12,12,0.7)",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                    }}
+                  >
                     출동비
                   </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
-                  </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
-                  </div>
-                  <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "4px 8px" }}>
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                  ></div>
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderRight: "1px solid #E0E0E0",
+                      borderBottom: "none",
+                      borderTop: "none",
+                    }}
+                  ></div>
+                  <div
+                    style={{
+                      ...TABLE_CELL_STYLE,
+                      flex: 1,
+                      borderBottom: "none",
+                      borderRight: "none",
+                      borderTop: "none",
+                      padding: "4px 8px",
+                    }}
+                  >
                     <div className="flex items-center justify-center gap-1">
                       <Input
                         type="text"
@@ -1380,7 +1704,11 @@ export function InvoiceManagementPopup({
             {/* Section 3: 입금관리 - visible after invoice approval */}
             {isInvoiceApproved && (
               <div style={{ overflow: "hidden" }}>
-                <div className="flex items-center justify-between" style={SECTION_HEADER_STYLE} data-testid="section-deposit-management">
+                <div
+                  className="flex items-center justify-between"
+                  style={SECTION_HEADER_STYLE}
+                  data-testid="section-deposit-management"
+                >
                   <span>입금관리</span>
                   <div className="flex items-center gap-1">
                     <button
@@ -1425,25 +1753,85 @@ export function InvoiceManagementPopup({
                     </button>
                   </div>
                 </div>
-                <div style={{ border: "1px solid #E0E0E0", borderTop: "none", overflowX: "auto" }}>
+                <div
+                  style={{
+                    border: "1px solid #E0E0E0",
+                    borderTop: "none",
+                    overflowX: "auto",
+                  }}
+                >
                   {/* Header */}
-                  <div className="flex" style={{ borderBottom: "1px solid #E0E0E0", minWidth: "750px" }}>
-                    <div style={{ ...DEPOSIT_COLS.col1, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                  <div
+                    className="flex"
+                    style={{
+                      borderBottom: "1px solid #E0E0E0",
+                      minWidth: "750px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        ...DEPOSIT_COLS.col1,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       입금일자
                     </div>
-                    <div style={{ ...DEPOSIT_COLS.col2, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...DEPOSIT_COLS.col2,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       보험사
                     </div>
-                    <div style={{ ...DEPOSIT_COLS.col3, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...DEPOSIT_COLS.col3,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       청구액
                     </div>
-                    <div style={{ ...DEPOSIT_COLS.col4, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...DEPOSIT_COLS.col4,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       입금액
                     </div>
-                    <div style={{ ...DEPOSIT_COLS.col5, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...DEPOSIT_COLS.col5,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       입금구분
                     </div>
-                    <div style={{ ...DEPOSIT_COLS.col6, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...DEPOSIT_COLS.col6,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       메모
                     </div>
                   </div>
@@ -1488,13 +1876,25 @@ export function InvoiceManagementPopup({
                                   border: "1px solid #E0E0E0",
                                 }}
                               >
-                                <CalendarIcon size={12} style={{ marginRight: "4px", flexShrink: 0 }} />
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                <CalendarIcon
+                                  size={12}
+                                  style={{ marginRight: "4px", flexShrink: 0 }}
+                                />
+                                <span
+                                  style={{
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
                                   {entry.depositDate || "날짜"}
                                 </span>
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
                               <Calendar
                                 mode="single"
                                 selected={
@@ -1519,7 +1919,11 @@ export function InvoiceManagementPopup({
                           <Select
                             value={entry.insuranceCompany}
                             onValueChange={(value) =>
-                              handleUpdateDepositEntry(index, "insuranceCompany", value)
+                              handleUpdateDepositEntry(
+                                index,
+                                "insuranceCompany",
+                                value,
+                              )
                             }
                           >
                             <SelectTrigger
@@ -1535,7 +1939,10 @@ export function InvoiceManagementPopup({
                             <SelectContent>
                               <SelectItem value="전체">전체</SelectItem>
                               {insuranceCompanyNames.map((companyName) => (
-                                <SelectItem key={companyName} value={companyName}>
+                                <SelectItem
+                                  key={companyName}
+                                  value={companyName}
+                                >
                                   {companyName}
                                 </SelectItem>
                               ))}
@@ -1547,10 +1954,20 @@ export function InvoiceManagementPopup({
                           <div className="flex items-center gap-1">
                             <Input
                               type="text"
-                              value={entry.claimAmount ? entry.claimAmount.toLocaleString() : ""}
+                              value={
+                                entry.claimAmount
+                                  ? entry.claimAmount.toLocaleString()
+                                  : ""
+                              }
                               onChange={(e) => {
-                                const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                                handleUpdateDepositEntry(index, "claimAmount", parseInt(value) || 0);
+                                const value = e.target.value
+                                  .replace(/,/g, "")
+                                  .replace(/[^0-9]/g, "");
+                                handleUpdateDepositEntry(
+                                  index,
+                                  "claimAmount",
+                                  parseInt(value) || 0,
+                                );
                               }}
                               data-testid={`input-deposit-claim-${index}`}
                               placeholder="0"
@@ -1562,7 +1979,9 @@ export function InvoiceManagementPopup({
                                 flex: 1,
                               }}
                             />
-                            <span style={{ fontSize: "12px", flexShrink: 0 }}>원</span>
+                            <span style={{ fontSize: "12px", flexShrink: 0 }}>
+                              원
+                            </span>
                           </div>
                         </div>
                         {/* 입금액 */}
@@ -1570,10 +1989,20 @@ export function InvoiceManagementPopup({
                           <div className="flex items-center gap-1">
                             <Input
                               type="text"
-                              value={entry.depositAmount ? entry.depositAmount.toLocaleString() : ""}
+                              value={
+                                entry.depositAmount
+                                  ? entry.depositAmount.toLocaleString()
+                                  : ""
+                              }
                               onChange={(e) => {
-                                const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                                handleUpdateDepositEntry(index, "depositAmount", parseInt(value) || 0);
+                                const value = e.target.value
+                                  .replace(/,/g, "")
+                                  .replace(/[^0-9]/g, "");
+                                handleUpdateDepositEntry(
+                                  index,
+                                  "depositAmount",
+                                  parseInt(value) || 0,
+                                );
                               }}
                               data-testid={`input-deposit-amount-${index}`}
                               placeholder="0"
@@ -1585,7 +2014,9 @@ export function InvoiceManagementPopup({
                                 flex: 1,
                               }}
                             />
-                            <span style={{ fontSize: "12px", flexShrink: 0 }}>원</span>
+                            <span style={{ fontSize: "12px", flexShrink: 0 }}>
+                              원
+                            </span>
                           </div>
                         </div>
                         {/* 입금구분 */}
@@ -1593,7 +2024,11 @@ export function InvoiceManagementPopup({
                           <Select
                             value={entry.depositCategory || ""}
                             onValueChange={(value) =>
-                              handleUpdateDepositEntry(index, "depositCategory", value)
+                              handleUpdateDepositEntry(
+                                index,
+                                "depositCategory",
+                                value,
+                              )
                             }
                           >
                             <SelectTrigger
@@ -1618,7 +2053,11 @@ export function InvoiceManagementPopup({
                             type="text"
                             value={entry.memo || ""}
                             onChange={(e) =>
-                              handleUpdateDepositEntry(index, "memo", e.target.value)
+                              handleUpdateDepositEntry(
+                                index,
+                                "memo",
+                                e.target.value,
+                              )
                             }
                             data-testid={`input-deposit-memo-${index}`}
                             placeholder="메모"
@@ -1645,16 +2084,27 @@ export function InvoiceManagementPopup({
                     <div style={{ ...DEPOSIT_COLS.col1, fontWeight: 600 }}>
                       합계
                     </div>
-                    <div style={DEPOSIT_COLS.col2}>
-                    </div>
+                    <div style={DEPOSIT_COLS.col2}></div>
                     <div style={{ ...DEPOSIT_COLS.col3, fontWeight: 600 }}>
                       {depositTotals.totalClaim.toLocaleString()}원
                     </div>
                     <div style={{ ...DEPOSIT_COLS.col4, fontWeight: 600 }}>
                       {depositTotals.totalDeposit.toLocaleString()}원
                     </div>
-                    <div style={{ ...DEPOSIT_COLS.col5, fontWeight: 600, fontSize: "11px", color: outstandingAmount > 0 ? "#E53935" : "#0C0C0C", overflow: "hidden", whiteSpace: "nowrap" }}>
-                      (입금-청구) {(depositTotals.totalDeposit - depositTotals.totalClaim).toLocaleString()}원
+                    <div
+                      style={{
+                        ...DEPOSIT_COLS.col5,
+                        fontWeight: 600,
+                        fontSize: "11px",
+                        color: outstandingAmount > 0 ? "#E53935" : "#0C0C0C",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {(
+                        depositTotals.totalDeposit - depositTotals.totalClaim
+                      ).toLocaleString()}
+                      원
                     </div>
                     <div style={{ ...DEPOSIT_COLS.col6, padding: "4px 8px" }}>
                       <Button
@@ -1667,7 +2117,7 @@ export function InvoiceManagementPopup({
                           color: "#FFFFFF",
                           fontWeight: 600,
                           fontSize: "13px",
-                          padding: "0 16px",
+                          padding: "0 8px",
                           borderRadius: "4px",
                           width: "100%",
                         }}
@@ -1683,7 +2133,11 @@ export function InvoiceManagementPopup({
             {/* Section 4: 지급일자 - visible after invoice approval */}
             {isInvoiceApproved && (
               <div style={{ overflow: "hidden" }}>
-                <div className="flex items-center justify-between" style={SECTION_HEADER_STYLE} data-testid="section-payment-management">
+                <div
+                  className="flex items-center justify-between"
+                  style={SECTION_HEADER_STYLE}
+                  data-testid="section-payment-management"
+                >
                   <span>지급일자</span>
                   <div className="flex items-center gap-1">
                     <button
@@ -1728,25 +2182,85 @@ export function InvoiceManagementPopup({
                     </button>
                   </div>
                 </div>
-                <div style={{ border: "1px solid #E0E0E0", borderTop: "none", overflowX: "auto" }}>
+                <div
+                  style={{
+                    border: "1px solid #E0E0E0",
+                    borderTop: "none",
+                    overflowX: "auto",
+                  }}
+                >
                   {/* Header */}
-                  <div className="flex" style={{ borderBottom: "1px solid #E0E0E0", minWidth: "750px" }}>
-                    <div style={{ ...PAYMENT_COLS.col1, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                  <div
+                    className="flex"
+                    style={{
+                      borderBottom: "1px solid #E0E0E0",
+                      minWidth: "750px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        ...PAYMENT_COLS.col1,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       지급일자
                     </div>
-                    <div style={{ ...PAYMENT_COLS.col2, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...PAYMENT_COLS.col2,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       보험사
                     </div>
-                    <div style={{ ...PAYMENT_COLS.col3, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...PAYMENT_COLS.col3,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       지급액
                     </div>
-                    <div style={{ ...PAYMENT_COLS.col4, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...PAYMENT_COLS.col4,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       수수료
                     </div>
-                    <div style={{ ...PAYMENT_COLS.col5, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...PAYMENT_COLS.col5,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       지급구분
                     </div>
-                    <div style={{ ...PAYMENT_COLS.col6, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
+                    <div
+                      style={{
+                        ...PAYMENT_COLS.col6,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
                       메모
                     </div>
                   </div>
@@ -1791,13 +2305,25 @@ export function InvoiceManagementPopup({
                                   border: "1px solid #E0E0E0",
                                 }}
                               >
-                                <CalendarIcon size={12} style={{ marginRight: "4px", flexShrink: 0 }} />
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                <CalendarIcon
+                                  size={12}
+                                  style={{ marginRight: "4px", flexShrink: 0 }}
+                                />
+                                <span
+                                  style={{
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
                                   {entry.paymentDate || "날짜"}
                                 </span>
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
+                            <PopoverContent
+                              className="w-auto p-0"
+                              align="start"
+                            >
                               <Calendar
                                 mode="single"
                                 selected={
@@ -1822,7 +2348,11 @@ export function InvoiceManagementPopup({
                           <Select
                             value={entry.insuranceCompany}
                             onValueChange={(value) =>
-                              handleUpdatePaymentEntry(index, "insuranceCompany", value)
+                              handleUpdatePaymentEntry(
+                                index,
+                                "insuranceCompany",
+                                value,
+                              )
                             }
                           >
                             <SelectTrigger
@@ -1838,7 +2368,10 @@ export function InvoiceManagementPopup({
                             <SelectContent>
                               <SelectItem value="전체">전체</SelectItem>
                               {insuranceCompanyNames.map((companyName) => (
-                                <SelectItem key={companyName} value={companyName}>
+                                <SelectItem
+                                  key={companyName}
+                                  value={companyName}
+                                >
                                   {companyName}
                                 </SelectItem>
                               ))}
@@ -1850,10 +2383,20 @@ export function InvoiceManagementPopup({
                           <div className="flex items-center gap-1">
                             <Input
                               type="text"
-                              value={entry.paymentAmount ? entry.paymentAmount.toLocaleString() : ""}
+                              value={
+                                entry.paymentAmount
+                                  ? entry.paymentAmount.toLocaleString()
+                                  : ""
+                              }
                               onChange={(e) => {
-                                const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                                handleUpdatePaymentEntry(index, "paymentAmount", parseInt(value) || 0);
+                                const value = e.target.value
+                                  .replace(/,/g, "")
+                                  .replace(/[^0-9]/g, "");
+                                handleUpdatePaymentEntry(
+                                  index,
+                                  "paymentAmount",
+                                  parseInt(value) || 0,
+                                );
                               }}
                               data-testid={`input-payment-amount-${index}`}
                               placeholder="0"
@@ -1865,7 +2408,9 @@ export function InvoiceManagementPopup({
                                 flex: 1,
                               }}
                             />
-                            <span style={{ fontSize: "12px", flexShrink: 0 }}>원</span>
+                            <span style={{ fontSize: "12px", flexShrink: 0 }}>
+                              원
+                            </span>
                           </div>
                         </div>
                         {/* 수수료 */}
@@ -1873,10 +2418,20 @@ export function InvoiceManagementPopup({
                           <div className="flex items-center gap-1">
                             <Input
                               type="text"
-                              value={entry.commission ? entry.commission.toLocaleString() : ""}
+                              value={
+                                entry.commission
+                                  ? entry.commission.toLocaleString()
+                                  : ""
+                              }
                               onChange={(e) => {
-                                const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                                handleUpdatePaymentEntry(index, "commission", parseInt(value) || 0);
+                                const value = e.target.value
+                                  .replace(/,/g, "")
+                                  .replace(/[^0-9]/g, "");
+                                handleUpdatePaymentEntry(
+                                  index,
+                                  "commission",
+                                  parseInt(value) || 0,
+                                );
                               }}
                               data-testid={`input-payment-commission-${index}`}
                               placeholder="0"
@@ -1888,7 +2443,9 @@ export function InvoiceManagementPopup({
                                 flex: 1,
                               }}
                             />
-                            <span style={{ fontSize: "12px", flexShrink: 0 }}>원</span>
+                            <span style={{ fontSize: "12px", flexShrink: 0 }}>
+                              원
+                            </span>
                           </div>
                         </div>
                         {/* 지급구분 */}
@@ -1896,7 +2453,11 @@ export function InvoiceManagementPopup({
                           <Select
                             value={entry.paymentCategory || ""}
                             onValueChange={(value) =>
-                              handleUpdatePaymentEntry(index, "paymentCategory", value)
+                              handleUpdatePaymentEntry(
+                                index,
+                                "paymentCategory",
+                                value,
+                              )
                             }
                           >
                             <SelectTrigger
@@ -1921,7 +2482,11 @@ export function InvoiceManagementPopup({
                             type="text"
                             value={entry.memo || ""}
                             onChange={(e) =>
-                              handleUpdatePaymentEntry(index, "memo", e.target.value)
+                              handleUpdatePaymentEntry(
+                                index,
+                                "memo",
+                                e.target.value,
+                              )
                             }
                             data-testid={`input-payment-memo-${index}`}
                             placeholder="메모"
@@ -1948,8 +2513,7 @@ export function InvoiceManagementPopup({
                     <div style={{ ...PAYMENT_COLS.col1, fontWeight: 600 }}>
                       합계
                     </div>
-                    <div style={PAYMENT_COLS.col2}>
-                    </div>
+                    <div style={PAYMENT_COLS.col2}></div>
                     <div style={{ ...PAYMENT_COLS.col3, fontWeight: 600 }}>
                       {paymentTotals.totalPayment.toLocaleString()}원
                     </div>
@@ -1957,7 +2521,11 @@ export function InvoiceManagementPopup({
                       {paymentTotals.totalCommission.toLocaleString()}원
                     </div>
                     <div style={{ ...PAYMENT_COLS.col5, fontWeight: 600 }}>
-                      {(paymentTotals.totalPayment + paymentTotals.totalCommission).toLocaleString()}원
+                      {(
+                        paymentTotals.totalPayment +
+                        paymentTotals.totalCommission
+                      ).toLocaleString()}
+                      원
                     </div>
                     <div style={{ ...PAYMENT_COLS.col6, padding: "4px 8px" }}>
                       <Button
@@ -2010,14 +2578,28 @@ export function InvoiceManagementPopup({
               />
               <Label
                 htmlFor="invoice-issued"
-                style={{ fontSize: "14px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
               >
                 계산서 발행(종결 여부)
               </Label>
             </div>
             {invoiceIssued && (
               <div className="flex items-center gap-2">
-                <span style={{ fontSize: "13px", fontWeight: 500, color: "#555", whiteSpace: "nowrap" }}>처리일자</span>
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "#555",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  처리일자
+                </span>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -2033,7 +2615,9 @@ export function InvoiceManagementPopup({
                       }}
                     >
                       <CalendarIcon style={{ width: "14px", height: "14px" }} />
-                      {closingProcessDate ? format(closingProcessDate, "yyyy-MM-dd") : "날짜 선택"}
+                      {closingProcessDate
+                        ? format(closingProcessDate, "yyyy-MM-dd")
+                        : "날짜 선택"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -2081,7 +2665,9 @@ export function InvoiceManagementPopup({
                     handleSaveComplete();
                   }
                 }}
-                disabled={isSubmitting || (invoiceIssued && !closingProcessDate)}
+                disabled={
+                  isSubmitting || (invoiceIssued && !closingProcessDate)
+                }
                 data-testid="button-save-complete"
                 style={{
                   padding: "10px 20px",
@@ -2093,7 +2679,11 @@ export function InvoiceManagementPopup({
                   color: "#FDFDFD",
                 }}
               >
-                {isSubmitting ? "처리중..." : invoiceIssued ? "종결 확정하기" : "저장완료"}
+                {isSubmitting
+                  ? "처리중..."
+                  : invoiceIssued
+                    ? "종결 확정하기"
+                    : "저장완료"}
               </Button>
             )}
           </div>
