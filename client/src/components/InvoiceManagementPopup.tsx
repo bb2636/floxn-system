@@ -205,6 +205,7 @@ export function InvoiceManagementPopup({
   const [totalApprovedAmountOverride, setTotalApprovedAmountOverride] =
     useState<string | null>(null);
   const [showApprovalConfirm, setShowApprovalConfirm] = useState(false);
+  const [showClosingConfirm, setShowClosingConfirm] = useState(false);
   const [invoiceIssued, setInvoiceIssued] = useState(false);
   const [closingProcessDate, setClosingProcessDate] = useState<Date | undefined>(undefined);
   const [depositEntries, setDepositEntries] = useState<DepositEntry[]>([]);
@@ -2032,7 +2033,13 @@ export function InvoiceManagementPopup({
 
             {isInvoiceApproved && isAdmin && (
               <Button
-                onClick={handleSaveComplete}
+                onClick={() => {
+                  if (invoiceIssued && closingProcessDate) {
+                    setShowClosingConfirm(true);
+                  } else {
+                    handleSaveComplete();
+                  }
+                }}
                 disabled={isSubmitting || (invoiceIssued && !closingProcessDate)}
                 data-testid="button-save-complete"
                 style={{
@@ -2124,6 +2131,83 @@ export function InvoiceManagementPopup({
               }}
             >
               승인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Closing confirm dialog */}
+      <AlertDialog
+        open={showClosingConfirm}
+        onOpenChange={setShowClosingConfirm}
+      >
+        <AlertDialogContent
+          style={{
+            maxWidth: "400px",
+            padding: "32px",
+            borderRadius: "16px",
+            background: "#FFFFFF",
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              style={{
+                fontWeight: 700,
+                fontSize: "20px",
+                color: "#0C0C0C",
+                textAlign: "center",
+                marginBottom: "8px",
+              }}
+            >
+              종결로 확정하시겠습니까?
+            </AlertDialogTitle>
+            <AlertDialogDescription
+              style={{
+                fontWeight: 400,
+                fontSize: "15px",
+                color: "rgba(12, 12, 12, 0.6)",
+                textAlign: "center",
+              }}
+            >
+              확정 후 해당 건의 상태가 종결로 변경됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter
+            className="flex justify-center gap-3 mt-6"
+            style={{ justifyContent: "center" }}
+          >
+            <AlertDialogCancel
+              data-testid="button-cancel-closing"
+              style={{
+                padding: "10px 24px",
+                height: "44px",
+                borderRadius: "6px",
+                fontWeight: 500,
+                fontSize: "16px",
+                color: "#008FED",
+                background: "transparent",
+                border: "none",
+              }}
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowClosingConfirm(false);
+                handleSaveComplete();
+              }}
+              data-testid="button-confirm-closing"
+              style={{
+                padding: "10px 32px",
+                height: "44px",
+                background: "#008FED",
+                borderRadius: "6px",
+                fontWeight: 600,
+                fontSize: "16px",
+                color: "#FFFFFF",
+              }}
+            >
+              확인
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
