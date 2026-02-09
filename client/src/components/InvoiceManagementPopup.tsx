@@ -33,6 +33,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar as CalendarIcon, Plus, Minus } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -204,6 +205,8 @@ export function InvoiceManagementPopup({
   const [totalApprovedAmountOverride, setTotalApprovedAmountOverride] =
     useState<string | null>(null);
   const [showApprovalConfirm, setShowApprovalConfirm] = useState(false);
+  const [invoiceIssued, setInvoiceIssued] = useState(false);
+  const [closingProcessDate, setClosingProcessDate] = useState<Date | undefined>(undefined);
   const [depositEntries, setDepositEntries] = useState<DepositEntry[]>([]);
   const [paymentEntries, setPaymentEntries] = useState<PaymentEntry[]>([]);
 
@@ -943,8 +946,12 @@ export function InvoiceManagementPopup({
 
         if (caseData.taxInvoiceConfirmDate) {
           setTaxInvoiceDate(new Date(caseData.taxInvoiceConfirmDate));
+          setInvoiceIssued(true);
+          setClosingProcessDate(new Date(caseData.taxInvoiceConfirmDate));
         } else {
           setTaxInvoiceDate(undefined);
+          setInvoiceIssued(false);
+          setClosingProcessDate(undefined);
         }
       }
     }
@@ -1938,66 +1945,110 @@ export function InvoiceManagementPopup({
 
         {/* Bottom button area */}
         <div
-          className="flex justify-end items-center px-5 gap-3"
+          className="flex items-center justify-between px-5 gap-3"
           style={{
-            height: "111px",
+            height: "64px",
             background: "#FDFDFD",
             borderTop: "1px solid rgba(12, 12, 12, 0.1)",
           }}
         >
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            data-testid="button-cancel-invoice-management"
-            style={{
-              padding: "10px 20px",
-              height: "48px",
-              borderRadius: "6px",
-              fontWeight: 500,
-              fontSize: "18px",
-              color: "rgba(12, 12, 12, 0.7)",
-            }}
-          >
-            취소
-          </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="invoice-issued"
+                checked={invoiceIssued}
+                onCheckedChange={(checked) => {
+                  setInvoiceIssued(!!checked);
+                  if (!checked) {
+                    setClosingProcessDate(undefined);
+                    setTaxInvoiceDate(undefined);
+                  }
+                }}
+                data-testid="checkbox-invoice-issued"
+              />
+              <Label
+                htmlFor="invoice-issued"
+                style={{ fontSize: "14px", fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap" }}
+              >
+                계산서 발행(종결 여부)
+              </Label>
+            </div>
+            {invoiceIssued && (
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: "13px", fontWeight: 500, color: "#555", whiteSpace: "nowrap" }}>처리일자</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      data-testid="button-closing-process-date"
+                      style={{
+                        height: "36px",
+                        fontSize: "13px",
+                        fontWeight: 400,
+                        minWidth: "140px",
+                        justifyContent: "flex-start",
+                        gap: "6px",
+                      }}
+                    >
+                      <CalendarIcon style={{ width: "14px", height: "14px" }} />
+                      {closingProcessDate ? format(closingProcessDate, "yyyy-MM-dd") : "날짜 선택"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={closingProcessDate}
+                      onSelect={(date) => {
+                        setClosingProcessDate(date);
+                        setTaxInvoiceDate(date);
+                      }}
+                      locale={ko}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+          </div>
 
-          {!isInvoiceApproved && canApproveInvoice && (
-            <Button
-              onClick={() => setShowApprovalConfirm(true)}
-              disabled={isSubmitting}
-              data-testid="button-confirm-invoice"
-              style={{
-                padding: "10px 20px",
-                height: "48px",
-                background: "#008FED",
-                borderRadius: "6px",
-                fontWeight: 600,
-                fontSize: "18px",
-                color: "#FDFDFD",
-              }}
-            >
-              {isSubmitting ? "처리중..." : "인보이스 확인"}
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            {!isInvoiceApproved && canApproveInvoice && (
+              <Button
+                onClick={() => setShowApprovalConfirm(true)}
+                disabled={isSubmitting}
+                data-testid="button-confirm-invoice"
+                style={{
+                  padding: "10px 20px",
+                  height: "40px",
+                  background: "#008FED",
+                  borderRadius: "6px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  color: "#FDFDFD",
+                }}
+              >
+                {isSubmitting ? "처리중..." : "인보이스 확인"}
+              </Button>
+            )}
 
-          {isInvoiceApproved && isAdmin && (
-            <Button
-              onClick={handleSaveComplete}
-              disabled={isSubmitting}
-              data-testid="button-save-complete"
-              style={{
-                padding: "10px 20px",
-                height: "48px",
-                background: "#008FED",
-                borderRadius: "6px",
-                fontWeight: 600,
-                fontSize: "18px",
-                color: "#FDFDFD",
-              }}
-            >
-              {isSubmitting ? "처리중..." : "저장완료"}
-            </Button>
-          )}
+            {isInvoiceApproved && isAdmin && (
+              <Button
+                onClick={handleSaveComplete}
+                disabled={isSubmitting || (invoiceIssued && !closingProcessDate)}
+                data-testid="button-save-complete"
+                style={{
+                  padding: "10px 20px",
+                  height: "40px",
+                  background: "#008FED",
+                  borderRadius: "6px",
+                  fontWeight: 600,
+                  fontSize: "14px",
+                  color: "#FDFDFD",
+                }}
+              >
+                {isSubmitting ? "처리중..." : invoiceIssued ? "종결 확정하기" : "저장완료"}
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
 
