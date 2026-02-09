@@ -525,6 +525,22 @@ export function InvoiceManagementPopup({
         }
       }
 
+      if (hasTaxInvoiceDate) {
+        try {
+          await apiRequest("POST", "/api/send-stage-notification", {
+            caseId: caseData.id,
+            stage: "종결",
+            recipients: {
+              partner: true,
+              manager: false,
+              assessorInvestigator: false,
+            },
+          });
+        } catch (smsError) {
+          console.error("종결 SMS 발송 실패:", smsError);
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/settlements"] });

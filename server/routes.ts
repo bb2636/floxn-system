@@ -12581,30 +12581,35 @@ https://www.floxn.co.kr/
 위 접수건은 접수 취소 되었음을 알려드립니다.
 취소 사유 : ${cancelReason || "-"}`;
       } else if (stage === "종결") {
-        // 정산 정보 조회
         const settlements = await storage.getSettlementsByCaseId(caseId);
         const latestSettlement = settlements && settlements.length > 0 ? settlements[0] : null;
         
-        // 지급금액 및 수수료
-        const paymentAmountNum = latestSettlement?.partnerPaymentAmount ? Number(latestSettlement.partnerPaymentAmount) : 0;
-        const commissionNum = latestSettlement?.commission ? Number(latestSettlement.commission) : 0;
+        let paymentAmountNum = 0;
+        let commissionNum = 0;
+        
+        if (latestSettlement?.paymentEntries && Array.isArray(latestSettlement.paymentEntries)) {
+          const entries = latestSettlement.paymentEntries as Array<{ paymentAmount?: number; commission?: number }>;
+          paymentAmountNum = entries.reduce((sum, e) => sum + (Number(e.paymentAmount) || 0), 0);
+          commissionNum = entries.reduce((sum, e) => sum + (Number(e.commission) || 0), 0);
+        } else {
+          paymentAmountNum = latestSettlement?.partnerPaymentAmount ? Number(latestSettlement.partnerPaymentAmount) : 0;
+          commissionNum = latestSettlement?.commission ? Number(latestSettlement.commission) : 0;
+        }
+        
         const totalAmountNum = paymentAmountNum + commissionNum;
         
         const paymentAmountStr = paymentAmountNum > 0 ? paymentAmountNum.toLocaleString() : "-";
         const commissionStr = commissionNum > 0 ? commissionNum.toLocaleString() : "-";
         const totalAmountStr = totalAmountNum > 0 ? totalAmountNum.toLocaleString() : "-";
         
-        subject = "종결안내";
-        messageText = `<종결안내>
+        subject = "지급 알림";
+        messageText = `<지급 알림>
 
-접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
-증권번호 : ${caseData.insurancePolicyNo || "-"}
-사고번호 : ${caseData.insuranceAccidentNo || "-"}
+사고(증권)번호 : ${caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
 사고장소 : ${getFullAddress()}
 
-위 접수건이 종결되었음을 알려드립니다.
 지급금액 : ${paymentAmountStr}원
 수수료 : ${commissionStr}원
 합계금액 : ${totalAmountStr}원`;
