@@ -321,7 +321,7 @@ export default function Dashboard() {
       if (isPartnerUnsettled) existing.partnerUnsettled++;
     });
 
-    return Array.from(companyCounts.values()).sort((a, b) => b.reception - a.reception);
+    return Array.from(companyCounts.values()).sort((a, b) => a.name.localeCompare(b.name, 'ko'));
   }, [allCases, summaryCases]);
 
   const insuranceTotals = useMemo(() => {
