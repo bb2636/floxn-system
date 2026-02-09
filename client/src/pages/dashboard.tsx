@@ -213,25 +213,25 @@ export default function Dashboard() {
   }, [allCases, progressPeriodType, progressDateRange]);
 
   const filteredCasesByTab = useMemo(() => {
-    if (!progressCases) return [];
+    if (!allCases) return [];
+    const activeCases = allCases.filter(c => c.status !== '작성중');
 
     switch (activeTab) {
       case 'reception':
         return progressCases;
       case 'pending':
-        // 미결건: 청구단계 이전 (청구, 입금완료, 부분입금, 정산완료, 접수취소 제외)
-        return progressCases.filter(c => 
+        return activeCases.filter(c => 
           c.status !== '청구' && c.status !== '입금완료' && c.status !== '부분입금' && 
           c.status !== '정산완료' && c.status !== '접수취소' && c.status !== '취소'
         );
       case 'insurance':
-        return progressCases.filter(c => c.status === '완료');
+        return activeCases.filter(c => c.status === '완료');
       case 'partner':
-        return progressCases.filter(c => c.status === '완료');
+        return activeCases.filter(c => c.status === '완료');
       default:
-        return progressCases;
+        return activeCases;
     }
-  }, [progressCases, activeTab]);
+  }, [allCases, progressCases, activeTab]);
 
   const staffSummary = useMemo(() => {
     if (!filteredCasesByTab || !user) return [];
@@ -908,68 +908,69 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-12 gap-6">
               <div className="col-span-12 lg:col-span-8">
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-3">
                   <h2 className="text-base font-bold">진행건 요약</h2>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        className="inline-flex items-center gap-2 rounded-lg border border-[#D8DEEF] bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-white"
-                        type="button"
-                        data-testid="button-period-selector-progress"
-                      >
-                        <span className="inline-block h-4 w-4 rounded bg-[#E7F0FF] ring-1 ring-[#CFE0FF]"></span>
-                        {getProgressPeriodLabel()}
-                        <ChevronDown className="h-4 w-4 text-slate-500" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
-                      <DropdownMenuItem 
-                        onClick={() => handleProgressPeriodSelect('all')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
-                      >
-                        전체
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleProgressPeriodSelect('today')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
-                      >
-                        오늘
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleProgressPeriodSelect('thisMonth')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
-                      >
-                        이번 달
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleProgressPeriodSelect('lastMonth')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
-                      >
-                        지난달
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleProgressPeriodSelect('custom')}
-                        className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
-                      >
-                        날짜 선택
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
 
                 <div className="rounded-2xl bg-white/70 p-5 shadow-sm ring-1 ring-[#DDE3F3]">
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setActiveTab('reception')}
-                      className={activeTab === 'reception' 
-                        ? "rounded-lg bg-[#0B6BFF] px-5 py-2 text-sm font-bold text-white shadow-sm"
-                        : "rounded-lg bg-white px-5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-[#E5E7EB] hover:bg-slate-50"
-                      }
-                      type="button"
-                      data-testid="tab-reception"
-                    >
-                      접수
-                    </button>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <div className="inline-flex items-center gap-1">
+                      <button
+                        onClick={() => setActiveTab('reception')}
+                        className={activeTab === 'reception' 
+                          ? "rounded-lg bg-[#0B6BFF] px-5 py-2 text-sm font-bold text-white shadow-sm"
+                          : "rounded-lg bg-white px-5 py-2 text-sm font-semibold text-slate-600 ring-1 ring-[#E5E7EB] hover:bg-slate-50"
+                        }
+                        type="button"
+                        data-testid="tab-reception"
+                      >
+                        접수
+                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="inline-flex items-center gap-1 rounded-md border border-[#D8DEEF] bg-white/70 px-2 py-0.5 text-xs font-medium text-slate-600 shadow-sm hover:bg-white"
+                            type="button"
+                            data-testid="button-period-selector-progress"
+                          >
+                            {getProgressPeriodLabel()}
+                            <ChevronDown className="h-3 w-3 text-slate-400" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-28 bg-white p-1 shadow-lg rounded-lg border border-slate-200">
+                          <DropdownMenuItem 
+                            onClick={() => handleProgressPeriodSelect('all')}
+                            className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'all' ? 'bg-slate-100 font-medium' : ''}`}
+                          >
+                            전체
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleProgressPeriodSelect('today')}
+                            className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'today' ? 'bg-slate-100 font-medium' : ''}`}
+                          >
+                            오늘
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleProgressPeriodSelect('thisMonth')}
+                            className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'thisMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                          >
+                            이번 달
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleProgressPeriodSelect('lastMonth')}
+                            className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'lastMonth' ? 'bg-slate-100 font-medium' : ''}`}
+                          >
+                            지난달
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleProgressPeriodSelect('custom')}
+                            className={`text-sm py-2 px-3 cursor-pointer rounded ${progressPeriodType === 'custom' ? 'bg-slate-100 font-medium' : ''}`}
+                          >
+                            날짜 선택
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                     <button
                       onClick={() => setActiveTab('pending')}
                       className={activeTab === 'pending'
