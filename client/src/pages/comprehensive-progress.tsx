@@ -758,10 +758,19 @@ export default function ComprehensiveProgress() {
     { name: "관리자 설정" },
   ];
 
-  // 진행상태 옵션 - CASE_STATUSES와 동일하게 + 전체 옵션
+  const FILTER_STATUSES = [
+    "배당대기",
+    "접수완료",
+    "현장정보제출",
+    "복구요청(2차승인)",
+    "청구자료제출(복구)",
+    "출동비청구(선견적)",
+    "청구",
+  ] as const;
+
   const statusOptions = [
     { name: "전체", key: "all" },
-    ...CASE_STATUSES.map((status) => ({
+    ...FILTER_STATUSES.map((status) => ({
       name: getStatusDisplayText(status),
       key: status,
     })),
