@@ -853,6 +853,18 @@ export interface DepositEntryData {
   depositStatus: "입금" | "미입금";
   depositAmount: number;
   memo: string;
+  depositCategory?: string;
+}
+
+// 지급내역 타입 정의
+export interface PaymentEntryData {
+  id: string;
+  paymentDate: string;
+  insuranceCompany: string;
+  paymentAmount: number;
+  commission: number;
+  paymentCategory: string;
+  memo: string;
 }
 
 // 정산 테이블
@@ -871,6 +883,7 @@ export const settlements = pgTable("settlements", {
   partnerPaymentAmount: text("partner_payment_amount"), // 협력업체 지급금액
   partnerPaymentDate: text("partner_payment_date"), // 협력업체 지급일
   depositEntries: json("deposit_entries").$type<DepositEntryData[]>(), // 입금내역 배열
+  paymentEntries: json("payment_entries").$type<PaymentEntryData[]>(), // 지급내역 배열
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),
 });
