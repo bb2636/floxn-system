@@ -752,7 +752,7 @@ export default function Dashboard() {
               </div>
 
               <div className="rounded-2xl bg-white/70 p-4 shadow-sm ring-1 ring-[#DDE3F3]">
-                <div className="overflow-hidden rounded-xl ring-1 ring-[#E5E7EB]">
+                <div className="overflow-visible rounded-xl ring-1 ring-[#E5E7EB]">
                   <table className="w-full text-sm">
                     <thead className="bg-[#F6F7FB] text-slate-600">
                       <tr>
@@ -848,10 +848,10 @@ export default function Dashboard() {
                             <span>협력사 미정산</span>
                             <div className="relative group/partner">
                               <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
-                              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 hidden group-hover/partner:block">
+                              <div className="absolute right-0 top-full mt-1.5 z-50 hidden group-hover/partner:block">
                                 <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
                                   보험사 입금 건 중 계산서 미발행
-                                  <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
+                                  <div className="absolute right-2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
                                 </div>
                               </div>
                             </div>
