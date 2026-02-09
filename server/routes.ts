@@ -12112,6 +12112,102 @@ Front·Line·Ops·Xpert·Net
   });
 
   // ==========================================
+  // POST /api/send-custom-sms - 범용 문자 발송 (제목, 내용, 수신인 지정)
+  // ==========================================
+  const sendCustomSmsSchema = z.object({
+    subject: z.string().min(1, "제목을 입력해주세요"),
+    content: z.string().min(1, "내용을 입력해주세요"),
+    recipients: z.array(z.object({
+      name: z.string(),
+      phone: z.string().min(10, "유효한 전화번호를 입력해주세요").max(20),
+    })).min(1, "수신인을 1명 이상 입력해주세요"),
+  });
+
+  app.post("/api/send-custom-sms", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const currentUser = await storage.getUser(req.session.userId);
+    if (!currentUser) {
+      return res.status(401).json({ error: "사용자를 찾을 수 없습니다" });
+    }
+
+    if (!["관리자", "보험사"].includes(currentUser.role)) {
+      return res.status(403).json({ error: "문자 발송 권한이 없습니다" });
+    }
+
+    try {
+      const validatedData = sendCustomSmsSchema.parse(req.body);
+      const { subject, content, recipients } = validatedData;
+
+      const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+      const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+      const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+      if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
+        return res.status(500).json({ error: "SMS 서비스가 설정되지 않았습니다" });
+      }
+
+      const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+      const results: { name: string; phone: string; success: boolean; error?: string }[] = [];
+
+      for (const recipient of recipients) {
+        const normalizedTo = recipient.phone.replace(/[^0-9]/g, "");
+        if (normalizedTo.length < 10 || normalizedTo.length > 11) {
+          results.push({ name: recipient.name, phone: recipient.phone, success: false, error: "유효하지 않은 전화번호" });
+          continue;
+        }
+
+        try {
+          const payload = {
+            message: {
+              to: normalizedTo,
+              from: normalizedSender,
+              text: content,
+              subject: subject,
+              type: "LMS",
+            },
+          };
+          const body = JSON.stringify(payload);
+
+          await solapiHttpsRequest({
+            method: "POST",
+            path: "/messages/v4/send",
+            headers: {
+              Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+              "Content-Type": "application/json",
+              "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+          });
+
+          console.log(`[send-custom-sms] LMS sent to ${normalizedTo} (${recipient.name})`);
+          results.push({ name: recipient.name, phone: recipient.phone, success: true });
+        } catch (err: any) {
+          console.error(`[send-custom-sms] Failed to send to ${normalizedTo}:`, err);
+          results.push({ name: recipient.name, phone: recipient.phone, success: false, error: "발송 실패" });
+        }
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+
+      res.json({
+        success: failCount === 0,
+        message: `${successCount}건 발송 완료${failCount > 0 ? `, ${failCount}건 실패` : ""}`,
+        results,
+      });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다", details: error.errors });
+      }
+      console.error("[send-custom-sms] Error:", error);
+      res.status(500).json({ error: "문자 전송에 실패했습니다" });
+    }
+  });
+
+  // ==========================================
   // POST /api/send-account-notification - 계정 생성 안내 발송 (이메일/SMS)
   // ==========================================
   const accountNotificationSchema = z.object({
