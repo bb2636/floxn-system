@@ -7,7 +7,7 @@ import { formatCaseNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useIdleTimeout } from "@/hooks/use-idle-timeout";
-import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight, X, Mail, Loader2 } from "lucide-react";
+import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight, X, Mail, Loader2, HelpCircle } from "lucide-react";
 import logoIcon from "@assets/Vector_1762589710900.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -760,6 +760,15 @@ export default function Dashboard() {
                         <th className="px-4 py-3 text-center font-semibold">
                           <div className="inline-flex items-center gap-1">
                             <span>접수건</span>
+                            <div className="relative group/tip">
+                              <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 hidden group-hover/tip:block">
+                                <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
+                                  해당기간 중 모든 접수건
+                                  <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
+                                </div>
+                              </div>
+                            </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <button
@@ -806,9 +815,48 @@ export default function Dashboard() {
                             </DropdownMenu>
                           </div>
                         </th>
-                        <th className="px-4 py-3 text-center font-semibold">미결건</th>
-                        <th className="px-4 py-3 text-center font-semibold">보험사 미정산</th>
-                        <th className="px-4 py-3 text-center font-semibold">협력사 미정산</th>
+                        <th className="px-4 py-3 text-center font-semibold">
+                          <div className="inline-flex items-center gap-1 justify-center">
+                            <span>미결건</span>
+                            <div className="relative group/pending">
+                              <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 hidden group-hover/pending:block">
+                                <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
+                                  청구자료 미제출건
+                                  <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </th>
+                        <th className="px-4 py-3 text-center font-semibold">
+                          <div className="inline-flex items-center gap-1 justify-center">
+                            <span>보험사 미정산</span>
+                            <div className="relative group/ins">
+                              <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 hidden group-hover/ins:block">
+                                <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
+                                  청구자료 제출 건 중 보험사 미입금<br/>('최종액'이 없는 경우)
+                                  <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </th>
+                        <th className="px-4 py-3 text-center font-semibold">
+                          <div className="inline-flex items-center gap-1 justify-center">
+                            <span>협력사 미정산</span>
+                            <div className="relative group/partner">
+                              <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 hidden group-hover/partner:block">
+                                <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
+                                  보험사 입금 건 중 계산서 미발행
+                                  <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#EEF1F7] bg-white">
