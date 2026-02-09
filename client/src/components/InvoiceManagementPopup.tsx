@@ -1558,9 +1558,8 @@ export function InvoiceManagementPopup({
                               <SelectValue placeholder="선택" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="정산">정산</SelectItem>
-                              <SelectItem value="부분입금">부분입금</SelectItem>
-                              <SelectItem value="청구변경">청구변경</SelectItem>
+                              <SelectItem value="일부">일부</SelectItem>
+                              <SelectItem value="최종액">최종액</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1862,9 +1861,8 @@ export function InvoiceManagementPopup({
                               <SelectValue placeholder="선택" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="지급완료">지급완료</SelectItem>
-                              <SelectItem value="부분지급">부분지급</SelectItem>
-                              <SelectItem value="미지급">미지급</SelectItem>
+                              <SelectItem value="일부">일부</SelectItem>
+                              <SelectItem value="최종액">최종액</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
