@@ -9,7 +9,6 @@ import {
 import { Search, Calendar as CalendarIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -78,6 +77,9 @@ interface SettlementRow {
   // 협력업체 지급 정보
   partnerPaymentAmount: number; // 협력업체 지급금액
   partnerPaymentDate: string; // 협력업체 지급일
+  // 추가 필드
+  insuredName: string; // 피보험자 이름
+  claimDate: string; // 청구일 (invoicePdfGenerated)
 }
 
 export default function SettlementsInquiry() {
@@ -487,6 +489,8 @@ export default function SettlementsInquiry() {
           : 0,
         partnerPaymentDate: settlement?.partnerPaymentDate || "-",
         assignedPartner: caseItem.assignedPartner || "-",
+        insuredName: caseItem.insuredName || "-",
+        claimDate: caseItem.invoicePdfGenerated || "-",
       };
     });
 
@@ -697,6 +701,8 @@ export default function SettlementsInquiry() {
         status: primaryCase.status,
         partnerPaymentAmount: totalPartnerPaymentAmount,
         partnerPaymentDate: primaryCase.partnerPaymentDate,
+        insuredName: primaryCase.insuredName || "-",
+        claimDate: primaryCase.claimDate || "-",
       });
     });
 
@@ -1236,539 +1242,32 @@ export default function SettlementsInquiry() {
             }}
           >
             <thead style={{ position: "sticky", top: 0, zIndex: 20 }}>
-              {/* FIX: 2단 헤더 구조 수정 - 첫 번째 행 */}
               <tr style={{ background: "rgba(240, 240, 240, 1)" }}>
-                {/* 기본 컬럼들 - rowSpan=2로 두 줄 차지, 왼쪽 고정 */}
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    width: "60px",
-                    position: "sticky",
-                    left: 0,
-                    zIndex: 30,
-                    background: "rgba(240, 240, 240, 1)",
-                  }}
-                >
-                  <Checkbox data-testid="checkbox-select-all" />
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "120px",
-                    position: "sticky",
-                    left: "60px",
-                    zIndex: 30,
-                    background: "rgba(240, 240, 240, 1)",
-                  }}
-                >
-                  증권번호
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "120px",
-                    position: "sticky",
-                    left: "180px",
-                    zIndex: 30,
-                    background: "rgba(240, 240, 240, 1)",
-                  }}
-                >
-                  사고번호
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                    position: "sticky",
-                    left: "300px",
-                    zIndex: 30,
-                    background: "rgba(240, 240, 240, 1)",
-                  }}
-                >
-                  보험사
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                    position: "sticky",
-                    left: "400px",
-                    zIndex: 30,
-                    background: "rgba(240, 240, 240, 1)",
-                  }}
-                >
-                  담당자
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "150px",
-                    position: "sticky",
-                    left: "500px",
-                    zIndex: 30,
-                    background: "rgba(240, 240, 240, 1)",
-                  }}
-                >
-                  접수번호
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                    position: "sticky",
-                    left: "650px",
-                    zIndex: 30,
-                    background: "rgba(240, 240, 240, 1)",
-                  }}
-                >
-                  협력업체
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "90px",
-                    position: "sticky",
-                    left: "750px",
-                    zIndex: 30,
-                    background: "rgba(240, 240, 240, 1)",
-                  }}
-                >
-                  종결일
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "50px",
-                    position: "sticky",
-                    left: "840px",
-                    zIndex: 30,
-                    background: "rgba(240, 240, 240, 1)",
-                  }}
-                >
-                  공사
-                  <br />
-                  유무
-                </th>
-                {/* FIX: 상위 헤더 - colSpan으로 하위 컬럼들을 그룹화 */}
-                {/* 손해방지비용 - colSpan=4 (견적금액, 승인금액, 차액, 수정률) */}
-                <th
-                  colSpan={4}
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    background: "rgba(0, 143, 237, 0.05)",
-                  }}
-                >
-                  손해방지비용
-                </th>
-                {/* 대물비용 - colSpan=4 (견적금액, 승인금액, 차액, 수정률) */}
-                <th
-                  colSpan={4}
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    background: "rgba(0, 143, 237, 0.05)",
-                  }}
-                >
-                  대물비용
-                </th>
-                {/* 나머지 컬럼들 - rowSpan=2로 두 줄 차지 */}
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  수수료
-                </th>
-                {/* 협력업체 - colSpan=2 (지급금액, 지급일) */}
-                <th
-                  colSpan={2}
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    background: "rgba(0, 143, 237, 0.05)",
-                  }}
-                >
-                  협력업체
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "120px",
-                  }}
-                >
-                  <div style={{ textAlign: "center" }}>
-                    현장
-                    <br />
-                    출동비
-                  </div>
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  자기부담금
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  청구액
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  입금액
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "120px",
-                  }}
-                >
-                  입금일
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  계산서
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  관리
-                </th>
-              </tr>
-
-              {/* FIX: 2단 헤더 구조 수정 - 두 번째 행 (하위 헤더만) */}
-              <tr style={{ background: "rgba(240, 240, 240, 1)" }}>
-                {/* 손해방지비용 하위 컬럼 (견적금액, 승인금액, 차액, 수정률) */}
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  견적금액
-                </th>
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  승인금액
-                </th>
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "80px",
-                  }}
-                >
-                  차액
-                </th>
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "80px",
-                  }}
-                >
-                  수정률
-                </th>
-                {/* 대물비용 하위 컬럼 (견적금액, 승인금액, 차액, 수정률) */}
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  견적금액
-                </th>
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  승인금액
-                </th>
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "80px",
-                  }}
-                >
-                  차액
-                </th>
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "80px",
-                  }}
-                >
-                  수정률
-                </th>
-                {/* 협력업체 하위 컬럼 (지급금액, 지급일) */}
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
-                  지급금액
-                </th>
-                <th
-                  style={{
-                    padding: "12px 16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "120px",
-                  }}
-                >
-                  지급일
-                </th>
+                {["보험사", "증권번호", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체", "청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", "관리"].map((label, idx) => (
+                  <th
+                    key={label}
+                    style={{
+                      padding: "16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "rgba(12, 12, 12, 0.8)",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                      borderRight: idx < 15 ? "1px solid rgba(12, 12, 12, 0.08)" : "none",
+                      textAlign: "center",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={21}
+                    colSpan={16}
                     style={{
                       padding: "48px",
                       textAlign: "center",
@@ -1783,7 +1282,7 @@ export default function SettlementsInquiry() {
               ) : filteredRows.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={21}
+                    colSpan={16}
                     style={{
                       padding: "48px",
                       textAlign: "center",
@@ -1798,521 +1297,83 @@ export default function SettlementsInquiry() {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row, index) => (
-                  <tr
-                    key={row.id}
-                    style={{
-                      borderBottom:
-                        index < filteredRows.length - 1
-                          ? "1px solid rgba(12, 12, 12, 0.05)"
-                          : "none",
-                      background:
-                        index % 2 === 0
-                          ? "rgba(255, 255, 255, 1)"
-                          : "rgba(248, 248, 248, 1)",
-                    }}
-                  >
-                    <td
+                filteredRows.map((row, index) => {
+                  const cellStyle: React.CSSProperties = {
+                    padding: "14px 16px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "rgba(12, 12, 12, 0.8)",
+                    borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                    textAlign: "center",
+                  };
+                  const amountStyle: React.CSSProperties = {
+                    ...cellStyle,
+                    textAlign: "right",
+                  };
+                  const renderAmount = (val: number) =>
+                    val > 0 ? val.toLocaleString() + "원" : "-";
+
+                  return (
+                    <tr
+                      key={row.id}
                       style={{
-                        padding: "14px 16px",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                        position: "sticky",
-                        left: 0,
-                        zIndex: 10,
+                        borderBottom:
+                          index < filteredRows.length - 1
+                            ? "1px solid rgba(12, 12, 12, 0.05)"
+                            : "none",
                         background:
                           index % 2 === 0
                             ? "rgba(255, 255, 255, 1)"
                             : "rgba(248, 248, 248, 1)",
                       }}
                     >
-                      <Checkbox data-testid={`checkbox-row-${index}`} />
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.8)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                        position: "sticky",
-                        left: "60px",
-                        zIndex: 10,
-                        background:
-                          index % 2 === 0
-                            ? "rgba(255, 255, 255, 1)"
-                            : "rgba(248, 248, 248, 1)",
-                      }}
-                    >
-                      {row.withdrawalNumber}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.8)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                        position: "sticky",
-                        left: "180px",
-                        zIndex: 10,
-                        background:
-                          index % 2 === 0
-                            ? "rgba(255, 255, 255, 1)"
-                            : "rgba(248, 248, 248, 1)",
-                      }}
-                    >
-                      {row.accidentNumber}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.8)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                        position: "sticky",
-                        left: "300px",
-                        zIndex: 10,
-                        background:
-                          index % 2 === 0
-                            ? "rgba(255, 255, 255, 1)"
-                            : "rgba(248, 248, 248, 1)",
-                      }}
-                    >
-                      {row.insuranceCompany}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.8)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                        position: "sticky",
-                        left: "400px",
-                        zIndex: 10,
-                        background:
-                          index % 2 === 0
-                            ? "rgba(255, 255, 255, 1)"
-                            : "rgba(248, 248, 248, 1)",
-                      }}
-                    >
-                      {row.managerId ? usersByIdMap.get(row.managerId)?.name || "-" : "-"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.8)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                        minWidth: "150px",
-                        position: "sticky",
-                        left: "500px",
-                        zIndex: 10,
-                        background:
-                          index % 2 === 0
-                            ? "rgba(255, 255, 255, 1)"
-                            : "rgba(248, 248, 248, 1)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "2px",
-                        }}
-                      >
-                        {row.caseNumber
-                          ?.split(", ")
-                          .map((num, idx) => (
-                            <div key={idx}>{formatCaseNumber(num)}</div>
-                          )) || "-"}
-                      </div>
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.8)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                        position: "sticky",
-                        left: "650px",
-                        zIndex: 10,
-                        background:
-                          index % 2 === 0
-                            ? "rgba(255, 255, 255, 1)"
-                            : "rgba(248, 248, 248, 1)",
-                      }}
-                    >
-                      {row.assignedPartner || "-"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 8px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.8)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                        minWidth: "90px",
-                        position: "sticky",
-                        left: "750px",
-                        zIndex: 10,
-                        background:
-                          index % 2 === 0
-                            ? "rgba(255, 255, 255, 1)"
-                            : "rgba(248, 248, 248, 1)",
-                      }}
-                    >
-                      {row.withdrawalDate}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 8px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.8)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                        minWidth: "50px",
-                        position: "sticky",
-                        left: "840px",
-                        zIndex: 10,
-                        background:
-                          index % 2 === 0
-                            ? "rgba(255, 255, 255, 1)"
-                            : "rgba(248, 248, 248, 1)",
-                      }}
-                    >
-                      {row.constructionStatus}
-                    </td>
-                    {/* 손해방지비용 (견적금액, 승인금액, 차액, 수정률) */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.preventionEstimateAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.preventionEstimateAmount > 0
-                        ? row.preventionEstimateAmount.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.preventionApprovedAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.preventionApprovedAmount > 0
-                        ? row.preventionApprovedAmount.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.preventionEstimateAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.preventionEstimateAmount > 0
-                        ? row.preventionDifference.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.preventionEstimateAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                      }}
-                    >
-                      {row.preventionAdjustmentRate}
-                    </td>
-                    {/* 대물비용 (견적금액, 승인금액, 차액, 수정률) */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.propertyEstimateAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.propertyEstimateAmount > 0
-                        ? row.propertyEstimateAmount.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.propertyApprovedAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.propertyApprovedAmount > 0
-                        ? row.propertyApprovedAmount.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.propertyEstimateAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.propertyEstimateAmount > 0
-                        ? row.propertyDifference.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.propertyEstimateAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                      }}
-                    >
-                      {row.propertyAdjustmentRate}
-                    </td>
-                    {/* 수수료 */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.settlementCommission > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.settlementCommission > 0
-                        ? row.settlementCommission.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    {/* 협력업체 (지급금액, 지급일) */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.partnerPaymentAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.partnerPaymentAmount > 0
-                        ? row.partnerPaymentAmount.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.partnerPaymentDate !== "-"
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                      }}
-                    >
-                      {row.partnerPaymentDate}
-                    </td>
-                    {/* 사용료 */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.usageFee > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.usageFee > 0
-                        ? row.usageFee.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    {/* 자기부담금 */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.settlementDeductible > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.settlementDeductible > 0
-                        ? row.settlementDeductible.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    {/* 청구액 */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.claimAmount > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.claimAmount > 0
-                        ? row.claimAmount.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    {/* 입금액 (정산 입금액) */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.settlementDeposit > 0
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "right",
-                      }}
-                    >
-                      {row.settlementDeposit > 0
-                        ? row.settlementDeposit.toLocaleString() + "원"
-                        : "-"}
-                    </td>
-                    {/* 입금일 (정산일자) */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.settlementDate !== "-"
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                      }}
-                    >
-                      {row.settlementDate}
-                    </td>
-                    {/* 계산서 (계산서 발행일) */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color:
-                          row.settlementInvoiceDate !== "-"
-                            ? "rgba(12, 12, 12, 0.8)"
-                            : "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                      }}
-                    >
-                      {row.settlementInvoiceDate}
-                    </td>
-                    {/* 관리 */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenManagement(row);
-                        }}
-                        data-testid={`button-management-${row.id}`}
-                        style={{
-                          padding: "4px 12px",
-                          height: "28px",
-                          fontSize: "12px",
-                          fontFamily: "Pretendard",
-                        }}
-                      >
-                        관리
-                      </Button>
-                    </td>
-                  </tr>
-                ))
+                      <td style={cellStyle}>{row.insuranceCompany}</td>
+                      <td style={cellStyle}>{row.withdrawalNumber}</td>
+                      <td style={cellStyle}>{row.accidentNumber}</td>
+                      <td style={cellStyle}>{row.insuredName}</td>
+                      <td style={cellStyle}>
+                        {row.managerId ? usersByIdMap.get(row.managerId)?.name || "-" : "-"}
+                      </td>
+                      <td style={{ ...cellStyle, padding: "8px 12px", minWidth: "150px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          {row.caseNumber
+                            ?.split(", ")
+                            .map((num, idx) => (
+                              <div key={idx}>{formatCaseNumber(num)}</div>
+                            )) || "-"}
+                        </div>
+                      </td>
+                      <td style={cellStyle}>{row.assignedPartner}</td>
+                      <td style={cellStyle}>{row.claimDate}</td>
+                      <td style={amountStyle}>{renderAmount(row.claimAmount)}</td>
+                      <td style={amountStyle}>{renderAmount(row.settlementDeductible)}</td>
+                      <td style={cellStyle}>{row.settlementDate}</td>
+                      <td style={amountStyle}>{renderAmount(row.settlementDeposit)}</td>
+                      <td style={amountStyle}>{renderAmount(row.partnerPaymentAmount)}</td>
+                      <td style={amountStyle}>{renderAmount(row.settlementCommission)}</td>
+                      <td style={cellStyle}>{row.settlementInvoiceDate}</td>
+                      <td style={{ ...cellStyle, borderRight: "none" }}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenManagement(row);
+                          }}
+                          data-testid={`button-management-${row.id}`}
+                          style={{
+                            padding: "4px 12px",
+                            height: "28px",
+                            fontSize: "12px",
+                            fontFamily: "Pretendard",
+                          }}
+                        >
+                          관리
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
