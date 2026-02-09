@@ -53,7 +53,7 @@ export function GlobalHeader() {
     if (location === "/dashboard" || location === "/mobile-home") return "홈";
     if (location === "/intake") return "접수하기";
     if (location === "/comprehensive-progress") return "종합진행관리";
-    if (location.startsWith("/statistics") || location === "/settlements")
+    if (location.startsWith("/statistics") || location.startsWith("/settlements"))
       return "정산 및 통계";
     if (location === "/admin-settings") return "관리자 설정";
     return "";
@@ -274,7 +274,7 @@ export function GlobalHeader() {
                   } else if (item.name === "관리자 설정") {
                     setLocation("/admin-settings");
                   } else if (item.name === "정산 및 통계") {
-                    setLocation("/settlements");
+                    setLocation("/settlements/claim");
                   }
                 }}
                 className="px-6 py-3 rounded-lg transition-colors"

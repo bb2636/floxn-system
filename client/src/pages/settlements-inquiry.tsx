@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   User,
@@ -82,7 +82,11 @@ interface SettlementRow {
   claimDate: string; // 청구일 (invoicePdfGenerated)
 }
 
-export default function SettlementsInquiry() {
+interface SettlementsInquiryProps {
+  filterMode?: "claim" | "closed";
+}
+
+export default function SettlementsInquiry({ filterMode = "claim" }: SettlementsInquiryProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [settlementStatus, setSettlementStatus] = useState("전체");
   const [insuranceCompany, setInsuranceCompany] = useState("전체");
@@ -113,6 +117,11 @@ export default function SettlementsInquiry() {
     propertyEstimate: number;
     propertyApproved: number;
   } | null>(null);
+
+  useEffect(() => {
+    setSettlementStatus("전체");
+    setSearchQuery("");
+  }, [filterMode]);
 
   const { toast } = useToast();
 
@@ -291,14 +300,9 @@ export default function SettlementsInquiry() {
       .sort();
   }, [allUsers]);
 
-  // Filter cases with status '청구' and after (claim, payment, settlement)
-  const settlementStatuses = [
-    "청구",
-    "입금완료",
-    "부분입금",
-    "정산완료",
-    "종결",
-  ];
+  const settlementStatuses = filterMode === "closed"
+    ? ["종결"]
+    : ["청구", "입금완료", "부분입금", "정산완료"];
   const claimCases = cases.filter((c) => settlementStatuses.includes(c.status));
   const caseIds = claimCases.map((c) => c.id);
 
@@ -846,7 +850,7 @@ export default function SettlementsInquiry() {
             color: "#0C0C0C",
           }}
         >
-          정산 조회
+          {filterMode === "closed" ? "정산 종결" : "정산 청구"}
         </h1>
         <div
           style={{
@@ -968,11 +972,16 @@ export default function SettlementsInquiry() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="전체">전체</SelectItem>
-                <SelectItem value="청구">청구</SelectItem>
-                <SelectItem value="부분입금">부분입금</SelectItem>
-                <SelectItem value="입금완료">입금완료</SelectItem>
-                <SelectItem value="정산완료">정산완료</SelectItem>
-                <SelectItem value="종결">종결</SelectItem>
+                {filterMode === "closed" ? (
+                  <SelectItem value="종결">종결</SelectItem>
+                ) : (
+                  <>
+                    <SelectItem value="청구">청구</SelectItem>
+                    <SelectItem value="부분입금">부분입금</SelectItem>
+                    <SelectItem value="입금완료">입금완료</SelectItem>
+                    <SelectItem value="정산완료">정산완료</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -1303,7 +1312,7 @@ export default function SettlementsInquiry() {
                   >
                     {searchQuery.trim()
                       ? "검색 결과가 없습니다."
-                      : "정산 조회 대상 접수건이 없습니다."}
+                      : filterMode === "closed" ? "종결 상태의 접수건이 없습니다." : "정산 청구 대상 접수건이 없습니다."}
                   </td>
                 </tr>
               ) : (

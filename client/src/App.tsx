@@ -76,7 +76,27 @@ function Router() {
         {() => (
           <ProtectedRoute category="정산 및 통계">
             <StatisticsLayout>
-              <SettlementsInquiry />
+              <SettlementsInquiry filterMode="claim" />
+            </StatisticsLayout>
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      <Route path="/settlements/claim">
+        {() => (
+          <ProtectedRoute category="정산 및 통계">
+            <StatisticsLayout>
+              <SettlementsInquiry filterMode="claim" />
+            </StatisticsLayout>
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      <Route path="/settlements/closed">
+        {() => (
+          <ProtectedRoute category="정산 및 통계">
+            <StatisticsLayout>
+              <SettlementsInquiry filterMode="closed" />
             </StatisticsLayout>
           </ProtectedRoute>
         )}
@@ -86,7 +106,7 @@ function Router() {
         {() => (
           <ProtectedRoute category="정산 및 통계">
             <StatisticsLayout>
-              <SettlementsInquiry />
+              <SettlementsInquiry filterMode="claim" />
             </StatisticsLayout>
           </ProtectedRoute>
         )}
