@@ -1403,22 +1403,22 @@ export function InvoiceManagementPopup({
                 <div style={{ border: "1px solid #E0E0E0", borderTop: "none", overflowX: "auto" }}>
                   {/* Header */}
                   <div className="flex" style={{ borderBottom: "1px solid #E0E0E0", minWidth: "750px" }}>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "6px 4px" }}>
                       입금일자
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
                       보험사
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
                       청구액
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
                       입금액
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
                       입금구분
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "6px 4px" }}>
                       메모
                     </div>
                   </div>
@@ -1617,18 +1617,18 @@ export function InvoiceManagementPopup({
                       minWidth: "750px",
                     }}
                   >
-                    <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", fontWeight: 600 }}>
+                    <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
                       합계
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", fontWeight: 600 }}>
+                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
                       {depositTotals.totalClaim.toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", fontWeight: 600 }}>
+                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
                       {depositTotals.totalDeposit.toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", fontWeight: 600, color: outstandingAmount > 0 ? "#E53935" : "#0C0C0C" }}>
+                    <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600, fontSize: "12px", color: outstandingAmount > 0 ? "#E53935" : "#0C0C0C" }}>
                       (입금-청구) {(depositTotals.totalDeposit - depositTotals.totalClaim).toLocaleString()}원
                     </div>
                     <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "4px 8px" }}>
@@ -1706,22 +1706,22 @@ export function InvoiceManagementPopup({
                 <div style={{ border: "1px solid #E0E0E0", borderTop: "none", overflowX: "auto" }}>
                   {/* Header */}
                   <div className="flex" style={{ borderBottom: "1px solid #E0E0E0", minWidth: "750px" }}>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "6px 4px" }}>
                       지급일자
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
                       보험사
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
                       지급액
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
                       수수료
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
                       지급구분
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "6px 4px" }}>
                       메모
                     </div>
                   </div>
@@ -1920,18 +1920,18 @@ export function InvoiceManagementPopup({
                       minWidth: "750px",
                     }}
                   >
-                    <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", fontWeight: 600 }}>
+                    <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
                       합계
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", fontWeight: 600 }}>
+                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
                       {paymentTotals.totalPayment.toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", fontWeight: 600 }}>
+                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
                       {paymentTotals.totalCommission.toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", fontWeight: 600 }}>
+                    <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
                       {(paymentTotals.totalPayment + paymentTotals.totalCommission).toLocaleString()}원
                     </div>
                     <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "4px 8px" }}>
