@@ -1907,7 +1907,8 @@ export function InvoiceManagementPopup({
                     <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", fontWeight: 600 }}>
                       {paymentTotals.totalCommission.toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none" }}>
+                    <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", fontWeight: 600 }}>
+                      {(paymentTotals.totalPayment + paymentTotals.totalCommission).toLocaleString()}원
                     </div>
                     <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "4px 8px" }}>
                       <Button
