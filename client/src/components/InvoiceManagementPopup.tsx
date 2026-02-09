@@ -1621,8 +1621,8 @@ export function InvoiceManagementPopup({
                     </div>
                   </div>
                 </div>
-                {/* 출동비 row */}
-                <div className="flex">
+                {/* 출동비 row - 선견적요청 cases only */}
+                {caseData?.recoveryType === "선견적요청" && <div className="flex">
                   <div
                     style={{
                       ...TABLE_CELL_STYLE,
@@ -1697,7 +1697,7 @@ export function InvoiceManagementPopup({
                       <span style={{ fontSize: "14px" }}>원</span>
                     </div>
                   </div>
-                </div>
+                </div>}
               </div>
             </div>
 
