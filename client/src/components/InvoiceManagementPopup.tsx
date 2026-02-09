@@ -159,6 +159,31 @@ const TABLE_HEADER_CELL_STYLE: React.CSSProperties = {
   color: "rgba(12, 12, 12, 0.7)",
 };
 
+const INLINE_COL_BASE: React.CSSProperties = {
+  padding: "4px",
+  fontSize: "13px",
+  textAlign: "center",
+  verticalAlign: "middle",
+  borderRight: "1px solid #E0E0E0",
+  boxSizing: "border-box",
+};
+const DEPOSIT_COLS = {
+  col1: { ...INLINE_COL_BASE, flex: "0 0 120px", width: "120px" } as React.CSSProperties,
+  col2: { ...INLINE_COL_BASE, flex: "0 0 110px", width: "110px" } as React.CSSProperties,
+  col3: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
+  col4: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
+  col5: { ...INLINE_COL_BASE, flex: "0 0 120px", width: "120px" } as React.CSSProperties,
+  col6: { ...INLINE_COL_BASE, flex: 1, borderRight: "none" } as React.CSSProperties,
+};
+const PAYMENT_COLS = {
+  col1: { ...INLINE_COL_BASE, flex: "0 0 120px", width: "120px" } as React.CSSProperties,
+  col2: { ...INLINE_COL_BASE, flex: "0 0 110px", width: "110px" } as React.CSSProperties,
+  col3: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
+  col4: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
+  col5: { ...INLINE_COL_BASE, flex: "0 0 120px", width: "120px" } as React.CSSProperties,
+  col6: { ...INLINE_COL_BASE, flex: 1, borderRight: "none" } as React.CSSProperties,
+};
+
 export function InvoiceManagementPopup({
   open,
   onOpenChange,
@@ -1403,22 +1428,22 @@ export function InvoiceManagementPopup({
                 <div style={{ border: "1px solid #E0E0E0", borderTop: "none", overflowX: "auto" }}>
                   {/* Header */}
                   <div className="flex" style={{ borderBottom: "1px solid #E0E0E0", minWidth: "750px" }}>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...DEPOSIT_COLS.col1, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       입금일자
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...DEPOSIT_COLS.col2, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       보험사
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...DEPOSIT_COLS.col3, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       청구액
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...DEPOSIT_COLS.col4, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       입금액
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...DEPOSIT_COLS.col5, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       입금구분
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...DEPOSIT_COLS.col6, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       메모
                     </div>
                   </div>
@@ -1449,7 +1474,7 @@ export function InvoiceManagementPopup({
                         }}
                       >
                         {/* 입금일자 */}
-                        <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={DEPOSIT_COLS.col1}>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
@@ -1490,7 +1515,7 @@ export function InvoiceManagementPopup({
                           </Popover>
                         </div>
                         {/* 보험사 */}
-                        <div style={{ ...TABLE_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={DEPOSIT_COLS.col2}>
                           <Select
                             value={entry.insuranceCompany}
                             onValueChange={(value) =>
@@ -1518,7 +1543,7 @@ export function InvoiceManagementPopup({
                           </Select>
                         </div>
                         {/* 청구액 */}
-                        <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={DEPOSIT_COLS.col3}>
                           <div className="flex items-center gap-1">
                             <Input
                               type="text"
@@ -1541,7 +1566,7 @@ export function InvoiceManagementPopup({
                           </div>
                         </div>
                         {/* 입금액 */}
-                        <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={DEPOSIT_COLS.col4}>
                           <div className="flex items-center gap-1">
                             <Input
                               type="text"
@@ -1564,7 +1589,7 @@ export function InvoiceManagementPopup({
                           </div>
                         </div>
                         {/* 입금구분 */}
-                        <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={DEPOSIT_COLS.col5}>
                           <Select
                             value={entry.depositCategory || ""}
                             onValueChange={(value) =>
@@ -1588,7 +1613,7 @@ export function InvoiceManagementPopup({
                           </Select>
                         </div>
                         {/* 메모 */}
-                        <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={DEPOSIT_COLS.col6}>
                           <Input
                             type="text"
                             value={entry.memo || ""}
@@ -1617,21 +1642,21 @@ export function InvoiceManagementPopup({
                       minWidth: "750px",
                     }}
                   >
-                    <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
+                    <div style={{ ...DEPOSIT_COLS.col1, fontWeight: 600 }}>
                       합계
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                    <div style={DEPOSIT_COLS.col2}>
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
+                    <div style={{ ...DEPOSIT_COLS.col3, fontWeight: 600 }}>
                       {depositTotals.totalClaim.toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
+                    <div style={{ ...DEPOSIT_COLS.col4, fontWeight: 600 }}>
                       {depositTotals.totalDeposit.toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600, fontSize: "12px", color: outstandingAmount > 0 ? "#E53935" : "#0C0C0C" }}>
+                    <div style={{ ...DEPOSIT_COLS.col5, fontWeight: 600, fontSize: "11px", color: outstandingAmount > 0 ? "#E53935" : "#0C0C0C", overflow: "hidden", whiteSpace: "nowrap" }}>
                       (입금-청구) {(depositTotals.totalDeposit - depositTotals.totalClaim).toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "4px 8px" }}>
+                    <div style={{ ...DEPOSIT_COLS.col6, padding: "4px 8px" }}>
                       <Button
                         onClick={handleSaveDeposits}
                         disabled={isSubmitting}
@@ -1706,22 +1731,22 @@ export function InvoiceManagementPopup({
                 <div style={{ border: "1px solid #E0E0E0", borderTop: "none", overflowX: "auto" }}>
                   {/* Header */}
                   <div className="flex" style={{ borderBottom: "1px solid #E0E0E0", minWidth: "750px" }}>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...PAYMENT_COLS.col1, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       지급일자
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...PAYMENT_COLS.col2, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       보험사
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...PAYMENT_COLS.col3, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       지급액
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...PAYMENT_COLS.col4, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       수수료
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...PAYMENT_COLS.col5, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       지급구분
                     </div>
-                    <div style={{ ...TABLE_HEADER_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "6px 4px" }}>
+                    <div style={{ ...PAYMENT_COLS.col6, background: "#F5F7FA", fontWeight: 600, color: "rgba(12,12,12,0.7)", padding: "6px 4px" }}>
                       메모
                     </div>
                   </div>
@@ -1752,7 +1777,7 @@ export function InvoiceManagementPopup({
                         }}
                       >
                         {/* 지급일자 */}
-                        <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={PAYMENT_COLS.col1}>
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
@@ -1793,7 +1818,7 @@ export function InvoiceManagementPopup({
                           </Popover>
                         </div>
                         {/* 보험사 */}
-                        <div style={{ ...TABLE_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={PAYMENT_COLS.col2}>
                           <Select
                             value={entry.insuranceCompany}
                             onValueChange={(value) =>
@@ -1821,7 +1846,7 @@ export function InvoiceManagementPopup({
                           </Select>
                         </div>
                         {/* 지급액 */}
-                        <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={PAYMENT_COLS.col3}>
                           <div className="flex items-center gap-1">
                             <Input
                               type="text"
@@ -1844,7 +1869,7 @@ export function InvoiceManagementPopup({
                           </div>
                         </div>
                         {/* 수수료 */}
-                        <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={PAYMENT_COLS.col4}>
                           <div className="flex items-center gap-1">
                             <Input
                               type="text"
@@ -1867,7 +1892,7 @@ export function InvoiceManagementPopup({
                           </div>
                         </div>
                         {/* 지급구분 */}
-                        <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={PAYMENT_COLS.col5}>
                           <Select
                             value={entry.paymentCategory || ""}
                             onValueChange={(value) =>
@@ -1891,7 +1916,7 @@ export function InvoiceManagementPopup({
                           </Select>
                         </div>
                         {/* 메모 */}
-                        <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "4px" }}>
+                        <div style={PAYMENT_COLS.col6}>
                           <Input
                             type="text"
                             value={entry.memo || ""}
@@ -1920,21 +1945,21 @@ export function InvoiceManagementPopup({
                       minWidth: "750px",
                     }}
                   >
-                    <div style={{ ...TABLE_CELL_STYLE, width: "120px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderLeft: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
+                    <div style={{ ...PAYMENT_COLS.col1, fontWeight: 600 }}>
                       합계
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, width: "110px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px" }}>
+                    <div style={PAYMENT_COLS.col2}>
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
+                    <div style={{ ...PAYMENT_COLS.col3, fontWeight: 600 }}>
                       {paymentTotals.totalPayment.toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
+                    <div style={{ ...PAYMENT_COLS.col4, fontWeight: 600 }}>
                       {paymentTotals.totalCommission.toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, width: "100px", borderRight: "1px solid #E0E0E0", borderBottom: "none", borderTop: "none", padding: "4px", fontWeight: 600 }}>
+                    <div style={{ ...PAYMENT_COLS.col5, fontWeight: 600 }}>
                       {(paymentTotals.totalPayment + paymentTotals.totalCommission).toLocaleString()}원
                     </div>
-                    <div style={{ ...TABLE_CELL_STYLE, flex: 1, borderBottom: "none", borderRight: "none", borderTop: "none", padding: "4px 8px" }}>
+                    <div style={{ ...PAYMENT_COLS.col6, padding: "4px 8px" }}>
                       <Button
                         onClick={handleSavePayments}
                         disabled={isSubmitting}
