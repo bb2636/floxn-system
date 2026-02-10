@@ -103,6 +103,14 @@ export function FloatingIntakeButton() {
       });
       return;
     }
+    if (recipients.length >= 10) {
+      toast({
+        title: "추가 불가",
+        description: "수신인은 최대 10명까지 선택 가능합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
     const alreadyAdded = recipients.some((r) => r.phone === u.phone && r.name === u.name);
     if (alreadyAdded) {
       toast({
