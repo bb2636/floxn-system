@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Plus, MessageSquare, X, Mail, Loader2 } from "lucide-react";
+import { Plus, MessageSquare, X, Mail, Loader2, Search } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -13,6 +13,7 @@ import Intake from "@/pages/intake";
 interface Recipient {
   name: string;
   phone: string;
+  company?: string;
 }
 
 export function FloatingIntakeButton() {
@@ -24,12 +25,28 @@ export function FloatingIntakeButton() {
   const [smsSubject, setSmsSubject] = useState("");
   const [smsContent, setSmsContent] = useState("");
   const [recipients, setRecipients] = useState<Recipient[]>([]);
-  const [newRecipientName, setNewRecipientName] = useState("");
-  const [newRecipientPhone, setNewRecipientPhone] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
+
+  const { data: allUsers } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: smsDialogOpen,
+  });
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const sendSmsMutation = useMutation({
     mutationFn: async (data: { subject: string; content: string; recipients: Recipient[] }) => {
@@ -66,18 +83,38 @@ export function FloatingIntakeButton() {
     setIsOpen(false);
   };
 
-  const addRecipient = () => {
-    if (!newRecipientName.trim() || !newRecipientPhone.trim()) {
+  const filteredUsers = (allUsers || []).filter((u) => {
+    if (!searchQuery.trim()) return false;
+    const q = searchQuery.trim().toLowerCase();
+    const alreadyAdded = recipients.some((r) => r.phone === u.phone && r.name === u.name);
+    if (alreadyAdded) return false;
+    return (
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.company && u.company.toLowerCase().includes(q))
+    );
+  });
+
+  const addUserAsRecipient = (u: User) => {
+    if (!u.phone) {
       toast({
-        title: "입력 오류",
-        description: "이름과 휴대폰번호를 모두 입력해주세요.",
+        title: "추가 불가",
+        description: `${u.name}님의 연락처가 등록되어 있지 않습니다.`,
         variant: "destructive",
       });
       return;
     }
-    setRecipients([...recipients, { name: newRecipientName.trim(), phone: newRecipientPhone.trim() }]);
-    setNewRecipientName("");
-    setNewRecipientPhone("");
+    const alreadyAdded = recipients.some((r) => r.phone === u.phone && r.name === u.name);
+    if (alreadyAdded) {
+      toast({
+        title: "중복 수신인",
+        description: `${u.name}님은 이미 추가되어 있습니다.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setRecipients([...recipients, { name: u.name, phone: u.phone, company: u.company }]);
+    setSearchQuery("");
+    setShowSearchResults(false);
   };
 
   const removeRecipient = (index: number) => {
@@ -88,8 +125,8 @@ export function FloatingIntakeButton() {
     setSmsSubject("");
     setSmsContent("");
     setRecipients([]);
-    setNewRecipientName("");
-    setNewRecipientPhone("");
+    setSearchQuery("");
+    setShowSearchResults(false);
   };
 
   const handleSendSms = () => {
@@ -288,6 +325,98 @@ export function FloatingIntakeButton() {
                     수신인
                   </div>
 
+                  <div ref={searchRef} style={{ position: 'relative', marginBottom: '8px' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 12px',
+                      border: '1px solid rgba(12, 12, 12, 0.15)',
+                      borderRadius: '8px',
+                      background: '#FFFFFF',
+                    }}>
+                      <Search size={16} color="rgba(12,12,12,0.4)" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setShowSearchResults(true);
+                        }}
+                        onFocus={() => { if (searchQuery.trim()) setShowSearchResults(true); }}
+                        placeholder="이름 또는 회사명으로 검색"
+                        style={{
+                          flex: 1,
+                          border: 'none',
+                          fontFamily: 'Pretendard',
+                          fontSize: '13px',
+                          outline: 'none',
+                          background: 'transparent',
+                        }}
+                        data-testid="input-search-recipient"
+                      />
+                    </div>
+
+                    {showSearchResults && searchQuery.trim() && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        background: '#FFFFFF',
+                        border: '1px solid rgba(12,12,12,0.15)',
+                        borderRadius: '8px',
+                        marginTop: '4px',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        zIndex: 50,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      }}>
+                        {filteredUsers.length === 0 ? (
+                          <div style={{
+                            padding: '12px 14px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '12px',
+                            color: 'rgba(12,12,12,0.4)',
+                            textAlign: 'center',
+                          }}>
+                            검색 결과가 없습니다
+                          </div>
+                        ) : (
+                          filteredUsers.map((u) => (
+                            <button
+                              key={u.id}
+                              onClick={() => addUserAsRecipient(u)}
+                              style={{
+                                width: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '2px',
+                                padding: '10px 14px',
+                                border: 'none',
+                                borderBottom: '1px solid rgba(12,12,12,0.06)',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.background = '#F5F7FA')}
+                              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                              data-testid={`button-search-user-${u.id}`}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontFamily: 'Pretendard', fontSize: '13px', fontWeight: 600, color: '#0C0C0C' }}>{u.name}</span>
+                                <span style={{ fontFamily: 'Pretendard', fontSize: '11px', color: 'rgba(12,12,12,0.5)', background: '#F0F2F5', padding: '1px 6px', borderRadius: '4px' }}>{u.role}</span>
+                              </div>
+                              <div style={{ fontFamily: 'Pretendard', fontSize: '12px', color: 'rgba(12,12,12,0.5)' }}>
+                                {u.company}{u.phone ? ` · ${u.phone}` : ' · 연락처 없음'}
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <div style={{
                     border: '1px solid rgba(12, 12, 12, 0.15)',
                     borderRadius: '8px',
@@ -295,11 +424,11 @@ export function FloatingIntakeButton() {
                   }}>
                     <div style={{
                       display: 'grid',
-                      gridTemplateColumns: '80px 1fr 32px',
+                      gridTemplateColumns: '1fr 1fr 32px',
                       background: '#F5F7FA',
                       borderBottom: '1px solid rgba(12, 12, 12, 0.1)',
                     }}>
-                      <div style={{ padding: '8px 10px', fontFamily: 'Pretendard', fontSize: '12px', fontWeight: 600, color: 'rgba(12,12,12,0.6)' }}>이름</div>
+                      <div style={{ padding: '8px 10px', fontFamily: 'Pretendard', fontSize: '12px', fontWeight: 600, color: 'rgba(12,12,12,0.6)' }}>이름(회사)</div>
                       <div style={{ padding: '8px 10px', fontFamily: 'Pretendard', fontSize: '12px', fontWeight: 600, color: 'rgba(12,12,12,0.6)' }}>휴대폰번호</div>
                       <div />
                     </div>
@@ -321,13 +450,15 @@ export function FloatingIntakeButton() {
                             key={idx}
                             style={{
                               display: 'grid',
-                              gridTemplateColumns: '80px 1fr 32px',
+                              gridTemplateColumns: '1fr 1fr 32px',
                               borderBottom: idx < recipients.length - 1 ? '1px solid rgba(12,12,12,0.06)' : 'none',
                               alignItems: 'center',
                             }}
                             data-testid={`row-recipient-${idx}`}
                           >
-                            <div style={{ padding: '8px 10px', fontFamily: 'Pretendard', fontSize: '13px', color: '#0C0C0C', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
+                            <div style={{ padding: '8px 10px', fontFamily: 'Pretendard', fontSize: '13px', color: '#0C0C0C', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {r.name}{r.company ? <span style={{ fontSize: '11px', color: 'rgba(12,12,12,0.45)', marginLeft: '4px' }}>({r.company})</span> : ''}
+                            </div>
                             <div style={{ padding: '8px 10px', fontFamily: 'Pretendard', fontSize: '13px', color: '#0C0C0C' }}>{r.phone}</div>
                             <button
                               onClick={() => removeRecipient(idx)}
@@ -340,50 +471,6 @@ export function FloatingIntakeButton() {
                         ))
                       )}
                     </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '8px', alignItems: 'center' }}>
-                    <input
-                      type="text"
-                      value={newRecipientName}
-                      onChange={(e) => setNewRecipientName(e.target.value)}
-                      placeholder="이름"
-                      style={{
-                        width: '70px',
-                        padding: '8px 10px',
-                        border: '1px solid rgba(12, 12, 12, 0.15)',
-                        borderRadius: '6px',
-                        fontFamily: 'Pretendard',
-                        fontSize: '13px',
-                        outline: 'none',
-                      }}
-                      data-testid="input-recipient-name"
-                    />
-                    <input
-                      type="text"
-                      value={newRecipientPhone}
-                      onChange={(e) => setNewRecipientPhone(e.target.value)}
-                      placeholder="휴대폰번호"
-                      onKeyPress={(e) => { if (e.key === 'Enter') addRecipient(); }}
-                      style={{
-                        flex: 1,
-                        padding: '8px 10px',
-                        border: '1px solid rgba(12, 12, 12, 0.15)',
-                        borderRadius: '6px',
-                        fontFamily: 'Pretendard',
-                        fontSize: '13px',
-                        outline: 'none',
-                      }}
-                      data-testid="input-recipient-phone"
-                    />
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={addRecipient}
-                      data-testid="button-add-recipient"
-                    >
-                      <Plus size={16} />
-                    </Button>
                   </div>
                 </div>
 
