@@ -322,7 +322,7 @@ export function FloatingIntakeButton() {
                     color: '#0C0C0C',
                     marginBottom: '8px',
                   }}>
-                    수신인
+                    수신인 {recipients.length > 0 && <span style={{ color: '#008FED', fontWeight: 700 }}>({recipients.length}명)</span>}
                   </div>
 
                   <div ref={searchRef} style={{ position: 'relative', marginBottom: '8px' }}>
