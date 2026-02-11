@@ -5423,8 +5423,7 @@ export default function AdminSettings() {
                         )}
 
                       {/* Row 7: Attachments */}
-                      {selectedUser.attachments &&
-                        selectedUser.attachments.length > 0 && (
+                      {(isEditMode || (selectedUser.attachments && selectedUser.attachments.length > 0)) && (
                           <div className="flex gap-5">
                             <div className="flex-1 flex flex-col gap-2">
                               <span
@@ -5439,6 +5438,102 @@ export default function AdminSettings() {
                                 첨부파일
                               </span>
                               {isEditMode && (
+                                <div
+                                  className="flex flex-col items-center justify-center gap-2"
+                                  style={{
+                                    border: "2px dashed rgba(0, 143, 237, 0.3)",
+                                    borderRadius: "8px",
+                                    padding: "16px",
+                                    background: "#F8FCFF",
+                                    cursor: "pointer",
+                                    transition: "background 0.2s",
+                                  }}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.style.background = "#EDF5FF";
+                                  }}
+                                  onDragLeave={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.style.background = "#F8FCFF";
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.style.background = "#F8FCFF";
+                                    const files = Array.from(e.dataTransfer.files || []);
+                                    if (files.length > 0 && selectedUser) {
+                                      let processedCount = 0;
+                                      const newFileJsons: string[] = [];
+                                      files.forEach((file) => {
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => {
+                                          const dataUrl = ev.target?.result as string;
+                                          newFileJsons.push(JSON.stringify({ name: file.name, data: dataUrl, type: file.type }));
+                                          processedCount++;
+                                          if (processedCount === files.length) {
+                                            const currentAttachments = selectedUser.attachments || [];
+                                            const updatedAttachments = [...currentAttachments, ...newFileJsons];
+                                            updateUserMutation.mutate({
+                                              userId: selectedUser.id.toString(),
+                                              data: { attachments: updatedAttachments },
+                                            });
+                                            setSelectedUser(prev => prev ? { ...prev, attachments: updatedAttachments } : null);
+                                          }
+                                        };
+                                        reader.readAsDataURL(file);
+                                      });
+                                    }
+                                  }}
+                                  onClick={() => {
+                                    const input = document.createElement("input");
+                                    input.type = "file";
+                                    input.multiple = true;
+                                    input.accept = "*/*";
+                                    input.onchange = (e) => {
+                                      const files = Array.from((e.target as HTMLInputElement).files || []);
+                                      if (files.length > 0 && selectedUser) {
+                                        let processedCount = 0;
+                                        const newFileJsons: string[] = [];
+                                        files.forEach((file) => {
+                                          const reader = new FileReader();
+                                          reader.onload = (ev) => {
+                                            const dataUrl = ev.target?.result as string;
+                                            newFileJsons.push(JSON.stringify({ name: file.name, data: dataUrl, type: file.type }));
+                                            processedCount++;
+                                            if (processedCount === files.length) {
+                                              const currentAttachments = selectedUser.attachments || [];
+                                              const updatedAttachments = [...currentAttachments, ...newFileJsons];
+                                              updateUserMutation.mutate({
+                                                userId: selectedUser.id.toString(),
+                                                data: { attachments: updatedAttachments },
+                                              });
+                                              setSelectedUser(prev => prev ? { ...prev, attachments: updatedAttachments } : null);
+                                            }
+                                          };
+                                          reader.readAsDataURL(file);
+                                        });
+                                      }
+                                    };
+                                    input.click();
+                                  }}
+                                  data-testid="edit-file-upload-area"
+                                >
+                                  <Upload size={20} style={{ color: "#008FED" }} />
+                                  <span
+                                    style={{
+                                      fontFamily: "Pretendard",
+                                      fontSize: "13px",
+                                      fontWeight: 400,
+                                      color: "rgba(12, 12, 12, 0.5)",
+                                    }}
+                                  >
+                                    파일을 드래그하거나 클릭하여 업로드
+                                  </span>
+                                </div>
+                              )}
+                              {isEditMode && selectedUser.attachments && selectedUser.attachments.length > 0 && (
                                 <div className="flex items-center gap-1">
                                   <button
                                     type="button"
@@ -5465,6 +5560,7 @@ export default function AdminSettings() {
                                   </button>
                                 </div>
                               )}
+                              {selectedUser.attachments && selectedUser.attachments.length > 0 && (
                               <div className="flex flex-col gap-1">
                                 {selectedUser.attachments.map((file, index) => {
                                   let fileName = file;
@@ -5520,6 +5616,7 @@ export default function AdminSettings() {
                                   );
                                 })}
                               </div>
+                              )}
                             </div>
                           </div>
                         )}
