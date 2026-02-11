@@ -5605,7 +5605,29 @@ export default function AdminSettings() {
                                       {fileData && (
                                         <button
                                           type="button"
-                                          onClick={() => setPreviewAttachment(fileData)}
+                                          onClick={() => {
+                                            const isPdf = fileData.type === "application/pdf" || fileData.name.toLowerCase().endsWith(".pdf");
+                                            if (isPdf) {
+                                              try {
+                                                const base64Match = fileData.data.match(/^data:([^;]+);base64,(.+)$/);
+                                                if (base64Match) {
+                                                  const byteCharacters = atob(base64Match[2]);
+                                                  const byteNumbers = new Array(byteCharacters.length);
+                                                  for (let i = 0; i < byteCharacters.length; i++) {
+                                                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                                  }
+                                                  const byteArray = new Uint8Array(byteNumbers);
+                                                  const blob = new Blob([byteArray], { type: "application/pdf" });
+                                                  const blobUrl = URL.createObjectURL(blob);
+                                                  window.open(blobUrl, "_blank");
+                                                }
+                                              } catch {
+                                                window.open(fileData.data, "_blank");
+                                              }
+                                            } else {
+                                              setPreviewAttachment(fileData);
+                                            }
+                                          }}
                                           style={{ cursor: "pointer", flexShrink: 0 }}
                                           data-testid={`button-preview-attachment-${index}`}
                                         >
