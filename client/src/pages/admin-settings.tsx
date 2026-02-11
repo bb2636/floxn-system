@@ -5825,6 +5825,7 @@ export default function AdminSettings() {
                       userId: selectedUser.id.toString(),
                       data: { attachments: remainingAttachments },
                     });
+                    setSelectedUser(prev => prev ? { ...prev, attachments: remainingAttachments } : null);
                     setSelectedAttachmentIndices(new Set());
                     setShowDeleteAttachmentsConfirm(false);
                   }
