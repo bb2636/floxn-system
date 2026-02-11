@@ -7260,6 +7260,21 @@ export default function AdminSettings() {
                                   width: '100%',
                                   height: 400,
                                 }).embed(el);
+                                const noticeBar = el.querySelector('.postcode_search_announce');
+                                if (noticeBar) (noticeBar as HTMLElement).style.display = 'none';
+                                setTimeout(() => {
+                                  const iframes = el.querySelectorAll('iframe');
+                                  iframes.forEach((iframe: HTMLIFrameElement) => {
+                                    try {
+                                      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+                                      if (iframeDoc) {
+                                        const style = iframeDoc.createElement('style');
+                                        style.textContent = '.postcode_search_announce, .postcode_banner, [class*="announce"], [class*="banner"] { display: none !important; }';
+                                        iframeDoc.head.appendChild(style);
+                                      }
+                                    } catch(e) {}
+                                  });
+                                }, 500);
                               }
                             }}
                             style={{ width: '100%', height: '400px' }}
