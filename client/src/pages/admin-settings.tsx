@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2, Star } from "lucide-react";
+import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2, Star, ZoomIn } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -450,6 +450,9 @@ export default function AdminSettings() {
     serviceRegions: [] as string[],
     attachments: [] as string[],
   });
+  const [attachmentFilesData, setAttachmentFilesData] = useState<Array<{id: string, name: string, data: string, type: string}>>([]);
+  const [pendingFileReads, setPendingFileReads] = useState(0);
+  const [previewAttachment, setPreviewAttachment] = useState<{name: string, data: string, type: string} | null>(null);
   const [regionSearchTerm, setRegionSearchTerm] = useState("");
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState("서울");
@@ -5432,20 +5435,42 @@ export default function AdminSettings() {
                                 첨부파일
                               </span>
                               <div className="flex flex-col gap-1">
-                                {selectedUser.attachments.map((file, index) => (
-                                  <span
-                                    key={index}
-                                    style={{
-                                      fontFamily: "Pretendard",
-                                      fontSize: "14px",
-                                      fontWeight: 400,
-                                      color: "#008FED",
-                                    }}
-                                    data-testid={`detail-attachment-${index}`}
-                                  >
-                                    {file}
-                                  </span>
-                                ))}
+                                {selectedUser.attachments.map((file, index) => {
+                                  let fileName = file;
+                                  let fileData: {name: string, data: string, type: string} | null = null;
+                                  try {
+                                    const parsed = JSON.parse(file);
+                                    if (parsed && parsed.name && parsed.data) {
+                                      fileName = parsed.name;
+                                      fileData = parsed;
+                                    }
+                                  } catch {}
+                                  return (
+                                    <div key={index} className="flex items-center gap-2">
+                                      <span
+                                        style={{
+                                          fontFamily: "Pretendard",
+                                          fontSize: "14px",
+                                          fontWeight: 400,
+                                          color: "#008FED",
+                                        }}
+                                        data-testid={`detail-attachment-${index}`}
+                                      >
+                                        {fileName}
+                                      </span>
+                                      {fileData && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setPreviewAttachment(fileData)}
+                                          style={{ cursor: "pointer", flexShrink: 0 }}
+                                          data-testid={`button-preview-attachment-${index}`}
+                                        >
+                                          <ZoomIn size={16} style={{ color: "#008FED" }} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           </div>
@@ -5574,6 +5599,107 @@ export default function AdminSettings() {
                     </span>
                   </button>
                 </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Attachment Preview Modal */}
+      {previewAttachment && (
+        <>
+          <div
+            className="fixed inset-0 z-[60]"
+            style={{ background: "rgba(0, 0, 0, 0.7)" }}
+            onClick={() => setPreviewAttachment(null)}
+          />
+          <div
+            className="fixed z-[61] flex flex-col"
+            style={{
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#FFFFFF",
+              borderRadius: "12px",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              minWidth: "400px",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+            }}
+          >
+            <div
+              className="flex items-center justify-between px-6"
+              style={{
+                height: "56px",
+                borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {previewAttachment.name}
+              </span>
+              <button
+                onClick={() => setPreviewAttachment(null)}
+                className="flex items-center justify-center"
+                style={{ width: "28px", height: "28px" }}
+                data-testid="button-close-preview"
+              >
+                <X size={20} style={{ color: "#686A6E" }} />
+              </button>
+            </div>
+            <div
+              className="flex items-center justify-center overflow-auto"
+              style={{ padding: "24px", maxHeight: "calc(90vh - 56px)" }}
+            >
+              {previewAttachment.type.startsWith("image/") ? (
+                <img
+                  src={previewAttachment.data}
+                  alt={previewAttachment.name}
+                  style={{ maxWidth: "100%", maxHeight: "70vh", objectFit: "contain" }}
+                  data-testid="preview-image"
+                />
+              ) : previewAttachment.type === "application/pdf" ? (
+                <iframe
+                  src={previewAttachment.data}
+                  title={previewAttachment.name}
+                  style={{ width: "600px", height: "70vh", border: "none" }}
+                  data-testid="preview-pdf"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-4 py-8">
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 400,
+                      color: "#686A6E",
+                    }}
+                  >
+                    미리보기를 지원하지 않는 파일 형식입니다.
+                  </span>
+                  <a
+                    href={previewAttachment.data}
+                    download={previewAttachment.name}
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#008FED",
+                      textDecoration: "underline",
+                    }}
+                    data-testid="link-download-attachment"
+                  >
+                    파일 다운로드
+                  </a>
+                </div>
               )}
             </div>
           </div>
@@ -7267,13 +7393,23 @@ export default function AdminSettings() {
                         onChange={(e) => {
                           const files = Array.from(e.target.files || []);
                           if (files.length > 0) {
-                            const newFileNames = files.map((f) => f.name);
+                            const fileEntries = files.map((f) => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file: f }));
                             setCreateAccountForm({
                               ...createAccountForm,
                               attachments: [
                                 ...createAccountForm.attachments,
-                                ...newFileNames,
+                                ...fileEntries.map((e) => e.id),
                               ],
+                            });
+                            setPendingFileReads((c) => c + files.length);
+                            fileEntries.forEach(({ id, file }) => {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const dataUrl = ev.target?.result as string;
+                                setAttachmentFilesData((prev) => [...prev, { id, name: file.name, data: dataUrl, type: file.type }]);
+                                setPendingFileReads((c) => c - 1);
+                              };
+                              reader.readAsDataURL(file);
                             });
                           }
                           e.target.value = "";
@@ -7310,13 +7446,23 @@ export default function AdminSettings() {
 
                           const files = Array.from(e.dataTransfer.files || []);
                           if (files.length > 0) {
-                            const newFileNames = files.map((f) => f.name);
+                            const fileEntries = files.map((f) => ({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file: f }));
                             setCreateAccountForm({
                               ...createAccountForm,
                               attachments: [
                                 ...createAccountForm.attachments,
-                                ...newFileNames,
+                                ...fileEntries.map((e) => e.id),
                               ],
+                            });
+                            setPendingFileReads((c) => c + files.length);
+                            fileEntries.forEach(({ id, file }) => {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const dataUrl = ev.target?.result as string;
+                                setAttachmentFilesData((prev) => [...prev, { id, name: file.name, data: dataUrl, type: file.type }]);
+                                setPendingFileReads((c) => c - 1);
+                              };
+                              reader.readAsDataURL(file);
                             });
                           }
                         }}
@@ -7349,46 +7495,51 @@ export default function AdminSettings() {
                         ) : (
                           <div className="flex flex-col gap-2 w-full p-4">
                             {createAccountForm.attachments.map(
-                              (fileName, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex items-center justify-between px-3 py-2"
-                                  style={{
-                                    background: "#FFFFFF",
-                                    border: "1px solid rgba(0, 143, 237, 0.2)",
-                                    borderRadius: "6px",
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  data-testid={`file-item-${idx}`}
-                                >
-                                  <span
+                              (fileId, idx) => {
+                                const fileInfo = attachmentFilesData.find((f) => f.id === fileId);
+                                const displayName = fileInfo ? fileInfo.name : fileId;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center justify-between px-3 py-2"
                                     style={{
-                                      fontFamily: "Pretendard",
-                                      fontSize: "13px",
-                                      fontWeight: 400,
-                                      color: "#0C0C0C",
+                                      background: "#FFFFFF",
+                                      border: "1px solid rgba(0, 143, 237, 0.2)",
+                                      borderRadius: "6px",
                                     }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    data-testid={`file-item-${idx}`}
                                   >
-                                    {fileName}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setCreateAccountForm({
-                                        ...createAccountForm,
-                                        attachments:
-                                          createAccountForm.attachments.filter(
-                                            (_, i) => i !== idx,
-                                          ),
-                                      });
-                                    }}
-                                    data-testid={`button-remove-file-${idx}`}
-                                  >
-                                    <X size={16} style={{ color: "#686A6E" }} />
-                                  </button>
-                                </div>
-                              ),
+                                    <span
+                                      style={{
+                                        fontFamily: "Pretendard",
+                                        fontSize: "13px",
+                                        fontWeight: 400,
+                                        color: "#0C0C0C",
+                                      }}
+                                    >
+                                      {displayName}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setCreateAccountForm({
+                                          ...createAccountForm,
+                                          attachments:
+                                            createAccountForm.attachments.filter(
+                                              (_, i) => i !== idx,
+                                            ),
+                                        });
+                                        setAttachmentFilesData((prev) => prev.filter((f) => f.id !== fileId));
+                                      }}
+                                      data-testid={`button-remove-file-${idx}`}
+                                    >
+                                      <X size={16} style={{ color: "#686A6E" }} />
+                                    </button>
+                                  </div>
+                                );
+                              },
                             )}
                           </div>
                         )}
@@ -7607,6 +7758,8 @@ export default function AdminSettings() {
                     serviceRegions: [] as string[],
                     attachments: [] as string[],
                   });
+                  setAttachmentFilesData([]);
+                  setPendingFileReads(0);
                   setRegionSearchTerm("");
                 }}
                 data-testid="button-reset-form"
@@ -8089,8 +8242,20 @@ export default function AdminSettings() {
                   onClick={async () => {
                     try {
                       // Call create account API with user-entered password
+                      if (pendingFileReads > 0) {
+                        toast({ variant: "destructive", title: "파일 업로드 중", description: "파일 읽기가 완료될 때까지 잠시 기다려주세요." });
+                        return;
+                      }
+                      const attachmentsWithData = createAccountForm.attachments.map((fileId) => {
+                        const fileData = attachmentFilesData.find((f) => f.id === fileId);
+                        if (fileData) {
+                          return JSON.stringify({ name: fileData.name, data: fileData.data, type: fileData.type });
+                        }
+                        return fileId;
+                      });
                       await apiRequest("POST", "/api/create-account", {
                         ...createAccountForm,
+                        attachments: attachmentsWithData,
                         password: generatedPassword,
                       });
 
@@ -8168,6 +8333,8 @@ export default function AdminSettings() {
                         serviceRegions: [] as string[],
                         attachments: [] as string[],
                       });
+                      setAttachmentFilesData([]);
+                      setPendingFileReads(0);
                       setRegionSearchTerm("");
                     } catch (error: any) {
                       console.error("Failed to create account:", error);
@@ -8353,6 +8520,8 @@ export default function AdminSettings() {
                       serviceRegions: [] as string[],
                       attachments: [] as string[],
                     });
+                    setAttachmentFilesData([]);
+                    setPendingFileReads(0);
                     setRegionSearchTerm("");
                   }}
                   data-testid="button-cancel-confirm-exit"
