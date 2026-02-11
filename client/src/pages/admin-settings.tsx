@@ -5812,13 +5812,31 @@ export default function AdminSettings() {
                   style={{ maxWidth: "100%", maxHeight: "70vh", objectFit: "contain" }}
                   data-testid="preview-image"
                 />
-              ) : previewAttachment.type === "application/pdf" ? (
-                <iframe
-                  src={previewAttachment.data}
-                  title={previewAttachment.name}
-                  style={{ width: "600px", height: "70vh", border: "none" }}
-                  data-testid="preview-pdf"
-                />
+              ) : (previewAttachment.type === "application/pdf" || previewAttachment.name.toLowerCase().endsWith(".pdf")) ? (
+                (() => {
+                  let pdfSrc = previewAttachment.data;
+                  try {
+                    const base64Match = previewAttachment.data.match(/^data:([^;]+);base64,(.+)$/);
+                    if (base64Match) {
+                      const byteCharacters = atob(base64Match[2]);
+                      const byteNumbers = new Array(byteCharacters.length);
+                      for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                      }
+                      const byteArray = new Uint8Array(byteNumbers);
+                      const blob = new Blob([byteArray], { type: "application/pdf" });
+                      pdfSrc = URL.createObjectURL(blob);
+                    }
+                  } catch {}
+                  return (
+                    <iframe
+                      src={pdfSrc}
+                      title={previewAttachment.name}
+                      style={{ width: "700px", height: "70vh", border: "none" }}
+                      data-testid="preview-pdf"
+                    />
+                  );
+                })()
               ) : (
                 <div className="flex flex-col items-center gap-4 py-8">
                   <span
