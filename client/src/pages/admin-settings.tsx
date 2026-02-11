@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2, Star, ZoomIn } from "lucide-react";
+import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2, Star, ZoomIn, Trash2 } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -453,6 +453,8 @@ export default function AdminSettings() {
   const [attachmentFilesData, setAttachmentFilesData] = useState<Array<{id: string, name: string, data: string, type: string}>>([]);
   const [pendingFileReads, setPendingFileReads] = useState(0);
   const [previewAttachment, setPreviewAttachment] = useState<{name: string, data: string, type: string} | null>(null);
+  const [selectedAttachmentIndices, setSelectedAttachmentIndices] = useState<Set<number>>(new Set());
+  const [showDeleteAttachmentsConfirm, setShowDeleteAttachmentsConfirm] = useState(false);
   const [regionSearchTerm, setRegionSearchTerm] = useState("");
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState("서울");
@@ -4516,6 +4518,7 @@ export default function AdminSettings() {
               setSelectedUser(null);
               setIsEditMode(false);
               setEditedUserData({});
+              setSelectedAttachmentIndices(new Set());
             }}
             data-testid="modal-overlay"
           />
@@ -4588,6 +4591,7 @@ export default function AdminSettings() {
                     setSelectedUser(null);
                     setIsEditMode(false);
                     setEditedUserData({});
+                    setSelectedAttachmentIndices(new Set());
                   }}
                   style={{
                     width: "24px",
@@ -5434,6 +5438,33 @@ export default function AdminSettings() {
                               >
                                 첨부파일
                               </span>
+                              {isEditMode && (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    className="flex items-center gap-1"
+                                    style={{ cursor: selectedAttachmentIndices.size > 0 ? "pointer" : "default" }}
+                                    onClick={() => {
+                                      if (selectedAttachmentIndices.size > 0) {
+                                        setShowDeleteAttachmentsConfirm(true);
+                                      }
+                                    }}
+                                    data-testid="button-delete-selected-attachments"
+                                  >
+                                    <Trash2 size={14} style={{ color: selectedAttachmentIndices.size > 0 ? "#E53E3E" : "rgba(12, 12, 12, 0.3)" }} />
+                                    <span
+                                      style={{
+                                        fontFamily: "Pretendard",
+                                        fontSize: "13px",
+                                        fontWeight: 500,
+                                        color: selectedAttachmentIndices.size > 0 ? "#E53E3E" : "rgba(12, 12, 12, 0.3)",
+                                      }}
+                                    >
+                                      선택 삭제하기
+                                    </span>
+                                  </button>
+                                </div>
+                              )}
                               <div className="flex flex-col gap-1">
                                 {selectedUser.attachments.map((file, index) => {
                                   let fileName = file;
@@ -5447,6 +5478,23 @@ export default function AdminSettings() {
                                   } catch {}
                                   return (
                                     <div key={index} className="flex items-center gap-2">
+                                      {isEditMode && (
+                                        <input
+                                          type="checkbox"
+                                          checked={selectedAttachmentIndices.has(index)}
+                                          onChange={(e) => {
+                                            const newSet = new Set(selectedAttachmentIndices);
+                                            if (e.target.checked) {
+                                              newSet.add(index);
+                                            } else {
+                                              newSet.delete(index);
+                                            }
+                                            setSelectedAttachmentIndices(newSet);
+                                          }}
+                                          style={{ accentColor: "#008FED", cursor: "pointer" }}
+                                          data-testid={`checkbox-attachment-${index}`}
+                                        />
+                                      )}
                                       <span
                                         style={{
                                           fontFamily: "Pretendard",
@@ -5502,6 +5550,7 @@ export default function AdminSettings() {
                     onClick={() => {
                       setIsEditMode(false);
                       setEditedUserData({});
+                      setSelectedAttachmentIndices(new Set());
                     }}
                     data-testid="button-cancel-edit"
                   >
@@ -5701,6 +5750,98 @@ export default function AdminSettings() {
                   </a>
                 </div>
               )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Delete Attachments Confirmation Modal */}
+      {showDeleteAttachmentsConfirm && selectedUser && (
+        <>
+          <div
+            className="fixed inset-0 z-[70]"
+            style={{ background: "rgba(0, 0, 0, 0.5)" }}
+            onClick={() => setShowDeleteAttachmentsConfirm(false)}
+          />
+          <div
+            className="fixed z-[71] flex flex-col"
+            style={{
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#FFFFFF",
+              borderRadius: "12px",
+              width: "400px",
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+              padding: "32px",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: 600,
+                color: "#0C0C0C",
+                letterSpacing: "-0.02em",
+                textAlign: "center",
+                marginBottom: "24px",
+              }}
+            >
+              파일 {selectedAttachmentIndices.size}개를 삭제하시겠습니까?
+            </span>
+            <div className="flex gap-3">
+              <button
+                className="flex-1 flex items-center justify-center rounded-lg"
+                style={{
+                  height: "48px",
+                  background: "rgba(12, 12, 12, 0.1)",
+                }}
+                onClick={() => setShowDeleteAttachmentsConfirm(false)}
+                data-testid="button-cancel-delete-attachments"
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  취소
+                </span>
+              </button>
+              <button
+                className="flex-1 flex items-center justify-center rounded-lg"
+                style={{
+                  height: "48px",
+                  background: "#E53E3E",
+                }}
+                onClick={() => {
+                  if (selectedUser && selectedUser.attachments) {
+                    const remainingAttachments = selectedUser.attachments.filter(
+                      (_, idx) => !selectedAttachmentIndices.has(idx)
+                    );
+                    updateUserMutation.mutate({
+                      userId: selectedUser.id.toString(),
+                      data: { attachments: remainingAttachments },
+                    });
+                    setSelectedAttachmentIndices(new Set());
+                    setShowDeleteAttachmentsConfirm(false);
+                  }
+                }}
+                data-testid="button-confirm-delete-attachments"
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "#FFFFFF",
+                  }}
+                >
+                  확인
+                </span>
+              </button>
             </div>
           </div>
         </>
