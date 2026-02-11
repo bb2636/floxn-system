@@ -5474,7 +5474,7 @@ export default function AdminSettings() {
                                           processedCount++;
                                           if (processedCount === files.length) {
                                             const currentAttachments = selectedUser.attachments || [];
-                                            const updatedAttachments = [...currentAttachments, ...newFileJsons];
+                                            const updatedAttachments = [...newFileJsons, ...currentAttachments];
                                             updateUserMutation.mutate({
                                               userId: selectedUser.id.toString(),
                                               data: { attachments: updatedAttachments },
@@ -5504,7 +5504,7 @@ export default function AdminSettings() {
                                             processedCount++;
                                             if (processedCount === files.length) {
                                               const currentAttachments = selectedUser.attachments || [];
-                                              const updatedAttachments = [...currentAttachments, ...newFileJsons];
+                                              const updatedAttachments = [...newFileJsons, ...currentAttachments];
                                               updateUserMutation.mutate({
                                                 userId: selectedUser.id.toString(),
                                                 data: { attachments: updatedAttachments },
