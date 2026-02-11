@@ -28,6 +28,10 @@ export function FloatingIntakeButton() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [senderName, setSenderName] = useState("");
+  const [senderSearchQuery, setSenderSearchQuery] = useState("");
+  const [showSenderSearch, setShowSenderSearch] = useState(false);
+  const senderSearchRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -43,13 +47,16 @@ export function FloatingIntakeButton() {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowSearchResults(false);
       }
+      if (senderSearchRef.current && !senderSearchRef.current.contains(e.target as Node)) {
+        setShowSenderSearch(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const sendSmsMutation = useMutation({
-    mutationFn: async (data: { subject: string; content: string; recipients: Recipient[] }) => {
+    mutationFn: async (data: { subject: string; content: string; recipients: Recipient[]; senderName?: string }) => {
       const res = await apiRequest("POST", "/api/send-custom-sms", data);
       return res.json();
     },
@@ -82,6 +89,13 @@ export function FloatingIntakeButton() {
   const handleSuccess = () => {
     setIsOpen(false);
   };
+
+  const filteredSenderUsers = (allUsers || []).filter((u) => {
+    if (!senderSearchQuery.trim()) return false;
+    if (u.role !== "관리자") return false;
+    const q = senderSearchQuery.trim().toLowerCase();
+    return u.name && u.name.toLowerCase().includes(q);
+  });
 
   const filteredUsers = (allUsers || []).filter((u) => {
     if (!searchQuery.trim()) return false;
@@ -135,6 +149,9 @@ export function FloatingIntakeButton() {
     setRecipients([]);
     setSearchQuery("");
     setShowSearchResults(false);
+    setSenderName(user?.name || "");
+    setSenderSearchQuery("");
+    setShowSenderSearch(false);
   };
 
   const handleSendSms = () => {
@@ -154,6 +171,7 @@ export function FloatingIntakeButton() {
       subject: smsSubject,
       content: smsContent,
       recipients,
+      senderName: senderName.trim() || undefined,
     });
   };
 
@@ -172,7 +190,14 @@ export function FloatingIntakeButton() {
       >
         <button
           onClick={() => {
-            resetSmsForm();
+            setSmsSubject("");
+            setSmsContent("");
+            setRecipients([]);
+            setSearchQuery("");
+            setShowSearchResults(false);
+            setSenderName(user?.name || "");
+            setSenderSearchQuery("");
+            setShowSenderSearch(false);
             setSmsDialogOpen(true);
           }}
           style={{
@@ -479,6 +504,136 @@ export function FloatingIntakeButton() {
                         ))
                       )}
                     </div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '16px' }}>
+                  <div style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#0C0C0C',
+                    marginBottom: '8px',
+                  }}>
+                    발신인
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input
+                      type="text"
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      placeholder="발신인 이름"
+                      style={{
+                        flex: 1,
+                        padding: '8px 10px',
+                        border: '1px solid rgba(12, 12, 12, 0.15)',
+                        borderRadius: '6px',
+                        fontFamily: 'Pretendard',
+                        fontSize: '13px',
+                        outline: 'none',
+                      }}
+                      data-testid="input-sender-name"
+                    />
+                    <div ref={senderSearchRef} style={{ position: 'relative' }}>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => setShowSenderSearch(!showSenderSearch)}
+                        data-testid="button-sender-search"
+                      >
+                        <Search size={16} />
+                      </Button>
+
+                      {showSenderSearch && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          right: 0,
+                          width: '220px',
+                          background: '#FFFFFF',
+                          border: '1px solid rgba(12,12,12,0.15)',
+                          borderRadius: '8px',
+                          marginTop: '4px',
+                          zIndex: 50,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        }}>
+                          <div style={{ padding: '8px' }}>
+                            <input
+                              type="text"
+                              value={senderSearchQuery}
+                              onChange={(e) => setSenderSearchQuery(e.target.value)}
+                              placeholder="관리자 이름 검색"
+                              autoFocus
+                              style={{
+                                width: '100%',
+                                padding: '6px 10px',
+                                border: '1px solid rgba(12,12,12,0.15)',
+                                borderRadius: '6px',
+                                fontFamily: 'Pretendard',
+                                fontSize: '12px',
+                                outline: 'none',
+                              }}
+                              data-testid="input-sender-search"
+                            />
+                          </div>
+                          <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
+                            {filteredSenderUsers.length === 0 && senderSearchQuery.trim() ? (
+                              <div style={{
+                                padding: '10px 14px',
+                                fontFamily: 'Pretendard',
+                                fontSize: '12px',
+                                color: 'rgba(12,12,12,0.4)',
+                                textAlign: 'center',
+                              }}>
+                                검색 결과 없음
+                              </div>
+                            ) : (
+                              filteredSenderUsers.map((u) => (
+                                <button
+                                  key={u.id}
+                                  onClick={() => {
+                                    setSenderName(u.name);
+                                    setSenderSearchQuery("");
+                                    setShowSenderSearch(false);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '8px 14px',
+                                    border: 'none',
+                                    borderBottom: '1px solid rgba(12,12,12,0.06)',
+                                    background: 'transparent',
+                                    cursor: 'pointer',
+                                    textAlign: 'left',
+                                    fontFamily: 'Pretendard',
+                                    fontSize: '13px',
+                                    color: '#0C0C0C',
+                                  }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = '#F5F7FA')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                  data-testid={`button-sender-user-${u.id}`}
+                                >
+                                  {u.name}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    marginTop: '6px',
+                    fontFamily: 'Pretendard',
+                    fontSize: '12px',
+                    color: 'rgba(12,12,12,0.5)',
+                  }}>
+                    <Mail size={12} color="rgba(12,12,12,0.4)" />
+                    <span>연락처: 070-7778-0925</span>
                   </div>
                 </div>
 

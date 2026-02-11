@@ -12121,6 +12121,7 @@ Front·Line·Ops·Xpert·Net
       name: z.string(),
       phone: z.string().min(10, "유효한 전화번호를 입력해주세요").max(20),
     })).min(1, "수신인을 1명 이상 입력해주세요"),
+    senderName: z.string().optional(),
   });
 
   app.post("/api/send-custom-sms", async (req, res) => {
@@ -12139,7 +12140,8 @@ Front·Line·Ops·Xpert·Net
 
     try {
       const validatedData = sendCustomSmsSchema.parse(req.body);
-      const { subject, content, recipients } = validatedData;
+      const { subject, content, recipients, senderName } = validatedData;
+      const smsText = senderName ? `${content}\n\n발신인: ${senderName}\n연락처: 070-7778-0925` : content;
 
       const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
       const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
@@ -12164,7 +12166,7 @@ Front·Line·Ops·Xpert·Net
             message: {
               to: normalizedTo,
               from: normalizedSender,
-              text: content,
+              text: smsText,
               subject: subject,
               type: "LMS",
             },
