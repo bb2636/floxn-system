@@ -3833,7 +3833,7 @@ export default function AdminSettings() {
                     회사명
                   </span>
                 </div>
-                <div className="px-2 flex-1">
+                <div className="px-2" style={{ width: "80px" }}>
                   <span
                     style={{
                       fontFamily: "Pretendard",
@@ -3872,7 +3872,7 @@ export default function AdminSettings() {
                     직급
                   </span>
                 </div>
-                <div className="px-2" style={{ width: "190px" }}>
+                <div className="px-2" style={{ width: "220px" }}>
                   <span
                     style={{
                       fontFamily: "Pretendard",
@@ -3885,7 +3885,7 @@ export default function AdminSettings() {
                     이메일 주소
                   </span>
                 </div>
-                <div className="px-2" style={{ width: "200px" }}>
+                <div className="px-2" style={{ width: "230px" }}>
                   <span
                     style={{
                       fontFamily: "Pretendard",
@@ -3997,7 +3997,8 @@ export default function AdminSettings() {
                     </span>
                   </div>
                   <div
-                    className="px-2 flex-1 cursor-pointer"
+                    className="px-2 cursor-pointer"
+                    style={{ width: "80px" }}
                     onClick={() => setSelectedUser(user)}
                   >
                     <span
@@ -4048,7 +4049,7 @@ export default function AdminSettings() {
                   </div>
                   <div
                     className="px-2 cursor-pointer"
-                    style={{ width: "190px" }}
+                    style={{ width: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                     onClick={() => setSelectedUser(user)}
                   >
                     <span
@@ -4065,7 +4066,7 @@ export default function AdminSettings() {
                   </div>
                   <div
                     className="px-2 cursor-pointer"
-                    style={{ width: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    style={{ width: "230px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                     onClick={() => setSelectedUser(user)}
                   >
                     <span
