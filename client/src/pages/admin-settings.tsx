@@ -3970,7 +3970,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
@@ -3987,7 +3987,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
@@ -4003,7 +4003,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
@@ -4020,7 +4020,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
@@ -4037,7 +4037,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
@@ -4054,7 +4054,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
@@ -4071,7 +4071,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
@@ -4088,7 +4088,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
@@ -4105,7 +4105,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
@@ -4122,7 +4122,7 @@ export default function AdminSettings() {
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "13px",
                         fontWeight: 400,
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.8)",
