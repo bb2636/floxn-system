@@ -1,18 +1,21 @@
 import { useLocation } from "wouter";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface MenuItem {
   title: string;
   url?: string;
   testId: string;
+  permissionItem?: string;
   children?: { title: string; url: string; testId: string }[];
 }
 
-const menuItems: MenuItem[] = [
+const allMenuItems: MenuItem[] = [
   {
     title: "정산 조회",
     testId: "submenu-settlement-inquiry",
+    permissionItem: "정산조회",
     children: [
       {
         title: "정산 청구",
@@ -30,12 +33,24 @@ const menuItems: MenuItem[] = [
     title: "통계",
     url: "/statistics",
     testId: "submenu-statistics",
+    permissionItem: "통계",
   },
 ];
 
 export function AppSidebarStatistics() {
   const [location, setLocation] = useLocation();
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(["정산 조회"]));
+  const { hasItem, isAdmin, permissions } = usePermissions();
+
+  const menuItems = useMemo(() => {
+    if (isAdmin) return allMenuItems;
+    const categoryPerm = permissions["정산 및 통계"];
+    if (categoryPerm?.enabled) return allMenuItems;
+    return allMenuItems.filter((item) => {
+      if (!item.permissionItem) return true;
+      return hasItem("정산 및 통계", item.permissionItem);
+    });
+  }, [isAdmin, permissions, hasItem]);
 
   const isSettlementActive = location.startsWith("/settlements");
 
