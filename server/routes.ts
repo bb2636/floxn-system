@@ -4468,7 +4468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clone drawing from related case
   app.post("/api/cases/:caseId/clone-drawing", async (req, res) => {
     if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+      return res.status(401).json({ error: "인증되��� 않은 사용자입니다" });
     }
 
     try {
@@ -5435,7 +5435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .json({ error: "이미지 데이터를 찾을 수 없습니다" });
     } catch (error) {
       console.error("[image] Error:", error);
-      res.status(500).json({ error: "이미지 로드 중 오류가 발생했습니다" });
+      res.status(500).json({ error: "이미지 로드 중 오류가 발생o��습니다" });
     }
   });
 
@@ -8784,7 +8784,9 @@ FLOXN`;
           );
 
           // 접수취소 건 제외
-          const activeCases = relatedCases.filter((c: any) => c.status !== "접수취소");
+          const activeCases = relatedCases.filter(
+            (c: any) => c.status !== "접수취소",
+          );
 
           // Fetch documents from all related cases and build mapping
           for (const relatedCase of activeCases) {
@@ -9794,7 +9796,9 @@ FLOXN`;
           );
 
           // 접수취소 건 제외
-          const activeCases = relatedCases.filter((c: any) => c.status !== "접수취소");
+          const activeCases = relatedCases.filter(
+            (c: any) => c.status !== "접수취소",
+          );
 
           // Fetch documents from all related cases and build mapping
           for (const relatedCase of activeCases) {
@@ -12117,10 +12121,14 @@ Front·Line·Ops·Xpert·Net
   const sendCustomSmsSchema = z.object({
     subject: z.string().min(1, "제목을 입력해주세요"),
     content: z.string().min(1, "내용을 입력해주세요"),
-    recipients: z.array(z.object({
-      name: z.string(),
-      phone: z.string().min(10, "유효한 전화번호를 입력해주세요").max(20),
-    })).min(1, "수신인을 1명 이상 입력해주세요"),
+    recipients: z
+      .array(
+        z.object({
+          name: z.string(),
+          phone: z.string().min(10, "유효한 전화번호를 입력해주세요").max(20),
+        }),
+      )
+      .min(1, "수신인을 1명 이상 입력해주세요"),
     senderName: z.string().optional(),
   });
 
@@ -12141,23 +12149,37 @@ Front·Line·Ops·Xpert·Net
     try {
       const validatedData = sendCustomSmsSchema.parse(req.body);
       const { subject, content, recipients, senderName } = validatedData;
-      const smsText = senderName ? `${content}\n\n발신인: ${senderName}\n연락처: 070-7778-0925` : content;
+      const smsText = senderName
+        ? `${content}\n\n발신인: ${senderName}\n연락처: 070-7778-0925`
+        : content;
 
       const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
       const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
       const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
 
       if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
-        return res.status(500).json({ error: "SMS 서비스가 설정되지 않았습니다" });
+        return res
+          .status(500)
+          .json({ error: "SMS 서비스가 설정되지 않았습니다" });
       }
 
       const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
-      const results: { name: string; phone: string; success: boolean; error?: string }[] = [];
+      const results: {
+        name: string;
+        phone: string;
+        success: boolean;
+        error?: string;
+      }[] = [];
 
       for (const recipient of recipients) {
         const normalizedTo = recipient.phone.replace(/[^0-9]/g, "");
         if (normalizedTo.length < 10 || normalizedTo.length > 11) {
-          results.push({ name: recipient.name, phone: recipient.phone, success: false, error: "유효하지 않은 전화번호" });
+          results.push({
+            name: recipient.name,
+            phone: recipient.phone,
+            success: false,
+            error: "유효하지 않은 전화번호",
+          });
           continue;
         }
 
@@ -12177,23 +12199,40 @@ Front·Line·Ops·Xpert·Net
             method: "POST",
             path: "/messages/v4/send",
             headers: {
-              Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+              Authorization: createSolapiAuthHeader(
+                SOLAPI_API_KEY,
+                SOLAPI_API_SECRET,
+              ),
               "Content-Type": "application/json",
               "Content-Length": Buffer.byteLength(body),
             },
             body,
           });
 
-          console.log(`[send-custom-sms] LMS sent to ${normalizedTo} (${recipient.name})`);
-          results.push({ name: recipient.name, phone: recipient.phone, success: true });
+          console.log(
+            `[send-custom-sms] LMS sent to ${normalizedTo} (${recipient.name})`,
+          );
+          results.push({
+            name: recipient.name,
+            phone: recipient.phone,
+            success: true,
+          });
         } catch (err: any) {
-          console.error(`[send-custom-sms] Failed to send to ${normalizedTo}:`, err);
-          results.push({ name: recipient.name, phone: recipient.phone, success: false, error: "발송 실패" });
+          console.error(
+            `[send-custom-sms] Failed to send to ${normalizedTo}:`,
+            err,
+          );
+          results.push({
+            name: recipient.name,
+            phone: recipient.phone,
+            success: false,
+            error: "발송 실패",
+          });
         }
       }
 
-      const successCount = results.filter(r => r.success).length;
-      const failCount = results.filter(r => !r.success).length;
+      const successCount = results.filter((r) => r.success).length;
+      const failCount = results.filter((r) => !r.success).length;
 
       res.json({
         success: failCount === 0,
@@ -12202,7 +12241,12 @@ Front·Line·Ops·Xpert·Net
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다", details: error.errors });
+        return res
+          .status(400)
+          .json({
+            error: "요청 데이터가 올바르지 않습니다",
+            details: error.errors,
+          });
       }
       console.error("[send-custom-sms] Error:", error);
       res.status(500).json({ error: "문자 전송에 실패했습니다" });
@@ -12254,7 +12298,11 @@ Front·Line·Ops·Xpert·Net
       }
 
       if (!recipientPhone) {
-        return res.status(400).json({ error: `${recipientType}의 연락처가 등록되어 있지 않습니다` });
+        return res
+          .status(400)
+          .json({
+            error: `${recipientType}의 연락처가 등록되어 있지 않습니다`,
+          });
       }
 
       const senderName = currentUser.name || "플록슨 담당자";
@@ -12274,17 +12322,25 @@ Front·Line·Ops·Xpert·Net
             const settlement = settlements[0];
             if (settlement.depositEntries) {
               const entries = settlement.depositEntries as any[];
-              const deposited = entries.filter((e: any) => e.depositStatus === "입금" && e.depositAmount > 0);
+              const deposited = entries.filter(
+                (e: any) => e.depositStatus === "입금" && e.depositAmount > 0,
+              );
               if (deposited.length > 0) {
-                const totalDeposit = deposited.reduce((sum: number, e: any) => sum + (Number(e.depositAmount) || 0), 0);
-                const lastDate = deposited.sort((a: any, b: any) => (b.depositDate || "").localeCompare(a.depositDate || ""))[0]?.depositDate || "";
+                const totalDeposit = deposited.reduce(
+                  (sum: number, e: any) => sum + (Number(e.depositAmount) || 0),
+                  0,
+                );
+                const lastDate =
+                  deposited.sort((a: any, b: any) =>
+                    (b.depositDate || "").localeCompare(a.depositDate || ""),
+                  )[0]?.depositDate || "";
                 depositInfo = `${totalDeposit.toLocaleString()}원 (${lastDate})`;
               }
             }
           }
         } catch {}
 
-        messageText = `[중복보험 일부금 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건과 관련하여 중복보험 일부만 입금된 것으로 확인되어 안내드립니다.\n\n손해업체와의 원활한 업무 진행을 위해, 미지급 금액에 대한 신속한 지급을 요청드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 청구금액: ${caseData.estimateAmount || ""}\n▷ 입금금액: ${depositInfo}\n\n※ 관련 문의사항은 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시면 재 안내드리겠습니다.\n\n감사합니다.`;
+        messageText = `[중복보험 일부금 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건과 관련하여 중복보험금 일부만 입금된 것으로 확인되어 안내드립니다.\n\n협력업체와의 원활한 업무 진행을 위해, 미지급 금액에 대한 신속한 지급을 요청드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 청구금액: ${caseData.estimateAmount || ""}\n▷ 입금금액: ${depositInfo}\n\n※ 관련 문의사항은 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시면 재 안내드리겠습니다.\n\n감사합니다.`;
       }
 
       // Send LMS via Solapi
@@ -12293,14 +12349,18 @@ Front·Line·Ops·Xpert·Net
       const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
 
       if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
-        return res.status(500).json({ error: "SMS 서비스가 설정되지 않았습니다" });
+        return res
+          .status(500)
+          .json({ error: "SMS 서비스가 설정되지 않았습니다" });
       }
 
       const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
       const normalizedTo = recipientPhone.replace(/[^0-9]/g, "");
 
       if (normalizedTo.length < 10 || normalizedTo.length > 11) {
-        return res.status(400).json({ error: "유효하지 않은 수신자 전화번호입니다" });
+        return res
+          .status(400)
+          .json({ error: "유효하지 않은 수신자 전화번호입니다" });
       }
 
       const payload = {
@@ -12318,14 +12378,19 @@ Front·Line·Ops·Xpert·Net
         method: "POST",
         path: "/messages/v4/send",
         headers: {
-          Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+          Authorization: createSolapiAuthHeader(
+            SOLAPI_API_KEY,
+            SOLAPI_API_SECRET,
+          ),
           "Content-Type": "application/json",
           "Content-Length": Buffer.byteLength(body),
         },
         body,
       });
 
-      console.log(`[send-case-lms] LMS sent to ${normalizedTo} (${recipientName}) for case ${caseId}`);
+      console.log(
+        `[send-case-lms] LMS sent to ${normalizedTo} (${recipientName}) for case ${caseId}`,
+      );
 
       // Record LMS send history
       const now = new Date();
@@ -12359,7 +12424,9 @@ Front·Line·Ops·Xpert·Net
       res.json({ success: true, message: "LMS 발송 완료", entry: newEntry });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다" });
+        return res
+          .status(400)
+          .json({ error: "요청 데이터가 올바르지 않습니다" });
       }
       console.error("[send-case-lms] Error:", error);
       res.status(500).json({ error: "LMS 발송에 실패했습니다" });
@@ -12837,26 +12904,46 @@ https://www.floxn.co.kr/
 취소 사유 : ${cancelReason || "-"}`;
       } else if (stage === "종결") {
         const settlements = await storage.getSettlementsByCaseId(caseId);
-        const latestSettlement = settlements && settlements.length > 0 ? settlements[0] : null;
-        
+        const latestSettlement =
+          settlements && settlements.length > 0 ? settlements[0] : null;
+
         let paymentAmountNum = 0;
         let commissionNum = 0;
-        
-        if (latestSettlement?.paymentEntries && Array.isArray(latestSettlement.paymentEntries)) {
-          const entries = latestSettlement.paymentEntries as Array<{ paymentAmount?: number; commission?: number }>;
-          paymentAmountNum = entries.reduce((sum, e) => sum + (Number(e.paymentAmount) || 0), 0);
-          commissionNum = entries.reduce((sum, e) => sum + (Number(e.commission) || 0), 0);
+
+        if (
+          latestSettlement?.paymentEntries &&
+          Array.isArray(latestSettlement.paymentEntries)
+        ) {
+          const entries = latestSettlement.paymentEntries as Array<{
+            paymentAmount?: number;
+            commission?: number;
+          }>;
+          paymentAmountNum = entries.reduce(
+            (sum, e) => sum + (Number(e.paymentAmount) || 0),
+            0,
+          );
+          commissionNum = entries.reduce(
+            (sum, e) => sum + (Number(e.commission) || 0),
+            0,
+          );
         } else {
-          paymentAmountNum = latestSettlement?.partnerPaymentAmount ? Number(latestSettlement.partnerPaymentAmount) : 0;
-          commissionNum = latestSettlement?.commission ? Number(latestSettlement.commission) : 0;
+          paymentAmountNum = latestSettlement?.partnerPaymentAmount
+            ? Number(latestSettlement.partnerPaymentAmount)
+            : 0;
+          commissionNum = latestSettlement?.commission
+            ? Number(latestSettlement.commission)
+            : 0;
         }
-        
+
         const totalAmountNum = paymentAmountNum + commissionNum;
-        
-        const paymentAmountStr = paymentAmountNum > 0 ? paymentAmountNum.toLocaleString() : "-";
-        const commissionStr = commissionNum > 0 ? commissionNum.toLocaleString() : "-";
-        const totalAmountStr = totalAmountNum > 0 ? totalAmountNum.toLocaleString() : "-";
-        
+
+        const paymentAmountStr =
+          paymentAmountNum > 0 ? paymentAmountNum.toLocaleString() : "-";
+        const commissionStr =
+          commissionNum > 0 ? commissionNum.toLocaleString() : "-";
+        const totalAmountStr =
+          totalAmountNum > 0 ? totalAmountNum.toLocaleString() : "-";
+
         subject = "지급 알림";
         messageText = `<지급 알림>
 
@@ -13396,12 +13483,15 @@ https://www.floxn.co.kr/
       const reasonCellWidth = tableWidth - col1Width - 10; // 셀 내부 패딩 고려
       const reasonFontSize = 10;
       const reasonLines: string[] = [];
-      
+
       // 폰트 너비 기준으로 줄바꿈 계산
       let currentLine = "";
       for (const char of reasonText) {
         const testLine = currentLine + char;
-        const testWidth = customFont.widthOfTextAtSize(testLine, reasonFontSize);
+        const testWidth = customFont.widthOfTextAtSize(
+          testLine,
+          reasonFontSize,
+        );
         if (testWidth > reasonCellWidth) {
           if (currentLine) {
             reasonLines.push(currentLine);
@@ -13489,7 +13579,7 @@ https://www.floxn.co.kr/
       const footerY = yPos - 30;
       const lineStartX = margin + 50;
       const lineEndX = width - margin - 50;
-      
+
       // 가로선
       page.drawLine({
         start: { x: lineStartX, y: footerY },
@@ -13497,7 +13587,7 @@ https://www.floxn.co.kr/
         thickness: 1,
         color: rgb(0, 0, 0),
       });
-      
+
       // FLOXN., Inc 텍스트 (중앙 정렬)
       const footerText = "FLOXN., Inc";
       const footerTextWidth = customFont.widthOfTextAtSize(footerText, 10);
@@ -13581,7 +13671,11 @@ FLOXN`;
       }> = [];
 
       // PDF 첨부 - 파일명: [FLOXN] 접수취소- 사고번호 (사고번호 없으면 증권번호)
-      const filenameId = (caseData.insuranceAccidentNo || caseData.insurancePolicyNo || "unknown").replace(/[^a-zA-Z0-9가-힣-]/g, "_");
+      const filenameId = (
+        caseData.insuranceAccidentNo ||
+        caseData.insurancePolicyNo ||
+        "unknown"
+      ).replace(/[^a-zA-Z0-9가-힣-]/g, "_");
       const pdfFilename = `[FLOXN] 접수취소- ${filenameId}.pdf`;
       attachments.push({
         filename: pdfFilename,
