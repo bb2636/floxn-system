@@ -31,7 +31,7 @@ export function AccessControlPanel() {
   const [selectedRole, setSelectedRole] = useState<string>("협력사");
   const [selectedAdminId, setSelectedAdminId] = useState<string>("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(["현장조사", "통계 및 정산", "관리자 설정"])
+    new Set(["현장조사", "종합진행관리", "통계 및 정산", "관리자 설정"])
   );
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>({});
 

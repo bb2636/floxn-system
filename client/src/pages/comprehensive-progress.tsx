@@ -20,6 +20,7 @@ import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { GlobalHeader } from "@/components/global-header";
 import IntakePage from "@/pages/intake";
 import { useForm } from "react-hook-form";
@@ -246,6 +247,9 @@ export default function ComprehensiveProgress() {
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
   });
+
+  const { hasItem } = usePermissions();
+  const canDeleteCases = hasItem("종합진행관리", "접수건 삭제 권한");
 
   const { data: cases, isLoading } = useQuery<CaseWithLatestProgress[]>({
     queryKey: ["/api/cases"],
@@ -1294,7 +1298,7 @@ export default function ComprehensiveProgress() {
               {totalCount}
             </span>
           </div>
-          {user?.role === "관리자" && selectedCaseIds.length > 0 && (
+          {canDeleteCases && selectedCaseIds.length > 0 && (
             <Button
               variant="destructive"
               size="sm"
@@ -1333,7 +1337,7 @@ export default function ComprehensiveProgress() {
                 gap: "8px",
               }}
             >
-              {user?.role === "관리자" && (
+              {canDeleteCases && (
                 <div
                   style={{
                     display: "flex",
@@ -1357,7 +1361,7 @@ export default function ComprehensiveProgress() {
                   />
                 </div>
               )}
-              {user?.role !== "관리자" && <div style={{ width: "40px" }} />}
+              {!canDeleteCases && <div style={{ width: "40px" }} />}
               <div
                 style={{
                   fontFamily: "Pretendard",
@@ -1607,7 +1611,7 @@ export default function ComprehensiveProgress() {
                     }}
                     data-testid={`case-row-${caseItem.id}`}
                   >
-                    {user?.role === "관리자" && (
+                    {canDeleteCases && (
                       <div
                         style={{
                           display: "flex",
@@ -1634,7 +1638,7 @@ export default function ComprehensiveProgress() {
                         />
                       </div>
                     )}
-                    {user?.role !== "관리자" && (
+                    {!canDeleteCases && (
                       <div style={{ width: "40px" }} />
                     )}
                     <div

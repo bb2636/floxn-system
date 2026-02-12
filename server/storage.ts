@@ -2828,7 +2828,7 @@ export class DbStorage implements IStorage {
     const fullPermissions = {
       "홈": { enabled: true, items: {} },
       "새로운접수": { enabled: true, items: {} },
-      "종합진행관리": { enabled: true, items: {} },
+      "종합진행관리": { enabled: true, items: { "접수건 삭제 권한": true } },
       "정산 및 통계": { enabled: true, items: {} },
       "관리자 설정": { enabled: true, items: {} }
     };
