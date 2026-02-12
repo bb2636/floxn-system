@@ -1705,8 +1705,7 @@ export function InvoiceManagementPopup({
               </div>
             </div>
 
-            {/* Section 3: 입금관리 - visible after invoice approval */}
-            {isInvoiceApproved && (
+            {/* Section 3: 입금관리 */}
               <div style={{ overflow: "hidden" }}>
                 <div
                   className="flex items-center justify-between"
@@ -2132,10 +2131,8 @@ export function InvoiceManagementPopup({
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* Section 4: 지급일자 - visible after invoice approval */}
-            {isInvoiceApproved && (
+            {/* Section 4: 지급일자 */}
               <div style={{ overflow: "hidden" }}>
                 <div
                   className="flex items-center justify-between"
@@ -2553,7 +2550,6 @@ export function InvoiceManagementPopup({
                   </div>
                 </div>
               </div>
-            )}
           </div>
         </div>
 
@@ -2641,26 +2637,7 @@ export function InvoiceManagementPopup({
           </div>
 
           <div className="flex items-center gap-3">
-            {!isInvoiceApproved && canApproveInvoice && (
-              <Button
-                onClick={() => setShowApprovalConfirm(true)}
-                disabled={isSubmitting}
-                data-testid="button-confirm-invoice"
-                style={{
-                  padding: "10px 20px",
-                  height: "40px",
-                  background: "#008FED",
-                  borderRadius: "6px",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  color: "#FDFDFD",
-                }}
-              >
-                {isSubmitting ? "처리중..." : "인보이스 확인"}
-              </Button>
-            )}
-
-            {isInvoiceApproved && isAdmin && (
+            {isAdmin && (
               <Button
                 onClick={() => {
                   if (invoiceIssued && closingProcessDate) {
