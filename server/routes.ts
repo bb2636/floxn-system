@@ -12328,7 +12328,8 @@ Front·Line·Ops·Xpert·Net
         const caseNumber = caseData.caseNumber || "";
         const prefix = caseNumber.replace(/-\d+$/, "");
         const relatedCases = await storage.getCasesByPrefix(prefix);
-        const allCasesInGroup = relatedCases.length > 0 ? relatedCases : [caseData];
+        const filteredCases = relatedCases.filter((c: any) => c.status !== "접수취소");
+        const allCasesInGroup = filteredCases.length > 0 ? filteredCases : [caseData];
 
         const hasDirectRepair = allCasesInGroup.some((c: any) => c.recoveryType === "직접복구");
         const allNoRepair = allCasesInGroup.every((c: any) => c.recoveryType === "선견적요청");
