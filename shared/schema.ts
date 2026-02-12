@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   accountHolder: text("account_holder"),
   serviceRegions: text("service_regions").array(),
   attachments: text("attachments").array(),
+  accountType: text("account_type").default("개인"), // "개인" | "회사"
   status: text("status").notNull().default("active"), // "active" | "deleted"
   mustChangePassword: boolean("must_change_password").notNull().default(true), // 최초 로그인 시 비밀번호 변경 필요 여부
   createdAt: text("created_at").notNull(),
@@ -104,11 +105,13 @@ export const createAccountSchema = z.object({
   accountHolder: z.string().optional(),
   serviceRegions: z.array(z.string()).optional(),
   attachments: z.array(z.string()).optional(),
+  accountType: z.enum(["개인", "회사"]).optional().default("개인"),
 });
 
 export const updateUserSchema = z.object({
   name: z.string().min(1, "이름을 입력해주세요").optional(),
   role: z.enum(VALID_ROLES).optional(),
+  accountType: z.enum(["개인", "회사"]).optional().nullable(),
   department: z.string().optional().nullable(),
   position: z.string().optional().nullable(),
   email: z.string().email("올바른 이메일 주소를 입력해주세요").optional().or(z.literal("")).nullable(),

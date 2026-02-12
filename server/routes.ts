@@ -886,6 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accountHolder: validatedData.accountHolder,
         serviceRegions: validatedData.serviceRegions,
         attachments: validatedData.attachments,
+        accountType: validatedData.accountType || "개인",
         status: "active",
       });
 

@@ -431,6 +431,7 @@ export default function AdminSettings() {
   const [viewingNotice, setViewingNotice] = useState<Notice | null>(null);
   const [createAccountForm, setCreateAccountForm] = useState({
     role: "보험사",
+    accountType: "개인" as "개인" | "회사",
     name: "",
     company: "",
     department: "",
@@ -4658,6 +4659,22 @@ export default function AdminSettings() {
                   >
                     {selectedUser.role}
                   </span>
+                  {selectedUser.accountType && (
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                        background: selectedUser.accountType === "회사" ? "rgba(0, 143, 237, 0.1)" : "rgba(12, 12, 12, 0.06)",
+                        color: selectedUser.accountType === "회사" ? "#008FED" : "rgba(12, 12, 12, 0.6)",
+                      }}
+                      data-testid="badge-account-type"
+                    >
+                      {selectedUser.accountType}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-6">
@@ -4925,6 +4942,56 @@ export default function AdminSettings() {
                           }}
                         >
                           {selectedUser.role}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        구분
+                      </span>
+                      {isEditMode ? (
+                        <div className="flex items-center gap-3" style={{ height: "36px" }}>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="editAccountType"
+                              checked={(editedUserData.accountType || selectedUser.accountType || "개인") === "개인"}
+                              onChange={() => setEditedUserData({ ...editedUserData, accountType: "개인" })}
+                              style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
+                              data-testid="radio-edit-account-type-individual"
+                            />
+                            <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.8)" }}>개인</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="editAccountType"
+                              checked={(editedUserData.accountType || selectedUser.accountType || "개인") === "회사"}
+                              onChange={() => setEditedUserData({ ...editedUserData, accountType: "회사" })}
+                              style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
+                              data-testid="radio-edit-account-type-company"
+                            />
+                            <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.8)" }}>회사</span>
+                          </label>
+                        </div>
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.accountType || "개인"}
                         </span>
                       )}
                     </div>
@@ -6835,44 +6902,104 @@ export default function AdminSettings() {
                 >
                   역할
                 </label>
-                <div className="relative" style={{ width: "97px" }}>
-                  <select
-                    value={createAccountForm.role}
-                    onChange={(e) =>
-                      setCreateAccountForm({
-                        ...createAccountForm,
-                        role: e.target.value,
-                      })
-                    }
-                    className="flex items-center justify-center px-4 pr-8 appearance-none cursor-pointer"
-                    style={{
-                      width: "100%",
-                      height: "46px",
-                      background: "rgba(255, 255, 255, 0.04)",
-                      border: "1px solid rgba(12, 12, 12, 0.3)",
-                      boxShadow:
-                        "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
-                      backdropFilter: "blur(7px)",
-                      borderRadius: "6px",
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 500,
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.9)",
-                    }}
-                    data-testid="select-role"
-                  >
-                    {VALID_ROLES.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    size={22}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: "rgba(12, 12, 12, 0.6)" }}
-                  />
+                <div className="flex items-center gap-4">
+                  <div className="relative" style={{ width: "97px" }}>
+                    <select
+                      value={createAccountForm.role}
+                      onChange={(e) =>
+                        setCreateAccountForm({
+                          ...createAccountForm,
+                          role: e.target.value,
+                        })
+                      }
+                      className="flex items-center justify-center px-4 pr-8 appearance-none cursor-pointer"
+                      style={{
+                        width: "100%",
+                        height: "46px",
+                        background: "rgba(255, 255, 255, 0.04)",
+                        border: "1px solid rgba(12, 12, 12, 0.3)",
+                        boxShadow:
+                          "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
+                        backdropFilter: "blur(7px)",
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 500,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                      data-testid="select-role"
+                    >
+                      {VALID_ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={22}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ color: "rgba(12, 12, 12, 0.6)" }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label
+                      className="flex items-center gap-1.5 cursor-pointer"
+                      data-testid="label-account-type-individual"
+                    >
+                      <input
+                        type="radio"
+                        name="accountType"
+                        checked={createAccountForm.accountType === "개인"}
+                        onChange={() =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            accountType: "개인",
+                          })
+                        }
+                        style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
+                        data-testid="radio-account-type-individual"
+                      />
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "15px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
+                        개인
+                      </span>
+                    </label>
+                    <label
+                      className="flex items-center gap-1.5 cursor-pointer"
+                      data-testid="label-account-type-company"
+                    >
+                      <input
+                        type="radio"
+                        name="accountType"
+                        checked={createAccountForm.accountType === "회사"}
+                        onChange={() =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            accountType: "회사",
+                          })
+                        }
+                        style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
+                        data-testid="radio-account-type-company"
+                      />
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "15px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
+                        회사
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -8033,6 +8160,7 @@ export default function AdminSettings() {
                 onClick={() => {
                   setCreateAccountForm({
                     role: "보험사",
+                    accountType: "개인",
                     name: "",
                     company: "",
                     department: "",
@@ -8608,6 +8736,7 @@ export default function AdminSettings() {
                       setGeneratedPassword("0000");
                       setCreateAccountForm({
                         role: "보험사",
+                        accountType: "개인",
                         name: "",
                         company: "",
                         department: "",
@@ -8795,6 +8924,7 @@ export default function AdminSettings() {
                     setGeneratedPassword("0000");
                     setCreateAccountForm({
                       role: "보험사",
+                      accountType: "개인",
                       name: "",
                       company: "",
                       department: "",
