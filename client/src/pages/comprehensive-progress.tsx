@@ -198,11 +198,15 @@ export default function ComprehensiveProgress() {
 
   // 접수취소 확인 다이얼로그 상태
   const [cancelConfirmDialogOpen, setCancelConfirmDialogOpen] = useState(false);
-  const [cancelTargetCase, setCancelTargetCase] = useState<CaseWithLatestProgress | null>(null);
+  const [cancelTargetCase, setCancelTargetCase] =
+    useState<CaseWithLatestProgress | null>(null);
 
   // 상태 변경 확인 다이얼로그 상태
   const [statusChangeDialogOpen, setStatusChangeDialogOpen] = useState(false);
-  const [statusChangeTarget, setStatusChangeTarget] = useState<{ caseId: string; status: string } | null>(null);
+  const [statusChangeTarget, setStatusChangeTarget] = useState<{
+    caseId: string;
+    status: string;
+  } | null>(null);
 
   // 청구하기 버튼 표시 조건: 연관된 모든 케이스가 "청구" 상태인 경우에만 버튼 표시
   // (접수취소 건은 종결된 건으로 간주하여 제외)
@@ -489,12 +493,16 @@ export default function ComprehensiveProgress() {
       ) => {
         try {
           const recipients = STAGE_RECIPIENT_DEFAULTS[stage];
-          
+
           // recipients가 모두 false인 경우 API 호출하지 않음
-          if (!recipients.partner && !recipients.manager && !recipients.assessorInvestigator) {
+          if (
+            !recipients.partner &&
+            !recipients.manager &&
+            !recipients.assessorInvestigator
+          ) {
             return;
           }
-          
+
           const payload: {
             caseId: string;
             stage: NotificationStage;
@@ -527,9 +535,7 @@ export default function ComprehensiveProgress() {
       };
 
       // 추가 정보 입력이 필요한 상태 (취소 사유 등)
-      const stagesRequiringDialog: NotificationStage[] = [
-        "접수취소",
-      ];
+      const stagesRequiringDialog: NotificationStage[] = ["접수취소"];
 
       // 미복구 선택 시 자동 전환 알림 (백엔드에서 출동비 청구로 변경됨)
       if (variables.status === "미복구") {
@@ -886,7 +892,7 @@ export default function ComprehensiveProgress() {
 
     // 접수취소인 경우 확인 팝업 먼저 표시
     if (targetStatus === "접수취소") {
-      const targetCase = cases?.find(c => c.id === caseId);
+      const targetCase = cases?.find((c) => c.id === caseId);
       if (targetCase) {
         setCancelTargetCase(targetCase);
         setCancelConfirmDialogOpen(true);
@@ -1776,7 +1782,14 @@ export default function ComprehensiveProgress() {
                           >
                             {(user?.role === "협력사"
                               ? PARTNER_ALLOWED_STATUSES
-                              : (["반려", "직접복구", "선견적요청", "청구", "종결", "접수취소"] as const)
+                              : ([
+                                  "반려",
+                                  "직접복구",
+                                  "선견적요청",
+                                  "청구",
+                                  "종결",
+                                  "접수취소",
+                                ] as const)
                             ).map((status) => (
                               <DropdownMenuItem
                                 key={status}
@@ -2076,7 +2089,7 @@ export default function ComprehensiveProgress() {
                       padding: "0 20px",
                     }}
                   >
-                    {["기본정보", "일자", "진행단계", "특이사항"].map((tab) => (
+                    {["기본정보", "일자", "진행단계", "진행메모"].map((tab) => (
                       <button
                         key={tab}
                         onClick={() => setDetailTab(tab)}
@@ -2576,7 +2589,7 @@ export default function ComprehensiveProgress() {
                         </div>
                       )}
 
-                      {/* 진행단계 탭 */}
+                      {/* 진행메모 탭 */}
                       {detailTab === "진행단계" && (
                         <div
                           style={{
@@ -2630,8 +2643,8 @@ export default function ComprehensiveProgress() {
                         </div>
                       )}
 
-                      {/* 특이사항 탭 */}
-                      {detailTab === "특이사항" && (
+                      {/* 진행메모 탭 */}
+                      {detailTab === "진행메모" && (
                         <div
                           style={{
                             display: "flex",
@@ -2671,7 +2684,7 @@ export default function ComprehensiveProgress() {
                                   color: "rgba(12, 12, 12, 0.9)",
                                 }}
                               >
-                                협력사 특이사항
+                                협력사 진행메모
                               </div>
                             </div>
 
@@ -2706,7 +2719,7 @@ export default function ComprehensiveProgress() {
                                         color: "rgba(12, 12, 12, 0.5)",
                                       }}
                                     >
-                                      협력사가 입력한 특이사항이 없습니다.
+                                      협력사가 입력한 진행메모가 없습니다.
                                     </div>
                                   );
                                 }
@@ -2940,7 +2953,7 @@ export default function ComprehensiveProgress() {
                                   color: "rgba(12, 12, 12, 0.9)",
                                 }}
                               >
-                                관리자 특이사항
+                                관리자 진행메모
                               </div>
                             </div>
 
@@ -2971,7 +2984,7 @@ export default function ComprehensiveProgress() {
                                         color: "rgba(12, 12, 12, 0.5)",
                                       }}
                                     >
-                                      관리자가 입력한 특이사항이 없습니다.
+                                      관리자가 입력한 진행메모가 없습니다.
                                     </div>
                                   );
                                 }
@@ -3091,7 +3104,7 @@ export default function ComprehensiveProgress() {
                                   data-testid="button-save-admin-notes"
                                 >
                                   {addNotesHistoryMutation.isPending
-                                    ? "저장 중..."
+                                    ? "저장중..."
                                     : "저장"}
                                 </button>
                               </div>
@@ -3482,7 +3495,9 @@ export default function ComprehensiveProgress() {
           );
           return invoiceCasePrefix
             ? cases?.filter(
-                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix && c.status !== "접수취소",
+                (c) =>
+                  getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix &&
+                  c.status !== "접수취소",
               ) || []
             : invoiceCase && invoiceCase.status !== "접수취소"
               ? [invoiceCase]
@@ -3501,7 +3516,9 @@ export default function ComprehensiveProgress() {
           );
           return invoiceCasePrefix
             ? cases?.filter(
-                (c) => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix && c.status !== "접수취소",
+                (c) =>
+                  getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix &&
+                  c.status !== "접수취소",
               ) || []
             : invoiceCase && invoiceCase.status !== "접수취소"
               ? [invoiceCase]
@@ -3523,12 +3540,24 @@ export default function ComprehensiveProgress() {
       )}
 
       {/* 상태 변경 확인 다이얼로그 */}
-      <AlertDialog open={statusChangeDialogOpen} onOpenChange={setStatusChangeDialogOpen}>
+      <AlertDialog
+        open={statusChangeDialogOpen}
+        onOpenChange={setStatusChangeDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>상태 변경 확인</AlertDialogTitle>
             <AlertDialogDescription>
-              상태를 <span style={{ fontWeight: 700, color: getStatusColor(statusChangeTarget?.status || "") }}>"{statusChangeTarget?.status}"</span>(으)로 변경하시겠습니까?
+              상태를{" "}
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: getStatusColor(statusChangeTarget?.status || ""),
+                }}
+              >
+                "{statusChangeTarget?.status}"
+              </span>
+              (으)로 변경하시겠습니까?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -3545,7 +3574,10 @@ export default function ComprehensiveProgress() {
               onClick={() => {
                 if (statusChangeTarget) {
                   setStatusChangeDialogOpen(false);
-                  updateStatusMutation.mutate({ caseId: statusChangeTarget.caseId, status: statusChangeTarget.status });
+                  updateStatusMutation.mutate({
+                    caseId: statusChangeTarget.caseId,
+                    status: statusChangeTarget.status,
+                  });
                   setStatusChangeTarget(null);
                 }
               }}
@@ -3558,12 +3590,17 @@ export default function ComprehensiveProgress() {
       </AlertDialog>
 
       {/* 접수취소 확인 다이얼로그 */}
-      <AlertDialog open={cancelConfirmDialogOpen} onOpenChange={setCancelConfirmDialogOpen}>
+      <AlertDialog
+        open={cancelConfirmDialogOpen}
+        onOpenChange={setCancelConfirmDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>접수 취소 확인</AlertDialogTitle>
             <AlertDialogDescription>
-              [{cancelTargetCase?.accidentNumber || cancelTargetCase?.caseNumber}] 건을 접수 취소 하시겠습니까?
+              [
+              {cancelTargetCase?.accidentNumber || cancelTargetCase?.caseNumber}
+              ] 건을 접수 취소 하시겠습니까?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -3582,7 +3619,10 @@ export default function ComprehensiveProgress() {
                   // 확인 다이얼로그 닫기
                   setCancelConfirmDialogOpen(false);
                   // 상태를 접수취소로 변경 (onSuccess에서 자동으로 사유 입력 다이얼로그 표시)
-                  updateStatusMutation.mutate({ caseId: cancelTargetCase.id, status: "접수취소" });
+                  updateStatusMutation.mutate({
+                    caseId: cancelTargetCase.id,
+                    status: "접수취소",
+                  });
                   setCancelTargetCase(null);
                 }
               }}
