@@ -111,6 +111,11 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
     useState<CaseWithLatestProgress[]>([]);
   const [selectedCommission, setSelectedCommission] = useState<number>(0);
   const [selectedClaimAmount, setSelectedClaimAmount] = useState<number>(0);
+
+  const { data: currentUser } = useQuery<User>({
+    queryKey: ["/api/user"],
+  });
+  const isPartner = currentUser?.role === "협력사";
   const [selectedEstimateData, setSelectedEstimateData] = useState<{
     preventionEstimate: number;
     preventionApproved: number;
@@ -1262,7 +1267,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           >
             <thead style={{ position: "sticky", top: 0, zIndex: 20 }}>
               <tr style={{ background: "rgba(240, 240, 240, 1)" }}>
-                {["보험사", "증권번호", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체", "청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", "관리"].map((label, idx) => (
+                {["보험사", "증권번호", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체", "청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", ...(isPartner ? [] : ["관리"])].map((label, idx, arr) => (
                   <th
                     key={label}
                     style={{
@@ -1272,7 +1277,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                       fontWeight: 600,
                       color: "rgba(12, 12, 12, 0.8)",
                       borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                      borderRight: idx < 15 ? "1px solid rgba(12, 12, 12, 0.08)" : "none",
+                      borderRight: idx < arr.length - 1 ? "1px solid rgba(12, 12, 12, 0.08)" : "none",
                       textAlign: "center",
                       whiteSpace: "nowrap",
                     }}
@@ -1286,7 +1291,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={16}
+                    colSpan={isPartner ? 15 : 16}
                     style={{
                       padding: "48px",
                       textAlign: "center",
@@ -1301,7 +1306,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
               ) : filteredRows.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={16}
+                    colSpan={isPartner ? 15 : 16}
                     style={{
                       padding: "48px",
                       textAlign: "center",
@@ -1370,26 +1375,28 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                       <td style={amountStyle}>{renderAmount(row.settlementDeposit)}</td>
                       <td style={amountStyle}>{renderAmount(row.partnerPaymentAmount)}</td>
                       <td style={amountStyle}>{renderAmount(row.settlementCommission)}</td>
-                      <td style={cellStyle}>{row.settlementInvoiceDate}</td>
-                      <td style={{ ...cellStyle, borderRight: "none" }}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenManagement(row);
-                          }}
-                          data-testid={`button-management-${row.id}`}
-                          style={{
-                            padding: "4px 12px",
-                            height: "28px",
-                            fontSize: "12px",
-                            fontFamily: "Pretendard",
-                          }}
-                        >
-                          관리
-                        </Button>
-                      </td>
+                      <td style={{ ...cellStyle, borderRight: isPartner ? "none" : cellStyle.borderRight }}>{row.settlementInvoiceDate}</td>
+                      {!isPartner && (
+                        <td style={{ ...cellStyle, borderRight: "none" }}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenManagement(row);
+                            }}
+                            data-testid={`button-management-${row.id}`}
+                            style={{
+                              padding: "4px 12px",
+                              height: "28px",
+                              fontSize: "12px",
+                              fontFamily: "Pretendard",
+                            }}
+                          >
+                            관리
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
