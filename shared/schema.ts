@@ -300,6 +300,7 @@ export const cases = pgTable("cases", {
   invoiceConfirmDate: text("invoice_confirm_date"), // 인보이스 확인 날짜 (승인 권한자가 확인한 날짜)
   taxInvoiceConfirmDate: text("tax_invoice_confirm_date"), // 세금계산서 확인 날짜
   invoicePdfGenerated: text("invoice_pdf_generated"), // 청구 PDF 다운로드/발송 기록 (타임스탬프)
+  lmsSendHistory: text("lms_send_history"), // LMS 발송 이력 (JSON 배열)
   
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
@@ -854,6 +855,18 @@ export interface DepositEntryData {
   depositAmount: number;
   memo: string;
   depositCategory?: string;
+}
+
+// LMS 발송 이력 타입 정의
+export interface LmsSendEntry {
+  id: string;
+  sentAt: string;
+  messageType: string;
+  recipientType: string;
+  recipientCompany: string;
+  recipientName: string;
+  recipientPhone: string;
+  senderName: string;
 }
 
 // 지급내역 타입 정의

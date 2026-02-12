@@ -12210,6 +12210,163 @@ Front·Line·Ops·Xpert·Net
   });
 
   // ==========================================
+  // POST /api/cases/:id/send-lms - 진행관리 LMS 발송
+  // ==========================================
+  const sendCaseLmsSchema = z.object({
+    messageType: z.enum(["청구금액 독촉", "중복보험 일부금 독촉"]),
+    recipientType: z.enum(["심사자", "조사자"]),
+  });
+
+  app.post("/api/cases/:id/send-lms", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const currentUser = await storage.getUser(req.session.userId);
+    if (!currentUser) {
+      return res.status(401).json({ error: "사용자를 찾을 수 없습니다" });
+    }
+
+    if (currentUser.role !== "관리자") {
+      return res.status(403).json({ error: "LMS 발송 권한이 없습니다" });
+    }
+
+    try {
+      const { messageType, recipientType } = sendCaseLmsSchema.parse(req.body);
+      const caseId = req.params.id;
+      const caseData = await storage.getCase(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      let recipientCompany = "";
+      let recipientName = "";
+      let recipientPhone = "";
+
+      if (recipientType === "심사자") {
+        recipientCompany = caseData.assessorId || "";
+        recipientName = caseData.assessorTeam || "";
+        recipientPhone = caseData.assessorContact || "";
+      } else {
+        recipientCompany = caseData.investigatorTeam || "";
+        recipientName = caseData.investigatorTeamName || "";
+        recipientPhone = caseData.investigatorContact || "";
+      }
+
+      if (!recipientPhone) {
+        return res.status(400).json({ error: `${recipientType}의 연락처가 등록되어 있지 않습니다` });
+      }
+
+      const senderName = currentUser.name || "플록슨 담당자";
+      const senderPhone = currentUser.phone || "070-7778-0925";
+
+      let messageText = "";
+
+      if (messageType === "청구금액 독촉") {
+        const invoiceDate = caseData.firstInvoiceDate || "";
+        messageText = `[청구금액 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건은 복구공사가 이미 완료되었으며, 공사금액 관련 자료는 ${invoiceDate} 이메일로 송부드린 바 있습니다.\n\n현재까지 공사금액 지급이 이루어지지 않아 확인 차 재안내 드리오니 신속한 검토 후 지급을 부탁드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 소재지: ${caseData.insuredAddress || ""}\n▷ 견적금액: ${caseData.estimateAmount || ""}\n\n※ 문의사항이 있으신 경우 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시기 바랍니다.\n\n감사합니다.`;
+      } else {
+        // 중복보험 일부금 독촉
+        let depositInfo = "";
+        try {
+          const settlements = await storage.getSettlementsByCaseId(caseId);
+          if (settlements && settlements.length > 0) {
+            const settlement = settlements[0];
+            if (settlement.depositEntries) {
+              const entries = settlement.depositEntries as any[];
+              const deposited = entries.filter((e: any) => e.depositStatus === "입금" && e.depositAmount > 0);
+              if (deposited.length > 0) {
+                const totalDeposit = deposited.reduce((sum: number, e: any) => sum + (Number(e.depositAmount) || 0), 0);
+                const lastDate = deposited.sort((a: any, b: any) => (b.depositDate || "").localeCompare(a.depositDate || ""))[0]?.depositDate || "";
+                depositInfo = `${totalDeposit.toLocaleString()}원 (${lastDate})`;
+              }
+            }
+          }
+        } catch {}
+
+        messageText = `[중복보험 일부금 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건과 관련하여 중복보험 일부만 입금된 것으로 확인되어 안내드립니다.\n\n손해업체와의 원활한 업무 진행을 위해, 미지급 금액에 대한 신속한 지급을 요청드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 청구금액: ${caseData.estimateAmount || ""}\n▷ 입금금액: ${depositInfo}\n\n※ 관련 문의사항은 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시면 재 안내드리겠습니다.\n\n감사합니다.`;
+      }
+
+      // Send LMS via Solapi
+      const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+      const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+      const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+      if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
+        return res.status(500).json({ error: "SMS 서비스가 설정되지 않았습니다" });
+      }
+
+      const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+      const normalizedTo = recipientPhone.replace(/[^0-9]/g, "");
+
+      if (normalizedTo.length < 10 || normalizedTo.length > 11) {
+        return res.status(400).json({ error: "유효하지 않은 수신자 전화번호입니다" });
+      }
+
+      const payload = {
+        message: {
+          to: normalizedTo,
+          from: normalizedSender,
+          text: messageText,
+          subject: messageType,
+          type: "LMS" as const,
+        },
+      };
+      const body = JSON.stringify(payload);
+
+      await solapiHttpsRequest({
+        method: "POST",
+        path: "/messages/v4/send",
+        headers: {
+          Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+        body,
+      });
+
+      console.log(`[send-case-lms] LMS sent to ${normalizedTo} (${recipientName}) for case ${caseId}`);
+
+      // Record LMS send history
+      const now = new Date();
+      const kstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+      const kstString = kstDate.toISOString().slice(0, 10);
+
+      const newEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        sentAt: kstString,
+        messageType,
+        recipientType,
+        recipientCompany,
+        recipientName,
+        recipientPhone,
+        senderName,
+      };
+
+      let history: any[] = [];
+      try {
+        if (caseData.lmsSendHistory) {
+          history = JSON.parse(caseData.lmsSendHistory as string);
+        }
+      } catch {}
+
+      history.unshift(newEntry);
+
+      await storage.updateCase(caseId, {
+        lmsSendHistory: JSON.stringify(history),
+      });
+
+      res.json({ success: true, message: "LMS 발송 완료", entry: newEntry });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다" });
+      }
+      console.error("[send-case-lms] Error:", error);
+      res.status(500).json({ error: "LMS 발송에 실패했습니다" });
+    }
+  });
+
+  // ==========================================
   // POST /api/send-account-notification - 계정 생성 안내 발송 (이메일/SMS)
   // ==========================================
   const accountNotificationSchema = z.object({

@@ -711,6 +711,46 @@ export default function ComprehensiveProgress() {
     },
   });
 
+  // LMS 발송 관련 상태
+  const [lmsMessageType, setLmsMessageType] = useState("");
+  const [lmsRecipientType, setLmsRecipientType] = useState("");
+  const [showLmsConfirmDialog, setShowLmsConfirmDialog] = useState(false);
+
+  const sendLmsMutation = useMutation({
+    mutationFn: async ({
+      caseId,
+      messageType,
+      recipientType,
+    }: {
+      caseId: string;
+      messageType: string;
+      recipientType: string;
+    }) => {
+      return await apiRequest("POST", `/api/cases/${caseId}/send-lms`, {
+        messageType,
+        recipientType,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      setLmsMessageType("");
+      setLmsRecipientType("");
+      setShowLmsConfirmDialog(false);
+      toast({
+        variant: "snackbar",
+        title: "LMS 발송이 완료되었습니다",
+      });
+    },
+    onError: (error: any) => {
+      setShowLmsConfirmDialog(false);
+      toast({
+        title: "LMS 발송 실패",
+        description: error?.message || "LMS 발송 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addProgressMutation = useMutation({
     mutationFn: async ({
       caseId,
@@ -3157,6 +3197,276 @@ export default function ComprehensiveProgress() {
                                 </div>
                               )}
                           </div>
+
+                          {/* 진행관리 LMS 발송 섹션 */}
+                          {user?.role === "관리자" && (
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "12px",
+                                borderTop: "1px solid rgba(12, 12, 12, 0.1)",
+                                paddingTop: "24px",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={true}
+                                  readOnly
+                                  style={{ accentColor: "#008FED", width: "14px", height: "14px" }}
+                                />
+                                <div
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontWeight: 600,
+                                    fontSize: "16px",
+                                    letterSpacing: "-0.02em",
+                                    color: "rgba(12, 12, 12, 0.9)",
+                                  }}
+                                >
+                                  진행관리 LMS 발송
+                                </div>
+                              </div>
+
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "10px",
+                                  padding: "16px",
+                                  background: "rgba(0, 143, 237, 0.04)",
+                                  border: "1px solid rgba(0, 143, 237, 0.1)",
+                                  borderRadius: "8px",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: "8px",
+                                    alignItems: "center",
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontFamily: "Pretendard",
+                                      fontSize: "13px",
+                                      fontWeight: 500,
+                                      color: "rgba(12, 12, 12, 0.6)",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    문자유형
+                                  </div>
+                                  <select
+                                    value={lmsMessageType}
+                                    onChange={(e) => setLmsMessageType(e.target.value)}
+                                    style={{
+                                      flex: 1,
+                                      minWidth: "140px",
+                                      padding: "8px 12px",
+                                      background: "#FFFFFF",
+                                      border: "1px solid rgba(12, 12, 12, 0.15)",
+                                      borderRadius: "6px",
+                                      fontFamily: "Pretendard",
+                                      fontSize: "13px",
+                                      color: lmsMessageType ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.4)",
+                                    }}
+                                    data-testid="select-lms-message-type"
+                                  >
+                                    <option value="">내용을 선택하세요</option>
+                                    <option value="청구금액 독촉">청구금액 독촉</option>
+                                    <option value="중복보험 일부금 독촉">중복보험 일부금 독촉</option>
+                                  </select>
+
+                                  <select
+                                    value={lmsRecipientType}
+                                    onChange={(e) => setLmsRecipientType(e.target.value)}
+                                    style={{
+                                      minWidth: "140px",
+                                      padding: "8px 12px",
+                                      background: "#FFFFFF",
+                                      border: "1px solid rgba(12, 12, 12, 0.15)",
+                                      borderRadius: "6px",
+                                      fontFamily: "Pretendard",
+                                      fontSize: "13px",
+                                      color: lmsRecipientType ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.4)",
+                                    }}
+                                    data-testid="select-lms-recipient-type"
+                                  >
+                                    <option value="">심사자, 조사자 선택</option>
+                                    <option value="심사자">심사자</option>
+                                    <option value="조사자">조사자</option>
+                                  </select>
+                                </div>
+
+                                <div style={{ display: "flex", justifyContent: "center" }}>
+                                  <button
+                                    onClick={() => {
+                                      if (lmsMessageType && lmsRecipientType) {
+                                        setShowLmsConfirmDialog(true);
+                                      }
+                                    }}
+                                    disabled={!lmsMessageType || !lmsRecipientType || sendLmsMutation.isPending}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "6px",
+                                      padding: "8px 20px",
+                                      background: lmsMessageType && lmsRecipientType ? "#008FED" : "rgba(12, 12, 12, 0.15)",
+                                      border: "none",
+                                      borderRadius: "6px",
+                                      fontFamily: "Pretendard",
+                                      fontWeight: 600,
+                                      fontSize: "13px",
+                                      color: lmsMessageType && lmsRecipientType ? "#FFFFFF" : "rgba(12, 12, 12, 0.4)",
+                                      cursor: lmsMessageType && lmsRecipientType ? "pointer" : "not-allowed",
+                                    }}
+                                    data-testid="button-send-lms"
+                                  >
+                                    {sendLmsMutation.isPending ? "발송 중..." : "발송하기"}
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* LMS 발송 이력 테이블 */}
+                              {(() => {
+                                let lmsHistory: any[] = [];
+                                try {
+                                  if (selectedCase.lmsSendHistory) {
+                                    lmsHistory = JSON.parse(selectedCase.lmsSendHistory as string);
+                                    lmsHistory.sort((a: any, b: any) => (b.sentAt || "").localeCompare(a.sentAt || ""));
+                                  }
+                                } catch {}
+
+                                return (
+                                  <div
+                                    style={{
+                                      borderRadius: "8px",
+                                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                                      overflow: "hidden",
+                                      maxHeight: "200px",
+                                      overflowY: "auto",
+                                    }}
+                                  >
+                                    <table
+                                      style={{
+                                        width: "100%",
+                                        borderCollapse: "collapse",
+                                        fontFamily: "Pretendard",
+                                        fontSize: "13px",
+                                      }}
+                                    >
+                                      <thead>
+                                        <tr
+                                          style={{
+                                            background: "rgba(12, 12, 12, 0.04)",
+                                            position: "sticky",
+                                            top: 0,
+                                          }}
+                                        >
+                                          <th
+                                            style={{
+                                              padding: "10px 12px",
+                                              textAlign: "left",
+                                              fontWeight: 600,
+                                              color: "rgba(12, 12, 12, 0.7)",
+                                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                                              whiteSpace: "nowrap",
+                                            }}
+                                          >
+                                            일자
+                                          </th>
+                                          <th
+                                            style={{
+                                              padding: "10px 12px",
+                                              textAlign: "left",
+                                              fontWeight: 600,
+                                              color: "rgba(12, 12, 12, 0.7)",
+                                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                                              whiteSpace: "nowrap",
+                                            }}
+                                          >
+                                            발송유형
+                                          </th>
+                                          <th
+                                            style={{
+                                              padding: "10px 12px",
+                                              textAlign: "left",
+                                              fontWeight: 600,
+                                              color: "rgba(12, 12, 12, 0.7)",
+                                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                                              whiteSpace: "nowrap",
+                                            }}
+                                          >
+                                            수신자
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {lmsHistory.length === 0 ? (
+                                          <tr>
+                                            <td
+                                              colSpan={3}
+                                              style={{
+                                                padding: "20px 12px",
+                                                textAlign: "center",
+                                                color: "rgba(12, 12, 12, 0.4)",
+                                              }}
+                                            >
+                                              발송 이력이 없습니다
+                                            </td>
+                                          </tr>
+                                        ) : (
+                                          lmsHistory.map((entry: any, idx: number) => (
+                                            <tr
+                                              key={entry.id || idx}
+                                              style={{
+                                                borderBottom: idx < lmsHistory.length - 1 ? "1px solid rgba(12, 12, 12, 0.06)" : "none",
+                                              }}
+                                            >
+                                              <td
+                                                style={{
+                                                  padding: "10px 12px",
+                                                  color: "rgba(12, 12, 12, 0.8)",
+                                                  whiteSpace: "nowrap",
+                                                }}
+                                              >
+                                                {entry.sentAt || ""}
+                                              </td>
+                                              <td
+                                                style={{
+                                                  padding: "10px 12px",
+                                                  color: "rgba(12, 12, 12, 0.8)",
+                                                }}
+                                              >
+                                                {entry.messageType || ""}
+                                              </td>
+                                              <td
+                                                style={{
+                                                  padding: "10px 12px",
+                                                  color: "rgba(12, 12, 12, 0.8)",
+                                                }}
+                                              >
+                                                {entry.recipientCompany} {entry.recipientName}
+                                              </td>
+                                            </tr>
+                                          ))
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -3166,6 +3476,54 @@ export default function ComprehensiveProgress() {
             })()}
         </SheetContent>
       </Sheet>
+
+      {/* LMS 발송 확인 다이얼로그 */}
+      <AlertDialog open={showLmsConfirmDialog} onOpenChange={setShowLmsConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>LMS 발송 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                if (!selectedCaseId) return "";
+                const caseItem = cases?.find((c: CaseWithLatestProgress) => c.id === selectedCaseId);
+                if (!caseItem) return "";
+                let recipientCompany = "";
+                let recipientName = "";
+                if (lmsRecipientType === "심사자") {
+                  recipientCompany = caseItem.assessorId || "";
+                  recipientName = caseItem.assessorTeam || "";
+                } else if (lmsRecipientType === "조사자") {
+                  recipientCompany = caseItem.investigatorTeam || "";
+                  recipientName = caseItem.investigatorTeamName || "";
+                }
+                return `'${lmsMessageType}'을(를) (${recipientCompany}) ${recipientName}에게 발송하시겠습니까?`;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-lms-send">
+              발송취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedCaseId && lmsMessageType && lmsRecipientType) {
+                  sendLmsMutation.mutate({
+                    caseId: selectedCaseId,
+                    messageType: lmsMessageType,
+                    recipientType: lmsRecipientType,
+                  });
+                }
+              }}
+              disabled={sendLmsMutation.isPending}
+              style={{ background: "#008FED" }}
+              data-testid="button-confirm-lms-send"
+            >
+              {sendLmsMutation.isPending ? "발송 중..." : "발송확인"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* 삭제 확인 Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
