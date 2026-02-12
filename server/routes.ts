@@ -12234,7 +12234,7 @@ Front·Line·Ops·Xpert·Net
     try {
       const { messageType, recipientType } = sendCaseLmsSchema.parse(req.body);
       const caseId = req.params.id;
-      const caseData = await storage.getCase(caseId);
+      const caseData = await storage.getCaseById(caseId);
       if (!caseData) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
