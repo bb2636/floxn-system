@@ -12308,57 +12308,11 @@ Front·Line·Ops·Xpert·Net
       const senderName = currentUser.name || "플록슨 담당자";
       const senderPhone = currentUser.phone || "070-7778-0925";
 
-      // 청구액 계산 (정산조회와 동일한 로직: 총 승인금액 - 자기부담금)
-      let claimAmountText = "";
-      try {
-        const caseNumber = caseData.caseNumber || "";
-        const prefix = caseNumber.replace(/-\d+$/, "");
-        const relatedCases = await storage.getCasesByPrefix(prefix);
-        const allCasesInGroup = relatedCases.length > 0 ? relatedCases : [caseData];
-
-        const hasDirectRepair = allCasesInGroup.some((c) => c.recoveryType === "직접복구");
-        const allNoRepair = allCasesInGroup.every((c) => c.recoveryType !== "직접복구");
-
-        // 승인금액 합산
-        const totalApprovedFromCases = hasDirectRepair
-          ? allCasesInGroup.reduce((sum, c) => sum + (Number(c.approvedAmount) || 0), 0)
-          : allNoRepair ? 100000 : 0;
-
-        // 자기부담금 합산 (정산 테이블)
-        let totalSettlementDeductible = 0;
-        for (const c of allCasesInGroup) {
-          try {
-            const setts = await storage.getSettlementsByCaseId(c.id);
-            for (const s of setts) {
-              totalSettlementDeductible += Number(s.deductible) || 0;
-            }
-          } catch {}
-        }
-
-        // 인보이스에 저장된 값이 있으면 우선 사용
-        let invoiceTotalApproved = 0;
-        let invoiceDeductible = 0;
-        try {
-          const invoice = await storage.getInvoiceByCaseGroupPrefix(prefix);
-          if (invoice) {
-            invoiceTotalApproved = invoice.totalApprovedAmount ? parseInt(invoice.totalApprovedAmount) : 0;
-            invoiceDeductible = invoice.deductible ? parseInt(invoice.deductible) : 0;
-          }
-        } catch {}
-
-        const finalApproved = invoiceTotalApproved > 0 ? invoiceTotalApproved : totalApprovedFromCases;
-        const finalDeductible = invoiceDeductible > 0 ? invoiceDeductible : totalSettlementDeductible;
-        const claimAmount = finalApproved - finalDeductible;
-        claimAmountText = claimAmount > 0 ? `${claimAmount.toLocaleString()}원` : "0원";
-      } catch {
-        claimAmountText = caseData.estimateAmount || "";
-      }
-
       let messageText = "";
 
       if (messageType === "청구금액 독촉") {
         const invoiceDate = caseData.firstInvoiceDate || "";
-        messageText = `[청구금액 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건은 복구공사가 이미 완료되었으며, 공사금액 관련 자료는 ${invoiceDate} 이메일로 송부드린 바 있습니다.\n\n현재까지 공사금액 지급이 이루어지지 않아 확인 차 재안내 드리오니 신속한 검토 후 지급을 부탁드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 소재지: ${caseData.insuredAddress || ""}\n▷ 청구금액: ${claimAmountText}\n\n※ 문의사항이 있으신 경우 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시기 바랍니다.\n\n감사합니다.`;
+        messageText = `[청구금액 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건은 복구공사가 이미 완료되었으며, 공사금액 관련 자료는 ${invoiceDate} 이메일로 송부드린 바 있습니다.\n\n현재까지 공사금액 지급이 이루어지지 않아 확인 차 재안내 드리오니 신속한 검토 후 지급을 부탁드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 소재지: ${caseData.insuredAddress || ""}\n▷ 견적금액: ${caseData.estimateAmount || ""}\n\n※ 문의사항이 있으신 경우 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시기 바랍니다.\n\n감사합니다.`;
       } else {
         // 중복보험 일부금 독촉
         let depositInfo = "";
@@ -12386,7 +12340,7 @@ Front·Line·Ops·Xpert·Net
           }
         } catch {}
 
-        messageText = `[중복보험 일부금 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건과 관련하여 중복보험금 일부만 입금된 것으로 확인되어 안내드립니다.\n\n협력업체와의 원활한 업무 진행을 위해, 미지급 금액에 대한 신속한 지급을 요청드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 청구금액: ${claimAmountText}\n▷ 입금금액: ${depositInfo}\n\n※ 관련 문의사항은 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시면 재 안내드리겠습니다.\n\n감사합니다.`;
+        messageText = `[중복보험 일부금 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건과 관련하여 중복보험금 일부만 입금된 것으로 확인되어 안내드립니다.\n\n협력업체와의 원활한 업무 진행을 위해, 미지급 금액에 대한 신속한 지급을 요청드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 청구금액: ${caseData.estimateAmount || ""}\n▷ 입금금액: ${depositInfo}\n\n※ 관련 문의사항은 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시면 재 안내드리겠습니다.\n\n감사합니다.`;
       }
 
       // Send LMS via Solapi
