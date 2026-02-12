@@ -3301,9 +3301,20 @@ export default function ComprehensiveProgress() {
                                     }}
                                     data-testid="select-lms-recipient-type"
                                   >
-                                    <option value="">심사자, 조사자 선택</option>
-                                    <option value="심사자">심사자</option>
-                                    <option value="조사자">조사자</option>
+                                    <option value="">수신자 선택</option>
+                                    {selectedCase?.assessorTeam && (
+                                      <option value="심사자">
+                                        심사자: {selectedCase.assessorId ? `(${selectedCase.assessorId}) ` : ""}{selectedCase.assessorTeam}
+                                      </option>
+                                    )}
+                                    {selectedCase?.investigatorTeamName && (
+                                      <option value="조사자">
+                                        조사자: {selectedCase.investigatorTeam ? `(${selectedCase.investigatorTeam}) ` : ""}{selectedCase.investigatorTeamName}
+                                      </option>
+                                    )}
+                                    {!selectedCase?.assessorTeam && !selectedCase?.investigatorTeamName && (
+                                      <option value="" disabled>배정된 심사자/조사자가 없습니다</option>
+                                    )}
                                   </select>
                                 </div>
 
