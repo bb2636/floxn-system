@@ -230,7 +230,7 @@ export default function ClosedCaseStatistics() {
         <Star size={16} style={{ color: "rgba(12, 12, 12, 0.2)", marginLeft: "8px" }} />
       </div>
 
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3" style={{ maxWidth: "540px" }}>
         <div className="relative flex-1">
           <Search size={16} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(12, 12, 12, 0.3)" }} />
           <Input
