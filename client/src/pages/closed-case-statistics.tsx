@@ -173,7 +173,7 @@ export default function ClosedCaseStatistics() {
       "조사사", "조사자", "협력사", "담당자", "배당일자",
       "사고유형", "사고원인", "복구방식", "진행상태",
       "견적금액", "견적일자", "승인금액", "승인일자",
-      "청구액", "청구일자", "입금액", "입금일자", "비고",
+      "청구액", "청구일자", "입금액", "입금일자", "정산액(협력업체 지급일)", "수수료", "정산일자",
     ];
 
     const rows = filteredCases.map((c) => {
@@ -205,7 +205,9 @@ export default function ClosedCaseStatistics() {
         formatDate(c.claimDate),
         deposit.amount ? deposit.amount.toLocaleString() : "",
         formatDate(deposit.date),
-        settlement?.memo || "",
+        settlement?.partnerPaymentAmount ? `${parseFloat(settlement.partnerPaymentAmount).toLocaleString()} (${formatDate(settlement.partnerPaymentDate)})` : "",
+        settlement?.commission ? parseFloat(settlement.commission).toLocaleString() : "",
+        formatDate(settlement?.settlementDate),
       ];
     });
 
@@ -434,7 +436,7 @@ export default function ClosedCaseStatistics() {
           overflow: "auto",
         }}
       >
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "3200px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "3500px" }}>
           <thead>
             <tr>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>보험사</th>
@@ -451,7 +453,7 @@ export default function ClosedCaseStatistics() {
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>승인금액 (합계)</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>청구액</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>입금액</th>
-              <th rowSpan={2} style={{ ...headerStyle, width: "150px", borderRight: "none" }}>비고</th>
+              <th colSpan={3} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)", borderRight: "none" }}>정산</th>
             </tr>
             <tr>
               <th style={{ ...headerStyle, width: "120px" }}>보험사</th>
@@ -474,14 +476,17 @@ export default function ClosedCaseStatistics() {
               <th style={{ ...headerStyle, width: "120px" }}>청구액</th>
               <th style={{ ...headerStyle, width: "110px" }}>청구일자</th>
               <th style={{ ...headerStyle, width: "120px" }}>입금액</th>
-              <th style={{ ...headerStyle, width: "110px", borderRight: "none" }}>입금일자</th>
+              <th style={{ ...headerStyle, width: "110px" }}>입금일자</th>
+              <th style={{ ...headerStyle, width: "140px" }}>정산액{"\n"}(협력업체 지급일)</th>
+              <th style={{ ...headerStyle, width: "120px" }}>수수료</th>
+              <th style={{ ...headerStyle, width: "110px", borderRight: "none" }}>정산일자</th>
             </tr>
           </thead>
           <tbody>
             {filteredCases.length === 0 ? (
               <tr>
                 <td
-                  colSpan={26}
+                  colSpan={28}
                   style={{
                     padding: "60px 20px",
                     textAlign: "center",
@@ -528,7 +533,12 @@ export default function ClosedCaseStatistics() {
                     <td style={cellStyle}>{formatDate(c.claimDate)}</td>
                     <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(deposit.amount)}</td>
                     <td style={cellStyle}>{formatDate(deposit.date)}</td>
-                    <td style={{ ...cellStyle, borderRight: "none", textAlign: "left", fontSize: "12px" }}>{settlement?.memo || "-"}</td>
+                    <td style={{ ...cellStyle, textAlign: "right" }}>
+                      {formatAmount(parseFloat(settlement?.partnerPaymentAmount || "0") || 0)}
+                      {settlement?.partnerPaymentDate ? <div style={{ fontSize: "11px", color: "rgba(12,12,12,0.4)", marginTop: "2px" }}>({formatDate(settlement.partnerPaymentDate)})</div> : null}
+                    </td>
+                    <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(parseFloat(settlement?.commission || "0") || 0)}</td>
+                    <td style={{ ...cellStyle, borderRight: "none" }}>{formatDate(settlement?.settlementDate)}</td>
                   </tr>
                 );
               })
