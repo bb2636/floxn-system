@@ -66,7 +66,28 @@ function Router() {
         {() => (
           <ProtectedRoute category="정산 및 통계">
             <StatisticsLayout>
-              <StatisticsOverview />
+              <StatisticsOverview mode="closed" />
+            </StatisticsLayout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      
+
+      <Route path="/statistics/closed">
+        {() => (
+          <ProtectedRoute category="정산 및 통계">
+            <StatisticsLayout>
+              <StatisticsOverview mode="closed" />
+            </StatisticsLayout>
+          </ProtectedRoute>
+        )}
+      </Route>
+
+      <Route path="/statistics/unsettled">
+        {() => (
+          <ProtectedRoute category="정산 및 통계">
+            <StatisticsLayout>
+              <StatisticsOverview mode="unsettled" />
             </StatisticsLayout>
           </ProtectedRoute>
         )}

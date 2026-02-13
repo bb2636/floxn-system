@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
 import { Search, Calendar as CalendarIcon } from "lucide-react";
@@ -99,10 +99,25 @@ const getPeriodTier = (createdAt: Date, now: Date): string => {
   return "1년~";
 };
 
-export default function StatisticsOverview() {
+interface StatisticsOverviewProps {
+  mode?: "closed" | "unsettled";
+}
+
+export default function StatisticsOverview({ mode = "closed" }: StatisticsOverviewProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("수임");
-  const [activeSubFilter, setActiveSubFilter] = useState("진행과정별");
+  const defaultTab = mode === "unsettled" ? "미결" : "수임";
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [activeSubFilter, setActiveSubFilter] = useState(mode === "unsettled" ? "진행과정별" : "");
+
+  useEffect(() => {
+    const newDefaultTab = mode === "unsettled" ? "미결" : "수임";
+    setActiveTab(newDefaultTab);
+    if (mode === "unsettled") {
+      setActiveSubFilter("진행과정별");
+    } else {
+      setActiveSubFilter("");
+    }
+  }, [mode]);
   
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
@@ -627,6 +642,12 @@ export default function StatisticsOverview() {
     "출동비 청구": ["전체"],
     "사고확인": ["사고 원인별"],
   };
+
+  const tabList = mode === "unsettled"
+    ? ["미결"]
+    : ["수임", "직접복구", "출동비 청구", "사고확인"];
+
+  const pageTitle = mode === "unsettled" ? "미결건 통계" : "종결건 통계";
   
   const currentSubFilters = subFiltersMap[activeTab] || [];
   const periodText = `${format(startDate, "yyyy.MM.dd")} - ${format(endDate, "yyyy.MM.dd")}`;
@@ -1164,7 +1185,7 @@ export default function StatisticsOverview() {
             color: "#0C0C0C",
           }}
         >
-          통계
+          {pageTitle}
         </h1>
         <div
           style={{
@@ -1278,7 +1299,7 @@ export default function StatisticsOverview() {
           <div style={{ width: "1px", height: "24px", background: "rgba(12, 12, 12, 0.1)" }} />
 
           <div className="flex items-center gap-2">
-            {["수임", "미결", "직접복구", "출동비 청구", "사고확인"].map((tab) => {
+            {tabList.map((tab) => {
               const isActive = activeTab === tab;
               return (
                 <button

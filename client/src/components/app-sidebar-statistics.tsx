@@ -31,15 +31,26 @@ const allMenuItems: MenuItem[] = [
   },
   {
     title: "통계",
-    url: "/statistics",
     testId: "submenu-statistics",
     permissionItem: "통계",
+    children: [
+      {
+        title: "종결건 통계",
+        url: "/statistics/closed",
+        testId: "submenu-statistics-closed",
+      },
+      {
+        title: "미결건 통계",
+        url: "/statistics/unsettled",
+        testId: "submenu-statistics-unsettled",
+      },
+    ],
   },
 ];
 
 export function AppSidebarStatistics() {
   const [location, setLocation] = useLocation();
-  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(["정산 조회"]));
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(["정산 조회", "통계"]));
   const { hasItem, isAdmin, permissions } = usePermissions();
 
   const menuItems = useMemo(() => {
@@ -91,7 +102,7 @@ export function AppSidebarStatistics() {
         {menuItems.map((item) => {
           if (item.children) {
             const isExpanded = expandedMenus.has(item.title);
-            const isChildActive = item.children.some(child => location === child.url);
+            const isChildActive = item.children.some(child => location === child.url || (child.url === "/statistics/closed" && location === "/statistics"));
             return (
               <div key={item.title}>
                 <button
@@ -121,15 +132,16 @@ export function AppSidebarStatistics() {
                         onClick={() => setLocation(child.url)}
                         className="flex items-center px-4 py-2.5 rounded-lg transition-colors text-left"
                         style={{
-                          background: location === child.url ? "rgba(12, 12, 12, 0.08)" : "transparent",
+                          background: (location === child.url || (child.url === "/statistics/closed" && location === "/statistics")) ? "rgba(12, 12, 12, 0.08)" : "transparent",
                           fontFamily: "Pretendard",
                           fontSize: "14px",
-                          fontWeight: location === child.url ? 700 : 400,
+                          fontWeight: (location === child.url || (child.url === "/statistics/closed" && location === "/statistics")) ? 700 : 400,
                           letterSpacing: "-0.02em",
-                          color: location === child.url ? "#008FED" : "rgba(12, 12, 12, 0.65)",
+                          color: (location === child.url || (child.url === "/statistics/closed" && location === "/statistics")) ? "#008FED" : "rgba(12, 12, 12, 0.65)",
                         }}
                         data-testid={child.testId}
                       >
+                        <span style={{ marginRight: "6px", color: (location === child.url || (child.url === "/statistics/closed" && location === "/statistics")) ? "#008FED" : "rgba(12, 12, 12, 0.3)" }}>•</span>
                         {child.title}
                       </button>
                     ))}
