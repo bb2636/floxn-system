@@ -242,6 +242,7 @@ export default function ClosedCaseStatistics() {
                 e.preventDefault();
               }
             }}
+            className="w-full"
             style={{
               paddingLeft: "40px",
               height: "48px",
