@@ -174,7 +174,7 @@ export default function ClosedCaseStatistics() {
       "조사사", "조사자", "협력사", "담당자", "배당일자",
       "사고유형", "사고원인", "복구방식", "진행상태",
       "견적금액", "견적일자", "승인금액", "승인일자",
-      "청구액", "청구일자", "입금액", "입금일자", "정산액(협력업체 지급일)", "수수료", "정산일자",
+      ...(searchType !== "접수번호" ? ["청구액", "청구일자", "입금액", "입금일자", "정산액(협력업체 지급일)", "수수료", "정산일자"] : []),
     ];
 
     const rows = filteredCases.map((c) => {
@@ -203,13 +203,15 @@ export default function ClosedCaseStatistics() {
         formatDate(c.siteInvestigationSubmitDate),
         c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : "",
         formatDate(c.approvalDate),
-        getClaimAmount(c) ? getClaimAmount(c).toLocaleString() : "",
-        formatDate(c.claimDate),
-        deposit.amount ? deposit.amount.toLocaleString() : "",
-        formatDate(deposit.date),
-        settlement?.partnerPaymentAmount ? `${parseFloat(settlement.partnerPaymentAmount).toLocaleString()} (${formatDate(settlement.partnerPaymentDate)})` : "",
-        settlement?.commission ? parseFloat(settlement.commission).toLocaleString() : "",
-        formatDate(settlement?.settlementDate),
+        ...(searchType !== "접수번호" ? [
+          getClaimAmount(c) ? getClaimAmount(c).toLocaleString() : "",
+          formatDate(c.claimDate),
+          deposit.amount ? deposit.amount.toLocaleString() : "",
+          formatDate(deposit.date),
+          settlement?.partnerPaymentAmount ? `${parseFloat(settlement.partnerPaymentAmount).toLocaleString()} (${formatDate(settlement.partnerPaymentDate)})` : "",
+          settlement?.commission ? parseFloat(settlement.commission).toLocaleString() : "",
+          formatDate(settlement?.settlementDate),
+        ] : []),
       ];
     });
 
@@ -422,10 +424,14 @@ export default function ClosedCaseStatistics() {
               <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>복구 방식</th>
               <th rowSpan={2} style={{ ...headerStyle, width: "120px" }}>진행 상태</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>견적금액</th>
-              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>승인금액</th>
-              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>청구액</th>
-              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>입금액</th>
-              <th colSpan={3} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)", borderRight: "none" }}>정산</th>
+              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)", ...(searchType === "접수번호" ? { borderRight: "none" } : {}) }}>승인금액</th>
+              {searchType !== "접수번호" && (
+                <>
+                  <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>청구액</th>
+                  <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>입금액</th>
+                  <th colSpan={3} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)", borderRight: "none" }}>정산</th>
+                </>
+              )}
             </tr>
             <tr>
               <th style={{ ...headerStyle, width: "120px" }}>보험사</th>
@@ -447,21 +453,25 @@ export default function ClosedCaseStatistics() {
               <th style={{ ...headerStyle, width: "120px" }}>견적금액</th>
               <th style={{ ...headerStyle, width: "110px" }}>견적일자</th>
               <th style={{ ...headerStyle, width: "120px" }}>승인금액</th>
-              <th style={{ ...headerStyle, width: "110px" }}>승인일자</th>
-              <th style={{ ...headerStyle, width: "120px" }}>청구액</th>
-              <th style={{ ...headerStyle, width: "110px" }}>청구일자</th>
-              <th style={{ ...headerStyle, width: "120px" }}>입금액</th>
-              <th style={{ ...headerStyle, width: "110px" }}>입금일자</th>
-              <th style={{ ...headerStyle, width: "140px" }}>정산액{"\n"}(협력업체 지급일)</th>
-              <th style={{ ...headerStyle, width: "120px" }}>수수료</th>
-              <th style={{ ...headerStyle, width: "110px", borderRight: "none" }}>정산일자</th>
+              <th style={{ ...headerStyle, width: "110px", ...(searchType === "접수번호" ? { borderRight: "none" } : {}) }}>승인일자</th>
+              {searchType !== "접수번호" && (
+                <>
+                  <th style={{ ...headerStyle, width: "120px" }}>청구액</th>
+                  <th style={{ ...headerStyle, width: "110px" }}>청구일자</th>
+                  <th style={{ ...headerStyle, width: "120px" }}>입금액</th>
+                  <th style={{ ...headerStyle, width: "110px" }}>입금일자</th>
+                  <th style={{ ...headerStyle, width: "140px" }}>정산액{"\n"}(협력업체 지급일)</th>
+                  <th style={{ ...headerStyle, width: "120px" }}>수수료</th>
+                  <th style={{ ...headerStyle, width: "110px", borderRight: "none" }}>정산일자</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
             {filteredCases.length === 0 ? (
               <tr>
                 <td
-                  colSpan={searchType === "접수번호" ? 29 : 28}
+                  colSpan={searchType === "접수번호" ? 22 : 28}
                   style={{
                     padding: "60px 20px",
                     textAlign: "center",
@@ -506,17 +516,21 @@ export default function ClosedCaseStatistics() {
                     <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(estimateAmt)}</td>
                     <td style={cellStyle}>{formatDate(c.siteInvestigationSubmitDate)}</td>
                     <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(approvedAmt)}</td>
-                    <td style={cellStyle}>{formatDate(c.approvalDate)}</td>
-                    <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(claimAmt)}</td>
-                    <td style={cellStyle}>{formatDate(c.claimDate)}</td>
-                    <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(deposit.amount)}</td>
-                    <td style={cellStyle}>{formatDate(deposit.date)}</td>
-                    <td style={{ ...cellStyle, textAlign: "right" }}>
-                      {formatAmount(parseFloat(settlement?.partnerPaymentAmount || "0") || 0)}
-                      {settlement?.partnerPaymentDate ? <div style={{ fontSize: "11px", color: "rgba(12,12,12,0.4)", marginTop: "2px" }}>({formatDate(settlement.partnerPaymentDate)})</div> : null}
-                    </td>
-                    <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(parseFloat(settlement?.commission || "0") || 0)}</td>
-                    <td style={{ ...cellStyle, borderRight: "none" }}>{formatDate(settlement?.settlementDate)}</td>
+                    <td style={{ ...cellStyle, ...(searchType === "접수번호" ? { borderRight: "none" } : {}) }}>{formatDate(c.approvalDate)}</td>
+                    {searchType !== "접수번호" && (
+                      <>
+                        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(claimAmt)}</td>
+                        <td style={cellStyle}>{formatDate(c.claimDate)}</td>
+                        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(deposit.amount)}</td>
+                        <td style={cellStyle}>{formatDate(deposit.date)}</td>
+                        <td style={{ ...cellStyle, textAlign: "right" }}>
+                          {formatAmount(parseFloat(settlement?.partnerPaymentAmount || "0") || 0)}
+                          {settlement?.partnerPaymentDate ? <div style={{ fontSize: "11px", color: "rgba(12,12,12,0.4)", marginTop: "2px" }}>({formatDate(settlement.partnerPaymentDate)})</div> : null}
+                        </td>
+                        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(parseFloat(settlement?.commission || "0") || 0)}</td>
+                        <td style={{ ...cellStyle, borderRight: "none" }}>{formatDate(settlement?.settlementDate)}</td>
+                      </>
+                    )}
                   </tr>
                 );
               })
