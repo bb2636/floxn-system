@@ -75,7 +75,6 @@ export default function ClosedCaseStatistics() {
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
   const [startCalendarOpen, setStartCalendarOpen] = useState(false);
-  const [endCalendarOpen, setEndCalendarOpen] = useState(false);
 
   const { data: cases = [] } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
@@ -231,134 +230,107 @@ export default function ClosedCaseStatistics() {
         <Star size={16} style={{ color: "rgba(12, 12, 12, 0.2)", marginLeft: "8px" }} />
       </div>
 
-      <div
-        className="flex flex-wrap items-center gap-3 mb-4"
-        style={{
-          background: "#FFFFFF",
-          borderRadius: "12px",
-          border: "1px solid rgba(12, 12, 12, 0.06)",
-          padding: "16px 20px",
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="relative" style={{ width: "280px" }}>
-            <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "rgba(12, 12, 12, 0.3)" }} />
-            <Input
-              placeholder={searchType === "사고번호" ? "사고번호를 입력해주세요" : "접수번호를 입력해주세요"}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                }
-              }}
-              style={{
-                paddingLeft: "36px",
-                height: "40px",
-                borderRadius: "8px",
-                border: "1px solid rgba(12, 12, 12, 0.1)",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-              }}
-              data-testid="input-statistics-search"
-            />
-          </div>
-          <Button
-            style={{
-              height: "40px",
-              padding: "0 20px",
-              background: "#008FED",
-              color: "#FFFFFF",
-              borderRadius: "8px",
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 600,
+      <div className="flex items-center gap-2 mb-3">
+        <div className="relative flex-1">
+          <Search size={16} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(12, 12, 12, 0.3)" }} />
+          <Input
+            placeholder="검색어를 입력해주세요"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+              }
             }}
-            data-testid="button-statistics-search"
-          >
-            검색
-          </Button>
+            style={{
+              paddingLeft: "40px",
+              height: "48px",
+              borderRadius: "10px",
+              border: "1px solid rgba(12, 12, 12, 0.1)",
+              fontFamily: "Pretendard",
+              fontSize: "15px",
+              background: "#FFFFFF",
+            }}
+            data-testid="input-statistics-search"
+          />
         </div>
+        <Button
+          style={{
+            height: "48px",
+            padding: "0 28px",
+            background: "#008FED",
+            color: "#FFFFFF",
+            borderRadius: "10px",
+            fontFamily: "Pretendard",
+            fontSize: "15px",
+            fontWeight: 600,
+          }}
+          data-testid="button-statistics-search"
+        >
+          검색
+        </Button>
+      </div>
 
-        <div style={{ width: "1px", height: "24px", background: "rgba(12, 12, 12, 0.1)" }} />
-
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="flex items-center gap-2">
-          <span style={{ fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", whiteSpace: "nowrap" }}>
-            종결기간:
+          <span style={{ fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", whiteSpace: "nowrap", fontFamily: "Pretendard" }}>
+            종결기간 :
           </span>
-          <div className="flex items-center gap-1">
-            <Popover open={startCalendarOpen} onOpenChange={setStartCalendarOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className="flex items-center gap-1"
-                  style={{
-                    height: "36px",
-                    padding: "0 12px",
-                    border: "1px solid rgba(12, 12, 12, 0.1)",
-                    borderRadius: "6px",
-                    background: "#FFFFFF",
-                    fontSize: "13px",
-                    fontFamily: "Pretendard",
-                    color: "rgba(12, 12, 12, 0.7)",
-                    cursor: "pointer",
-                  }}
-                  data-testid="button-start-date"
-                >
-                  <CalendarIcon size={14} style={{ color: "rgba(12, 12, 12, 0.4)" }} />
-                  {format(startDate, "yyyy.MM.dd")}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setStartDate(date);
-                      setStartCalendarOpen(false);
-                    }
-                  }}
-                  locale={ko}
-                />
-              </PopoverContent>
-            </Popover>
-            <span style={{ color: "rgba(12, 12, 12, 0.3)", fontSize: "13px" }}>-</span>
-            <Popover open={endCalendarOpen} onOpenChange={setEndCalendarOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className="flex items-center gap-1"
-                  style={{
-                    height: "36px",
-                    padding: "0 12px",
-                    border: "1px solid rgba(12, 12, 12, 0.1)",
-                    borderRadius: "6px",
-                    background: "#FFFFFF",
-                    fontSize: "13px",
-                    fontFamily: "Pretendard",
-                    color: "rgba(12, 12, 12, 0.7)",
-                    cursor: "pointer",
-                  }}
-                  data-testid="button-end-date"
-                >
-                  <CalendarIcon size={14} style={{ color: "rgba(12, 12, 12, 0.4)" }} />
-                  {format(endDate, "yyyy.MM.dd")}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={(date) => {
-                    if (date) {
-                      setEndDate(date);
-                      setEndCalendarOpen(false);
-                    }
-                  }}
-                  locale={ko}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <Popover open={startCalendarOpen} onOpenChange={setStartCalendarOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className="flex items-center gap-2"
+                style={{
+                  height: "36px",
+                  padding: "0 12px",
+                  border: "1px solid rgba(12, 12, 12, 0.1)",
+                  borderRadius: "6px",
+                  background: "#FFFFFF",
+                  fontSize: "13px",
+                  fontFamily: "Pretendard",
+                  color: "rgba(12, 12, 12, 0.7)",
+                  cursor: "pointer",
+                }}
+                data-testid="button-start-date"
+              >
+                <CalendarIcon size={14} style={{ color: "rgba(12, 12, 12, 0.4)" }} />
+                {format(startDate, "yyyy.MM.dd")} - {format(endDate, "yyyy.MM.dd")}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <div className="flex gap-0">
+                <div>
+                  <div style={{ padding: "8px 12px", fontSize: "12px", fontWeight: 600, color: "rgba(12,12,12,0.5)", fontFamily: "Pretendard", borderBottom: "1px solid rgba(12,12,12,0.06)" }}>시작일</div>
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setStartDate(date);
+                        if (date > endDate) setEndDate(date);
+                      }
+                    }}
+                    locale={ko}
+                  />
+                </div>
+                <div style={{ borderLeft: "1px solid rgba(12,12,12,0.06)" }}>
+                  <div style={{ padding: "8px 12px", fontSize: "12px", fontWeight: 600, color: "rgba(12,12,12,0.5)", fontFamily: "Pretendard", borderBottom: "1px solid rgba(12,12,12,0.06)" }}>종료일</div>
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setEndDate(date);
+                        if (date < startDate) setStartDate(date);
+                        setStartCalendarOpen(false);
+                      }
+                    }}
+                    locale={ko}
+                  />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div style={{ width: "1px", height: "24px", background: "rgba(12, 12, 12, 0.1)" }} />
