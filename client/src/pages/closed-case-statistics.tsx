@@ -232,7 +232,6 @@ export default function ClosedCaseStatistics() {
         <span>종결건 통계</span>
         <Star size={16} style={{ color: "rgba(12, 12, 12, 0.2)", marginLeft: "8px" }} />
       </div>
-
       <div className="flex items-center gap-2 mb-3" style={{ maxWidth: "540px" }}>
         <div className="relative flex-1">
           <Search size={16} style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "rgba(12, 12, 12, 0.3)" }} />
@@ -274,7 +273,6 @@ export default function ClosedCaseStatistics() {
           검색
         </Button>
       </div>
-
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="flex items-center gap-2">
           <span style={{ fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", whiteSpace: "nowrap", fontFamily: "Pretendard" }}>
@@ -379,7 +377,6 @@ export default function ClosedCaseStatistics() {
           </button>
         </div>
       </div>
-
       <div className="flex items-center justify-between mb-3">
         <div style={{ fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", fontFamily: "Pretendard" }}>
           총 <span style={{ fontWeight: 700, color: "rgba(12, 12, 12, 0.8)" }}>{filteredCases.length}</span>개의 통계
@@ -403,7 +400,6 @@ export default function ClosedCaseStatistics() {
           엑셀 다운로드
         </Button>
       </div>
-
       <div
         style={{
           background: "#FFFFFF",
@@ -438,7 +434,7 @@ export default function ClosedCaseStatistics() {
                 <th style={{ ...headerStyle, width: "140px" }}>접수번호</th>
               )}
               <th style={{ ...headerStyle, width: "80px" }}>담당자</th>
-              <th style={{ ...headerStyle, width: "110px" }}>접수 일자</th>
+              <th style={{ ...headerStyle, width: "110px" }}>최초 접수 일자</th>
               <th style={{ ...headerStyle, width: "100px" }}>의뢰사</th>
               <th style={{ ...headerStyle, width: "80px" }}>의뢰자</th>
               <th style={{ ...headerStyle, width: "100px" }}>심사사</th>
