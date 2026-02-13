@@ -12,6 +12,7 @@ import AdminSettings from "@/pages/admin-settings";
 import Intake from "@/pages/intake";
 import ComprehensiveProgress from "@/pages/comprehensive-progress";
 import StatisticsOverview from "@/pages/statistics-overview";
+import ClosedCaseStatistics from "@/pages/closed-case-statistics";
 import SettlementsInquiry from "@/pages/settlements-inquiry";
 import SettlementAction from "@/pages/settlement-action";
 import FieldManagement from "@/pages/field-management";
@@ -66,7 +67,7 @@ function Router() {
         {() => (
           <ProtectedRoute category="정산 및 통계">
             <StatisticsLayout>
-              <StatisticsOverview mode="closed" />
+              <ClosedCaseStatistics />
             </StatisticsLayout>
           </ProtectedRoute>
         )}
@@ -77,7 +78,7 @@ function Router() {
         {() => (
           <ProtectedRoute category="정산 및 통계">
             <StatisticsLayout>
-              <StatisticsOverview mode="closed" />
+              <ClosedCaseStatistics />
             </StatisticsLayout>
           </ProtectedRoute>
         )}
