@@ -167,7 +167,9 @@ export default function ClosedCaseStatistics() {
 
   const handleExcelDownload = () => {
     const headers = [
-      "보험사", "사고번호", "플록슨 담당자", "최초 접수 일자",
+      "보험사", "사고번호",
+      ...(searchType === "접수번호" ? ["접수번호"] : []),
+      "플록슨 담당자", "접수 일자",
       "의뢰사", "의뢰자", "심사사", "심사자",
       "조사사", "조사자", "협력사", "담당자", "배당일자",
       "사고유형", "사고원인", "복구방식", "진행상태",
@@ -181,6 +183,7 @@ export default function ClosedCaseStatistics() {
       return [
         c.insuranceCompany || "",
         c.insuranceAccidentNo || "",
+        ...(searchType === "접수번호" ? [c.caseNumber || ""] : []),
         getManagerName(c),
         formatDate(c.createdAt),
         c.clientResidence || "",
@@ -413,7 +416,7 @@ export default function ClosedCaseStatistics() {
           <thead>
             <tr>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>보험사</th>
-              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>플록슨</th>
+              <th colSpan={searchType === "접수번호" ? 3 : 2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>플록슨</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>의뢰사</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>심사사</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>조사사</th>
@@ -422,8 +425,8 @@ export default function ClosedCaseStatistics() {
               <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>사고 원인</th>
               <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>복구 방식</th>
               <th rowSpan={2} style={{ ...headerStyle, width: "120px" }}>진행 상태</th>
-              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>견적금액 (합계)</th>
-              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>승인금액 (합계)</th>
+              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>견적금액</th>
+              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>승인금액</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>청구액</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>입금액</th>
               <th colSpan={3} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)", borderRight: "none" }}>정산</th>
@@ -431,8 +434,11 @@ export default function ClosedCaseStatistics() {
             <tr>
               <th style={{ ...headerStyle, width: "120px" }}>보험사</th>
               <th style={{ ...headerStyle, width: "140px" }}>사고번호</th>
+              {searchType === "접수번호" && (
+                <th style={{ ...headerStyle, width: "140px" }}>접수번호</th>
+              )}
               <th style={{ ...headerStyle, width: "80px" }}>담당자</th>
-              <th style={{ ...headerStyle, width: "110px" }}>최초 접수 일자</th>
+              <th style={{ ...headerStyle, width: "110px" }}>접수 일자</th>
               <th style={{ ...headerStyle, width: "100px" }}>의뢰사</th>
               <th style={{ ...headerStyle, width: "80px" }}>의뢰자</th>
               <th style={{ ...headerStyle, width: "100px" }}>심사사</th>
@@ -459,7 +465,7 @@ export default function ClosedCaseStatistics() {
             {filteredCases.length === 0 ? (
               <tr>
                 <td
-                  colSpan={28}
+                  colSpan={searchType === "접수번호" ? 29 : 28}
                   style={{
                     padding: "60px 20px",
                     textAlign: "center",
@@ -483,6 +489,9 @@ export default function ClosedCaseStatistics() {
                   <tr key={c.id} data-testid={`row-case-${c.id}`}>
                     <td style={cellStyle}>{c.insuranceCompany || "-"}</td>
                     <td style={{ ...cellStyle, fontSize: "12px" }}>{c.insuranceAccidentNo || "-"}</td>
+                    {searchType === "접수번호" && (
+                      <td style={{ ...cellStyle, fontSize: "12px" }}>{c.caseNumber || "-"}</td>
+                    )}
                     <td style={cellStyle}>{getManagerName(c)}</td>
                     <td style={cellStyle}>{formatDate(c.createdAt)}</td>
                     <td style={cellStyle}>{c.clientResidence || "-"}</td>
