@@ -1345,25 +1345,49 @@ export class MemStorage implements IStorage {
   async getAssignedCasesForUser(user: User, search?: string): Promise<Case[]> {
     const allCases = Array.from(this.cases.values());
 
-    // Filter by role
+    // Filter by role (accountType: "개인" = 본인 건만, "회사" = 회사 전체건)
     let filtered = allCases;
+    const isPersonal = user.accountType === "개인";
     switch (user.role) {
       case "심사사":
-        filtered = allCases.filter((c) => c.assessorId === user.id);
+        if (isPersonal) {
+          filtered = allCases.filter((c) => c.assessorId === user.company && c.assessorTeam === user.name);
+        } else {
+          filtered = allCases.filter((c) => c.assessorId === user.company);
+        }
         break;
       case "협력사":
-        // 협력사는 "접수완료" 상태 이상의 건만 볼 수 있음 (배당대기 상태는 제외)
-        filtered = allCases.filter(
-          (c) => c.assignedPartner === user.company && c.status !== "배당대기",
-        );
+        if (isPersonal) {
+          filtered = allCases.filter((c) =>
+            c.assignedPartner === user.company && c.status !== "배당대기" &&
+            (c.assignedPartnerManager === user.name || c.createdBy === user.id || c.assignedTo === user.id)
+          );
+        } else {
+          filtered = allCases.filter(
+            (c) => c.assignedPartner === user.company && c.status !== "배당대기",
+          );
+        }
         break;
       case "조사사":
-        filtered = allCases.filter(
-          (c) => c.investigatorTeamName === user.company,
-        );
+        if (isPersonal) {
+          filtered = allCases.filter((c) => c.investigatorTeam === user.company && c.investigatorTeamName === user.name);
+        } else {
+          filtered = allCases.filter(
+            (c) => c.investigatorTeam === user.company,
+          );
+        }
+        break;
+      case "보험사":
+        if (isPersonal) {
+          filtered = allCases.filter((c) =>
+            c.insuranceCompany === user.company &&
+            (c.managerId === user.id || c.createdBy === user.id)
+          );
+        } else {
+          filtered = allCases.filter((c) => c.insuranceCompany === user.company);
+        }
         break;
       case "관리자":
-        // Admins see all
         break;
       default:
         return [];
@@ -1561,38 +1585,54 @@ export class MemStorage implements IStorage {
     // Fetch all cases from database instead of memory
     let allCases = await db.select().from(cases);
 
-    // 권한별 필터링
+    // 권한별 필터링 (accountType: "개인" = 본인 건만, "회사" = 회사 전체건)
     if (user) {
+      const isPersonal = user.accountType === "개인";
       switch (user.role) {
         case "관리자":
-          // 관리자는 모든 케이스 조회 가능
           break;
         case "협력사":
-          // 협력사는 직급 상관없이 자기 회사의 모든 케이스
-          allCases = allCases.filter((c) => c.assignedPartner === user.company);
+          if (isPersonal) {
+            allCases = allCases.filter((c) =>
+              c.assignedPartner === user.company &&
+              (c.assignedPartnerManager === user.name || c.createdBy === user.id || c.assignedTo === user.id)
+            );
+          } else {
+            allCases = allCases.filter((c) => c.assignedPartner === user.company);
+          }
           break;
         case "보험사":
-          // 보험사는 자기 회사 케이스만
-          allCases = allCases.filter(
-            (c) => c.insuranceCompany === user.company,
-          );
+          if (isPersonal) {
+            allCases = allCases.filter((c) =>
+              c.insuranceCompany === user.company &&
+              (c.managerId === user.id || c.createdBy === user.id)
+            );
+          } else {
+            allCases = allCases.filter((c) => c.insuranceCompany === user.company);
+          }
           break;
         case "심사사":
-          // 심사사는 자기가 맡은 케이스만
-          allCases = allCases.filter((c) => c.assessorId === user.id);
+          if (isPersonal) {
+            allCases = allCases.filter((c) => c.assessorId === user.company && c.assessorTeam === user.name);
+          } else {
+            allCases = allCases.filter((c) => c.assessorId === user.company);
+          }
           break;
         case "조사사":
-          // 조사사는 자기 팀 케이스만
-          allCases = allCases.filter(
-            (c) => c.investigatorTeamName === user.company,
-          );
+          if (isPersonal) {
+            allCases = allCases.filter((c) => c.investigatorTeam === user.company && c.investigatorTeamName === user.name);
+          } else {
+            allCases = allCases.filter((c) => c.investigatorTeam === user.company);
+          }
           break;
         case "의뢰사":
-          // 의뢰사는 자기가 의뢰한 케이스만
-          allCases = allCases.filter((c) => c.clientName === user.name);
+          if (isPersonal) {
+            allCases = allCases.filter((c) => c.clientName === user.name);
+          } else {
+            allCases = allCases.filter((c) => c.clientResidence === user.company);
+          }
           break;
         default:
-          // 기타 role은 빈 배열 반환
           allCases = [];
       }
     }
@@ -3920,45 +3960,63 @@ export class DbStorage implements IStorage {
   }
 
   async getAssignedCasesForUser(user: User, search?: string): Promise<Case[]> {
-    // Build filter based on user role
-    let query = db.select().from(cases);
+    let allCases = await db.select().from(cases);
 
-    // Role-based filtering
+    // 권한별 필터링 (accountType: "개인" = 본인 건만, "회사" = 회사 전체건)
+    const isPersonal = user.accountType === "개인";
     switch (user.role) {
       case "심사사":
-        // Assessors see cases where they are assigned
-        query = query.where(eq(cases.assessorId, user.id));
+        if (isPersonal) {
+          allCases = allCases.filter((c) => c.assessorId === user.company && c.assessorTeam === user.name);
+        } else {
+          allCases = allCases.filter((c) => c.assessorId === user.company);
+        }
         break;
       case "협력사":
-        // Partners see cases assigned to their company
-        query = query.where(eq(cases.assignedPartner, user.company));
+        if (isPersonal) {
+          allCases = allCases.filter((c) =>
+            c.assignedPartner === user.company &&
+            (c.assignedPartnerManager === user.name || c.createdBy === user.id || c.assignedTo === user.id)
+          );
+        } else {
+          allCases = allCases.filter((c) => c.assignedPartner === user.company);
+        }
         break;
       case "조사사":
-        // Investigators see cases where their team is assigned
-        query = query.where(eq(cases.investigatorTeamName, user.company));
+        if (isPersonal) {
+          allCases = allCases.filter((c) => c.investigatorTeam === user.company && c.investigatorTeamName === user.name);
+        } else {
+          allCases = allCases.filter((c) => c.investigatorTeam === user.company);
+        }
+        break;
+      case "보험사":
+        if (isPersonal) {
+          allCases = allCases.filter((c) =>
+            c.insuranceCompany === user.company &&
+            (c.managerId === user.id || c.createdBy === user.id)
+          );
+        } else {
+          allCases = allCases.filter((c) => c.insuranceCompany === user.company);
+        }
         break;
       case "관리자":
-        // Admins see all cases
         break;
       default:
-        // Other roles see no cases
         return [];
     }
 
     // Apply search filter if provided
     if (search && search.trim()) {
-      const searchTerm = `%${search.trim()}%`;
-      query = query.where(
-        or(
-          like(cases.caseNumber, searchTerm),
-          like(cases.insuredName, searchTerm),
-          like(cases.insuranceCompany, searchTerm),
-        ),
+      const searchLower = search.trim().toLowerCase();
+      allCases = allCases.filter(
+        (c) =>
+          c.caseNumber?.toLowerCase().includes(searchLower) ||
+          c.insuredName?.toLowerCase().includes(searchLower) ||
+          c.insuranceCompany?.toLowerCase().includes(searchLower),
       );
     }
 
-    const results = await query;
-    return results;
+    return allCases;
   }
 
   async getNextCaseSequence(
@@ -4124,41 +4182,59 @@ export class DbStorage implements IStorage {
   }
 
   async getAllCases(user?: User): Promise<CaseWithLatestProgress[]> {
-    let query: any = db.select().from(cases);
+    let allCases = await db.select().from(cases).orderBy(asc(cases.createdAt));
 
-    // 권한별 필터링
+    // 권한별 필터링 (accountType: "개인" = 본인 건만, "회사" = 회사 전체건)
     if (user) {
+      const isPersonal = user.accountType === "개인";
       switch (user.role) {
         case "관리자":
-          // 관리자는 모든 케이스 조회 가능
           break;
         case "협력사":
-          // 협력사는 직급 상관없이 자기 회사의 모든 케이스
-          query = query.where(eq(cases.assignedPartner, user.company));
+          if (isPersonal) {
+            allCases = allCases.filter((c) =>
+              c.assignedPartner === user.company &&
+              (c.assignedPartnerManager === user.name || c.createdBy === user.id || c.assignedTo === user.id)
+            );
+          } else {
+            allCases = allCases.filter((c) => c.assignedPartner === user.company);
+          }
           break;
         case "보험사":
-          // 보험사는 자기 회사 케이스만
-          query = query.where(eq(cases.insuranceCompany, user.company));
+          if (isPersonal) {
+            allCases = allCases.filter((c) =>
+              c.insuranceCompany === user.company &&
+              (c.managerId === user.id || c.createdBy === user.id)
+            );
+          } else {
+            allCases = allCases.filter((c) => c.insuranceCompany === user.company);
+          }
           break;
         case "심사사":
-          // 심사사는 자기가 맡은 케이스만
-          query = query.where(eq(cases.assessorId, user.id));
+          if (isPersonal) {
+            allCases = allCases.filter((c) => c.assessorId === user.company && c.assessorTeam === user.name);
+          } else {
+            allCases = allCases.filter((c) => c.assessorId === user.company);
+          }
           break;
         case "조사사":
-          // 조사사는 자기 팀 케이스만
-          query = query.where(eq(cases.investigatorTeamName, user.company));
+          if (isPersonal) {
+            allCases = allCases.filter((c) => c.investigatorTeam === user.company && c.investigatorTeamName === user.name);
+          } else {
+            allCases = allCases.filter((c) => c.investigatorTeam === user.company);
+          }
           break;
         case "의뢰사":
-          // 의뢰사는 자기가 의뢰한 케이스만
-          query = query.where(eq(cases.clientName, user.name));
+          if (isPersonal) {
+            allCases = allCases.filter((c) => c.clientName === user.name);
+          } else {
+            allCases = allCases.filter((c) => c.clientResidence === user.company);
+          }
           break;
         default:
-          // 기타 role은 빈 배열 반환
           return [];
       }
     }
-
-    const allCases = await query.orderBy(asc(cases.createdAt));
     const allProgressUpdates = await db.select().from(progressUpdates);
 
     // 담당자 이름 조회용 사용자 목록 가져오기
