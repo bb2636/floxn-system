@@ -2509,37 +2509,94 @@ export default function ComprehensiveProgress() {
                             </div>
                           </div>
 
-                          {/* 보고서 열람 버튼 - 항상 표시 */}
-                          <button
-                            onClick={() => {
-                              // localStorage에 케이스 ID 저장하고 현장출동보고서 페이지로 이동
-                              localStorage.setItem(
-                                "selectedFieldSurveyCaseId",
-                                selectedCase.id,
-                              );
-                              localStorage.setItem(
-                                "returnToComprehensiveProgress",
-                                "true",
-                              );
-                              setLocation("/field-survey/report");
-                            }}
-                            style={{
-                              width: "100%",
-                              padding: "14px",
-                              background: "#008FED",
-                              borderRadius: "8px",
-                              border: "none",
-                              fontFamily: "Pretendard",
-                              fontWeight: 600,
-                              fontSize: "16px",
-                              color: "#FFFFFF",
-                              cursor: "pointer",
-                              marginTop: "16px",
-                            }}
-                            data-testid="button-view-report"
-                          >
-                            보고서 열람
-                          </button>
+                          {/* 심사사/조사사: 두 개의 PDF 버튼 표시 */}
+                          {(user?.role === "심사사" || user?.role === "조사사") ? (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "16px" }}>
+                              <button
+                                onClick={() => {
+                                  localStorage.setItem(
+                                    "selectedFieldSurveyCaseId",
+                                    selectedCase.id,
+                                  );
+                                  localStorage.setItem(
+                                    "returnToComprehensiveProgress",
+                                    "true",
+                                  );
+                                  setLocation("/field-survey/report");
+                                }}
+                                style={{
+                                  width: "100%",
+                                  padding: "14px",
+                                  background: "#008FED",
+                                  borderRadius: "8px",
+                                  border: "none",
+                                  fontFamily: "Pretendard",
+                                  fontWeight: 600,
+                                  fontSize: "16px",
+                                  color: "#FFFFFF",
+                                  cursor: "pointer",
+                                }}
+                                data-testid="button-view-field-report-pdf"
+                              >
+                                현장출동보고서 PDF보기
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (selectedCase) {
+                                    setInvoiceCaseId(selectedCase.id);
+                                    setShowInvoiceDialog(true);
+                                  }
+                                }}
+                                disabled={!["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "")}
+                                style={{
+                                  width: "100%",
+                                  padding: "14px",
+                                  background: ["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "") ? "#008FED" : "#ccc",
+                                  borderRadius: "8px",
+                                  border: "none",
+                                  fontFamily: "Pretendard",
+                                  fontWeight: 600,
+                                  fontSize: "16px",
+                                  color: "#FFFFFF",
+                                  cursor: ["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "") ? "pointer" : "not-allowed",
+                                  opacity: ["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "") ? 1 : 0.6,
+                                }}
+                                data-testid="button-view-invoice-pdf"
+                              >
+                                Invoice(청구서) PDF보기
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                localStorage.setItem(
+                                  "selectedFieldSurveyCaseId",
+                                  selectedCase.id,
+                                );
+                                localStorage.setItem(
+                                  "returnToComprehensiveProgress",
+                                  "true",
+                                );
+                                setLocation("/field-survey/report");
+                              }}
+                              style={{
+                                width: "100%",
+                                padding: "14px",
+                                background: "#008FED",
+                                borderRadius: "8px",
+                                border: "none",
+                                fontFamily: "Pretendard",
+                                fontWeight: 600,
+                                fontSize: "16px",
+                                color: "#FFFFFF",
+                                cursor: "pointer",
+                                marginTop: "16px",
+                              }}
+                              data-testid="button-view-report"
+                            >
+                              보고서 열람
+                            </button>
+                          )}
                         </>
                       )}
 
