@@ -35,6 +35,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -190,7 +191,6 @@ export default function ComprehensiveProgress() {
   const [showFieldReportPdfDialog, setShowFieldReportPdfDialog] = useState(false);
   const [showInvoicePdfDialog, setShowInvoicePdfDialog] = useState(false);
   const [pdfViewerCaseId, setPdfViewerCaseId] = useState<string | null>(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -4067,6 +4067,7 @@ export default function ComprehensiveProgress() {
             <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
               현장출동보고서 PDF
             </DialogTitle>
+            <DialogDescription className="sr-only">현장출동보고서 PDF 미리보기</DialogDescription>
           </DialogHeader>
           <div style={{ flex: 1, overflow: "hidden" }}>
             {pdfViewerCaseId && showFieldReportPdfDialog && (
@@ -4091,6 +4092,7 @@ export default function ComprehensiveProgress() {
             <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
               Invoice(청구서) PDF
             </DialogTitle>
+            <DialogDescription className="sr-only">Invoice 청구서 PDF 미리보기</DialogDescription>
           </DialogHeader>
           <div style={{ flex: 1, overflow: "hidden" }}>
             {pdfViewerCaseId && showInvoicePdfDialog && (
