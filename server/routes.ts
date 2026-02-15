@@ -8454,6 +8454,133 @@ FLOXN`;
   });
 
   // ==========================================
+  // GET /api/view-field-report-pdf/:caseId - 현장출동보고서 PDF 보기 (브라우저에서 바로 표시)
+  // ==========================================
+  app.get("/api/view-field-report-pdf/:caseId", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      console.log(`[View Field Report PDF] Generating PDF for case ${caseData.caseNumber}`);
+
+      const pdfBuffer = await generatePdfWithSizeLimitPdfLib({
+        caseId,
+        sections: {
+          cover: true,
+          fieldReport: true,
+          drawing: true,
+          evidence: true,
+          estimate: true,
+          etc: false,
+        },
+        evidence: {
+          tab: "전체",
+          selectedFileIds: [],
+        },
+      });
+
+      console.log(`[View Field Report PDF] PDF generated, size: ${pdfBuffer.length} bytes`);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `inline; filename="field-report-${caseData.caseNumber || caseId}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("[View Field Report PDF] Error:", error);
+      const errorMessage = error instanceof Error ? error.message : "PDF 생성 중 오류가 발생했습니다";
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
+  // ==========================================
+  // GET /api/view-invoice-pdf/:caseId - Invoice(청구서) PDF 보기 (브라우저에서 바로 표시)
+  // ==========================================
+  app.get("/api/view-invoice-pdf/:caseId", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
+
+      let allRelatedCases: any[] = [caseData];
+      if (caseData.insuranceAccidentNo) {
+        const relatedCases = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
+        allRelatedCases = [caseData, ...relatedCases];
+      }
+
+      const getCaseSuffix = (caseNumber: string): number => {
+        const match = caseNumber?.match(/-(\d+)$/);
+        return match ? parseInt(match[1], 10) : 999;
+      };
+      allRelatedCases.sort((a, b) => getCaseSuffix(a.caseNumber || "") - getCaseSuffix(b.caseNumber || ""));
+
+      const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
+      let calculatedTotal = 0;
+
+      for (let i = 0; i < allRelatedCases.length; i++) {
+        const relatedCase = allRelatedCases[i];
+        const damageAmount = Number(relatedCase.invoiceDamagePreventionAmount) || 0;
+        const repairAmount = Number(relatedCase.invoicePropertyRepairAmount) || 0;
+        const fieldDispatchAmount = Number(relatedCase.fieldDispatchInvoiceAmount) || 0;
+        const caseTotal = damageAmount + repairAmount + fieldDispatchAmount;
+        calculatedTotal += caseTotal;
+
+        if (caseTotal > 0) {
+          particulars.push({
+            title: relatedCase.caseNumber || `Case ${i + 1}`,
+            detail: relatedCase.victimDetailAddress || relatedCase.victimAddress || "",
+            amount: caseTotal,
+          });
+        }
+      }
+
+      const invoiceData = {
+        recipientName: caseData.insuranceCompany || "-",
+        caseNumber: caseData.caseNumber || "-",
+        acceptanceDate: caseData.accidentDate || new Date().toISOString(),
+        submissionDate: caseData.invoicePdfGenerated || new Date().toISOString(),
+        insuranceAccidentNo: accidentNo || undefined,
+        particulars,
+        totalAmount: calculatedTotal,
+        remarks: caseData.invoiceRemarks || "",
+      };
+
+      const pdfBuffer = await generateInvoicePdf(invoiceData);
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `inline; filename="invoice-${accidentNo || caseId}.pdf"`);
+      res.send(Buffer.from(pdfBuffer));
+    } catch (error) {
+      console.error("[View Invoice PDF] Error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Invoice PDF 생성 중 오류가 발생했습니다";
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
+  // ==========================================
   // POST /api/generate-invoice-pdf - INVOICE PDF 생성 및 다운로드
   // ==========================================
   const generateInvoicePdfSchema = z.object({

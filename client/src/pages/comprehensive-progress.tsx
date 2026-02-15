@@ -187,6 +187,10 @@ export default function ComprehensiveProgress() {
   const [showFieldDispatchInvoiceDialog, setShowFieldDispatchInvoiceDialog] =
     useState(false);
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
+  const [showFieldReportPdfDialog, setShowFieldReportPdfDialog] = useState(false);
+  const [showInvoicePdfDialog, setShowInvoicePdfDialog] = useState(false);
+  const [pdfViewerCaseId, setPdfViewerCaseId] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -2509,20 +2513,13 @@ export default function ComprehensiveProgress() {
                             </div>
                           </div>
 
-                          {/* 심사사/조사사: 두 개의 PDF 버튼 표시 */}
+                          {/* 심사사/조사사: 두 개의 PDF 팝업 버튼 표시 */}
                           {(user?.role === "심사사" || user?.role === "조사사") ? (
                             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "16px" }}>
                               <button
                                 onClick={() => {
-                                  localStorage.setItem(
-                                    "selectedFieldSurveyCaseId",
-                                    selectedCase.id,
-                                  );
-                                  localStorage.setItem(
-                                    "returnToComprehensiveProgress",
-                                    "true",
-                                  );
-                                  setLocation("/field-survey/report");
+                                  setPdfViewerCaseId(selectedCase.id);
+                                  setShowFieldReportPdfDialog(true);
                                 }}
                                 style={{
                                   width: "100%",
@@ -2542,10 +2539,8 @@ export default function ComprehensiveProgress() {
                               </button>
                               <button
                                 onClick={() => {
-                                  if (selectedCase) {
-                                    setInvoiceCaseId(selectedCase.id);
-                                    setShowInvoiceDialog(true);
-                                  }
+                                  setPdfViewerCaseId(selectedCase.id);
+                                  setShowInvoicePdfDialog(true);
                                 }}
                                 disabled={!["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "")}
                                 style={{
@@ -4046,9 +4041,7 @@ export default function ComprehensiveProgress() {
             <AlertDialogAction
               onClick={() => {
                 if (cancelTargetCase) {
-                  // 확인 다이얼로그 닫기
                   setCancelConfirmDialogOpen(false);
-                  // 상태를 접수취소로 변경 (onSuccess에서 자동으로 사유 입력 다이얼로그 표시)
                   updateStatusMutation.mutate({
                     caseId: cancelTargetCase.id,
                     status: "접수취소",
@@ -4063,6 +4056,54 @@ export default function ComprehensiveProgress() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 현장출동보고서 PDF 팝업 다이얼로그 */}
+      <Dialog open={showFieldReportPdfDialog} onOpenChange={(open) => {
+        setShowFieldReportPdfDialog(open);
+        if (!open) setPdfViewerCaseId(null);
+      }}>
+        <DialogContent style={{ maxWidth: "900px", width: "90vw", height: "85vh", padding: 0, display: "flex", flexDirection: "column" }}>
+          <DialogHeader style={{ padding: "16px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+            <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
+              현장출동보고서 PDF
+            </DialogTitle>
+          </DialogHeader>
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            {pdfViewerCaseId && showFieldReportPdfDialog && (
+              <iframe
+                src={`/api/view-field-report-pdf/${pdfViewerCaseId}`}
+                style={{ width: "100%", height: "100%", border: "none" }}
+                title="현장출동보고서 PDF"
+                data-testid="iframe-field-report-pdf"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice(청구서) PDF 팝업 다이얼로그 */}
+      <Dialog open={showInvoicePdfDialog} onOpenChange={(open) => {
+        setShowInvoicePdfDialog(open);
+        if (!open) setPdfViewerCaseId(null);
+      }}>
+        <DialogContent style={{ maxWidth: "900px", width: "90vw", height: "85vh", padding: 0, display: "flex", flexDirection: "column" }}>
+          <DialogHeader style={{ padding: "16px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+            <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
+              Invoice(청구서) PDF
+            </DialogTitle>
+          </DialogHeader>
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            {pdfViewerCaseId && showInvoicePdfDialog && (
+              <iframe
+                src={`/api/view-invoice-pdf/${pdfViewerCaseId}`}
+                style={{ width: "100%", height: "100%", border: "none" }}
+                title="Invoice PDF"
+                data-testid="iframe-invoice-pdf"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
