@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -22,6 +22,7 @@ import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { GlobalHeader } from "@/components/global-header";
+import { PdfCanvasViewer } from "@/components/pdf-canvas-viewer";
 import IntakePage from "@/pages/intake";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -189,6 +190,13 @@ export default function ComprehensiveProgress() {
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  const [showFieldReportPdfDialog, setShowFieldReportPdfDialog] = useState(false);
+  const [showInvoicePdfDialog, setShowInvoicePdfDialog] = useState(false);
+  const [fieldReportPdfData, setFieldReportPdfData] = useState<ArrayBuffer | null>(null);
+  const [invoicePdfData, setInvoicePdfData] = useState<ArrayBuffer | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   // SMS 알림 다이얼로그 상태 (추가 정보가 필요한 상태에서만 사용)
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
@@ -2514,18 +2522,22 @@ export default function ComprehensiveProgress() {
                             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "16px" }}>
                               <button
                                 onClick={async () => {
-                                  toast({ title: "PDF 생성 중...", description: "잠시 기다려 주세요." });
+                                  setShowFieldReportPdfDialog(true);
+                                  setPdfLoading(true);
+                                  setPdfError(null);
+                                  setFieldReportPdfData(null);
                                   try {
                                     const response = await fetch(`/api/view-field-report-pdf/${selectedCase.id}`, { credentials: "include" });
                                     if (!response.ok) {
                                       const errData = await response.json().catch(() => null);
                                       throw new Error(errData?.error || `PDF 생성 실패 (${response.status})`);
                                     }
-                                    const blob = await response.blob();
-                                    const url = URL.createObjectURL(blob);
-                                    window.open(url, "_blank");
+                                    const arrayBuffer = await response.arrayBuffer();
+                                    setFieldReportPdfData(arrayBuffer);
                                   } catch (err) {
-                                    toast({ title: "PDF 오류", description: err instanceof Error ? err.message : "PDF를 불러올 수 없습니다", variant: "destructive" });
+                                    setPdfError(err instanceof Error ? err.message : "PDF를 불러올 수 없습니다");
+                                  } finally {
+                                    setPdfLoading(false);
                                   }
                                 }}
                                 style={{
@@ -2546,18 +2558,22 @@ export default function ComprehensiveProgress() {
                               </button>
                               <button
                                 onClick={async () => {
-                                  toast({ title: "PDF 생성 중...", description: "잠시 기다려 주세요." });
+                                  setShowInvoicePdfDialog(true);
+                                  setPdfLoading(true);
+                                  setPdfError(null);
+                                  setInvoicePdfData(null);
                                   try {
                                     const response = await fetch(`/api/view-invoice-pdf/${selectedCase.id}`, { credentials: "include" });
                                     if (!response.ok) {
                                       const errData = await response.json().catch(() => null);
                                       throw new Error(errData?.error || `PDF 생성 실패 (${response.status})`);
                                     }
-                                    const blob = await response.blob();
-                                    const url = URL.createObjectURL(blob);
-                                    window.open(url, "_blank");
+                                    const arrayBuffer = await response.arrayBuffer();
+                                    setInvoicePdfData(arrayBuffer);
                                   } catch (err) {
-                                    toast({ title: "PDF 오류", description: err instanceof Error ? err.message : "PDF를 불러올 수 없습니다", variant: "destructive" });
+                                    setPdfError(err instanceof Error ? err.message : "PDF를 불러올 수 없습니다");
+                                  } finally {
+                                    setPdfLoading(false);
                                   }
                                 }}
                                 disabled={!["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "")}
@@ -4074,6 +4090,44 @@ export default function ComprehensiveProgress() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showFieldReportPdfDialog} onOpenChange={(open) => {
+        setShowFieldReportPdfDialog(open);
+        if (!open) {
+          setFieldReportPdfData(null);
+          setPdfError(null);
+        }
+      }}>
+        <DialogContent style={{ maxWidth: "900px", width: "90vw", height: "85vh", padding: 0, display: "flex", flexDirection: "column" }}>
+          <DialogHeader style={{ padding: "16px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+            <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
+              현장출동보고서 PDF
+            </DialogTitle>
+          </DialogHeader>
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <PdfCanvasViewer pdfData={fieldReportPdfData} loading={pdfLoading} error={pdfError} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showInvoicePdfDialog} onOpenChange={(open) => {
+        setShowInvoicePdfDialog(open);
+        if (!open) {
+          setInvoicePdfData(null);
+          setPdfError(null);
+        }
+      }}>
+        <DialogContent style={{ maxWidth: "900px", width: "90vw", height: "85vh", padding: 0, display: "flex", flexDirection: "column" }}>
+          <DialogHeader style={{ padding: "16px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
+            <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
+              Invoice(청구서) PDF
+            </DialogTitle>
+          </DialogHeader>
+          <div style={{ flex: 1, overflow: "hidden" }}>
+            <PdfCanvasViewer pdfData={invoicePdfData} loading={pdfLoading} error={pdfError} />
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
