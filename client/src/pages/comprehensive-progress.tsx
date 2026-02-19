@@ -2100,8 +2100,8 @@ export default function ComprehensiveProgress() {
                 진행건 상세보기
               </SheetTitle>
               <div style={{ display: "flex", gap: "8px" }}>
-                {/* 접수완료 이후 상태에서만 접수건 상세보기 버튼 표시 */}
-                {(() => {
+                {/* 접수완료 이후 상태에서만 접수건 상세보기 버튼 표시 (심사사/조사사는 숨김) */}
+                {user?.role !== "심사사" && user?.role !== "조사사" && (() => {
                   const currentCase = cases?.find(
                     (c) => c.id === selectedCaseId,
                   );
@@ -2141,7 +2141,7 @@ export default function ComprehensiveProgress() {
                       padding: "0 20px",
                     }}
                   >
-                    {["기본정보", "일자", "진행단계", "진행메모"].map((tab) => (
+                    {(user?.role === "심사사" || user?.role === "조사사" ? ["기본정보", "일자", "진행단계"] : ["기본정보", "일자", "진행단계", "진행메모"]).map((tab) => (
                       <button
                         key={tab}
                         onClick={() => setDetailTab(tab)}
