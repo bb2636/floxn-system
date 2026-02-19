@@ -35,7 +35,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -188,13 +187,6 @@ export default function ComprehensiveProgress() {
   const [showFieldDispatchInvoiceDialog, setShowFieldDispatchInvoiceDialog] =
     useState(false);
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
-  const [showFieldReportPdfDialog, setShowFieldReportPdfDialog] = useState(false);
-  const [showInvoicePdfDialog, setShowInvoicePdfDialog] = useState(false);
-  const [pdfViewerCaseId, setPdfViewerCaseId] = useState<string | null>(null);
-  const [fieldReportPdfUrl, setFieldReportPdfUrl] = useState<string | null>(null);
-  const [invoicePdfUrl, setInvoicePdfUrl] = useState<string | null>(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -2522,11 +2514,7 @@ export default function ComprehensiveProgress() {
                             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "16px" }}>
                               <button
                                 onClick={async () => {
-                                  setPdfViewerCaseId(selectedCase.id);
-                                  setShowFieldReportPdfDialog(true);
-                                  setPdfLoading(true);
-                                  setPdfError(null);
-                                  setFieldReportPdfUrl(null);
+                                  toast({ title: "PDF 생성 중...", description: "잠시 기다려 주세요." });
                                   try {
                                     const response = await fetch(`/api/view-field-report-pdf/${selectedCase.id}`, { credentials: "include" });
                                     if (!response.ok) {
@@ -2535,11 +2523,9 @@ export default function ComprehensiveProgress() {
                                     }
                                     const blob = await response.blob();
                                     const url = URL.createObjectURL(blob);
-                                    setFieldReportPdfUrl(url);
+                                    window.open(url, "_blank");
                                   } catch (err) {
-                                    setPdfError(err instanceof Error ? err.message : "PDF를 불러올 수 없습니다");
-                                  } finally {
-                                    setPdfLoading(false);
+                                    toast({ title: "PDF 오류", description: err instanceof Error ? err.message : "PDF를 불러올 수 없습니다", variant: "destructive" });
                                   }
                                 }}
                                 style={{
@@ -2560,11 +2546,7 @@ export default function ComprehensiveProgress() {
                               </button>
                               <button
                                 onClick={async () => {
-                                  setPdfViewerCaseId(selectedCase.id);
-                                  setShowInvoicePdfDialog(true);
-                                  setPdfLoading(true);
-                                  setPdfError(null);
-                                  setInvoicePdfUrl(null);
+                                  toast({ title: "PDF 생성 중...", description: "잠시 기다려 주세요." });
                                   try {
                                     const response = await fetch(`/api/view-invoice-pdf/${selectedCase.id}`, { credentials: "include" });
                                     if (!response.ok) {
@@ -2573,11 +2555,9 @@ export default function ComprehensiveProgress() {
                                     }
                                     const blob = await response.blob();
                                     const url = URL.createObjectURL(blob);
-                                    setInvoicePdfUrl(url);
+                                    window.open(url, "_blank");
                                   } catch (err) {
-                                    setPdfError(err instanceof Error ? err.message : "PDF를 불러올 수 없습니다");
-                                  } finally {
-                                    setPdfLoading(false);
+                                    toast({ title: "PDF 오류", description: err instanceof Error ? err.message : "PDF를 불러올 수 없습니다", variant: "destructive" });
                                   }
                                 }}
                                 disabled={!["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "")}
@@ -4095,85 +4075,6 @@ export default function ComprehensiveProgress() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 현장출동보고서 PDF 팝업 다이얼로그 */}
-      <Dialog open={showFieldReportPdfDialog} onOpenChange={(open) => {
-        setShowFieldReportPdfDialog(open);
-        if (!open) {
-          setPdfViewerCaseId(null);
-          if (fieldReportPdfUrl) { URL.revokeObjectURL(fieldReportPdfUrl); setFieldReportPdfUrl(null); }
-          setPdfError(null);
-        }
-      }}>
-        <DialogContent style={{ maxWidth: "900px", width: "90vw", height: "85vh", padding: 0, display: "flex", flexDirection: "column" }}>
-          <DialogHeader style={{ padding: "16px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
-            <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
-              현장출동보고서 PDF
-            </DialogTitle>
-            <DialogDescription className="sr-only">현장출동보고서 PDF 미리보기</DialogDescription>
-          </DialogHeader>
-          <div style={{ flex: 1, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {pdfLoading && showFieldReportPdfDialog && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                <div className="animate-spin" style={{ width: "40px", height: "40px", border: "3px solid #e5e7eb", borderTop: "3px solid #008FED", borderRadius: "50%" }} />
-                <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#6b7280" }}>PDF 생성 중...</span>
-              </div>
-            )}
-            {pdfError && showFieldReportPdfDialog && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "20px" }}>
-                <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#ef4444" }}>{pdfError}</span>
-              </div>
-            )}
-            {fieldReportPdfUrl && !pdfLoading && (
-              <iframe
-                src={fieldReportPdfUrl}
-                style={{ width: "100%", height: "100%", border: "none" }}
-                title="현장출동보고서 PDF"
-                data-testid="iframe-field-report-pdf"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Invoice(청구서) PDF 팝업 다이얼로그 */}
-      <Dialog open={showInvoicePdfDialog} onOpenChange={(open) => {
-        setShowInvoicePdfDialog(open);
-        if (!open) {
-          setPdfViewerCaseId(null);
-          if (invoicePdfUrl) { URL.revokeObjectURL(invoicePdfUrl); setInvoicePdfUrl(null); }
-          setPdfError(null);
-        }
-      }}>
-        <DialogContent style={{ maxWidth: "900px", width: "90vw", height: "85vh", padding: 0, display: "flex", flexDirection: "column" }}>
-          <DialogHeader style={{ padding: "16px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
-            <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
-              Invoice(청구서) PDF
-            </DialogTitle>
-            <DialogDescription className="sr-only">Invoice 청구서 PDF 미리보기</DialogDescription>
-          </DialogHeader>
-          <div style={{ flex: 1, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {pdfLoading && showInvoicePdfDialog && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                <div className="animate-spin" style={{ width: "40px", height: "40px", border: "3px solid #e5e7eb", borderTop: "3px solid #008FED", borderRadius: "50%" }} />
-                <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#6b7280" }}>PDF 생성 중...</span>
-              </div>
-            )}
-            {pdfError && showInvoicePdfDialog && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "20px" }}>
-                <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#ef4444" }}>{pdfError}</span>
-              </div>
-            )}
-            {invoicePdfUrl && !pdfLoading && (
-              <iframe
-                src={invoicePdfUrl}
-                style={{ width: "100%", height: "100%", border: "none" }}
-                title="Invoice PDF"
-                data-testid="iframe-invoice-pdf"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
