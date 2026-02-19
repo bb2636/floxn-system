@@ -4098,14 +4098,12 @@ export default function ComprehensiveProgress() {
           setPdfError(null);
         }
       }}>
-        <DialogContent style={{ maxWidth: "900px", width: "90vw", height: "85vh", padding: 0, display: "flex", flexDirection: "column" }}>
-          <DialogHeader style={{ padding: "16px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
-            <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
-              현장출동보고서 PDF
-            </DialogTitle>
+        <DialogContent style={{ maxWidth: "95vw", width: "1100px", height: "90vh", padding: 0, display: "flex", flexDirection: "column" }}>
+          <DialogHeader className="sr-only">
+            <DialogTitle>현장출동보고서 PDF</DialogTitle>
           </DialogHeader>
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <PdfCanvasViewer pdfData={fieldReportPdfData} loading={pdfLoading} error={pdfError} />
+            <PdfCanvasViewer pdfData={fieldReportPdfData} loading={pdfLoading} error={pdfError} fileName="현장출동보고서.pdf" />
           </div>
         </DialogContent>
       </Dialog>
@@ -4117,14 +4115,12 @@ export default function ComprehensiveProgress() {
           setPdfError(null);
         }
       }}>
-        <DialogContent style={{ maxWidth: "900px", width: "90vw", height: "85vh", padding: 0, display: "flex", flexDirection: "column" }}>
-          <DialogHeader style={{ padding: "16px 24px", borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
-            <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
-              Invoice(청구서) PDF
-            </DialogTitle>
+        <DialogContent style={{ maxWidth: "95vw", width: "1100px", height: "90vh", padding: 0, display: "flex", flexDirection: "column" }}>
+          <DialogHeader className="sr-only">
+            <DialogTitle>Invoice(청구서) PDF</DialogTitle>
           </DialogHeader>
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <PdfCanvasViewer pdfData={invoicePdfData} loading={pdfLoading} error={pdfError} />
+            <PdfCanvasViewer pdfData={invoicePdfData} loading={pdfLoading} error={pdfError} fileName="Invoice_청구서.pdf" />
           </div>
         </DialogContent>
       </Dialog>
