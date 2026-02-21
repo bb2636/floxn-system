@@ -2423,29 +2423,6 @@ async function renderPhotoPage(
     });
   }
 
-  const firstUploadDate = firstImage.doc.createdAt
-    ? new Date(firstImage.doc.createdAt).toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-      })
-    : "-";
-  drawText(page, {
-    x: MARGIN + 5,
-    y: firstY + 8,
-    text: firstImage.doc.fileName || "",
-    font: fonts.regular,
-    size: 8,
-    color: { r: 0.3, g: 0.3, b: 0.3 },
-  });
-  drawText(page, {
-    x: A4_WIDTH - MARGIN - 100,
-    y: firstY + 8,
-    text: `업로드:${firstUploadDate}`,
-    font: fonts.regular,
-    size: 8,
-    color: { r: 0.3, g: 0.3, b: 0.3 },
-  });
 
   if (images[1]) {
     const secondImage = images[1];
@@ -2510,29 +2487,6 @@ async function renderPhotoPage(
       });
     }
 
-    const secondUploadDate = secondImage.doc.createdAt
-      ? new Date(secondImage.doc.createdAt).toLocaleDateString("ko-KR", {
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-        })
-      : "-";
-    drawText(page, {
-      x: MARGIN + 5,
-      y: secondY + 8,
-      text: secondImage.doc.fileName || "",
-      font: fonts.regular,
-      size: 8,
-      color: { r: 0.3, g: 0.3, b: 0.3 },
-    });
-    drawText(page, {
-      x: A4_WIDTH - MARGIN - 100,
-      y: secondY + 8,
-      text: `업로드:${secondUploadDate}`,
-      font: fonts.regular,
-      size: 8,
-      color: { r: 0.3, g: 0.3, b: 0.3 },
-    });
   }
 }
 
@@ -2661,29 +2615,6 @@ async function renderSingleImagePage(
     });
   }
 
-  const uploadDate = imageDoc.doc.createdAt
-    ? new Date(imageDoc.doc.createdAt).toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-      })
-    : "-";
-  drawText(page, {
-    x: MARGIN + 5,
-    y: MARGIN + 30,
-    text: imageDoc.doc.fileName || "",
-    font: fonts.regular,
-    size: 8,
-    color: { r: 0.3, g: 0.3, b: 0.3 },
-  });
-  drawText(page, {
-    x: A4_WIDTH - MARGIN - 100,
-    y: MARGIN + 30,
-    text: `업로드:${uploadDate}`,
-    font: fonts.regular,
-    size: 8,
-    color: { r: 0.3, g: 0.3, b: 0.3 },
-  });
 }
 
 async function renderRecoveryAreaPage(
