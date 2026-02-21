@@ -1517,6 +1517,7 @@ export default function ComprehensiveProgress() {
                   fontWeight: 600,
                   fontSize: "13px",
                   color: "rgba(12, 12, 12, 0.6)",
+                  textAlign: "center",
                 }}
               >
                 승인금액
@@ -1538,6 +1539,7 @@ export default function ComprehensiveProgress() {
                   fontWeight: 600,
                   fontSize: "13px",
                   color: "rgba(12, 12, 12, 0.6)",
+                  textAlign: "center",
                 }}
               >
                 진행상태
@@ -1568,6 +1570,7 @@ export default function ComprehensiveProgress() {
                   fontWeight: 600,
                   fontSize: "13px",
                   color: "rgba(12, 12, 12, 0.6)",
+                  textAlign: "center",
                 }}
               >자세히 보기</div>
             </div>
