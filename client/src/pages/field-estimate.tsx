@@ -974,6 +974,9 @@ export default function FieldEstimate() {
       const workName = row.workName || '';
       if (!workType) return; // 공종이 없으면 건너뜀
       
+      // 연동 제외 공종은 노무비 연동 제외
+      if (AREA_DISPLAY_ONLY_WORK_TYPES.includes(workType)) return;
+      
       // 산출표 표기 전용 공사명은 노무비 연동 제외
       if (AREA_DISPLAY_ONLY_WORK_NAMES.includes(workName)) return;
       
@@ -1157,6 +1160,9 @@ export default function FieldEstimate() {
       const workType = row.workType || '';
       const workName = row.workName || '';
       if (!workType || !workName) return;
+      
+      // 연동 제외 공종은 자재비 연동 제외
+      if (AREA_DISPLAY_ONLY_WORK_TYPES.includes(workType)) return;
       
       // 반자틀은 자동 연동 제외
       if (workName === '반자틀') return;
@@ -1566,6 +1572,9 @@ export default function FieldEstimate() {
   
   // 산출표 표기 전용 공사명 (노무비/자재비 연동 제외)
   const AREA_DISPLAY_ONLY_WORK_NAMES = ['수성페인트', '탄성코트', '무늬코트', '줄눈', '타일', 'SMC', '리빙보드', '도기류'];
+  
+  // 노무비/자재비 연동 제외 공종 (공종 단위로 연동 차단)
+  const AREA_DISPLAY_ONLY_WORK_TYPES = ['타일공사', '욕실공사'];
   
   // 위치별 공종 매핑 (복구면적 산출표용)
   const WORK_TYPES_BY_LOCATION: Record<string, string[]> = {
