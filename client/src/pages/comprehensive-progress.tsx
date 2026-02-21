@@ -1490,9 +1490,7 @@ export default function ComprehensiveProgress() {
                     fontSize: "13px",
                     color: "rgba(12, 12, 12, 0.6)",
                   }}
-                >
-                  동작
-                </div>
+                >수행업무</div>
               )}
               <div
                 style={{
