@@ -3447,6 +3447,19 @@ export default function FieldEstimate() {
   const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string, repairArea?: number) => {
     if (!workType || !workName) return;
     
+    // 연동 제외 공종/공사명으로 변경된 경우: 기존 연동 행 제거
+    if (AREA_DISPLAY_ONLY_WORK_TYPES.includes(workType) || AREA_DISPLAY_ONLY_WORK_NAMES.includes(workName)) {
+      console.log('[일위대가 연동] 연동 제외 대상 - 기존 행 제거:', workType, workName);
+      setLaborCostRows(prev => prev.filter(r => 
+        r.sourceAreaRowId !== sourceRowId && 
+        !r.sourceAreaRowId?.startsWith(`${sourceRowId}::`)
+      ));
+      setMaterialRows(prev => prev.filter(r => 
+        r.sourceAreaRowId !== sourceRowId
+      ));
+      return;
+    }
+    
     // 삭제 키가 로드되기 전에는 노무비 생성하지 않음 (삭제한 노무비가 재생성되는 것 방지)
     if (!exclusionsLoaded) {
       console.log('[일위대가 연동] 삭제 키 미로드 - 대기:', workType, workName);
