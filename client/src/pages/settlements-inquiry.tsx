@@ -783,18 +783,19 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
       });
     }
 
-    // 접수번호 검색 필터 적용
     if (searchQuery.trim()) {
-      const extractNumbers = (str: string | null) =>
-        (str || "").replace(/[^0-9]/g, "");
-      const normalizedQuery = extractNumbers(searchQuery.trim());
-
-      if (normalizedQuery) {
-        filtered = filtered.filter((row) => {
-          const caseNumberDigits = extractNumbers(row.caseNumber);
-          return caseNumberDigits.includes(normalizedQuery);
-        });
-      }
+      const query = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter((row) => {
+        return (
+          (row.caseNumber || "").toLowerCase().includes(query) ||
+          (row.insuranceCompany || "").toLowerCase().includes(query) ||
+          (row.accidentNumber || "").toLowerCase().includes(query) ||
+          (row.insuredName || "").toLowerCase().includes(query) ||
+          (row.manager || "").toLowerCase().includes(query) ||
+          (row.assignedPartner || "").toLowerCase().includes(query) ||
+          (row.withdrawalNumber || "").toLowerCase().includes(query)
+        );
+      });
     }
 
     // 기간 필터 적용 (정산일 기준)
