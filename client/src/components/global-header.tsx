@@ -249,7 +249,7 @@ export function GlobalHeader() {
 
       {/* Desktop Header */}
       <header
-        className="hidden lg:flex relative w-full h-[89px] px-8 items-center justify-between bg-white"
+        className="hidden lg:flex relative w-full h-[89px] pl-20 items-center justify-between bg-white"
         style={{
           borderBottom: "1px solid #E5E7EB",
         }}
@@ -261,7 +261,7 @@ export function GlobalHeader() {
         </div>
 
         {/* Navigation Menu */}
-        <div className="flex items-center gap-6 flex-1 px-6 justify-center">
+        <div className="flex items-center gap-6 flex-1 px-4">
           {menuItems.map((item) => {
             return (
               <button
