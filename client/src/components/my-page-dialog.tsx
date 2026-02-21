@@ -356,14 +356,6 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
           </div>
 
           <div className="flex-1 p-8 overflow-y-auto relative" style={{ maxHeight: 'calc(90vh - 2rem)' }}>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg"
-              data-testid="button-close-mypage"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-
             {activeTab === "profile" && (
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">내 프로필 설정</h3>
