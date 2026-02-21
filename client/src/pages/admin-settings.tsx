@@ -3589,108 +3589,22 @@ export default function AdminSettings() {
                 </h1>
               </div>
 
-          {/* Search Card */}
+          {/* Search & Role Filter */}
           <div
-            className="mb-6 rounded-xl"
+            className="mb-6 rounded-xl px-6 py-5"
             style={{
               background: "#FFFFFF",
-              boxShadow: "0px 0px 20px #DBE9F5",
+              border: "1px solid rgba(12, 12, 12, 0.08)",
             }}
           >
-            {/* Card Header */}
-            <div
-              className="px-6 py-6"
-              style={{
-                borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  letterSpacing: "-0.02em",
-                  color: "#0C0C0C",
-                }}
-              >
-                조회하기
-              </span>
-            </div>
-
-            {/* Search Section */}
-            <div className="px-5 py-6 flex flex-col gap-6">
-              {/* Search Input */}
-              <div>
-                <label
-                  className="mb-2 block"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    letterSpacing: "-0.01em",
-                    color: "#686A6E",
-                  }}
-                >
-                  검색
-                </label>
-                <div className="flex items-center">
-                  <div
-                    className="flex items-center flex-1 px-5 py-4 gap-3"
-                    style={{
-                      background: "#FDFDFD",
-                      border: "2px solid rgba(12, 12, 12, 0.08)",
-                      borderRadius: "8px 0px 0px 8px",
-                    }}
-                  >
-                    <Search className="w-[30px] h-[30px] text-[#008FED]" />
-                    <input
-                      type="text"
-                      placeholder="성함을 입력해주세요."
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      onKeyDown={handleSearchKeyDown}
-                      className="flex-1 outline-none bg-transparent"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        letterSpacing: "-0.02em",
-                        color: searchInput
-                          ? "rgba(12, 12, 12, 0.9)"
-                          : "rgba(12, 12, 12, 0.4)",
-                      }}
-                      data-testid="input-search"
-                    />
-                  </div>
-                  <button
-                    onClick={handleSearch}
-                    className="px-5 py-4"
-                    style={{
-                      width: "155px",
-                      height: "68px",
-                      background: "#008FED",
-                      border: "2px solid rgba(12, 12, 12, 0.08)",
-                      borderRadius: "0px 8px 8px 0px",
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      letterSpacing: "-0.02em",
-                      color: "#FDFDFD",
-                    }}
-                    data-testid="button-search"
-                  >
-                    검색
-                  </button>
-                </div>
-              </div>
-
+            <div className="flex items-end gap-8 flex-wrap">
               {/* Role Filter */}
               <div>
                 <label
                   className="mb-2 block"
                   style={{
                     fontFamily: "Pretendard",
-                    fontSize: "14px",
+                    fontSize: "13px",
                     fontWeight: 500,
                     letterSpacing: "-0.01em",
                     color: "#686A6E",
@@ -3703,7 +3617,7 @@ export default function AdminSettings() {
                     <button
                       key={filter}
                       onClick={() => setRoleFilter(filter)}
-                      className="px-4 py-3 rounded-md"
+                      className="px-4 py-2 rounded-md"
                       style={{
                         background:
                           roleFilter === filter
@@ -3712,13 +3626,9 @@ export default function AdminSettings() {
                         border:
                           roleFilter === filter
                             ? "2px solid rgba(255, 255, 255, 0.04)"
-                            : "1px solid rgba(12, 12, 12, 0.3)",
-                        boxShadow:
-                          roleFilter === filter
-                            ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)"
-                            : "none",
+                            : "1px solid rgba(12, 12, 12, 0.2)",
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
+                        fontSize: "14px",
                         fontWeight: roleFilter === filter ? 600 : 400,
                         letterSpacing: "-0.02em",
                         color:
@@ -3731,6 +3641,72 @@ export default function AdminSettings() {
                       {filter}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Search Input */}
+              <div className="flex-1 min-w-[280px]">
+                <label
+                  className="mb-2 block"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
+                  검색
+                </label>
+                <div className="flex items-center gap-0">
+                  <div
+                    className="flex items-center flex-1 px-4 gap-2"
+                    style={{
+                      height: "42px",
+                      background: "#FDFDFD",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRight: "none",
+                      borderRadius: "6px 0 0 6px",
+                    }}
+                  >
+                    <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="성함을 입력해주세요."
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                      className="flex-1 outline-none bg-transparent"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                      data-testid="input-search"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSearch}
+                    style={{
+                      height: "42px",
+                      padding: "0 20px",
+                      background: "#008FED",
+                      border: "none",
+                      borderRadius: "0 6px 6px 0",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "#FFFFFF",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                    data-testid="button-search"
+                  >
+                    검색
+                  </button>
                 </div>
               </div>
             </div>
