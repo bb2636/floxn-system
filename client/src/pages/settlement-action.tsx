@@ -363,19 +363,6 @@ export default function SettlementAction() {
           border: "1px solid rgba(12, 12, 12, 0.08)",
         }}
       >
-        {/* Section Title */}
-        <h2
-          className="mb-4"
-          style={{
-            fontFamily: "Pretendard",
-            fontSize: "16px",
-            fontWeight: 600,
-            color: "#0C0C0C",
-          }}
-        >
-          조회하기
-        </h2>
-
         {/* Search Input */}
         <div className="flex gap-3 mb-6">
           <div className="relative flex-1">

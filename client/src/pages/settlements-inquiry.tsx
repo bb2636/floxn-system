@@ -876,18 +876,6 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           border: "1px solid rgba(12, 12, 12, 0.08)",
         }}
       >
-        <h2
-          className="mb-6"
-          style={{
-            fontFamily: "Pretendard",
-            fontSize: "16px",
-            fontWeight: 600,
-            color: "#0C0C0C",
-          }}
-        >
-          조회하기
-        </h2>
-
         {/* Search */}
         <div className="mb-6">
           <label
