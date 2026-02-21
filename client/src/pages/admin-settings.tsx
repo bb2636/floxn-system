@@ -1160,20 +1160,6 @@ export default function AdminSettings() {
           }}
         >
           {/* Section Header */}
-          <div className="px-8 py-4">
-            <span
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "15px",
-                fontWeight: 500,
-                letterSpacing: "-0.01em",
-                color: "rgba(12, 12, 12, 0.5)",
-              }}
-            >
-              정산 및 통계
-            </span>
-          </div>
-
           {/* Menu Items */}
           <div className="flex flex-col px-3 gap-2">
             {sidebarMenus.map((menu) => (
