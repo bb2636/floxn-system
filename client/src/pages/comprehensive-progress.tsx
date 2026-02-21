@@ -1172,20 +1172,6 @@ export default function ComprehensiveProgress() {
           }}
         >
           {/* Header */}
-          <h2
-            style={{
-              fontFamily: "Pretendard",
-              fontWeight: 600,
-              fontSize: "16px",
-              lineHeight: "128%",
-              letterSpacing: "-0.02em",
-              color: "#0C0C0C",
-              marginBottom: "20px",
-            }}
-          >
-            검색
-          </h2>
-
           {/* Status Filter Dropdown + Search Input (한 줄 배치) */}
           <div
             style={{
