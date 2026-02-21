@@ -1501,9 +1501,7 @@ export default function ComprehensiveProgress() {
                   fontSize: "13px",
                   color: "rgba(12, 12, 12, 0.6)",
                 }}
-              >
-                요청
-              </div>
+              >자세히 보기</div>
             </div>
 
             {/* Table Body */}
@@ -1970,7 +1968,7 @@ export default function ComprehensiveProgress() {
                     <div>
                       {caseItem.status === "배당대기" ? (
                         // 배당대기 상태 - 임시 저장 건이므로 이어서 작성하기 버튼
-                        <button
+                        (<button
                           onClick={(e) => {
                             e.stopPropagation();
                             localStorage.setItem("editCaseId", caseItem.id);
@@ -1989,12 +1987,11 @@ export default function ComprehensiveProgress() {
                             whiteSpace: "nowrap",
                           }}
                           data-testid={`button-continue-draft-${caseItem.id}`}
-                        >
-                          이어서 작성하기
-                        </button>
+                        >이어서 작성하기
+                                                  </button>)
                       ) : (
                         // 접수완료 이후 상태 - 상세보기 버튼 및 청구하기 버튼
-                        <div
+                        (<div
                           style={{
                             display: "flex",
                             gap: "8px",
@@ -2049,7 +2046,7 @@ export default function ComprehensiveProgress() {
                                 청구하기
                               </button>
                             )}
-                        </div>
+                        </div>)
                       )}
                     </div>
                   </div>
@@ -3577,7 +3574,6 @@ export default function ComprehensiveProgress() {
             })()}
         </SheetContent>
       </Sheet>
-
       {/* LMS 발송 확인 다이얼로그 */}
       <AlertDialog open={showLmsConfirmDialog} onOpenChange={setShowLmsConfirmDialog}>
         <AlertDialogContent>
@@ -3624,7 +3620,6 @@ export default function ComprehensiveProgress() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* 삭제 확인 Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
@@ -3997,7 +3992,6 @@ export default function ComprehensiveProgress() {
           }}
         />
       )}
-
       {/* 상태 변경 확인 다이얼로그 */}
       <AlertDialog
         open={statusChangeDialogOpen}
@@ -4047,7 +4041,6 @@ export default function ComprehensiveProgress() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* 접수취소 확인 다이얼로그 */}
       <AlertDialog
         open={cancelConfirmDialogOpen}
@@ -4090,7 +4083,6 @@ export default function ComprehensiveProgress() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       <Dialog open={showFieldReportPdfDialog} onOpenChange={(open) => {
         setShowFieldReportPdfDialog(open);
         if (!open) {
@@ -4107,7 +4099,6 @@ export default function ComprehensiveProgress() {
           </div>
         </DialogContent>
       </Dialog>
-
       <Dialog open={showInvoicePdfDialog} onOpenChange={(open) => {
         setShowInvoicePdfDialog(open);
         if (!open) {
@@ -4124,7 +4115,6 @@ export default function ComprehensiveProgress() {
           </div>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
