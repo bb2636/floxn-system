@@ -1851,6 +1851,10 @@ export default function FieldEstimate() {
         row.workType && row.workType !== '' &&
         row.workName && row.workName !== '선택' && row.workName !== '';
       
+      // 연동 제외 공종/공사명은 건너뛰기
+      if (AREA_DISPLAY_ONLY_WORK_TYPES.includes(row.workType || '')) return false;
+      if (AREA_DISPLAY_ONLY_WORK_NAMES.includes(row.workName || '')) return false;
+      
       // 아직 연동되지 않은 행만
       const notYetSynced = !existingSourceAreaIds.has(row.id);
       
@@ -1995,6 +1999,12 @@ export default function FieldEstimate() {
           
           return true;
         } else {
+          // 연동 제외 공종/공사명으로 변경된 경우 → 노무비 행 삭제
+          if (AREA_DISPLAY_ONLY_WORK_TYPES.includes(linkedAreaRow.workType || '') || 
+              AREA_DISPLAY_ONLY_WORK_NAMES.includes(linkedAreaRow.workName || '')) {
+            console.log('[Reconcile] 연동 제외 대상 → 기존 행 삭제:', linkedAreaRow.workType, linkedAreaRow.workName);
+            return false;
+          }
           // 일반 연동 행: 공사명이 변경되었으면 삭제 (새로 생성됨)
           if (laborRow.workName !== linkedAreaRow.workName) {
             console.log('[Reconcile] 공사명 변경 → 기존 행 삭제:', laborRow.workName, '→', linkedAreaRow.workName);
@@ -2190,6 +2200,10 @@ export default function FieldEstimate() {
     
     rows.forEach(row => {
       if (row.workType && row.workName && row.workType !== '철거공사') {
+        // 연동 제외 공종/공사명은 철거공사 연동도 제외
+        if (AREA_DISPLAY_ONLY_WORK_TYPES.includes(row.workType)) return;
+        if (AREA_DISPLAY_ONLY_WORK_NAMES.includes(row.workName)) return;
+        
         const matchedWorkName = matchDemolitionWorkName(row.workName);
         if (matchedWorkName) {
           const repairArea = Number(row.repairArea) || 0;
