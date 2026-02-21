@@ -135,23 +135,18 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
     },
   });
 
-  // Menu structure for favorites
+  // Menu structure for favorites (실제 헤더/사이드바 메뉴와 일치)
   const menuStructure = [
     { category: "홈", items: [] },
-    { category: "새로운 접수", items: [] },
-    { category: "진행상황", items: [] },
-    { 
-      category: "현장조사", 
-      items: ["현장입력", "도면 작성", "증빙자료 업로드", "견적서 작성", "보고서 작성"] 
-    },
+    { category: "접수하기", items: [] },
     { category: "종합진행관리", items: [] },
     { 
-      category: "통계 및 정산", 
-      items: ["통계", "정산조회", "정산하기"] 
+      category: "정산 및 통계", 
+      items: ["정산 조회", "통계"] 
     },
     { 
       category: "관리자 설정", 
-      items: ["계정 관리", "DB관리", "1:1 문의 관리", "기준정보 관리", "알림 메시지 전송", "접근권한관리"] 
+      items: ["사용자 계정 관리", "접근 권한 관리", "1:1 문의 관리", "공지사항 관리", "DB 관리", "기준정보 관리", "변경 로그 관리"] 
     },
   ];
 
