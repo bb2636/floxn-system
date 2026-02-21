@@ -363,22 +363,26 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
                   최신 연락수단을 유지해주세요. 변경사항은 즉시 저장됩니다.
                 </p>
 
-                <div 
-                  className="w-24 h-24 rounded-lg flex items-center justify-center mb-6 relative"
-                  style={{ background: 'rgba(0, 143, 237, 0.15)' }}
-                >
-                  <span className="text-3xl font-bold text-[#008FED]">
-                    {getInitials(user.name)}
-                  </span>
-                  <button 
-                    className="absolute bottom-0 right-0 w-7 h-7 bg-white rounded-full shadow flex items-center justify-center"
-                    data-testid="button-edit-avatar"
+                <div className="flex items-center gap-4 mb-6">
+                  <div 
+                    className="w-24 h-24 rounded-lg flex items-center justify-center relative flex-shrink-0"
+                    style={{ background: 'rgba(0, 143, 237, 0.15)' }}
                   >
-                    <Pencil className="w-3.5 h-3.5 text-gray-500" />
-                  </button>
+                    <span className="text-3xl font-bold text-[#008FED]">
+                      {getInitials(user.name)}
+                    </span>
+                    <button 
+                      className="absolute bottom-0 right-0 w-7 h-7 bg-white rounded-full shadow flex items-center justify-center"
+                      data-testid="button-edit-avatar"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                    </button>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400" style={{ fontFamily: "Pretendard" }}>성함</span>
+                    <p className="text-base font-semibold text-gray-900" style={{ fontFamily: "Pretendard" }}>{user.name}</p>
+                  </div>
                 </div>
-
-                {renderReadOnlyField("성함", user.name)}
                 {renderReadOnlyField("아이디", user.username)}
                 {renderEditableField("연락처", "phone", user.phone)}
                 {renderEditableField("이메일", "email", user.email)}
