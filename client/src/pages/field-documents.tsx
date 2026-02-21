@@ -212,6 +212,7 @@ export default function FieldDocuments() {
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false);
+  const [showRelatedCasesDropdown, setShowRelatedCasesDropdown] = useState(false);
   const [caseSearchQuery, setCaseSearchQuery] = useState("");
   const [showClaimSubmitDialog, setShowClaimSubmitDialog] = useState(false);
 
@@ -261,6 +262,18 @@ export default function FieldDocuments() {
   const { data: selectedCase, isLoading: isLoadingCase } = useQuery<Case>({
     queryKey: [`/api/cases/${selectedCaseId}`],
     enabled: !!selectedCaseId,
+  });
+
+  // 동일 사고번호(증권번호) 관련 케이스 조회
+  const { data: relatedCases = [] } = useQuery<Case[]>({
+    queryKey: ["/api/cases"],
+    enabled: !!selectedCase?.insuranceAccidentNo,
+    select: (cases) => {
+      if (!selectedCase?.insuranceAccidentNo) return [];
+      return cases.filter(
+        (c) => c.insuranceAccidentNo === selectedCase.insuranceAccidentNo
+      );
+    },
   });
 
   // 증빙자료 등록은 제출 후에도 전체 수정 가능 (파일 업로드/삭제, 카테고리 변경 모두 허용)
@@ -1263,21 +1276,140 @@ export default function FieldDocuments() {
             </div>
 
             {/* 다른 건 선택 버튼 */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCaseSearchModalOpen(true)}
-              className="h-8"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "13px",
-                fontWeight: 500,
-              }}
-              data-testid="button-select-other-case"
-            >
-              <Search className="w-3.5 h-3.5 mr-1.5" />
-              다른 건 선택
-            </Button>
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRelatedCasesDropdown(!showRelatedCasesDropdown)}
+                className="h-8"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                }}
+                data-testid="button-select-other-case"
+              >
+                <Search className="w-3.5 h-3.5 mr-1.5" />
+                다른 건 선택
+              </Button>
+
+              {showRelatedCasesDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-[99]"
+                    onClick={() => setShowRelatedCasesDropdown(false)}
+                  />
+                  <div
+                    className="absolute right-0 top-full mt-2 z-[100] rounded-lg shadow-lg overflow-hidden"
+                    style={{
+                      width: "340px",
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                    }}
+                  >
+                    <div
+                      className="px-4 py-3"
+                      style={{
+                        borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          color: "#0C0C0C",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        관련 케이스 선택
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          fontWeight: 400,
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        동일 접수번호의 케이스로 전환합니다
+                      </div>
+                    </div>
+                    <div className="py-1">
+                      {relatedCases.length <= 1 ? (
+                        <div
+                          className="px-4 py-3 text-center"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "13px",
+                            color: "rgba(12, 12, 12, 0.4)",
+                          }}
+                        >
+                          관련 케이스가 없습니다
+                        </div>
+                      ) : (
+                        relatedCases.map((rc) => {
+                          const isCurrent = rc.id === selectedCaseId;
+                          const suffix = rc.caseNumber?.split("-").pop() || "";
+                          const label = suffix === "0" ? "손해방지"
+                            : `피해세대 ${suffix}`;
+                          return (
+                            <div
+                              key={rc.id}
+                              onClick={() => {
+                                if (!isCurrent && rc.id) {
+                                  handleCaseSelect(rc.id);
+                                  setShowRelatedCasesDropdown(false);
+                                }
+                              }}
+                              className={`px-4 py-3 flex items-center gap-2 ${isCurrent ? "" : "cursor-pointer hover:bg-gray-50"}`}
+                              style={{
+                                borderBottom: "1px solid rgba(12, 12, 12, 0.05)",
+                                background: isCurrent ? "rgba(255, 193, 7, 0.08)" : undefined,
+                              }}
+                              data-testid={`related-case-${rc.id}`}
+                            >
+                              <span
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  fontWeight: isCurrent ? 600 : 400,
+                                  color: isCurrent ? "#D97706" : "#0C0C0C",
+                                }}
+                              >
+                                {formatCaseNumber(rc.caseNumber)}
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "13px",
+                                  fontWeight: 400,
+                                  color: "rgba(12, 12, 12, 0.5)",
+                                }}
+                              >
+                                ({label})
+                              </span>
+                              {isCurrent && (
+                                <span
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontSize: "12px",
+                                    fontWeight: 600,
+                                    color: "#D97706",
+                                  }}
+                                >
+                                  - 현재
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           <div
