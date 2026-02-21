@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { X, Pencil, Star, Home, CalendarPlus, AlertCircle, Building2, TrendingUp, Settings, FileText, Plus, MessageCircle, ChevronDown, ChevronUp, Eye, EyeOff, Lock } from "lucide-react";
+import { X, Pencil, Star, Home, CalendarPlus, AlertCircle, Building2, TrendingUp, Settings, FileText, Plus, MessageCircle, ChevronDown, ChevronUp, Eye, EyeOff, Lock, MoreHorizontal, CheckCircle2, Clock } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 
@@ -680,7 +680,11 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
                             <th className="py-3 px-3 text-center text-gray-600 font-medium w-28">날짜</th>
                             <th className="py-3 px-3 text-left text-gray-600 font-medium">제목</th>
                             <th className="py-3 px-3 text-left text-gray-600 font-medium">내용</th>
-                            <th className="py-3 px-3 text-center text-gray-600 font-medium w-24">답변 여부</th>
+                            <th className="py-3 px-3 text-center text-gray-600 font-medium w-16">
+                              <div className="flex justify-center">
+                                <MoreHorizontal className="w-5 h-5 text-gray-500" />
+                              </div>
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -707,9 +711,13 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
                                   <td className="py-3 px-3 text-gray-900 truncate max-w-[150px]">{inquiry.title}</td>
                                   <td className="py-3 px-3 text-gray-600 truncate max-w-[200px]">{inquiry.content}</td>
                                   <td className="py-3 px-3 text-center">
-                                    <span className={inquiry.status === "완료" ? "text-[#008FED]" : "text-gray-500"}>
-                                      {inquiry.status === "완료" ? "답변완료" : "처리중"}
-                                    </span>
+                                    <div className="flex justify-center">
+                                      {inquiry.status === "완료" ? (
+                                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                      ) : (
+                                        <Clock className="w-5 h-5 text-amber-500" />
+                                      )}
+                                    </div>
                                   </td>
                                 </tr>
                                 {isExpanded && (
