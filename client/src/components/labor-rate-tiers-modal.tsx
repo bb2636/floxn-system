@@ -12,7 +12,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { LaborRateTier } from "@shared/schema";
 import { useLaborRateTiers, useUpdateLaborRateTiers, DEFAULT_LABOR_RATE_TIERS_FALLBACK } from "@/hooks/use-labor-rate-tiers";
-import { Settings } from "lucide-react";
+import { Settings, Plus, Minus } from "lucide-react";
 
 interface LaborRateTiersModalProps {
   open: boolean;
@@ -73,6 +73,22 @@ export function LaborRateTiersModal({ open, onOpenChange }: LaborRateTiersModalP
     }
   };
   
+  const handleAddRow = () => {
+    const newId = Math.max(...editedTiers.map(t => t.id), 0) + 1;
+    const sorted = [...editedTiers].sort((a, b) => b.minRatio - a.minRatio);
+    const lastTier = sorted[sorted.length - 1];
+    const secondLastTier = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
+    const newMinRatio = secondLastTier ? Math.max(lastTier.minRatio + 1, Math.floor((secondLastTier.minRatio + lastTier.minRatio) / 2)) : lastTier.minRatio + 5;
+    setEditedTiers(prev => [...prev, { id: newId, minRatio: newMinRatio, rateMultiplier: 50 }]);
+  };
+
+  const handleRemoveRow = () => {
+    if (editedTiers.length <= 2) return;
+    const sorted = [...editedTiers].sort((a, b) => b.minRatio - a.minRatio);
+    const secondLastTier = sorted[sorted.length - 2];
+    setEditedTiers(prev => prev.filter(t => t.id !== secondLastTier.id));
+  };
+
   const handleReset = () => {
     setEditedTiers(DEFAULT_LABOR_RATE_TIERS_FALLBACK.map(t => ({
       id: t.id,
@@ -126,7 +142,30 @@ export function LaborRateTiersModal({ open, onOpenChange }: LaborRateTiersModalP
                       borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
                     }}
                   >
-                    범주
+                    <div className="flex items-center gap-2">
+                      <span>범주</span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={handleAddRow}
+                        className="h-6 w-6 min-h-0"
+                        style={{ borderColor: "rgba(12, 12, 12, 0.15)" }}
+                        data-testid="button-add-tier-row"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={handleRemoveRow}
+                        disabled={editedTiers.length <= 2}
+                        className="h-6 w-6 min-h-0"
+                        style={{ borderColor: "rgba(12, 12, 12, 0.15)" }}
+                        data-testid="button-remove-tier-row"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </th>
                   <th 
                     className="text-left px-4 py-3"
