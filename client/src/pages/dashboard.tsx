@@ -481,16 +481,40 @@ export default function Dashboard() {
       case "접수하기":
         setLocation("/intake");
         break;
-      case "현장조사":
-        setLocation("/field-survey/management");
-        break;
       case "종합진행관리":
         setLocation("/comprehensive-progress");
         break;
       case "정산 및 통계":
-        setLocation("/statistics");
+        setLocation("/settlements/claim");
+        break;
+      case "정산 조회":
+        setLocation("/settlements/claim");
+        break;
+      case "통계":
+        setLocation("/statistics/closed");
         break;
       case "관리자 설정":
+        setLocation("/admin-settings");
+        break;
+      case "사용자 계정 관리":
+        setLocation("/admin-settings");
+        break;
+      case "접근 권한 관리":
+        setLocation("/admin-settings");
+        break;
+      case "1:1 문의 관리":
+        setLocation("/admin-settings");
+        break;
+      case "공지사항 관리":
+        setLocation("/admin-settings");
+        break;
+      case "DB 관리":
+        setLocation("/admin-settings");
+        break;
+      case "기준정보 관리":
+        setLocation("/admin-settings");
+        break;
+      case "변경 로그 관리":
         setLocation("/admin-settings");
         break;
     }
