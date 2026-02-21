@@ -1,11 +1,31 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Case, CaseDocument } from "@shared/schema";
-import { Upload, X, Check, Search, Info, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  Upload,
+  X,
+  Check,
+  Search,
+  Info,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +38,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { formatCaseNumber } from "@/lib/utils";
@@ -48,10 +72,10 @@ const fileToBase64 = (file: File): Promise<string> => {
     reader.onload = () => {
       const result = reader.result as string;
       // Remove the data URL prefix (e.g., "data:image/png;base64,")
-      const base64 = result.split(',')[1];
+      const base64 = result.split(",")[1];
       resolve(base64);
     };
-    reader.onerror = error => reject(error);
+    reader.onerror = (error) => reject(error);
   });
 };
 
@@ -59,14 +83,14 @@ const fileToBase64 = (file: File): Promise<string> => {
 const compressImage = (file: File): Promise<File> => {
   return new Promise((resolve, reject) => {
     // 이미지 파일이 아니면 원본 반환
-    if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+    if (!file.type.startsWith("image/") || file.type === "image/gif") {
       resolve(file);
       return;
     }
 
     const img = new Image();
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
     img.onload = () => {
       try {
@@ -84,12 +108,12 @@ const compressImage = (file: File): Promise<File> => {
         canvas.height = height;
 
         if (!ctx) {
-          reject(new Error('Canvas context not available'));
+          reject(new Error("Canvas context not available"));
           return;
         }
 
         // 이미지 그리기
-        ctx.fillStyle = '#FFFFFF';
+        ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
 
@@ -97,25 +121,27 @@ const compressImage = (file: File): Promise<File> => {
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              reject(new Error('이미지 변환 실패'));
+              reject(new Error("이미지 변환 실패"));
               return;
             }
 
             // 파일명에서 확장자 변경 (.png → .jpg)
             const originalName = file.name;
-            const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '');
+            const nameWithoutExt = originalName.replace(/\.[^/.]+$/, "");
             const newFileName = `${nameWithoutExt}.jpg`;
 
             const compressedFile = new File([blob], newFileName, {
-              type: 'image/jpeg',
+              type: "image/jpeg",
               lastModified: Date.now(),
             });
 
-            console.log(`[압축] ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) → ${newFileName} (${(compressedFile.size / 1024 / 1024).toFixed(2)}MB)`);
+            console.log(
+              `[압축] ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) → ${newFileName} (${(compressedFile.size / 1024 / 1024).toFixed(2)}MB)`,
+            );
             resolve(compressedFile);
           },
-          'image/jpeg',
-          0.38 // JPEG quality 38%
+          "image/jpeg",
+          0.38, // JPEG quality 38%
         );
       } catch (error) {
         reject(error);
@@ -123,7 +149,7 @@ const compressImage = (file: File): Promise<File> => {
     };
 
     img.onerror = () => {
-      reject(new Error('이미지 로드 실패'));
+      reject(new Error("이미지 로드 실패"));
     };
 
     // 파일을 이미지로 로드
@@ -131,13 +157,17 @@ const compressImage = (file: File): Promise<File> => {
     reader.onload = (e) => {
       img.src = e.target?.result as string;
     };
-    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.onerror = () => reject(new Error("파일 읽기 실패"));
     reader.readAsDataURL(file);
   });
 };
 
 // Helper function to download a file from Base64
-const downloadFile = (fileName: string, fileType: string, base64Data: string) => {
+const downloadFile = (
+  fileName: string,
+  fileType: string,
+  base64Data: string,
+) => {
   // Create blob from base64
   const byteCharacters = atob(base64Data);
   const byteNumbers = new Array(byteCharacters.length);
@@ -149,7 +179,7 @@ const downloadFile = (fileName: string, fileType: string, base64Data: string) =>
 
   // Create download link
   const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
   document.body.appendChild(link);
@@ -158,15 +188,27 @@ const downloadFile = (fileName: string, fileType: string, base64Data: string) =>
   window.URL.revokeObjectURL(url);
 };
 
-
 export default function FieldDocuments() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("전체");
-  const [photoSubFilter, setPhotoSubFilter] = useState<"전체" | "현장출동사진" | "수리중 사진" | "복구완료 사진">("전체");
-  const [basicDataSubFilter, setBasicDataSubFilter] = useState<"전체" | "보험금 청구서" | "개인정보 동의서(가족용)">("전체");
-  const [evidenceSubFilter, setEvidenceSubFilter] = useState<"전체" | "주민등록등본" | "등기부등본" | "건축물대장" | "기타증빙자료(민원일지 등)">("전체");
-  const [claimDataSubFilter, setClaimDataSubFilter] = useState<"전체" | "위임장" | "도급계약서" | "복구완료확인서" | "부가세 청구자료">("전체");
+  const [selectedCategory, setSelectedCategory] =
+    useState<DocumentCategory>("전체");
+  const [photoSubFilter, setPhotoSubFilter] = useState<
+    "전체" | "현장출동사진" | "수리중 사진" | "복구완료 사진"
+  >("전체");
+  const [basicDataSubFilter, setBasicDataSubFilter] = useState<
+    "전체" | "보험금 청구서" | "개인정보 동의서(가족용)"
+  >("전체");
+  const [evidenceSubFilter, setEvidenceSubFilter] = useState<
+    | "전체"
+    | "주민등록등본"
+    | "등기부등본"
+    | "건축물대장"
+    | "기타증빙자료(민원일지 등)"
+  >("전체");
+  const [claimDataSubFilter, setClaimDataSubFilter] = useState<
+    "전체" | "위임장" | "도급계약서" | "복구완료확인서" | "부가세 청구자료"
+  >("전체");
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false);
@@ -179,8 +221,10 @@ export default function FieldDocuments() {
 
   // 선택된 케이스 ID (초기값: localStorage, 문자열 "null" 방지)
   const [selectedCaseId, setSelectedCaseId] = useState(() => {
-    const rawCaseId = localStorage.getItem('selectedFieldSurveyCaseId');
-    return (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : '';
+    const rawCaseId = localStorage.getItem("selectedFieldSurveyCaseId");
+    return rawCaseId && rawCaseId !== "null" && rawCaseId !== "undefined"
+      ? rawCaseId
+      : "";
   });
 
   // 모든 케이스 목록 조회 (검색용)
@@ -190,20 +234,20 @@ export default function FieldDocuments() {
   });
 
   // 케이스 필터링 (검색어 기준 + 협력사 필터링) - 안전한 null 처리
-  const filteredCases = allCases.filter(c => {
+  const filteredCases = allCases.filter((c) => {
     // 협력사 사용자인 경우: 본인 협력사에 배당된 케이스만 표시
-    if (user?.role === '협력사') {
+    if (user?.role === "협력사") {
       if (c.assignedPartner !== user.company) return false;
     }
-    
+
     if (!caseSearchQuery) return true;
     const query = caseSearchQuery.toLowerCase();
-    const caseNumber = c.caseNumber?.toLowerCase() ?? '';
-    const insuranceCompany = c.insuranceCompany?.toLowerCase() ?? '';
-    const insuranceAccidentNo = c.insuranceAccidentNo?.toLowerCase() ?? '';
-    const policyHolderName = c.policyHolderName?.toLowerCase() ?? '';
-    const victimName = c.victimName?.toLowerCase() ?? '';
-    
+    const caseNumber = c.caseNumber?.toLowerCase() ?? "";
+    const insuranceCompany = c.insuranceCompany?.toLowerCase() ?? "";
+    const insuranceAccidentNo = c.insuranceAccidentNo?.toLowerCase() ?? "";
+    const policyHolderName = c.policyHolderName?.toLowerCase() ?? "";
+    const victimName = c.victimName?.toLowerCase() ?? "";
+
     return (
       caseNumber.includes(query) ||
       insuranceCompany.includes(query) ||
@@ -234,17 +278,19 @@ export default function FieldDocuments() {
     "결정금액/수수료",
     "입금완료",
     "부분입금",
-    "정산완료"
+    "정산완료",
   ];
-  const isClaimDocumentEnabled = claimDocumentStatuses.includes(selectedCase?.status || "");
-  
+  const isClaimDocumentEnabled = claimDocumentStatuses.includes(
+    selectedCase?.status || "",
+  );
+
   // 직접복구 상태 확인 (청구자료 버튼 표시 조건)
   const isDirectRecoveryStatus = selectedCase?.status === "직접복구";
 
   // 케이스 선택 핸들러
   const handleCaseSelect = (caseId: string) => {
     setSelectedCaseId(caseId);
-    localStorage.setItem('selectedFieldSurveyCaseId', caseId);
+    localStorage.setItem("selectedFieldSurveyCaseId", caseId);
     setCaseSearchModalOpen(false);
     setCaseSearchQuery("");
     toast({
@@ -260,27 +306,33 @@ export default function FieldDocuments() {
   });
 
   // 파일 다운로드 (Object Storage 또는 레거시)
-  const handleDownload = useCallback(async (doc: CaseDocument) => {
-    if (doc.storageKey && doc.status === "ready") {
-      try {
-        const response = await apiRequest("GET", `/api/documents/${doc.id}/download-url`);
-        if (!response.ok) {
-          throw new Error("다운로드 URL 생성 실패");
+  const handleDownload = useCallback(
+    async (doc: CaseDocument) => {
+      if (doc.storageKey && doc.status === "ready") {
+        try {
+          const response = await apiRequest(
+            "GET",
+            `/api/documents/${doc.id}/download-url`,
+          );
+          if (!response.ok) {
+            throw new Error("다운로드 URL 생성 실패");
+          }
+          const { downloadURL } = await response.json();
+          window.open(downloadURL, "_blank");
+        } catch (error) {
+          console.error("Download error:", error);
+          toast({
+            title: "다운로드 실패",
+            description: "파일을 다운로드할 수 없습니다",
+            variant: "destructive",
+          });
         }
-        const { downloadURL } = await response.json();
-        window.open(downloadURL, "_blank");
-      } catch (error) {
-        console.error("Download error:", error);
-        toast({
-          title: "다운로드 실패",
-          description: "파일을 다운로드할 수 없습니다",
-          variant: "destructive",
-        });
+      } else if (doc.fileData) {
+        downloadFile(doc.fileName, doc.fileType, doc.fileData);
       }
-    } else if (doc.fileData) {
-      downloadFile(doc.fileName, doc.fileType, doc.fileData);
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
 
   // 도면 데이터 조회 (제출 조건 체크용)
   const { data: drawingData, isLoading: isLoadingDrawing } = useQuery({
@@ -296,11 +348,21 @@ export default function FieldDocuments() {
 
   // 제출 조건 상태 계산
   const isFieldInputComplete = useMemo(() => {
-    return !!(selectedCase?.visitDate && selectedCase?.visitTime && selectedCase?.accidentCategory && selectedCase?.victimName);
+    return !!(
+      selectedCase?.visitDate &&
+      selectedCase?.visitTime &&
+      selectedCase?.accidentCategory &&
+      selectedCase?.victimName
+    );
   }, [selectedCase]);
 
   const isDrawingComplete = useMemo(() => {
-    return !isLoadingDrawing && !!drawingData && typeof drawingData === 'object' && 'id' in drawingData;
+    return (
+      !isLoadingDrawing &&
+      !!drawingData &&
+      typeof drawingData === "object" &&
+      "id" in drawingData
+    );
   }, [drawingData, isLoadingDrawing]);
 
   const isDocumentsComplete = useMemo(() => {
@@ -308,10 +370,20 @@ export default function FieldDocuments() {
   }, [documents, isLoading]);
 
   const isEstimateComplete = useMemo(() => {
-    return !isLoadingEstimate && !!estimateData && typeof estimateData === 'object' && 'estimate' in estimateData && !!estimateData.estimate;
+    return (
+      !isLoadingEstimate &&
+      !!estimateData &&
+      typeof estimateData === "object" &&
+      "estimate" in estimateData &&
+      !!estimateData.estimate
+    );
   }, [estimateData, isLoadingEstimate]);
 
-  const canSubmit = isFieldInputComplete && isDrawingComplete && isDocumentsComplete && isEstimateComplete;
+  const canSubmit =
+    isFieldInputComplete &&
+    isDrawingComplete &&
+    isDocumentsComplete &&
+    isEstimateComplete;
 
   // 관련 케이스 문서 확인 (같은 사고번호의 다른 케이스에 문서가 있는지)
   const { data: relatedDocumentsInfo } = useQuery<{
@@ -327,9 +399,13 @@ export default function FieldDocuments() {
   // 문서 복제 mutation
   const cloneDocumentsMutation = useMutation({
     mutationFn: async (sourceCaseId: string) => {
-      const response = await apiRequest("POST", `/api/cases/${selectedCaseId}/clone-documents`, {
-        sourceCaseId,
-      });
+      const response = await apiRequest(
+        "POST",
+        `/api/cases/${selectedCaseId}/clone-documents`,
+        {
+          sourceCaseId,
+        },
+      );
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || "문서 복제 실패");
@@ -337,8 +413,12 @@ export default function FieldDocuments() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cases", selectedCaseId, "related-documents"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/documents/case", selectedCaseId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/cases", selectedCaseId, "related-documents"],
+      });
       toast({
         title: "문서 동기화 완료",
         description: "관련 케이스의 문서들이 동기화되었습니다.",
@@ -371,7 +451,9 @@ export default function FieldDocuments() {
       return await apiRequest("POST", "/api/documents", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/documents/case", selectedCaseId],
+      });
       toast({
         title: "파일이 업로드 되었습니다",
         description: "",
@@ -382,7 +464,7 @@ export default function FieldDocuments() {
 
   // 삭제 중인 문서 ID 추적
   const [deletingDocIds, setDeletingDocIds] = useState<Set<string>>(new Set());
-  
+
   // 문서 삭제 mutation
   const deleteMutation = useMutation({
     mutationFn: async (documentId: string) => {
@@ -390,11 +472,13 @@ export default function FieldDocuments() {
     },
     onMutate: (documentId: string) => {
       // 즉시 UI에서 제거 (낙관적 업데이트)
-      setDeletingDocIds(prev => new Set(prev).add(documentId));
+      setDeletingDocIds((prev) => new Set(prev).add(documentId));
     },
     onSuccess: (_, documentId: string) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
-      setDeletingDocIds(prev => {
+      queryClient.invalidateQueries({
+        queryKey: ["/api/documents/case", selectedCaseId],
+      });
+      setDeletingDocIds((prev) => {
         const next = new Set(prev);
         next.delete(documentId);
         return next;
@@ -406,7 +490,7 @@ export default function FieldDocuments() {
       });
     },
     onError: (error, documentId: string) => {
-      setDeletingDocIds(prev => {
+      setDeletingDocIds((prev) => {
         const next = new Set(prev);
         next.delete(documentId);
         return next;
@@ -421,12 +505,24 @@ export default function FieldDocuments() {
 
   // 카테고리 변경 mutation
   const updateCategoryMutation = useMutation({
-    mutationFn: async ({ documentId, category }: { documentId: string; category: string }) => {
-      return await apiRequest("PATCH", `/api/documents/${documentId}`, { category });
+    mutationFn: async ({
+      documentId,
+      category,
+    }: {
+      documentId: string;
+      category: string;
+    }) => {
+      return await apiRequest("PATCH", `/api/documents/${documentId}`, {
+        category,
+      });
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
-      const fileName = documents.find(d => d.id === variables.documentId)?.fileName || "파일";
+      queryClient.invalidateQueries({
+        queryKey: ["/api/documents/case", selectedCaseId],
+      });
+      const fileName =
+        documents.find((d) => d.id === variables.documentId)?.fileName ||
+        "파일";
       toast({
         title: `${fileName}을(를) ${variables.category} 카테고리로 이동했습니다.`,
         description: "",
@@ -436,15 +532,21 @@ export default function FieldDocuments() {
 
   // 청구자료 제출 mutation (동일 사고번호 직접복구 케이스 일괄 상태 변경 + SMS 발송)
   const claimSubmitMutation = useMutation({
-    mutationFn: async (): Promise<{ success: boolean; message: string; updatedCount: number }> => {
+    mutationFn: async (): Promise<{
+      success: boolean;
+      message: string;
+      updatedCount: number;
+    }> => {
       // 동일 사고번호의 모든 직접복구 케이스 상태 변경 + 플록슨 담당자 SMS 발송
       const response = await apiRequest("POST", "/api/submit-claim-documents", {
-        caseId: selectedCaseId
+        caseId: selectedCaseId,
       });
       return await response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/cases/${selectedCaseId}`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/cases/${selectedCaseId}`],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       toast({
         title: "청구자료가 제출되었습니다",
@@ -557,21 +659,36 @@ export default function FieldDocuments() {
     );
   }
 
-  const categories: DocumentCategory[] = ["전체", "사진", "기본자료", "증빙자료", "청구자료"];
+  const categories: DocumentCategory[] = [
+    "전체",
+    "사진",
+    "기본자료",
+    "증빙자료",
+    "청구자료",
+  ];
 
   // 탭별 서브카테고리 옵션 반환 (전체 제외)
-  const getSubCategoryOptions = (tab: DocumentCategory, submitted: boolean, claimEnabled: boolean): string[] => {
+  const getSubCategoryOptions = (
+    tab: DocumentCategory,
+    submitted: boolean,
+    claimEnabled: boolean,
+  ): string[] => {
     switch (tab) {
       case "사진":
-        return submitted 
+        return submitted
           ? ["현장출동사진", "수리중 사진", "복구완료 사진"]
           : ["현장출동사진"];
       case "기본자료":
         return ["보험금 청구서", "개인정보 동의서(가족용)"];
       case "증빙자료":
-        return ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"];
+        return [
+          "주민등록등본",
+          "등기부등본",
+          "건축물대장",
+          "기타증빙자료(민원일지 등)",
+        ];
       case "청구자료":
-        return claimEnabled 
+        return claimEnabled
           ? ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"]
           : [];
       case "전체":
@@ -587,14 +704,20 @@ export default function FieldDocuments() {
           "등기부등본",
           "건축물대장",
           "기타증빙자료(민원일지 등)",
-          ...(claimEnabled ? ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"] : []),
+          ...(claimEnabled
+            ? ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"]
+            : []),
         ];
         return allOptions;
     }
   };
 
   // 현재 탭의 서브카테고리 옵션
-  const currentSubCategories = getSubCategoryOptions(selectedCategory, isSubmitted, isClaimDocumentEnabled);
+  const currentSubCategories = getSubCategoryOptions(
+    selectedCategory,
+    isSubmitted,
+    isClaimDocumentEnabled,
+  );
 
   // 현재 선택된 서브필터 값 가져오기
   const getCurrentSubFilter = (): string => {
@@ -602,9 +725,13 @@ export default function FieldDocuments() {
       case "사진":
         return photoSubFilter === "전체" ? "현장출동사진" : photoSubFilter;
       case "기본자료":
-        return basicDataSubFilter === "전체" ? "보험금 청구서" : basicDataSubFilter;
+        return basicDataSubFilter === "전체"
+          ? "보험금 청구서"
+          : basicDataSubFilter;
       case "증빙자료":
-        return evidenceSubFilter === "전체" ? "주민등록등본" : evidenceSubFilter;
+        return evidenceSubFilter === "전체"
+          ? "주민등록등본"
+          : evidenceSubFilter;
       case "청구자료":
         return claimDataSubFilter === "전체" ? "위임장" : claimDataSubFilter;
       case "전체":
@@ -617,20 +744,33 @@ export default function FieldDocuments() {
   const uploadLimit = pLimit(2);
 
   // 단일 파일 업로드 함수 (2단계 API: presign → PUT → upload-complete)
-  const uploadSingleFile = async (uploadingFile: UploadingFile): Promise<void> => {
-    const updateProgress = (progress: number, status?: UploadStatus, error?: string, documentId?: string) => {
-      setUploadingFiles(prev =>
-        prev.map(f =>
+  const uploadSingleFile = async (
+    uploadingFile: UploadingFile,
+  ): Promise<void> => {
+    const updateProgress = (
+      progress: number,
+      status?: UploadStatus,
+      error?: string,
+      documentId?: string,
+    ) => {
+      setUploadingFiles((prev) =>
+        prev.map((f) =>
           f.id === uploadingFile.id
-            ? { ...f, progress, ...(status && { status }), ...(error !== undefined && { error }), ...(documentId && { documentId }) }
-            : f
-        )
+            ? {
+                ...f,
+                progress,
+                ...(status && { status }),
+                ...(error !== undefined && { error }),
+                ...(documentId && { documentId }),
+              }
+            : f,
+        ),
       );
     };
 
     // 1단계: presign 호출 (DB 저장 없음, 메타데이터만 전송)
     updateProgress(5, "uploading");
-    
+
     const presignResponse = await apiRequest("POST", "/api/documents/presign", {
       caseId: selectedCaseId,
       fileName: uploadingFile.file.name,
@@ -639,8 +779,12 @@ export default function FieldDocuments() {
     });
 
     if (!presignResponse.ok) {
-      const errorData = await presignResponse.json().catch(() => ({ error: "presigned URL 발급 실패" }));
-      throw new Error(errorData.error || errorData.details || "presigned URL 발급 실패");
+      const errorData = await presignResponse
+        .json()
+        .catch(() => ({ error: "presigned URL 발급 실패" }));
+      throw new Error(
+        errorData.error || errorData.details || "presigned URL 발급 실패",
+      );
     }
 
     const { uploadURL, storageKey } = await presignResponse.json();
@@ -649,10 +793,11 @@ export default function FieldDocuments() {
     // 2단계: PUT으로 파일 직접 업로드 (XMLHttpRequest로 진행률 추적)
     await new Promise<void>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      
+
       xhr.upload.addEventListener("progress", (event) => {
         if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 65) + 15;
+          const percentComplete =
+            Math.round((event.loaded / event.total) * 65) + 15;
           updateProgress(percentComplete);
         }
       });
@@ -681,19 +826,27 @@ export default function FieldDocuments() {
     updateProgress(85);
 
     // 3단계: upload-complete 호출 (업로드 확인 후 DB 저장)
-    const completeResponse = await apiRequest("POST", "/api/documents/upload-complete", {
-      caseId: selectedCaseId,
-      category: uploadingFile.category,
-      fileName: uploadingFile.file.name,
-      fileType: uploadingFile.file.type,
-      fileSize: uploadingFile.file.size,
-      storageKey,
-      displayOrder: 0,
-    });
+    const completeResponse = await apiRequest(
+      "POST",
+      "/api/documents/upload-complete",
+      {
+        caseId: selectedCaseId,
+        category: uploadingFile.category,
+        fileName: uploadingFile.file.name,
+        fileType: uploadingFile.file.type,
+        fileSize: uploadingFile.file.size,
+        storageKey,
+        displayOrder: 0,
+      },
+    );
 
     if (!completeResponse.ok) {
-      const errorData = await completeResponse.json().catch(() => ({ error: "업로드 완료 처리 실패" }));
-      throw new Error(errorData.error || errorData.details || "업로드 완료 처리 실패");
+      const errorData = await completeResponse
+        .json()
+        .catch(() => ({ error: "업로드 완료 처리 실패" }));
+      throw new Error(
+        errorData.error || errorData.details || "업로드 완료 처리 실패",
+      );
     }
 
     const { documentId } = await completeResponse.json();
@@ -701,7 +854,9 @@ export default function FieldDocuments() {
   };
 
   // 파일 업로드 재시도 래퍼
-  const uploadWithRetry = async (uploadingFile: UploadingFile): Promise<void> => {
+  const uploadWithRetry = async (
+    uploadingFile: UploadingFile,
+  ): Promise<void> => {
     try {
       await pRetry(
         async () => {
@@ -712,14 +867,21 @@ export default function FieldDocuments() {
           minTimeout: 1000,
           maxTimeout: 5000,
           factor: 2,
-          onFailedAttempt: (error: { attemptNumber: number; retriesLeft: number }) => {
-            console.log(`[Upload] ${uploadingFile.file.name} 재시도 ${error.attemptNumber}/3`);
+          onFailedAttempt: (error: {
+            attemptNumber: number;
+            retriesLeft: number;
+          }) => {
+            console.log(
+              `[Upload] ${uploadingFile.file.name} 재시도 ${error.attemptNumber}/3`,
+            );
           },
-        }
+        },
       );
 
-      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
-      
+      queryClient.invalidateQueries({
+        queryKey: ["/api/documents/case", selectedCaseId],
+      });
+
       toast({
         title: "파일이 업로드 되었습니다",
         description: uploadingFile.file.name,
@@ -727,18 +889,23 @@ export default function FieldDocuments() {
       });
 
       setTimeout(() => {
-        setUploadingFiles(prev => prev.filter(f => f.id !== uploadingFile.id));
+        setUploadingFiles((prev) =>
+          prev.filter((f) => f.id !== uploadingFile.id),
+        );
       }, 1500);
-
     } catch (error) {
       console.error("Upload failed after retries:", error);
-      
-      setUploadingFiles(prev =>
-        prev.map(f =>
+
+      setUploadingFiles((prev) =>
+        prev.map((f) =>
           f.id === uploadingFile.id
-            ? { ...f, status: "failed", error: error instanceof Error ? error.message : "업로드 실패" }
-            : f
-        )
+            ? {
+                ...f,
+                status: "failed",
+                error: error instanceof Error ? error.message : "업로드 실패",
+              }
+            : f,
+        ),
       );
 
       if (uploadingFile.documentId) {
@@ -768,10 +935,10 @@ export default function FieldDocuments() {
           console.error(`[압축 실패] ${file.name}:`, error);
           return file; // 압축 실패 시 원본 사용
         }
-      })
+      }),
     );
 
-    const newFiles: UploadingFile[] = compressedFiles.map(file => ({
+    const newFiles: UploadingFile[] = compressedFiles.map((file) => ({
       id: `${Date.now()}-${Math.random()}`,
       file,
       category: defaultSubCategory,
@@ -780,10 +947,10 @@ export default function FieldDocuments() {
       status: "pending" as UploadStatus,
     }));
 
-    setUploadingFiles(prev => [...prev, ...newFiles]);
+    setUploadingFiles((prev) => [...prev, ...newFiles]);
 
-    const uploadPromises = newFiles.map(uploadingFile =>
-      uploadLimit(() => uploadWithRetry(uploadingFile))
+    const uploadPromises = newFiles.map((uploadingFile) =>
+      uploadLimit(() => uploadWithRetry(uploadingFile)),
     );
 
     await Promise.allSettled(uploadPromises);
@@ -791,20 +958,26 @@ export default function FieldDocuments() {
 
   // 실패한 파일 재업로드
   const handleRetryUpload = async (uploadingFile: UploadingFile) => {
-    setUploadingFiles(prev =>
-      prev.map(f =>
+    setUploadingFiles((prev) =>
+      prev.map((f) =>
         f.id === uploadingFile.id
-          ? { ...f, progress: 0, status: "pending" as UploadStatus, error: undefined, documentId: undefined }
-          : f
-      )
+          ? {
+              ...f,
+              progress: 0,
+              status: "pending" as UploadStatus,
+              error: undefined,
+              documentId: undefined,
+            }
+          : f,
+      ),
     );
-    
+
     await uploadWithRetry(uploadingFile);
   };
 
   // 실패한 파일 목록에서 제거
   const handleRemoveFailedUpload = (uploadId: string) => {
-    setUploadingFiles(prev => prev.filter(f => f.id !== uploadId));
+    setUploadingFiles((prev) => prev.filter((f) => f.id !== uploadId));
   };
 
   // 파일 삭제 (중복 호출 방지)
@@ -840,7 +1013,7 @@ export default function FieldDocuments() {
 
   // 파일 크기 포맷
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 MB';
+    if (bytes === 0) return "0 MB";
     const mb = bytes / (1024 * 1024);
     return `${mb.toFixed(2)}MB`;
   };
@@ -849,9 +1022,19 @@ export default function FieldDocuments() {
   const getParentTab = (subCategory: string): DocumentCategory => {
     const photoCategories = ["현장출동사진", "수리중 사진", "복구완료 사진"];
     const basicCategories = ["보험금 청구서", "개인정보 동의서(가족용)"];
-    const evidenceCategories = ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"];
-    const claimCategories = ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"];
-    
+    const evidenceCategories = [
+      "주민등록등본",
+      "등기부등본",
+      "건축물대장",
+      "기타증빙자료(민원일지 등)",
+    ];
+    const claimCategories = [
+      "위임장",
+      "도급계약서",
+      "복구완료확인서",
+      "부가세 청구자료",
+    ];
+
     if (photoCategories.includes(subCategory)) return "사진";
     if (basicCategories.includes(subCategory)) return "기본자료";
     if (evidenceCategories.includes(subCategory)) return "증빙자료";
@@ -878,48 +1061,53 @@ export default function FieldDocuments() {
   // 필터링된 파일 목록 (탭별 서브카테고리로 필터링 + 삭제 중인 파일 제외)
   const filteredDocuments = (() => {
     // 삭제 중인 문서 제외
-    const activeDocuments = documents.filter(d => !deletingDocIds.has(d.id));
-    
+    const activeDocuments = documents.filter((d) => !deletingDocIds.has(d.id));
+
     if (selectedCategory === "전체") {
       return activeDocuments;
     }
-    
+
     // 먼저 탭별 필터링
-    const tabFilteredDocs = activeDocuments.filter(d => getParentTab(d.category) === selectedCategory);
-    
+    const tabFilteredDocs = activeDocuments.filter(
+      (d) => getParentTab(d.category) === selectedCategory,
+    );
+
     // 서브 필터 적용 (원본 값 사용)
     const currentSubFilter = getCurrentSubFilterRaw();
     if (currentSubFilter === "전체") {
       return tabFilteredDocs;
     }
-    
+
     // 서브 필터가 선택되면 해당 카테고리만 표시
-    return tabFilteredDocs.filter(d => d.category === currentSubFilter);
+    return tabFilteredDocs.filter((d) => d.category === currentSubFilter);
   })();
 
   // 청구자료 단계 필수 서류 검증 함수
-  const validateClaimDocuments = (): { valid: boolean; missingDocs: string[] } => {
+  const validateClaimDocuments = (): {
+    valid: boolean;
+    missingDocs: string[];
+  } => {
     const missingDocs: string[] = [];
-    
+
     // 청구자료 단계 필수 서류 목록 (부가세 청구자료는 선택)
     const requiredCategories = [
       "수리중 사진",
       "복구완료 사진",
       "위임장",
       "도급계약서",
-      "복구완료확인서"
+      "복구완료확인서",
     ];
-    
+
     for (const category of requiredCategories) {
-      const hasDocument = documents.some(doc => doc.category === category);
+      const hasDocument = documents.some((doc) => doc.category === category);
       if (!hasDocument) {
         missingDocs.push(category);
       }
     }
-    
+
     return {
       valid: missingDocs.length === 0,
-      missingDocs
+      missingDocs,
     };
   };
 
@@ -934,7 +1122,7 @@ export default function FieldDocuments() {
     console.log("제출 가능:", canSubmit);
     console.log("청구자료 단계:", isClaimDocumentEnabled);
     console.log("====================================");
-    
+
     // 청구자료 단계일 때만 필수 서류 검증
     if (isClaimDocumentEnabled) {
       const validation = validateClaimDocuments();
@@ -947,7 +1135,7 @@ export default function FieldDocuments() {
         return;
       }
     }
-    
+
     const { dismiss } = toast({
       title: "증빙자료가 저장되었습니다",
       description: "",
@@ -986,7 +1174,7 @@ export default function FieldDocuments() {
       } else {
         displayText = `${missingDocs[0]}, ${missingDocs[1]} 등`;
       }
-      
+
       toast({
         title: "미등록 항목 안내",
         description: `${displayText} 미입력(미등록) 되어있습니다.`,
@@ -1013,7 +1201,7 @@ export default function FieldDocuments() {
         >
           증빙자료 등록
         </h1>
-        
+
         {/* 버튼 그룹 */}
         <div className="flex items-center gap-3">
           {/* 저장 버튼 */}
@@ -1034,7 +1222,7 @@ export default function FieldDocuments() {
           >
             저장
           </button>
-          
+
           {/* 청구자료 버튼 - 직접복구 상태일 때만 표시 */}
           {isDirectRecoveryStatus && (
             <button
@@ -1052,7 +1240,7 @@ export default function FieldDocuments() {
               }}
               data-testid="button-claim-submit"
             >
-              청구자료
+              청구자료제출
             </button>
           )}
         </div>
@@ -1073,7 +1261,7 @@ export default function FieldDocuments() {
             >
               작성중인 건
             </div>
-            
+
             {/* 다른 건 선택 버튼 */}
             <Button
               variant="outline"
@@ -1091,8 +1279,8 @@ export default function FieldDocuments() {
               다른 건 선택
             </Button>
           </div>
-          
-          <div 
+
+          <div
             className="p-4 rounded-lg"
             style={{
               background: "rgba(12, 12, 12, 0.03)",
@@ -1113,12 +1301,13 @@ export default function FieldDocuments() {
                   color: "#0C0C0C",
                 }}
               >
-                {selectedCase.insuranceCompany || "보험사 미정"} {selectedCase.insuranceAccidentNo || ""}
+                {selectedCase.insuranceCompany || "보험사 미정"}{" "}
+                {selectedCase.insuranceAccidentNo || ""}
               </span>
             </div>
-            
+
             {/* 두 번째 줄: 접수번호, 피보험자, 담당자 */}
-            <div 
+            <div
               className="flex items-center gap-4"
               style={{
                 fontFamily: "Pretendard",
@@ -1130,15 +1319,22 @@ export default function FieldDocuments() {
               }}
             >
               <span>접수번호 {formatCaseNumber(selectedCase.caseNumber)}</span>
-              <span>피보험자 {selectedCase.policyHolderName || selectedCase.clientName || "미정"}</span>
-              <span>담당자 {selectedCase.assignedPartnerManager || "미정"}</span>
+              <span>
+                피보험자{" "}
+                {selectedCase.policyHolderName ||
+                  selectedCase.clientName ||
+                  "미정"}
+              </span>
+              <span>
+                담당자 {selectedCase.assignedPartnerManager || "미정"}
+              </span>
             </div>
           </div>
         </div>
       )}
 
       {/* 카테고리 탭 */}
-      <div 
+      <div
         className="flex gap-8 mb-6"
         style={{
           borderBottom: "2px solid rgba(12, 12, 12, 0.08)",
@@ -1146,7 +1342,7 @@ export default function FieldDocuments() {
       >
         {categories.map((category) => {
           const isDisabled = category === "청구자료" && !isClaimDocumentEnabled;
-          
+
           const getTooltipContent = (cat: DocumentCategory) => {
             switch (cat) {
               case "사진":
@@ -1165,7 +1361,10 @@ export default function FieldDocuments() {
                 return (
                   <div className="text-left">
                     <div className="font-semibold mb-1">필수 서류 안내</div>
-                    <div>• 제출 전: 보험금 청구서, 개인정보 동의서 {isRequired ? "필수" : "선택"}</div>
+                    <div>
+                      • 제출 전: 보험금 청구서, 개인정보 동의서{" "}
+                      {isRequired ? "필수" : "선택"}
+                    </div>
                   </div>
                 );
               }
@@ -1180,7 +1379,10 @@ export default function FieldDocuments() {
                 return (
                   <div className="text-left">
                     <div className="font-semibold mb-1">필수 서류 안내</div>
-                    <div>• 청구 단계: 위임장, 도급계약서, 복구완료확인서 필수 (부가세 청구자료는 선택)</div>
+                    <div>
+                      • 청구 단계: 위임장, 도급계약서, 복구완료확인서 필수
+                      (부가세 청구자료는 선택)
+                    </div>
                   </div>
                 );
               default:
@@ -1191,7 +1393,10 @@ export default function FieldDocuments() {
           const tooltipContent = getTooltipContent(category);
 
           return (
-            <div key={category} className="flex items-center gap-1 pb-3 relative">
+            <div
+              key={category}
+              className="flex items-center gap-1 pb-3 relative"
+            >
               <button
                 type="button"
                 onClick={() => !isDisabled && setSelectedCategory(category)}
@@ -1203,10 +1408,10 @@ export default function FieldDocuments() {
                   fontWeight: selectedCategory === category ? 600 : 400,
                   letterSpacing: "-0.02em",
                   background: "transparent",
-                  color: isDisabled 
-                    ? "rgba(12, 12, 12, 0.25)" 
-                    : selectedCategory === category 
-                      ? "#008FED" 
+                  color: isDisabled
+                    ? "rgba(12, 12, 12, 0.25)"
+                    : selectedCategory === category
+                      ? "#008FED"
                       : "rgba(12, 12, 12, 0.5)",
                   border: "none",
                   cursor: isDisabled ? "not-allowed" : "pointer",
@@ -1215,7 +1420,7 @@ export default function FieldDocuments() {
               >
                 {category}
               </button>
-              
+
               {tooltipContent && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1224,18 +1429,19 @@ export default function FieldDocuments() {
                       className="p-0.5 rounded-full hover:bg-gray-100 transition-colors"
                       data-testid={`tab-info-${category}`}
                     >
-                      <Info 
-                        className="w-4 h-4" 
-                        style={{ 
-                          color: selectedCategory === category 
-                            ? "#008FED" 
-                            : "rgba(12, 12, 12, 0.35)" 
-                        }} 
+                      <Info
+                        className="w-4 h-4"
+                        style={{
+                          color:
+                            selectedCategory === category
+                              ? "#008FED"
+                              : "rgba(12, 12, 12, 0.35)",
+                        }}
                       />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent 
-                    side="top" 
+                  <TooltipContent
+                    side="top"
                     className="max-w-xs"
                     style={{
                       fontFamily: "Pretendard",
@@ -1246,7 +1452,7 @@ export default function FieldDocuments() {
                   </TooltipContent>
                 </Tooltip>
               )}
-              
+
               {selectedCategory === category && (
                 <div
                   style={{
@@ -1280,14 +1486,21 @@ export default function FieldDocuments() {
               onClick={() => setPhotoSubFilter("전체")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: photoSubFilter === "전체" ? "#FDFDFD" : "transparent",
-                boxShadow: photoSubFilter === "전체" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  photoSubFilter === "전체" ? "#FDFDFD" : "transparent",
+                boxShadow:
+                  photoSubFilter === "전체"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: photoSubFilter === "전체" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: photoSubFilter === "전체" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  photoSubFilter === "전체"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1300,14 +1513,21 @@ export default function FieldDocuments() {
               onClick={() => setPhotoSubFilter("현장출동사진")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: photoSubFilter === "현장출동사진" ? "#FDFDFD" : "transparent",
-                boxShadow: photoSubFilter === "현장출동사진" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  photoSubFilter === "현장출동사진" ? "#FDFDFD" : "transparent",
+                boxShadow:
+                  photoSubFilter === "현장출동사진"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: photoSubFilter === "현장출동사진" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: photoSubFilter === "현장출동사진" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  photoSubFilter === "현장출동사진"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1323,14 +1543,23 @@ export default function FieldDocuments() {
                   onClick={() => setPhotoSubFilter("수리중 사진")}
                   className="flex items-center justify-center px-1.5 py-1"
                   style={{
-                    background: photoSubFilter === "수리중 사진" ? "#FDFDFD" : "transparent",
-                    boxShadow: photoSubFilter === "수리중 사진" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                    background:
+                      photoSubFilter === "수리중 사진"
+                        ? "#FDFDFD"
+                        : "transparent",
+                    boxShadow:
+                      photoSubFilter === "수리중 사진"
+                        ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                        : "none",
                     borderRadius: "4px",
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     fontWeight: photoSubFilter === "수리중 사진" ? 500 : 400,
                     letterSpacing: "-0.01em",
-                    color: photoSubFilter === "수리중 사진" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                    color:
+                      photoSubFilter === "수리중 사진"
+                        ? "#0C0C0C"
+                        : "rgba(12, 12, 12, 0.6)",
                     border: "none",
                     cursor: "pointer",
                   }}
@@ -1343,14 +1572,23 @@ export default function FieldDocuments() {
                   onClick={() => setPhotoSubFilter("복구완료 사진")}
                   className="flex items-center justify-center px-1.5 py-1"
                   style={{
-                    background: photoSubFilter === "복구완료 사진" ? "#FDFDFD" : "transparent",
-                    boxShadow: photoSubFilter === "복구완료 사진" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                    background:
+                      photoSubFilter === "복구완료 사진"
+                        ? "#FDFDFD"
+                        : "transparent",
+                    boxShadow:
+                      photoSubFilter === "복구완료 사진"
+                        ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                        : "none",
                     borderRadius: "4px",
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     fontWeight: photoSubFilter === "복구완료 사진" ? 500 : 400,
                     letterSpacing: "-0.01em",
-                    color: photoSubFilter === "복구완료 사진" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                    color:
+                      photoSubFilter === "복구완료 사진"
+                        ? "#0C0C0C"
+                        : "rgba(12, 12, 12, 0.6)",
                     border: "none",
                     cursor: "pointer",
                   }}
@@ -1380,14 +1618,21 @@ export default function FieldDocuments() {
               onClick={() => setBasicDataSubFilter("전체")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: basicDataSubFilter === "전체" ? "#FDFDFD" : "transparent",
-                boxShadow: basicDataSubFilter === "전체" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  basicDataSubFilter === "전체" ? "#FDFDFD" : "transparent",
+                boxShadow:
+                  basicDataSubFilter === "전체"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: basicDataSubFilter === "전체" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: basicDataSubFilter === "전체" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  basicDataSubFilter === "전체"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1400,14 +1645,23 @@ export default function FieldDocuments() {
               onClick={() => setBasicDataSubFilter("보험금 청구서")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: basicDataSubFilter === "보험금 청구서" ? "#FDFDFD" : "transparent",
-                boxShadow: basicDataSubFilter === "보험금 청구서" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  basicDataSubFilter === "보험금 청구서"
+                    ? "#FDFDFD"
+                    : "transparent",
+                boxShadow:
+                  basicDataSubFilter === "보험금 청구서"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: basicDataSubFilter === "보험금 청구서" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: basicDataSubFilter === "보험금 청구서" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  basicDataSubFilter === "보험금 청구서"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1420,14 +1674,24 @@ export default function FieldDocuments() {
               onClick={() => setBasicDataSubFilter("개인정보 동의서(가족용)")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: basicDataSubFilter === "개인정보 동의서(가족용)" ? "#FDFDFD" : "transparent",
-                boxShadow: basicDataSubFilter === "개인정보 동의서(가족용)" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  basicDataSubFilter === "개인정보 동의서(가족용)"
+                    ? "#FDFDFD"
+                    : "transparent",
+                boxShadow:
+                  basicDataSubFilter === "개인정보 동의서(가족용)"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
-                fontWeight: basicDataSubFilter === "개인정보 동의서(가족용)" ? 500 : 400,
+                fontWeight:
+                  basicDataSubFilter === "개인정보 동의서(가족용)" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: basicDataSubFilter === "개인정보 동의서(가족용)" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  basicDataSubFilter === "개인정보 동의서(가족용)"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1455,14 +1719,21 @@ export default function FieldDocuments() {
               onClick={() => setEvidenceSubFilter("전체")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: evidenceSubFilter === "전체" ? "#FDFDFD" : "transparent",
-                boxShadow: evidenceSubFilter === "전체" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  evidenceSubFilter === "전체" ? "#FDFDFD" : "transparent",
+                boxShadow:
+                  evidenceSubFilter === "전체"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: evidenceSubFilter === "전체" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: evidenceSubFilter === "전체" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  evidenceSubFilter === "전체"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1475,14 +1746,23 @@ export default function FieldDocuments() {
               onClick={() => setEvidenceSubFilter("주민등록등본")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: evidenceSubFilter === "주민등록등본" ? "#FDFDFD" : "transparent",
-                boxShadow: evidenceSubFilter === "주민등록등본" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  evidenceSubFilter === "주민등록등본"
+                    ? "#FDFDFD"
+                    : "transparent",
+                boxShadow:
+                  evidenceSubFilter === "주민등록등본"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: evidenceSubFilter === "주민등록등본" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: evidenceSubFilter === "주민등록등본" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  evidenceSubFilter === "주민등록등본"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1495,14 +1775,23 @@ export default function FieldDocuments() {
               onClick={() => setEvidenceSubFilter("등기부등본")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: evidenceSubFilter === "등기부등본" ? "#FDFDFD" : "transparent",
-                boxShadow: evidenceSubFilter === "등기부등본" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  evidenceSubFilter === "등기부등본"
+                    ? "#FDFDFD"
+                    : "transparent",
+                boxShadow:
+                  evidenceSubFilter === "등기부등본"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: evidenceSubFilter === "등기부등본" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: evidenceSubFilter === "등기부등본" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  evidenceSubFilter === "등기부등본"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1515,14 +1804,23 @@ export default function FieldDocuments() {
               onClick={() => setEvidenceSubFilter("건축물대장")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: evidenceSubFilter === "건축물대장" ? "#FDFDFD" : "transparent",
-                boxShadow: evidenceSubFilter === "건축물대장" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  evidenceSubFilter === "건축물대장"
+                    ? "#FDFDFD"
+                    : "transparent",
+                boxShadow:
+                  evidenceSubFilter === "건축물대장"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: evidenceSubFilter === "건축물대장" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: evidenceSubFilter === "건축물대장" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  evidenceSubFilter === "건축물대장"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1535,14 +1833,24 @@ export default function FieldDocuments() {
               onClick={() => setEvidenceSubFilter("기타증빙자료(민원일지 등)")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: evidenceSubFilter === "기타증빙자료(민원일지 등)" ? "#FDFDFD" : "transparent",
-                boxShadow: evidenceSubFilter === "기타증빙자료(민원일지 등)" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  evidenceSubFilter === "기타증빙자료(민원일지 등)"
+                    ? "#FDFDFD"
+                    : "transparent",
+                boxShadow:
+                  evidenceSubFilter === "기타증빙자료(민원일지 등)"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
-                fontWeight: evidenceSubFilter === "기타증빙자료(민원일지 등)" ? 500 : 400,
+                fontWeight:
+                  evidenceSubFilter === "기타증빙자료(민원일지 등)" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: evidenceSubFilter === "기타증빙자료(민원일지 등)" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  evidenceSubFilter === "기타증빙자료(민원일지 등)"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1570,14 +1878,21 @@ export default function FieldDocuments() {
               onClick={() => setClaimDataSubFilter("전체")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: claimDataSubFilter === "전체" ? "#FDFDFD" : "transparent",
-                boxShadow: claimDataSubFilter === "전체" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  claimDataSubFilter === "전체" ? "#FDFDFD" : "transparent",
+                boxShadow:
+                  claimDataSubFilter === "전체"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: claimDataSubFilter === "전체" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: claimDataSubFilter === "전체" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  claimDataSubFilter === "전체"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1590,14 +1905,21 @@ export default function FieldDocuments() {
               onClick={() => setClaimDataSubFilter("위임장")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: claimDataSubFilter === "위임장" ? "#FDFDFD" : "transparent",
-                boxShadow: claimDataSubFilter === "위임장" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  claimDataSubFilter === "위임장" ? "#FDFDFD" : "transparent",
+                boxShadow:
+                  claimDataSubFilter === "위임장"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: claimDataSubFilter === "위임장" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: claimDataSubFilter === "위임장" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  claimDataSubFilter === "위임장"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1610,14 +1932,23 @@ export default function FieldDocuments() {
               onClick={() => setClaimDataSubFilter("도급계약서")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: claimDataSubFilter === "도급계약서" ? "#FDFDFD" : "transparent",
-                boxShadow: claimDataSubFilter === "도급계약서" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  claimDataSubFilter === "도급계약서"
+                    ? "#FDFDFD"
+                    : "transparent",
+                boxShadow:
+                  claimDataSubFilter === "도급계약서"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: claimDataSubFilter === "도급계약서" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: claimDataSubFilter === "도급계약서" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  claimDataSubFilter === "도급계약서"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1630,14 +1961,23 @@ export default function FieldDocuments() {
               onClick={() => setClaimDataSubFilter("복구완료확인서")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: claimDataSubFilter === "복구완료확인서" ? "#FDFDFD" : "transparent",
-                boxShadow: claimDataSubFilter === "복구완료확인서" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  claimDataSubFilter === "복구완료확인서"
+                    ? "#FDFDFD"
+                    : "transparent",
+                boxShadow:
+                  claimDataSubFilter === "복구완료확인서"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: claimDataSubFilter === "복구완료확인서" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: claimDataSubFilter === "복구완료확인서" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  claimDataSubFilter === "복구완료확인서"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1650,14 +1990,24 @@ export default function FieldDocuments() {
               onClick={() => setClaimDataSubFilter("부가세 청구자료")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: claimDataSubFilter === "부가세 청구자료" ? "#FDFDFD" : "transparent",
-                boxShadow: claimDataSubFilter === "부가세 청구자료" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background:
+                  claimDataSubFilter === "부가세 청구자료"
+                    ? "#FDFDFD"
+                    : "transparent",
+                boxShadow:
+                  claimDataSubFilter === "부가세 청구자료"
+                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
+                    : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
-                fontWeight: claimDataSubFilter === "부가세 청구자료" ? 500 : 400,
+                fontWeight:
+                  claimDataSubFilter === "부가세 청구자료" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: claimDataSubFilter === "부가세 청구자료" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color:
+                  claimDataSubFilter === "부가세 청구자료"
+                    ? "#0C0C0C"
+                    : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
@@ -1670,15 +2020,19 @@ export default function FieldDocuments() {
       )}
 
       {/* 파일 업로드 영역 - 전체 탭이 아닐 때와 하위탭이 전체가 아닐 때만 표시 */}
-      {selectedCategory !== "전체" && 
-       !((selectedCategory === "사진" && photoSubFilter === "전체") ||
-         (selectedCategory === "기본자료" && basicDataSubFilter === "전체") ||
-         (selectedCategory === "증빙자료" && evidenceSubFilter === "전체") ||
-         (selectedCategory === "청구자료" && claimDataSubFilter === "전체")) && (
-        <div
+      {selectedCategory !== "전체" &&
+        !(
+          (selectedCategory === "사진" && photoSubFilter === "전체") ||
+          (selectedCategory === "기본자료" && basicDataSubFilter === "전체") ||
+          (selectedCategory === "증빙자료" && evidenceSubFilter === "전체") ||
+          (selectedCategory === "청구자료" && claimDataSubFilter === "전체")
+        ) && (
+          <div
             className="mb-6 rounded-xl p-12 transition-all cursor-pointer"
             style={{
-              background: isDragging ? "rgba(0, 143, 237, 0.08)" : "rgba(0, 143, 237, 0.03)",
+              background: isDragging
+                ? "rgba(0, 143, 237, 0.08)"
+                : "rgba(0, 143, 237, 0.03)",
               border: "none",
             }}
             onDragOver={handleDragOver}
@@ -1696,7 +2050,10 @@ export default function FieldDocuments() {
               data-testid="file-input"
             />
             <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0, 143, 237, 0.1)" }}>
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(0, 143, 237, 0.1)" }}
+              >
                 <Upload className="w-8 h-8" style={{ color: "#008FED" }} />
               </div>
               <div className="text-center">
@@ -1730,8 +2087,8 @@ export default function FieldDocuments() {
                 </button>
               </div>
             </div>
-        </div>
-      )}
+          </div>
+        )}
 
       {/* Uploading files (progress) */}
       {uploadingFiles.length > 0 && (
@@ -1766,7 +2123,7 @@ export default function FieldDocuments() {
                     background: "rgba(12, 12, 12, 0.04)",
                   }}
                 >
-                  {uploadingFile.file.type.startsWith('image/') ? (
+                  {uploadingFile.file.type.startsWith("image/") ? (
                     <img
                       src={URL.createObjectURL(uploadingFile.file)}
                       alt={uploadingFile.file.name}
@@ -1774,7 +2131,10 @@ export default function FieldDocuments() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Upload className="w-6 h-6" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+                      <Upload
+                        className="w-6 h-6"
+                        style={{ color: "rgba(12, 12, 12, 0.3)" }}
+                      />
                     </div>
                   )}
                 </div>
@@ -1807,7 +2167,10 @@ export default function FieldDocuments() {
 
                   {/* Progress bar */}
                   {uploadingFile.status !== "failed" && (
-                    <Progress value={uploadingFile.progress} className="h-1.5" />
+                    <Progress
+                      value={uploadingFile.progress}
+                      className="h-1.5"
+                    />
                   )}
 
                   {uploadingFile.status === "completed" && (
@@ -1855,7 +2218,9 @@ export default function FieldDocuments() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleRemoveFailedUpload(uploadingFile.id)}
+                          onClick={() =>
+                            handleRemoveFailedUpload(uploadingFile.id)
+                          }
                           className="h-7 text-xs"
                           data-testid={`button-remove-failed-${uploadingFile.id}`}
                         >
@@ -1932,7 +2297,7 @@ export default function FieldDocuments() {
         /* 모든 탭에서 동일한 그리드 형식으로 사진/파일 표시 (사진 탭과 동일한 스타일) */
         <div className="grid grid-cols-4 gap-3">
           {filteredDocuments.map((doc, index) => {
-            const isImage = doc.fileType.startsWith('image/');
+            const isImage = doc.fileType.startsWith("image/");
             return (
               <div key={doc.id} className="flex flex-col gap-2">
                 <div
@@ -1951,19 +2316,27 @@ export default function FieldDocuments() {
                       alt={doc.fileName}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.nextElementSibling?.classList.remove(
+                          "hidden",
+                        );
                       }}
                     />
                   ) : null}
-                  <div className={`w-full h-full flex items-center justify-center ${isImage ? 'hidden' : ''}`}>
-                    <Upload className="w-8 h-8" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+                  <div
+                    className={`w-full h-full flex items-center justify-center ${isImage ? "hidden" : ""}`}
+                  >
+                    <Upload
+                      className="w-8 h-8"
+                      style={{ color: "rgba(12, 12, 12, 0.3)" }}
+                    />
                   </div>
-                  
-                  <div 
+
+                  <div
                     className="absolute bottom-0 left-0 right-0 px-2 py-1"
                     style={{
-                      background: "linear-gradient(transparent, rgba(0,0,0,0.5))",
+                      background:
+                        "linear-gradient(transparent, rgba(0,0,0,0.5))",
                     }}
                   >
                     <span
@@ -1974,7 +2347,9 @@ export default function FieldDocuments() {
                         color: "white",
                       }}
                     >
-                      {isImage ? `사진${index + 1}` : doc.fileName.substring(0, 15)}
+                      {isImage
+                        ? `사진${index + 1}`
+                        : doc.fileName.substring(0, 15)}
                     </span>
                   </div>
 
@@ -1990,10 +2365,13 @@ export default function FieldDocuments() {
                     }}
                     data-testid={`button-delete-photo-${doc.id}`}
                   >
-                    <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
+                    <X
+                      className="w-4 h-4"
+                      style={{ color: "rgba(12, 12, 12, 0.6)" }}
+                    />
                   </button>
                 </div>
-                
+
                 {/* Category dropdown */}
                 <Select
                   value={doc.category}
@@ -2021,8 +2399,8 @@ export default function FieldDocuments() {
                     {currentSubCategories.map((subCategory) => {
                       const isSelected = doc.category === subCategory;
                       return (
-                        <SelectItem 
-                          key={subCategory} 
+                        <SelectItem
+                          key={subCategory}
                           value={subCategory}
                           className="flex items-center justify-between"
                           style={{
@@ -2030,8 +2408,10 @@ export default function FieldDocuments() {
                             fontSize: "14px",
                             fontWeight: isSelected ? 600 : 500,
                             letterSpacing: "-0.02em",
-                            color: isSelected ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.4)",
-                            background: isSelected 
+                            color: isSelected
+                              ? "rgba(12, 12, 12, 0.8)"
+                              : "rgba(12, 12, 12, 0.4)",
+                            background: isSelected
                               ? "linear-gradient(0deg, rgba(0, 143, 237, 0.07), rgba(0, 143, 237, 0.07)), #FDFDFD"
                               : "#FFFFFF",
                             paddingTop: "10px",
@@ -2091,10 +2471,13 @@ export default function FieldDocuments() {
                 key={caseItem.id}
                 onClick={() => handleCaseSelect(caseItem.id!)}
                 className={`p-4 rounded-lg cursor-pointer transition-all hover-elevate ${
-                  selectedCaseId === caseItem.id ? 'ring-2 ring-blue-500' : ''
+                  selectedCaseId === caseItem.id ? "ring-2 ring-blue-500" : ""
                 }`}
                 style={{
-                  background: selectedCaseId === caseItem.id ? "rgba(0, 143, 237, 0.05)" : "rgba(12, 12, 12, 0.02)",
+                  background:
+                    selectedCaseId === caseItem.id
+                      ? "rgba(0, 143, 237, 0.05)"
+                      : "rgba(12, 12, 12, 0.02)",
                   border: "1px solid rgba(12, 12, 12, 0.08)",
                 }}
                 data-testid={`case-item-${caseItem.id}`}
@@ -2106,7 +2489,7 @@ export default function FieldDocuments() {
                       <Check className="w-5 h-5" style={{ color: "#008FED" }} />
                     </div>
                   )}
-                  
+
                   <div className="flex-1">
                     {/* 첫 번째 줄: 보험사 + 사고번호 */}
                     <div
@@ -2119,7 +2502,8 @@ export default function FieldDocuments() {
                         color: "#0C0C0C",
                       }}
                     >
-                      {caseItem.insuranceCompany || "보험사 미정"} {caseItem.insuranceAccidentNo || ""}
+                      {caseItem.insuranceCompany || "보험사 미정"}{" "}
+                      {caseItem.insuranceAccidentNo || ""}
                     </div>
 
                     {/* 두 번째 줄: 접수번호, 계약자, 피해자, 상태 */}
@@ -2133,14 +2517,24 @@ export default function FieldDocuments() {
                         color: "rgba(12, 12, 12, 0.6)",
                       }}
                     >
-                      <span>접수번호: {formatCaseNumber(caseItem.caseNumber)}</span>
-                      <span>계약자: {caseItem.policyHolderName || caseItem.clientName || "미정"}</span>
+                      <span>
+                        접수번호: {formatCaseNumber(caseItem.caseNumber)}
+                      </span>
+                      <span>
+                        계약자:{" "}
+                        {caseItem.policyHolderName ||
+                          caseItem.clientName ||
+                          "미정"}
+                      </span>
                       <span>피해자: {caseItem.victimName || "미정"}</span>
-                      <span className="px-2 py-0.5 rounded" style={{
-                        background: "rgba(0, 143, 237, 0.1)",
-                        color: "#008FED",
-                        fontSize: "12px",
-                      }}>
+                      <span
+                        className="px-2 py-0.5 rounded"
+                        style={{
+                          background: "rgba(0, 143, 237, 0.1)",
+                          color: "#008FED",
+                          fontSize: "12px",
+                        }}
+                      >
                         {caseItem.status}
                       </span>
                     </div>
@@ -2167,7 +2561,10 @@ export default function FieldDocuments() {
       </Dialog>
 
       {/* 청구자료 제출 확인 다이얼로그 */}
-      <AlertDialog open={showClaimSubmitDialog} onOpenChange={setShowClaimSubmitDialog}>
+      <AlertDialog
+        open={showClaimSubmitDialog}
+        onOpenChange={setShowClaimSubmitDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle
@@ -2187,8 +2584,10 @@ export default function FieldDocuments() {
                 whiteSpace: "pre-line",
               }}
             >
-              청구자료를 제출하시겠습니까? 제출 후에는 수정이 불가능 합니다.{"\n\n"}
-              그리고, 지급청구는 보험사 사고번호 기준으로 손방 및 대물 각 건의 청구자료제출이 완료된 후 일괄하여 진행됨을 안내드립니다.
+              청구자료를 제출하시겠습니까? 제출 후에는 수정이 불가능 합니다.
+              {"\n\n"}
+              그리고, 지급청구는 보험사 사고번호 기준으로 손방 및 대물 각 건의
+              청구자료제출이 완료된 후 일괄하여 진행됨을 안내드립니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
