@@ -261,7 +261,7 @@ export function GlobalHeader() {
         </div>
 
         {/* Navigation Menu */}
-        <div className="flex items-center gap-6 flex-1 px-6">
+        <div className="flex items-center gap-6 flex-1 px-6 justify-center">
           {menuItems.map((item) => {
             return (
               <button
