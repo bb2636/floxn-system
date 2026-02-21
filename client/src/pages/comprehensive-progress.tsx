@@ -175,6 +175,7 @@ export default function ComprehensiveProgress() {
   const [activeMenu, setActiveMenu] = useState("종합진행관리");
   const [selectedStatus, setSelectedStatus] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedManager, setSelectedManager] = useState<string>("__INIT__");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [detailTab, setDetailTab] = useState("기본정보");
@@ -907,8 +908,14 @@ export default function ComprehensiveProgress() {
     );
   });
 
+  const filteredByManager = filteredDataUnsorted.filter((caseItem) => {
+    const managerValue = selectedManager === "__INIT__" ? "전체" : selectedManager;
+    if (managerValue === "전체") return true;
+    return (caseItem.managerName || "") === managerValue;
+  });
+
   // 최신순으로 정렬 (caseNumber 기준 내림차순 - yyMMddxxx 형식)
-  const filteredData = [...filteredDataUnsorted].sort((a, b) => {
+  const filteredData = [...filteredByManager].sort((a, b) => {
     // caseNumber에서 숫자 부분만 추출 (예: "251201001" -> 251201001, "251201001-1" -> 2512010011)
     const extractNumericValue = (caseNumber: string | null) => {
       if (!caseNumber) return 0;
@@ -1058,6 +1065,14 @@ export default function ComprehensiveProgress() {
       });
     }
   }, [detailTab, selectedCase, user?.role, specialNotesForm]);
+
+  useEffect(() => {
+    if (selectedManager === "__INIT__" && user?.name) {
+      setSelectedManager(user.name);
+    }
+  }, [user, selectedManager]);
+
+  const adminUsers = allUsers.filter((u) => u.role === "관리자");
 
   // 당일차 계산 (접수일부터 오늘까지)
   const calculateDays = (createdAt: string | null) => {
@@ -1266,6 +1281,75 @@ export default function ComprehensiveProgress() {
               data-testid="button-search"
             >
               검색
+            </button>
+
+            <div style={{ width: "1px", height: "32px", background: "rgba(12,12,12,0.1)", flexShrink: 0 }} />
+
+            <span
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                whiteSpace: "nowrap",
+              }}
+            >
+              담당자
+            </span>
+
+            <Select value={selectedManager === "__INIT__" ? "전체" : selectedManager} onValueChange={setSelectedManager}>
+              <SelectTrigger
+                className="w-[140px] h-[52px]"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 400,
+                  letterSpacing: "-0.02em",
+                  border: "1px solid rgba(12, 12, 12, 0.1)",
+                  borderRadius: "6px",
+                  flexShrink: 0,
+                }}
+                data-testid="select-manager-filter"
+              >
+                <SelectValue placeholder="담당자 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="전체" data-testid="option-manager-all">전체</SelectItem>
+                {adminUsers.map((admin) => (
+                  <SelectItem
+                    key={admin.id}
+                    value={admin.name || admin.username}
+                    data-testid={`option-manager-${admin.id}`}
+                  >
+                    {admin.name || admin.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <button
+              onClick={() => {
+                // 조회 트리거 - 필터링은 이미 실시간
+              }}
+              style={{
+                height: "52px",
+                padding: "0 20px",
+                background: "#008FED",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#FFFFFF",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+              data-testid="button-manager-search"
+            >
+              조회하기
             </button>
           </div>
         </div>
