@@ -255,7 +255,7 @@ export function GlobalHeader() {
         }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-2 w-[260px]">
+        <div className="flex items-center gap-2 w-[240px]">
           <img src={logoIcon} alt="FLOXN Logo" className="w-6 h-6" />
           <div className="text-2xl font-bold text-gray-900">FLOXN</div>
         </div>
