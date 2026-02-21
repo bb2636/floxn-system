@@ -487,37 +487,39 @@ export default function Intake({
     return Array.from(allCompanies).sort();
   }, [insuranceCompanies, assessorCompanies, investigatorCompanies]);
 
-  const filteredClients = useMemo(() => {
-    if (!clientCompanies) return [];
-    if (!clientSearchQuery) return clientCompanies.map((name) => ({ name }));
-    return clientCompanies
-      .filter((name) =>
-        name.toLowerCase().includes(clientSearchQuery.toLowerCase()),
-      )
-      .map((name) => ({ name }));
-  }, [clientCompanies, clientSearchQuery]);
+  const filteredClientUsers = useMemo(() => {
+    if (!allUsers) return [];
+    const clientRoleUsers = allUsers.filter((u) => u.role === "의뢰사" || clientCompanies.includes(u.company || ""));
+    if (!clientSearchQuery) return clientRoleUsers;
+    const q = clientSearchQuery.toLowerCase();
+    return clientRoleUsers.filter((u) =>
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.company && u.company.toLowerCase().includes(q)) ||
+      (u.department && u.department.toLowerCase().includes(q))
+    );
+  }, [allUsers, clientCompanies, clientSearchQuery]);
 
-  const filteredAssessors = useMemo(() => {
-    if (!assessorCompanies) return [];
-    if (!assessorSearchQuery)
-      return assessorCompanies.map((name) => ({ name }));
-    return assessorCompanies
-      .filter((name) =>
-        name.toLowerCase().includes(assessorSearchQuery.toLowerCase()),
-      )
-      .map((name) => ({ name }));
-  }, [assessorCompanies, assessorSearchQuery]);
+  const filteredAssessorUsers = useMemo(() => {
+    if (!assessors) return [];
+    if (!assessorSearchQuery) return assessors;
+    const q = assessorSearchQuery.toLowerCase();
+    return assessors.filter((u) =>
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.company && u.company.toLowerCase().includes(q)) ||
+      (u.department && u.department.toLowerCase().includes(q))
+    );
+  }, [assessors, assessorSearchQuery]);
 
-  const filteredInvestigators = useMemo(() => {
-    if (!investigatorCompanies) return [];
-    if (!investigatorSearchQuery)
-      return investigatorCompanies.map((name) => ({ name }));
-    return investigatorCompanies
-      .filter((name) =>
-        name.toLowerCase().includes(investigatorSearchQuery.toLowerCase()),
-      )
-      .map((name) => ({ name }));
-  }, [investigatorCompanies, investigatorSearchQuery]);
+  const filteredInvestigatorUsers = useMemo(() => {
+    if (!investigators) return [];
+    if (!investigatorSearchQuery) return investigators;
+    const q = investigatorSearchQuery.toLowerCase();
+    return investigators.filter((u) =>
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.company && u.company.toLowerCase().includes(q)) ||
+      (u.department && u.department.toLowerCase().includes(q))
+    );
+  }, [investigators, investigatorSearchQuery]);
 
   const displayCaseNumber = useMemo(() => {
     const hasDamagePrevention =
@@ -1809,34 +1811,14 @@ export default function Intake({
                     의뢰사
                     <RequiredMark />
                   </label>
-                  <Select
-                    key={`client-residence-${initialCaseId || editCaseId || 'new'}-${loadedCaseNumber}`}
+                  <input
+                    className={disabledInputClasses}
                     value={formData.clientResidence}
-                    onValueChange={(value) =>
-                      handleInputChange("clientResidence", value)
-                    }
-                    disabled={readOnly}
-                  >
-                    <SelectTrigger
-                      className={`${selectTriggerClasses} bg-white`}
-                      data-testid="select-client-residence"
-                    >
-                      <SelectValue placeholder="의뢰사 선택" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[160px] overflow-y-scroll">
-                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
-                      {formData.clientResidence && !clientCompanies.includes(formData.clientResidence) && (
-                        <SelectItem key={formData.clientResidence} value={formData.clientResidence}>
-                          {formData.clientResidence}
-                        </SelectItem>
-                      )}
-                      {clientCompanies.map((company) => (
-                        <SelectItem key={company} value={company}>
-                          {company}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    readOnly
+                    placeholder="의뢰자 검색 시 자동입력"
+                    type="text"
+                    data-testid="input-client-residence"
+                  />
                 </div>
               </div>
 
@@ -1860,34 +1842,22 @@ export default function Intake({
                     의뢰자
                     <RequiredMark />
                   </label>
-                  <Select
-                    key={`client-name-${initialCaseId || editCaseId || 'new'}-${loadedCaseNumber}`}
-                    value={formData.clientName}
-                    onValueChange={(value) =>
-                      handleInputChange("clientName", value)
-                    }
-                    disabled={readOnly || !formData.clientResidence}
+                  <div
+                    className={`${selectTriggerClasses} bg-white flex items-center justify-between cursor-pointer ${readOnly ? "opacity-50 pointer-events-none" : ""}`}
+                    onClick={() => {
+                      if (!readOnly) {
+                        setClientSearchQuery("");
+                        setTempSelectedClient(null);
+                        setIsClientSearchOpen(true);
+                      }
+                    }}
+                    data-testid="button-open-client-search"
                   >
-                    <SelectTrigger
-                      className={`${selectTriggerClasses} bg-white`}
-                      data-testid="select-client-name"
-                    >
-                      <SelectValue placeholder="의뢰자 성함" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
-                      {formData.clientName && !filteredClientEmployees.some(emp => emp.name === formData.clientName) && (
-                        <SelectItem key={formData.clientName} value={formData.clientName}>
-                          {formData.clientName}
-                        </SelectItem>
-                      )}
-                      {filteredClientEmployees.map((emp) => (
-                        <SelectItem key={emp.id} value={emp.name}>
-                          {emp.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <span className={formData.clientName ? "text-slate-900" : "text-slate-400"}>
+                      {formData.clientName || "의뢰자 검색"}
+                    </span>
+                    <Search className="w-4 h-4 text-slate-400" />
+                  </div>
                 </div>
               </div>
 
@@ -1909,107 +1879,50 @@ export default function Intake({
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>심사사</label>
-                  <Select
-                    key={`assessor-id-${initialCaseId || editCaseId || 'new'}-${loadedCaseNumber}`}
+                  <input
+                    className={disabledInputClasses}
                     value={formData.assessorId}
-                    onValueChange={(value) =>
-                      handleInputChange("assessorId", value)
-                    }
-                    disabled={readOnly}
-                  >
-                    <SelectTrigger
-                      className={`${selectTriggerClasses} bg-white`}
-                      data-testid="select-assessor-id"
-                    >
-                      <SelectValue placeholder="심사사 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
-                      {formData.assessorId && !Array.from(new Set(assessors?.map((u) => u.company).filter(Boolean) || [])).includes(formData.assessorId) && (
-                        <SelectItem key={formData.assessorId} value={formData.assessorId}>
-                          {formData.assessorId}
-                        </SelectItem>
-                      )}
-                      {Array.from(
-                        new Set(
-                          assessors?.map((u) => u.company).filter(Boolean) ||
-                            [],
-                        ),
-                      ).map((company) => (
-                        <SelectItem key={company} value={company!}>
-                          {company}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    readOnly
+                    placeholder="심사자 검색 시 자동입력"
+                    type="text"
+                    data-testid="input-assessor-id"
+                  />
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
-                  <Select
-                    key={`assessor-dept-${initialCaseId || editCaseId || 'new'}-${loadedCaseNumber}`}
+                  <input
+                    className={disabledInputClasses}
                     value={formData.assessorDepartment}
-                    onValueChange={(value) =>
-                      handleInputChange("assessorDepartment", value)
-                    }
-                    disabled={readOnly || !formData.assessorId}
-                  >
-                    <SelectTrigger
-                      className={`${selectTriggerClasses} bg-white`}
-                      data-testid="select-assessor-department"
-                    >
-                      <SelectValue placeholder="부서 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
-                      {formData.assessorDepartment && !filteredAssessorDepartments.includes(formData.assessorDepartment) && (
-                        <SelectItem key={formData.assessorDepartment} value={formData.assessorDepartment}>
-                          {formData.assessorDepartment}
-                        </SelectItem>
-                      )}
-                      {filteredAssessorDepartments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    readOnly
+                    placeholder="심사자 검색 시 자동입력"
+                    type="text"
+                    data-testid="input-assessor-department"
+                  />
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>심사자</label>
-                  <Select
-                    key={`assessor-team-${initialCaseId || editCaseId || 'new'}-${loadedCaseNumber}`}
-                    value={formData.assessorTeam}
-                    onValueChange={(value) =>
-                      handleInputChange("assessorTeam", value)
-                    }
-                    disabled={readOnly || !formData.assessorId}
+                  <div
+                    className={`${selectTriggerClasses} bg-white flex items-center justify-between cursor-pointer ${readOnly ? "opacity-50 pointer-events-none" : ""}`}
+                    onClick={() => {
+                      if (!readOnly) {
+                        setAssessorSearchQuery("");
+                        setTempSelectedAssessor(null);
+                        setIsAssessorSearchOpen(true);
+                      }
+                    }}
+                    data-testid="button-open-assessor-search"
                   >
-                    <SelectTrigger
-                      className={`${selectTriggerClasses} bg-white`}
-                      data-testid="select-assessor-team"
-                    >
-                      <SelectValue placeholder="심사자 성함" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
-                      {formData.assessorTeam && !filteredAssessorEmployees.some(emp => emp.name === formData.assessorTeam) && (
-                        <SelectItem key={formData.assessorTeam} value={formData.assessorTeam}>
-                          {formData.assessorTeam}
-                        </SelectItem>
-                      )}
-                      {filteredAssessorEmployees.map((emp) => (
-                        <SelectItem key={emp.id} value={emp.name}>
-                          {emp.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <span className={formData.assessorTeam ? "text-slate-900" : "text-slate-400"}>
+                      {formData.assessorTeam || "심사자 검색"}
+                    </span>
+                    <Search className="w-4 h-4 text-slate-400" />
+                  </div>
                 </div>
               </div>
 
@@ -2031,108 +1944,50 @@ export default function Intake({
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>조사사</label>
-                  <Select
-                    key={`investigator-team-${initialCaseId || editCaseId || 'new'}-${loadedCaseNumber}`}
+                  <input
+                    className={disabledInputClasses}
                     value={formData.investigatorTeam}
-                    onValueChange={(value) =>
-                      handleInputChange("investigatorTeam", value)
-                    }
-                    disabled={readOnly}
-                  >
-                    <SelectTrigger
-                      className={`${selectTriggerClasses} bg-white`}
-                      data-testid="select-investigator-team"
-                    >
-                      <SelectValue placeholder="조사사 명" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
-                      {formData.investigatorTeam && !Array.from(new Set(investigators?.map((u) => u.company).filter(Boolean) || [])).includes(formData.investigatorTeam) && (
-                        <SelectItem key={formData.investigatorTeam} value={formData.investigatorTeam}>
-                          {formData.investigatorTeam}
-                        </SelectItem>
-                      )}
-                      {Array.from(
-                        new Set(
-                          investigators
-                            ?.map((u) => u.company)
-                            .filter(Boolean) || [],
-                        ),
-                      ).map((company) => (
-                        <SelectItem key={company} value={company!}>
-                          {company}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    readOnly
+                    placeholder="조사자 검색 시 자동입력"
+                    type="text"
+                    data-testid="input-investigator-team"
+                  />
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>소속부서명</label>
-                  <Select
-                    key={`investigator-dept-${initialCaseId || editCaseId || 'new'}-${loadedCaseNumber}`}
+                  <input
+                    className={disabledInputClasses}
                     value={formData.investigatorDepartment}
-                    onValueChange={(value) =>
-                      handleInputChange("investigatorDepartment", value)
-                    }
-                    disabled={readOnly || !formData.investigatorTeam}
-                  >
-                    <SelectTrigger
-                      className={`${selectTriggerClasses} bg-white`}
-                      data-testid="select-investigator-department"
-                    >
-                      <SelectValue placeholder="부서 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
-                      {formData.investigatorDepartment && !filteredInvestigatorDepartments.includes(formData.investigatorDepartment) && (
-                        <SelectItem key={formData.investigatorDepartment} value={formData.investigatorDepartment}>
-                          {formData.investigatorDepartment}
-                        </SelectItem>
-                      )}
-                      {filteredInvestigatorDepartments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    readOnly
+                    placeholder="조사자 검색 시 자동입력"
+                    type="text"
+                    data-testid="input-investigator-department"
+                  />
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-3">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>조사자</label>
-                  <Select
-                    key={`investigator-name-${initialCaseId || editCaseId || 'new'}-${loadedCaseNumber}`}
-                    value={formData.investigatorTeamName}
-                    onValueChange={(value) =>
-                      handleInputChange("investigatorTeamName", value)
-                    }
-                    disabled={readOnly || !formData.investigatorTeam}
+                  <div
+                    className={`${selectTriggerClasses} bg-white flex items-center justify-between cursor-pointer ${readOnly ? "opacity-50 pointer-events-none" : ""}`}
+                    onClick={() => {
+                      if (!readOnly) {
+                        setInvestigatorSearchQuery("");
+                        setTempSelectedInvestigator(null);
+                        setIsInvestigatorSearchOpen(true);
+                      }
+                    }}
+                    data-testid="button-open-investigator-search"
                   >
-                    <SelectTrigger
-                      className={`${selectTriggerClasses} bg-white`}
-                      data-testid="select-investigator-name"
-                    >
-                      <SelectValue placeholder="조사자 성함" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* 현재 저장된 값이 목록에 없으면 추가 */}
-                      {formData.investigatorTeamName && !filteredInvestigatorEmployees.some(emp => emp.name === formData.investigatorTeamName) && (
-                        <SelectItem key={formData.investigatorTeamName} value={formData.investigatorTeamName}>
-                          {formData.investigatorTeamName}
-                        </SelectItem>
-                      )}
-                      {filteredInvestigatorEmployees.map((emp) => (
-                        <SelectItem key={emp.id} value={emp.name}>
-                          {emp.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <span className={formData.investigatorTeamName ? "text-slate-900" : "text-slate-400"}>
+                      {formData.investigatorTeamName || "조사자 검색"}
+                    </span>
+                    <Search className="w-4 h-4 text-slate-400" />
+                  </div>
                 </div>
               </div>
 
@@ -2918,11 +2773,11 @@ export default function Intake({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[600px] bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col"
+              className="w-full max-w-[700px] bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col"
             >
               <div className="flex flex-row justify-between items-center w-full px-5 h-[60px] border-b">
                 <h2 className="font-semibold text-lg text-slate-900">
-                  의뢰사 검색
+                  의뢰자 검색
                 </h2>
                 <button
                   onClick={() => setIsClientSearchOpen(false)}
@@ -2934,11 +2789,11 @@ export default function Intake({
               </div>
               <div className="flex flex-col items-center w-full px-5 py-4 gap-4">
                 <div className="flex flex-col items-start w-full gap-2">
-                  <label className={labelClasses}>의뢰사 검색</label>
+                  <label className={labelClasses}>이름/회사/부서 검색</label>
                   <div className="flex flex-row items-center w-full">
                     <input
                       type="text"
-                      placeholder="의뢰사명을 입력해주세요."
+                      placeholder="이름, 회사명 또는 부서명을 입력해주세요."
                       value={clientSearchQuery}
                       onChange={(e) => setClientSearchQuery(e.target.value)}
                       className={`${inputClasses} flex-1 !rounded-r-none`}
@@ -2954,41 +2809,47 @@ export default function Intake({
                 </div>
               </div>
               <div className="flex flex-col items-start w-full px-5 flex-1">
-                {filteredClients.length === 0 ? (
+                {filteredClientUsers.length === 0 ? (
                   <div className="flex items-center justify-center w-full py-10">
                     <span className="text-sm text-slate-500">
                       {clientSearchQuery
                         ? "검색 결과가 없습니다"
-                        : "등록된 의뢰사가 없습니다"}
+                        : "등록된 의뢰자가 없습니다"}
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-start w-full">
                     <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600 sticky top-0">
-                      <div className="px-3 flex-1">의뢰사명</div>
+                      <div className="px-3 w-[120px]">이름</div>
+                      <div className="px-3 flex-1">회사</div>
+                      <div className="px-3 w-[120px]">부서</div>
                       <div className="px-3 w-[60px]">선택</div>
                     </div>
                     <div
                       className="flex flex-col items-start w-full overflow-y-auto"
-                      style={{ maxHeight: "192px" }}
+                      style={{ maxHeight: "300px" }}
                     >
-                      {filteredClients.map((client) => (
+                      {filteredClientUsers.map((user) => (
                         <div
-                          key={client.name}
-                          className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedClient?.name === client.name ? "bg-sky-50" : "hover:bg-slate-50"}`}
-                          onClick={() => setTempSelectedClient(client)}
-                          data-testid={`row-client-${client.name}`}
+                          key={user.id}
+                          className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedClient?.id === user.id ? "bg-sky-50" : "hover:bg-slate-50"}`}
+                          onClick={() => setTempSelectedClient(user)}
+                          data-testid={`row-client-user-${user.id}`}
                         >
-                          <div
-                            className={`px-3 flex-1 text-sm ${tempSelectedClient?.name === client.name ? "text-sky-600 font-medium" : "text-slate-600"}`}
-                          >
-                            {client.name}
+                          <div className={`px-3 w-[120px] text-sm ${tempSelectedClient?.id === user.id ? "text-sky-600 font-medium" : "text-slate-900"}`}>
+                            {user.name}
+                          </div>
+                          <div className={`px-3 flex-1 text-sm ${tempSelectedClient?.id === user.id ? "text-sky-600" : "text-slate-600"}`}>
+                            {user.company || "-"}
+                          </div>
+                          <div className={`px-3 w-[120px] text-sm ${tempSelectedClient?.id === user.id ? "text-sky-600" : "text-slate-600"}`}>
+                            {user.department || "-"}
                           </div>
                           <div className="px-3 w-[60px] flex justify-center">
                             <div
-                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedClient?.name === client.name ? "bg-sky-500 border-sky-500" : "border-slate-300"}`}
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedClient?.id === user.id ? "bg-sky-500 border-sky-500" : "border-slate-300"}`}
                             >
-                              {tempSelectedClient?.name === client.name && (
+                              {tempSelectedClient?.id === user.id && (
                                 <div className="w-2 h-2 bg-white rounded-full" />
                               )}
                             </div>
@@ -3006,6 +2867,9 @@ export default function Intake({
                     <span className="font-semibold text-slate-900">
                       {tempSelectedClient.name}
                     </span>
+                    <span className="text-sm text-slate-500">
+                      {tempSelectedClient.company || ""} {tempSelectedClient.department ? `/ ${tempSelectedClient.department}` : ""}
+                    </span>
                   </div>
                   <div className="flex justify-center gap-3">
                     <button
@@ -3017,10 +2881,13 @@ export default function Intake({
                     </button>
                     <button
                       onClick={() => {
-                        handleInputChange(
-                          "clientResidence",
-                          tempSelectedClient.name,
-                        );
+                        setFormData((prev) => ({
+                          ...prev,
+                          clientName: tempSelectedClient.name || "",
+                          clientResidence: tempSelectedClient.company || "",
+                          clientDepartment: tempSelectedClient.department || "",
+                          clientContact: tempSelectedClient.phone || "",
+                        }));
                         setIsClientSearchOpen(false);
                         setTempSelectedClient(null);
                         setClientSearchQuery("");
@@ -3037,7 +2904,7 @@ export default function Intake({
           </div>,
           document.body,
         )}
-      {/* 심사사 검색 팝업 */}
+      {/* 심사자 검색 팝업 */}
       {isAssessorSearchOpen &&
         createPortal(
           <div
@@ -3058,11 +2925,11 @@ export default function Intake({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[600px] bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col"
+              className="w-full max-w-[700px] bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col"
             >
               <div className="flex flex-row justify-between items-center w-full px-5 h-[60px] border-b">
                 <h2 className="font-semibold text-lg text-slate-900">
-                  심사사 검색
+                  심사자 검색
                 </h2>
                 <button
                   onClick={() => setIsAssessorSearchOpen(false)}
@@ -3074,11 +2941,11 @@ export default function Intake({
               </div>
               <div className="flex flex-col items-center w-full px-5 py-4 gap-4">
                 <div className="flex flex-col items-start w-full gap-2">
-                  <label className={labelClasses}>심사사 검색</label>
+                  <label className={labelClasses}>이름/회사/부서 검색</label>
                   <div className="flex flex-row items-center w-full">
                     <input
                       type="text"
-                      placeholder="심사사명을 입력해주세요."
+                      placeholder="이름, 회사명 또는 부서명을 입력해주세요."
                       value={assessorSearchQuery}
                       onChange={(e) => setAssessorSearchQuery(e.target.value)}
                       className={`${inputClasses} flex-1 !rounded-r-none`}
@@ -3093,47 +2960,55 @@ export default function Intake({
                   </div>
                 </div>
               </div>
-              <div
-                className="flex flex-col items-start w-full px-5 overflow-y-auto flex-1"
-                style={{ maxHeight: "300px" }}
-              >
-                {filteredAssessors.length === 0 ? (
+              <div className="flex flex-col items-start w-full px-5 flex-1">
+                {filteredAssessorUsers.length === 0 ? (
                   <div className="flex items-center justify-center w-full py-10">
                     <span className="text-sm text-slate-500">
                       {assessorSearchQuery
                         ? "검색 결과가 없습니다"
-                        : "등록된 심사사가 없습니다"}
+                        : "등록된 심사자가 없습니다"}
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-start w-full">
-                    <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600">
-                      <div className="px-3 flex-1">심사사명</div>
+                    <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600 sticky top-0">
+                      <div className="px-3 w-[120px]">이름</div>
+                      <div className="px-3 flex-1">회사</div>
+                      <div className="px-3 w-[120px]">부서</div>
                       <div className="px-3 w-[60px]">선택</div>
                     </div>
-                    {filteredAssessors.map((assessor) => (
-                      <div
-                        key={assessor.name}
-                        className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedAssessor?.name === assessor.name ? "bg-sky-50" : "hover:bg-slate-50"}`}
-                        onClick={() => setTempSelectedAssessor(assessor)}
-                        data-testid={`row-assessor-${assessor.name}`}
-                      >
+                    <div
+                      className="flex flex-col items-start w-full overflow-y-auto"
+                      style={{ maxHeight: "300px" }}
+                    >
+                      {filteredAssessorUsers.map((user) => (
                         <div
-                          className={`px-3 flex-1 text-sm ${tempSelectedAssessor?.name === assessor.name ? "text-sky-600 font-medium" : "text-slate-600"}`}
+                          key={user.id}
+                          className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedAssessor?.id === user.id ? "bg-sky-50" : "hover:bg-slate-50"}`}
+                          onClick={() => setTempSelectedAssessor(user)}
+                          data-testid={`row-assessor-user-${user.id}`}
                         >
-                          {assessor.name}
-                        </div>
-                        <div className="px-3 w-[60px] flex justify-center">
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedAssessor?.name === assessor.name ? "bg-sky-500 border-sky-500" : "border-slate-300"}`}
-                          >
-                            {tempSelectedAssessor?.name === assessor.name && (
-                              <div className="w-2 h-2 bg-white rounded-full" />
-                            )}
+                          <div className={`px-3 w-[120px] text-sm ${tempSelectedAssessor?.id === user.id ? "text-sky-600 font-medium" : "text-slate-900"}`}>
+                            {user.name}
+                          </div>
+                          <div className={`px-3 flex-1 text-sm ${tempSelectedAssessor?.id === user.id ? "text-sky-600" : "text-slate-600"}`}>
+                            {user.company || "-"}
+                          </div>
+                          <div className={`px-3 w-[120px] text-sm ${tempSelectedAssessor?.id === user.id ? "text-sky-600" : "text-slate-600"}`}>
+                            {user.department || "-"}
+                          </div>
+                          <div className="px-3 w-[60px] flex justify-center">
+                            <div
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedAssessor?.id === user.id ? "bg-sky-500 border-sky-500" : "border-slate-300"}`}
+                            >
+                              {tempSelectedAssessor?.id === user.id && (
+                                <div className="w-2 h-2 bg-white rounded-full" />
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -3143,6 +3018,9 @@ export default function Intake({
                     <div className="w-2 h-2 bg-sky-500 rounded-full" />
                     <span className="font-semibold text-slate-900">
                       {tempSelectedAssessor.name}
+                    </span>
+                    <span className="text-sm text-slate-500">
+                      {tempSelectedAssessor.company || ""} {tempSelectedAssessor.department ? `/ ${tempSelectedAssessor.department}` : ""}
                     </span>
                   </div>
                   <div className="flex justify-center gap-3">
@@ -3155,10 +3033,14 @@ export default function Intake({
                     </button>
                     <button
                       onClick={() => {
-                        handleInputChange(
-                          "assessorId",
-                          tempSelectedAssessor.name,
-                        );
+                        setFormData((prev) => ({
+                          ...prev,
+                          assessorTeam: tempSelectedAssessor.name || "",
+                          assessorId: tempSelectedAssessor.company || "",
+                          assessorDepartment: tempSelectedAssessor.department || "",
+                          assessorContact: tempSelectedAssessor.phone || "",
+                          assessorEmail: tempSelectedAssessor.email || "",
+                        }));
                         setIsAssessorSearchOpen(false);
                         setTempSelectedAssessor(null);
                         setAssessorSearchQuery("");
@@ -3175,7 +3057,7 @@ export default function Intake({
           </div>,
           document.body,
         )}
-      {/* 조사사 검색 팝업 */}
+      {/* 조사자 검색 팝업 */}
       {isInvestigatorSearchOpen &&
         createPortal(
           <div
@@ -3196,11 +3078,11 @@ export default function Intake({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-[600px] bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col"
+              className="w-full max-w-[700px] bg-white rounded-xl shadow-xl max-h-[90vh] flex flex-col"
             >
               <div className="flex flex-row justify-between items-center w-full px-5 h-[60px] border-b">
                 <h2 className="font-semibold text-lg text-slate-900">
-                  조사사 검색
+                  조사자 검색
                 </h2>
                 <button
                   onClick={() => setIsInvestigatorSearchOpen(false)}
@@ -3212,11 +3094,11 @@ export default function Intake({
               </div>
               <div className="flex flex-col items-center w-full px-5 py-4 gap-4">
                 <div className="flex flex-col items-start w-full gap-2">
-                  <label className={labelClasses}>조사사 검색</label>
+                  <label className={labelClasses}>이름/회사/부서 검색</label>
                   <div className="flex flex-row items-center w-full">
                     <input
                       type="text"
-                      placeholder="조사사명을 입력해주세요."
+                      placeholder="이름, 회사명 또는 부서명을 입력해주세요."
                       value={investigatorSearchQuery}
                       onChange={(e) =>
                         setInvestigatorSearchQuery(e.target.value)
@@ -3233,50 +3115,55 @@ export default function Intake({
                   </div>
                 </div>
               </div>
-              <div
-                className="flex flex-col items-start w-full px-5 overflow-y-auto flex-1"
-                style={{ maxHeight: "300px" }}
-              >
-                {filteredInvestigators.length === 0 ? (
+              <div className="flex flex-col items-start w-full px-5 flex-1">
+                {filteredInvestigatorUsers.length === 0 ? (
                   <div className="flex items-center justify-center w-full py-10">
                     <span className="text-sm text-slate-500">
                       {investigatorSearchQuery
                         ? "검색 결과가 없습니다"
-                        : "등록된 조사사가 없습니다"}
+                        : "등록된 조사자가 없습니다"}
                     </span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-start w-full">
-                    <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600">
-                      <div className="px-3 flex-1">조사사명</div>
+                    <div className="flex flex-row items-center w-full h-10 bg-slate-100 text-xs font-medium text-slate-600 sticky top-0">
+                      <div className="px-3 w-[120px]">이름</div>
+                      <div className="px-3 flex-1">회사</div>
+                      <div className="px-3 w-[120px]">부서</div>
                       <div className="px-3 w-[60px]">선택</div>
                     </div>
-                    {filteredInvestigators.map((investigator) => (
-                      <div
-                        key={investigator.name}
-                        className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedInvestigator?.name === investigator.name ? "bg-sky-50" : "hover:bg-slate-50"}`}
-                        onClick={() =>
-                          setTempSelectedInvestigator(investigator)
-                        }
-                        data-testid={`row-investigator-${investigator.name}`}
-                      >
+                    <div
+                      className="flex flex-col items-start w-full overflow-y-auto"
+                      style={{ maxHeight: "300px" }}
+                    >
+                      {filteredInvestigatorUsers.map((user) => (
                         <div
-                          className={`px-3 flex-1 text-sm ${tempSelectedInvestigator?.name === investigator.name ? "text-sky-600 font-medium" : "text-slate-600"}`}
+                          key={user.id}
+                          className={`flex flex-row items-center w-full h-12 cursor-pointer border-b border-slate-100 ${tempSelectedInvestigator?.id === user.id ? "bg-sky-50" : "hover:bg-slate-50"}`}
+                          onClick={() => setTempSelectedInvestigator(user)}
+                          data-testid={`row-investigator-user-${user.id}`}
                         >
-                          {investigator.name}
-                        </div>
-                        <div className="px-3 w-[60px] flex justify-center">
-                          <div
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedInvestigator?.name === investigator.name ? "bg-sky-500 border-sky-500" : "border-slate-300"}`}
-                          >
-                            {tempSelectedInvestigator?.name ===
-                              investigator.name && (
-                              <div className="w-2 h-2 bg-white rounded-full" />
-                            )}
+                          <div className={`px-3 w-[120px] text-sm ${tempSelectedInvestigator?.id === user.id ? "text-sky-600 font-medium" : "text-slate-900"}`}>
+                            {user.name}
+                          </div>
+                          <div className={`px-3 flex-1 text-sm ${tempSelectedInvestigator?.id === user.id ? "text-sky-600" : "text-slate-600"}`}>
+                            {user.company || "-"}
+                          </div>
+                          <div className={`px-3 w-[120px] text-sm ${tempSelectedInvestigator?.id === user.id ? "text-sky-600" : "text-slate-600"}`}>
+                            {user.department || "-"}
+                          </div>
+                          <div className="px-3 w-[60px] flex justify-center">
+                            <div
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tempSelectedInvestigator?.id === user.id ? "bg-sky-500 border-sky-500" : "border-slate-300"}`}
+                            >
+                              {tempSelectedInvestigator?.id === user.id && (
+                                <div className="w-2 h-2 bg-white rounded-full" />
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -3286,6 +3173,9 @@ export default function Intake({
                     <div className="w-2 h-2 bg-sky-500 rounded-full" />
                     <span className="font-semibold text-slate-900">
                       {tempSelectedInvestigator.name}
+                    </span>
+                    <span className="text-sm text-slate-500">
+                      {tempSelectedInvestigator.company || ""} {tempSelectedInvestigator.department ? `/ ${tempSelectedInvestigator.department}` : ""}
                     </span>
                   </div>
                   <div className="flex justify-center gap-3">
@@ -3298,10 +3188,14 @@ export default function Intake({
                     </button>
                     <button
                       onClick={() => {
-                        handleInputChange(
-                          "investigatorTeam",
-                          tempSelectedInvestigator.name,
-                        );
+                        setFormData((prev) => ({
+                          ...prev,
+                          investigatorTeamName: tempSelectedInvestigator.name || "",
+                          investigatorTeam: tempSelectedInvestigator.company || "",
+                          investigatorDepartment: tempSelectedInvestigator.department || "",
+                          investigatorContact: tempSelectedInvestigator.phone || "",
+                          investigatorEmail: tempSelectedInvestigator.email || "",
+                        }));
                         setIsInvestigatorSearchOpen(false);
                         setTempSelectedInvestigator(null);
                         setInvestigatorSearchQuery("");
