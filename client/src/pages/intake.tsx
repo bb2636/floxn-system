@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
-import { Star, X, Calendar as CalendarIcon, Search } from "lucide-react";
+import { Star, X, Calendar as CalendarIcon, Search, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { GlobalHeader } from "@/components/global-header";
@@ -1695,10 +1695,25 @@ export default function Intake({
 
           {/* 보험 정보 */}
           <section>
-            <div className="mb-4 border-b-2 border-sky-500">
+            <div className="mb-4 border-b-2 border-sky-500 flex items-center justify-between">
               <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 보험 정보
               </h2>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleInputChange("insuranceCompany", "");
+                    handleInputChange("insurancePolicyNo", "");
+                    handleInputChange("insuranceAccidentNo", "");
+                  }}
+                  className="pb-2 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                  data-testid="button-reset-insurance"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  초기화
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-12 gap-x-4 gap-y-3">
@@ -2320,10 +2335,28 @@ export default function Intake({
 
           {/* 배당사항 */}
           <section>
-            <div className="mb-4 border-b-2 border-sky-500">
+            <div className="mb-4 border-b-2 border-sky-500 flex items-center justify-between">
               <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 배당사항
               </h2>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleInputChange("damagePreventionCost", false);
+                    handleInputChange("victimIncidentAssistance", false);
+                    handleInputChange("accidentType", "");
+                    handleInputChange("restorationMethod", "");
+                    handleInputChange("accidentCause", "");
+                    handleInputChange("otherVendorEstimate", "");
+                  }}
+                  className="pb-2 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                  data-testid="button-reset-dividend"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  초기화
+                </button>
+              )}
             </div>
             <p className="mb-4 text-xs text-slate-500">
               손방 및 대물 선택(중복 가능)
@@ -2517,10 +2550,26 @@ export default function Intake({
 
           {/* 배당 협력사 정보 */}
           <section>
-            <div className="mb-4 border-b-2 border-sky-500">
+            <div className="mb-4 border-b-2 border-sky-500 flex items-center justify-between">
               <h2 className="pb-2 text-sm font-semibold text-sky-600">
                 배당 협력사 정보
               </h2>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleInputChange("assignedPartner", "");
+                    handleInputChange("assignedPartnerManager", "");
+                    handleInputChange("assignedPartnerContact", "");
+                    handleInputChange("specialRequests", "");
+                  }}
+                  className="pb-2 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                  data-testid="button-reset-partner"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  초기화
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-12 gap-x-4 gap-y-3">
