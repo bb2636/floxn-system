@@ -429,6 +429,7 @@ export default function AdminSettings() {
   const [noticeTitle, setNoticeTitle] = useState("");
   const [noticeContent, setNoticeContent] = useState("");
   const [viewingNotice, setViewingNotice] = useState<Notice | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "inquiry" | "notice"; id: string; title: string } | null>(null);
   const [createAccountForm, setCreateAccountForm] = useState({
     role: "보험사",
     accountType: "개인" as "개인" | "회사",
@@ -992,6 +993,26 @@ export default function AdminSettings() {
     },
   });
 
+  const deleteInquiryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/inquiries/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
+      toast({ description: "문의가 삭제되었습니다." });
+    },
+  });
+
+  const deleteNoticeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/notices/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notices"] });
+      toast({ description: "공지사항이 삭제되었습니다." });
+    },
+  });
+
   // Fetch notices
   const { data: notices = [], isLoading: noticesLoading } = useQuery<Notice[]>({
     queryKey: ["/api/notices"],
@@ -1396,18 +1417,31 @@ export default function AdminSettings() {
                       >
                         요청
                       </th>
+                      <th
+                        className="px-4 py-4 text-center"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                          width: "60px",
+                        }}
+                      >
+                        삭제
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {inquiriesLoading ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center">
+                        <td colSpan={9} className="px-4 py-8 text-center">
                           <div className="text-sm text-gray-500">로딩 중...</div>
                         </td>
                       </tr>
                     ) : filteredInquiries.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center">
+                        <td colSpan={9} className="px-4 py-8 text-center">
                           <div className="text-sm text-gray-500">
                             {inquiryStatusFilter === "전체" ? "등록된 문의가 없습니다" : 
                              inquiryStatusFilter === "완료" ? "답변 완료된 문의가 없습니다" : 
@@ -1545,6 +1579,18 @@ export default function AdminSettings() {
                                 data-testid={`button-inquiry-detail-${inquiry.id}`}
                               >
                                 자세히보기
+                              </button>
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteTarget({ type: "inquiry", id: inquiry.id, title: inquiry.title });
+                                }}
+                                className="p-1.5 hover:bg-red-50 rounded-md transition-colors"
+                                data-testid={`button-delete-inquiry-${inquiry.id}`}
+                              >
+                                <Trash2 size={18} style={{ color: "#9CA3AF" }} />
                               </button>
                             </td>
                           </tr>
@@ -2141,18 +2187,31 @@ export default function AdminSettings() {
                       >
                         조회
                       </th>
+                      <th
+                        className="px-4 py-4 text-center"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                          width: "60px",
+                        }}
+                      >
+                        삭제
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {noticesLoading ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center">
+                        <td colSpan={7} className="px-4 py-8 text-center">
                           <div className="text-sm text-gray-500">로딩 중...</div>
                         </td>
                       </tr>
                     ) : notices.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-8 text-center">
+                        <td colSpan={7} className="px-4 py-8 text-center">
                           <div className="text-sm text-gray-500">등록된 공지사항이 없습니다</div>
                         </td>
                       </tr>
@@ -2257,6 +2316,18 @@ export default function AdminSettings() {
                                 data-testid={`button-notice-view-${index}`}
                               >
                                 보기
+                              </button>
+                            </td>
+                            <td className="px-4 py-4 text-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteTarget({ type: "notice", id: notice.id, title: notice.title });
+                                }}
+                                className="p-1.5 hover:bg-red-50 rounded-md transition-colors"
+                                data-testid={`button-delete-notice-${index}`}
+                              >
+                                <Trash2 size={18} style={{ color: "#9CA3AF" }} />
                               </button>
                             </td>
                           </tr>
@@ -9727,6 +9798,79 @@ export default function AdminSettings() {
                 data-testid="button-close-view-notice-bottom"
               >
                 닫기
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {deleteTarget && (
+        <>
+          <div
+            className="fixed inset-0 z-[9999]"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+            onClick={() => setDeleteTarget(null)}
+          />
+          <div
+            className="fixed z-[10000] bg-white rounded-xl shadow-xl p-6"
+            style={{
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "400px",
+              maxWidth: "90vw",
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 500,
+                color: "#0C0C0C",
+                textAlign: "center",
+                marginBottom: "24px",
+              }}
+            >
+              해당 {deleteTarget.type === "inquiry" ? "1:1문의사항" : "공지사항"}을 삭제하시겠습니까?
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="px-6 py-2.5"
+                style={{
+                  border: "1px solid rgba(12, 12, 12, 0.15)",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                  background: "#FFFFFF",
+                }}
+                data-testid="button-delete-cancel"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  if (deleteTarget.type === "inquiry") {
+                    deleteInquiryMutation.mutate(deleteTarget.id);
+                  } else {
+                    deleteNoticeMutation.mutate(deleteTarget.id);
+                  }
+                  setDeleteTarget(null);
+                }}
+                className="px-6 py-2.5"
+                style={{
+                  background: "#E53E3E",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#FFFFFF",
+                }}
+                data-testid="button-delete-confirm"
+              >
+                확인
               </button>
             </div>
           </div>

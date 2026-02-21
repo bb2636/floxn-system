@@ -363,6 +363,7 @@ export interface IStorage {
     data: { title: string; content: string },
   ): Promise<Notice | null>;
   deleteNotice(id: string): Promise<void>;
+  deleteInquiry(id: string): Promise<void>;
   // Asset cloning methods (for syncing from related cases)
   getRelatedCaseWithDrawing(
     caseId: string,
@@ -2576,6 +2577,10 @@ export class MemStorage implements IStorage {
 
   async deleteNotice(id: string): Promise<void> {
     throw new Error("Notice methods not implemented in MemStorage");
+  }
+
+  async deleteInquiry(id: string): Promise<void> {
+    this.inquiries.delete(id);
   }
 
   // Asset cloning methods (stub)
@@ -6004,6 +6009,10 @@ export class DbStorage implements IStorage {
 
   async deleteNotice(id: string): Promise<void> {
     await db.delete(notices).where(eq(notices.id, id));
+  }
+
+  async deleteInquiry(id: string): Promise<void> {
+    await db.delete(inquiries).where(eq(inquiries.id, id));
   }
 
   // Asset cloning methods (for syncing from related cases)

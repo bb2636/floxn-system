@@ -4223,6 +4223,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete inquiry
+  app.delete("/api/inquiries/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      await storage.deleteInquiry(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete inquiry error:", error);
+      res.status(500).json({ error: "문의를 삭제하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // ==================== DRAWING ROUTES ====================
 
   // Save drawing (create or update)
