@@ -145,6 +145,8 @@ export function LaborCostSection({
   laborRateTiers = DEFAULT_LABOR_RATE_TIERS_FALLBACK, // 기본값: 하드코딩된 요율 (하위 호환)
   isLossPreventionCase = false, // 기본값 false
 }: LaborCostSectionProps) {
+  const [detailItemInputMode, setDetailItemInputMode] = useState<{[rowId: string]: boolean}>({});
+
   // 드래그 앤 드롭 상태
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
@@ -2124,12 +2126,51 @@ export function LaborCostSection({
                         />
                         {row.detailItem || ""}
                       </div>
+                    ) : detailItemInputMode[row.id] ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={row.detailItem === "직접입력" ? "" : (row.detailItem || "")}
+                          onChange={(e) => updateRow(row.id, "detailItem", e.target.value)}
+                          className="h-9 border-0 flex-1"
+                          style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                          placeholder="직접 입력"
+                          data-testid={`input-laborItem-${globalIndex}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDetailItemInputMode(prev => ({ ...prev, [row.id]: false }));
+                            updateRow(row.id, "detailItem", "");
+                          }}
+                          style={{
+                            width: "20px",
+                            height: "20px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "rgba(12, 12, 12, 0.4)",
+                            fontSize: "14px",
+                          }}
+                          title="목록 선택으로 돌아가기"
+                          data-testid={`button-laborItem-back-${globalIndex}`}
+                        >
+                          ×
+                        </button>
+                      </div>
                     ) : (
                       <Select
                         value={row.detailItem || undefined}
-                        onValueChange={(value) =>
-                          updateRow(row.id, "detailItem", value)
-                        }
+                        onValueChange={(value) => {
+                          if (value === "직접입력") {
+                            setDetailItemInputMode(prev => ({ ...prev, [row.id]: true }));
+                            updateRow(row.id, "detailItem", "");
+                          } else {
+                            updateRow(row.id, "detailItem", value);
+                          }
+                        }}
                         disabled={!row.workName}
                       >
                         <SelectTrigger
