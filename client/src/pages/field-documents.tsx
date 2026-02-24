@@ -1486,16 +1486,11 @@ export default function FieldDocuments() {
                   </div>
                 );
               case "기본자료": {
-                // -0 케이스는 필수, -1,-2,-3 등은 선택
-                const caseNum = selectedCase?.caseNumber || "";
-                const suffix = caseNum.split("-").pop() || "";
-                const isRequired = suffix === "0";
                 return (
                   <div className="text-left">
-                    <div className="font-semibold mb-1">필수 서류 안내</div>
+                    <div className="font-semibold mb-1">서류 안내</div>
                     <div>
-                      • 제출 전: 보험금 청구서, 개인정보 동의서{" "}
-                      {isRequired ? "필수" : "선택"}
+                      • 보험금 청구서, 개인정보 동의서 (선택)
                     </div>
                   </div>
                 );
