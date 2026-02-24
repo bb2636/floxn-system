@@ -851,6 +851,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delegate super admin (transfer super admin to another user)
+  app.post("/api/delegate-super-admin", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const requester = await storage.getUser(req.session.userId);
+    if (!requester?.isSuperAdmin) {
+      return res.status(403).json({ error: "최고관리자 권한이 필요합니다" });
+    }
+
+    const { targetUserId } = req.body;
+    if (!targetUserId) {
+      return res.status(400).json({ error: "위임 대상 사용자 ID가 필요합니다" });
+    }
+
+    const targetUser = await storage.getUser(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ error: "대상 사용자를 찾을 수 없습니다" });
+    }
+    if (targetUser.role !== "관리자") {
+      return res.status(400).json({ error: "관리자 역할의 사용자에게만 위임할 수 있습니다" });
+    }
+
+    try {
+      // Remove super admin from current user
+      await storage.updateUser(requester.id, { isSuperAdmin: false });
+      // Grant super admin to target user
+      await storage.updateUser(targetUserId, { isSuperAdmin: true });
+
+      // Update session
+      req.session.isSuperAdmin = false;
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delegate super admin error:", error);
+      res.status(500).json({ error: "최고관리자 위임 중 오류가 발생했습니다" });
+    }
+  });
+
   // Create account endpoint (admin only)
   app.post("/api/create-account", async (req, res) => {
     // Check authentication

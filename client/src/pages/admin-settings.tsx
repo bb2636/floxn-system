@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2, Star, ZoomIn, Trash2 } from "lucide-react";
+import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2, Star, ZoomIn, Trash2, Shield } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -412,6 +412,9 @@ export default function AdminSettings() {
   const [selectedMasterDataIds, setSelectedMasterDataIds] = useState<Set<string>>(new Set());
   const [editingMasterData, setEditingMasterData] = useState<Record<string, { value: string; note: string }>>({}); // 인라인 편집용
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
+  const [showDelegateConfirmModal, setShowDelegateConfirmModal] = useState(false);
+  const [delegateTargetUser, setDelegateTargetUser] = useState<User | null>(null);
+  const [isDelegating, setIsDelegating] = useState(false);
   const [showAccountCreatedModal, setShowAccountCreatedModal] = useState(false);
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
   const [sendEmailNotification, setSendEmailNotification] = useState(false);
@@ -4219,34 +4222,19 @@ export default function AdminSettings() {
                   </div>
                   {loggedInUser?.isSuperAdmin && (
                     <div className="px-2 flex-1">
-                      {user.role === "관리자" && user.id !== loggedInUser?.id && (
+                      {user.role === "관리자" && user.id !== loggedInUser?.id && !user.isSuperAdmin && (
                         <button
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            const newValue = !user.isSuperAdmin;
-                            const confirmMsg = newValue
-                              ? `${user.name || user.username}님을 최고관리자로 위임하시겠습니까?`
-                              : `${user.name || user.username}님의 최고관리자 권한을 해제하시겠습니까?`;
-                            if (!window.confirm(confirmMsg)) return;
-                            try {
-                              await apiRequest("PATCH", `/api/users/${user.id}`, { isSuperAdmin: newValue });
-                              queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                              toast({
-                                title: newValue ? "최고관리자로 위임되었습니다" : "최고관리자 권한이 해제되었습니다",
-                              });
-                            } catch (err) {
-                              toast({
-                                title: "오류가 발생했습니다",
-                                variant: "destructive",
-                              });
-                            }
+                            setDelegateTargetUser(user);
+                            setShowDelegateConfirmModal(true);
                           }}
                           className="flex items-center justify-center"
                           style={{
                             width: "92px",
                             height: "28px",
-                            background: user.isSuperAdmin ? "#FFF3E0" : "#E3F2FD",
-                            border: user.isSuperAdmin ? "1px solid #FF9800" : "1px solid #008FED",
+                            background: "#E3F2FD",
+                            border: "1px solid #008FED",
                             borderRadius: "6px",
                           }}
                           data-testid={`button-delegate-super-admin-${user.id}`}
@@ -4257,14 +4245,14 @@ export default function AdminSettings() {
                               fontSize: "13px",
                               fontWeight: 600,
                               letterSpacing: "-0.01em",
-                              color: user.isSuperAdmin ? "#E65100" : "#008FED",
+                              color: "#008FED",
                             }}
                           >
-                            {user.isSuperAdmin ? "권한 해제" : "위임"}
+                            위임
                           </span>
                         </button>
                       )}
-                      {user.role === "관리자" && user.id === loggedInUser?.id && (
+                      {user.role === "관리자" && user.id === loggedInUser?.id && user.isSuperAdmin && (
                         <span
                           style={{
                             fontFamily: "Pretendard",
@@ -4273,7 +4261,7 @@ export default function AdminSettings() {
                             color: "#008FED",
                           }}
                         >
-                          {user.isSuperAdmin ? "최고관리자" : ""}
+                          최고관리자
                         </span>
                       )}
                     </div>
@@ -4614,6 +4602,127 @@ export default function AdminSettings() {
           ) : null}
         </div>
       </div>
+      {/* Super Admin Delegate Confirm Modal */}
+      {showDelegateConfirmModal && delegateTargetUser && (
+        <>
+          <div
+            className="fixed inset-0 z-[60]"
+            style={{ background: "rgba(0, 0, 0, 0.5)" }}
+            onClick={() => {
+              setShowDelegateConfirmModal(false);
+              setDelegateTargetUser(null);
+            }}
+          />
+          <div
+            className="fixed z-[61] rounded-xl"
+            style={{
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "440px",
+              background: "#FFFFFF",
+              boxShadow: "0px 8px 40px rgba(0, 0, 0, 0.15)",
+              padding: "32px",
+            }}
+          >
+            <div className="flex flex-col items-center gap-5">
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  background: "rgba(0, 143, 237, 0.1)",
+                }}
+              >
+                <Shield style={{ width: "28px", height: "28px", color: "#008FED" }} />
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "20px",
+                    fontWeight: 700,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  최고관리자 위임
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 400,
+                    color: "rgba(12, 12, 12, 0.6)",
+                    textAlign: "center",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  <strong style={{ color: "#008FED" }}>{delegateTargetUser.name || delegateTargetUser.username}</strong>님에게
+                  최고관리자 권한을 위임하시겠습니까?
+                  <br />
+                  위임 후 본인은 일반관리자로 변경됩니다.
+                </span>
+              </div>
+              <div className="flex items-center gap-3 w-full mt-2">
+                <button
+                  className="flex-1 flex items-center justify-center hover-elevate active-elevate-2"
+                  style={{
+                    height: "44px",
+                    background: "#F5F5F5",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                  onClick={() => {
+                    setShowDelegateConfirmModal(false);
+                    setDelegateTargetUser(null);
+                  }}
+                  disabled={isDelegating}
+                  data-testid="button-delegate-cancel"
+                >
+                  취소
+                </button>
+                <button
+                  className="flex-1 flex items-center justify-center hover-elevate active-elevate-2"
+                  style={{
+                    height: "44px",
+                    background: "#008FED",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "#FFFFFF",
+                    opacity: isDelegating ? 0.6 : 1,
+                  }}
+                  onClick={async () => {
+                    setIsDelegating(true);
+                    try {
+                      await apiRequest("POST", "/api/delegate-super-admin", { targetUserId: delegateTargetUser.id });
+                      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                      toast({ title: `${delegateTargetUser.name || delegateTargetUser.username}님에게 최고관리자 권한이 위임되었습니다` });
+                      setShowDelegateConfirmModal(false);
+                      setDelegateTargetUser(null);
+                    } catch (err) {
+                      toast({ title: "위임 중 오류가 발생했습니다", variant: "destructive" });
+                    } finally {
+                      setIsDelegating(false);
+                    }
+                  }}
+                  disabled={isDelegating}
+                  data-testid="button-delegate-confirm"
+                >
+                  {isDelegating ? "처리 중..." : "위임하기"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {activeMenu === "사용자 계정 관리" && (
         <>
       {/* Account Detail Modal */}
@@ -5073,7 +5182,7 @@ export default function AdminSettings() {
                         </span>
                       )}
                     </div>
-                    {((isEditMode && (editedUserData.role || selectedUser.role) === "관리자" && user?.isSuperAdmin) || (!isEditMode && selectedUser.role === "관리자")) && (
+                    {selectedUser.role === "관리자" && (
                       <div className="flex flex-col gap-1.5">
                         <span
                           style={{
@@ -5086,48 +5195,17 @@ export default function AdminSettings() {
                         >
                           관리자 유형
                         </span>
-                        {isEditMode ? (
-                          <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-1.5 cursor-pointer" data-testid="label-edit-admin-type-general">
-                              <input
-                                type="radio"
-                                name="editAdminType"
-                                checked={!(editedUserData.isSuperAdmin ?? selectedUser.isSuperAdmin)}
-                                onChange={() => setEditedUserData({ ...editedUserData, isSuperAdmin: false })}
-                                style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
-                                data-testid="radio-edit-admin-type-general"
-                              />
-                              <span style={{ fontFamily: "Pretendard", fontSize: "15px", fontWeight: 500, color: "rgba(12, 12, 12, 0.8)" }}>
-                                일반관리자
-                              </span>
-                            </label>
-                            <label className="flex items-center gap-1.5 cursor-pointer" data-testid="label-edit-admin-type-super">
-                              <input
-                                type="radio"
-                                name="editAdminType"
-                                checked={!!(editedUserData.isSuperAdmin ?? selectedUser.isSuperAdmin)}
-                                onChange={() => setEditedUserData({ ...editedUserData, isSuperAdmin: true })}
-                                style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
-                                data-testid="radio-edit-admin-type-super"
-                              />
-                              <span style={{ fontFamily: "Pretendard", fontSize: "15px", fontWeight: 500, color: "rgba(12, 12, 12, 0.8)" }}>
-                                최고관리자
-                              </span>
-                            </label>
-                          </div>
-                        ) : (
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "16px",
-                              fontWeight: 400,
-                              letterSpacing: "-0.02em",
-                              color: selectedUser.isSuperAdmin ? "#008FED" : "rgba(12, 12, 12, 0.9)",
-                            }}
-                          >
-                            {selectedUser.isSuperAdmin ? "최고관리자" : "일반관리자"}
-                          </span>
-                        )}
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: selectedUser.isSuperAdmin ? "#008FED" : "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.isSuperAdmin ? "최고관리자" : "일반관리자"}
+                        </span>
                       </div>
                     )}
                     <div className="flex flex-col gap-1.5">
@@ -7189,79 +7267,6 @@ export default function AdminSettings() {
                 </div>
               </div>
 
-              {createAccountForm.role === "관리자" && user?.isSuperAdmin && (
-                <div className="flex flex-col gap-2">
-                  <label
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      letterSpacing: "-0.01em",
-                      color: "#686A6E",
-                    }}
-                  >
-                    관리자 유형
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <label
-                      className="flex items-center gap-1.5 cursor-pointer"
-                      data-testid="label-admin-type-general"
-                    >
-                      <input
-                        type="radio"
-                        name="adminType"
-                        checked={!createAccountForm.isSuperAdmin}
-                        onChange={() =>
-                          setCreateAccountForm({
-                            ...createAccountForm,
-                            isSuperAdmin: false,
-                          })
-                        }
-                        style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
-                        data-testid="radio-admin-type-general"
-                      />
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "rgba(12, 12, 12, 0.8)",
-                        }}
-                      >
-                        일반관리자
-                      </span>
-                    </label>
-                    <label
-                      className="flex items-center gap-1.5 cursor-pointer"
-                      data-testid="label-admin-type-super"
-                    >
-                      <input
-                        type="radio"
-                        name="adminType"
-                        checked={createAccountForm.isSuperAdmin}
-                        onChange={() =>
-                          setCreateAccountForm({
-                            ...createAccountForm,
-                            isSuperAdmin: true,
-                          })
-                        }
-                        style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
-                        data-testid="radio-admin-type-super"
-                      />
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "15px",
-                          fontWeight: 500,
-                          color: "rgba(12, 12, 12, 0.8)",
-                        }}
-                      >
-                        최고관리자
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              )}
 
               {/* Form Inputs */}
               <div className="flex flex-col gap-4">
