@@ -1237,6 +1237,26 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         </span>
       </div>
       {/* Wide Table with Horizontal Scroll and Sticky Header/Columns */}
+      {(() => {
+        const stickyHeaders = ["보험사", "증권번호", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체"];
+        const scrollHeaders = ["청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", ...(isPartner ? [] : ["관리"])];
+        const allHeaders = [...stickyHeaders, ...scrollHeaders];
+        const stickyColWidths = [100, 110, 130, 90, 110, 150, 110];
+        const stickyColLefts = stickyColWidths.map((_, i) => stickyColWidths.slice(0, i).reduce((a, b) => a + b, 0));
+        const totalStickyWidth = stickyColWidths.reduce((a, b) => a + b, 0);
+        const thBaseStyle: React.CSSProperties = {
+          padding: "16px",
+          fontFamily: "Pretendard",
+          fontSize: "14px",
+          fontWeight: 600,
+          color: "rgba(12, 12, 12, 0.8)",
+          borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+          borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+          textAlign: "center",
+          whiteSpace: "nowrap",
+          background: "rgba(240, 240, 240, 1)",
+        };
+        return (
       <div
         style={{
           background: "rgba(255, 255, 255, 0.7)",
@@ -1245,7 +1265,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           overflow: "hidden",
         }}
       >
-        <div style={{ overflow: "auto", maxHeight: "calc(100vh - 280px)" }}>
+        <div style={{ overflow: "auto", maxHeight: "calc(100vh - 280px)", position: "relative" }}>
           <table
             style={{
               width: "max-content",
@@ -1254,26 +1274,31 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
               borderSpacing: 0,
             }}
           >
-            <thead style={{ position: "sticky", top: 0, zIndex: 20 }}>
-              <tr style={{ background: "rgba(240, 240, 240, 1)" }}>
-                {["보험사", "증권번호", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체", "청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", ...(isPartner ? [] : ["관리"])].map((label, idx, arr) => (
-                  <th
-                    key={label}
-                    style={{
-                      padding: "16px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      color: "rgba(12, 12, 12, 0.8)",
-                      borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                      borderRight: idx < arr.length - 1 ? "1px solid rgba(12, 12, 12, 0.08)" : "none",
-                      textAlign: "center",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {label}
-                  </th>
-                ))}
+            <thead style={{ position: "sticky", top: 0, zIndex: 30 }}>
+              <tr>
+                {allHeaders.map((label, idx) => {
+                  const isStickyCol = idx < stickyHeaders.length;
+                  const isLast = idx === allHeaders.length - 1;
+                  return (
+                    <th
+                      key={label}
+                      style={{
+                        ...thBaseStyle,
+                        ...(isStickyCol ? {
+                          position: "sticky",
+                          left: stickyColLefts[idx],
+                          zIndex: 32,
+                          minWidth: stickyColWidths[idx],
+                          width: stickyColWidths[idx],
+                          boxShadow: idx === stickyHeaders.length - 1 ? "2px 0 4px rgba(0,0,0,0.06)" : undefined,
+                        } : {}),
+                        borderRight: isLast ? "none" : "1px solid rgba(12, 12, 12, 0.08)",
+                      }}
+                    >
+                      {label}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -1311,6 +1336,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                 </tr>
               ) : (
                 filteredRows.map((row, index) => {
+                  const rowBg = index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)";
                   const cellStyle: React.CSSProperties = {
                     padding: "14px 16px",
                     fontFamily: "Pretendard",
@@ -1319,6 +1345,16 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                     borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                     textAlign: "center",
                   };
+                  const stickyCellStyle = (colIdx: number): React.CSSProperties => ({
+                    ...cellStyle,
+                    position: "sticky",
+                    left: stickyColLefts[colIdx],
+                    zIndex: 10,
+                    background: rowBg,
+                    minWidth: stickyColWidths[colIdx],
+                    width: stickyColWidths[colIdx],
+                    ...(colIdx === stickyHeaders.length - 1 ? { boxShadow: "2px 0 4px rgba(0,0,0,0.06)" } : {}),
+                  });
                   const amountStyle: React.CSSProperties = {
                     ...cellStyle,
                     textAlign: "right",
@@ -1334,20 +1370,17 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                           index < filteredRows.length - 1
                             ? "1px solid rgba(12, 12, 12, 0.05)"
                             : "none",
-                        background:
-                          index % 2 === 0
-                            ? "rgba(255, 255, 255, 1)"
-                            : "rgba(248, 248, 248, 1)",
+                        background: rowBg,
                       }}
                     >
-                      <td style={cellStyle}>{row.insuranceCompany}</td>
-                      <td style={cellStyle}>{row.withdrawalNumber}</td>
-                      <td style={cellStyle}>{row.accidentNumber}</td>
-                      <td style={cellStyle}>{row.insuredName}</td>
-                      <td style={cellStyle}>
+                      <td style={stickyCellStyle(0)}>{row.insuranceCompany}</td>
+                      <td style={stickyCellStyle(1)}>{row.withdrawalNumber}</td>
+                      <td style={stickyCellStyle(2)}>{row.accidentNumber}</td>
+                      <td style={stickyCellStyle(3)}>{row.insuredName}</td>
+                      <td style={stickyCellStyle(4)}>
                         {row.managerId ? usersByIdMap.get(row.managerId)?.name || "-" : "-"}
                       </td>
-                      <td style={{ ...cellStyle, padding: "8px 12px", minWidth: "150px" }}>
+                      <td style={{ ...stickyCellStyle(5), padding: "8px 12px" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                           {row.caseNumber
                             ?.split(", ")
@@ -1356,7 +1389,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                             )) || "-"}
                         </div>
                       </td>
-                      <td style={cellStyle}>{row.assignedPartner}</td>
+                      <td style={stickyCellStyle(6)}>{row.assignedPartner}</td>
                       <td style={cellStyle}>{row.claimDate}</td>
                       <td style={amountStyle}>{renderAmount(row.claimAmount)}</td>
                       <td style={amountStyle}>{renderAmount(row.settlementDeductible)}</td>
@@ -1412,6 +1445,8 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           </span>
         </div>
       </div>
+        );
+      })()}
       {/* Settlement Management Dialog */}
       <Dialog
         open={managementDialogOpen}
