@@ -18,6 +18,7 @@ declare module 'express-session' {
   interface SessionData {
     userId: string;
     userRole: string;
+    isSuperAdmin: boolean;
     rememberMe: boolean;
   }
 }

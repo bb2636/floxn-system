@@ -433,6 +433,7 @@ export default function AdminSettings() {
   const [createAccountForm, setCreateAccountForm] = useState({
     role: "보험사",
     accountType: "개인" as "개인" | "회사",
+    isSuperAdmin: false,
     name: "",
     company: "",
     department: "",
@@ -883,7 +884,7 @@ export default function AdminSettings() {
 
   const sidebarMenus = [
     { name: "사용자 계정 관리", active: true },
-    { name: "접근 권한 관리", active: false },
+    ...(user?.isSuperAdmin ? [{ name: "접근 권한 관리", active: false }] : []),
     { name: "1:1 문의 관리", active: false },
     { name: "공지사항 관리", active: false },
     { name: "DB 관리", active: false },
@@ -4593,6 +4594,7 @@ export default function AdminSettings() {
                       setEditedUserData({
                         name: selectedUser.name,
                         role: selectedUser.role as "심사사" | "조사사" | "보험사" | "협력사" | "관리자",
+                        isSuperAdmin: selectedUser.isSuperAdmin || false,
                         department: selectedUser.department,
                         position: selectedUser.position,
                         email: selectedUser.email,
@@ -4706,6 +4708,22 @@ export default function AdminSettings() {
                       data-testid="badge-account-type"
                     >
                       {selectedUser.accountType}
+                    </span>
+                  )}
+                  {selectedUser.role === "관리자" && selectedUser.isSuperAdmin && (
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                        background: "rgba(239, 68, 68, 0.1)",
+                        color: "#EF4444",
+                      }}
+                      data-testid="badge-super-admin"
+                    >
+                      최고관리자
                     </span>
                   )}
                 </div>
@@ -4953,7 +4971,7 @@ export default function AdminSettings() {
                       {isEditMode ? (
                         <Select
                           value={editedUserData.role || selectedUser.role}
-                          onValueChange={(value) => setEditedUserData({ ...editedUserData, role: value as "심사사" | "조사사" | "보험사" | "협력사" | "관리자" })}
+                          onValueChange={(value) => setEditedUserData({ ...editedUserData, role: value as "심사사" | "조사사" | "보험사" | "협력사" | "관리자", isSuperAdmin: value === "관리자" ? editedUserData.isSuperAdmin : false })}
                         >
                           <SelectTrigger className="w-full" data-testid="select-edit-role">
                             <SelectValue />
@@ -4978,6 +4996,63 @@ export default function AdminSettings() {
                         </span>
                       )}
                     </div>
+                    {((isEditMode && (editedUserData.role || selectedUser.role) === "관리자" && user?.isSuperAdmin) || (!isEditMode && selectedUser.role === "관리자")) && (
+                      <div className="flex flex-col gap-1.5">
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "rgba(12, 12, 12, 0.5)",
+                          }}
+                        >
+                          관리자 유형
+                        </span>
+                        {isEditMode ? (
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-1.5 cursor-pointer" data-testid="label-edit-admin-type-general">
+                              <input
+                                type="radio"
+                                name="editAdminType"
+                                checked={!(editedUserData.isSuperAdmin ?? selectedUser.isSuperAdmin)}
+                                onChange={() => setEditedUserData({ ...editedUserData, isSuperAdmin: false })}
+                                style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
+                                data-testid="radio-edit-admin-type-general"
+                              />
+                              <span style={{ fontFamily: "Pretendard", fontSize: "15px", fontWeight: 500, color: "rgba(12, 12, 12, 0.8)" }}>
+                                일반관리자
+                              </span>
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer" data-testid="label-edit-admin-type-super">
+                              <input
+                                type="radio"
+                                name="editAdminType"
+                                checked={!!(editedUserData.isSuperAdmin ?? selectedUser.isSuperAdmin)}
+                                onChange={() => setEditedUserData({ ...editedUserData, isSuperAdmin: true })}
+                                style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
+                                data-testid="radio-edit-admin-type-super"
+                              />
+                              <span style={{ fontFamily: "Pretendard", fontSize: "15px", fontWeight: 500, color: "rgba(12, 12, 12, 0.8)" }}>
+                                최고관리자
+                              </span>
+                            </label>
+                          </div>
+                        ) : (
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 400,
+                              letterSpacing: "-0.02em",
+                              color: selectedUser.isSuperAdmin ? "#008FED" : "rgba(12, 12, 12, 0.9)",
+                            }}
+                          >
+                            {selectedUser.isSuperAdmin ? "최고관리자" : "일반관리자"}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div className="flex flex-col gap-1.5">
                       <span
                         style={{
@@ -6943,6 +7018,7 @@ export default function AdminSettings() {
                         setCreateAccountForm({
                           ...createAccountForm,
                           role: e.target.value,
+                          isSuperAdmin: e.target.value === "관리자" ? createAccountForm.isSuperAdmin : false,
                         })
                       }
                       className="flex items-center justify-center px-4 pr-8 appearance-none cursor-pointer"
@@ -7035,6 +7111,80 @@ export default function AdminSettings() {
                   </div>
                 </div>
               </div>
+
+              {createAccountForm.role === "관리자" && user?.isSuperAdmin && (
+                <div className="flex flex-col gap-2">
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                    }}
+                  >
+                    관리자 유형
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <label
+                      className="flex items-center gap-1.5 cursor-pointer"
+                      data-testid="label-admin-type-general"
+                    >
+                      <input
+                        type="radio"
+                        name="adminType"
+                        checked={!createAccountForm.isSuperAdmin}
+                        onChange={() =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            isSuperAdmin: false,
+                          })
+                        }
+                        style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
+                        data-testid="radio-admin-type-general"
+                      />
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "15px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
+                        일반관리자
+                      </span>
+                    </label>
+                    <label
+                      className="flex items-center gap-1.5 cursor-pointer"
+                      data-testid="label-admin-type-super"
+                    >
+                      <input
+                        type="radio"
+                        name="adminType"
+                        checked={createAccountForm.isSuperAdmin}
+                        onChange={() =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            isSuperAdmin: true,
+                          })
+                        }
+                        style={{ accentColor: "#008FED", width: "16px", height: "16px" }}
+                        data-testid="radio-admin-type-super"
+                      />
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "15px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
+                        최고관리자
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               {/* Form Inputs */}
               <div className="flex flex-col gap-4">
@@ -8194,6 +8344,7 @@ export default function AdminSettings() {
                   setCreateAccountForm({
                     role: "보험사",
                     accountType: "개인",
+                    isSuperAdmin: false,
                     name: "",
                     company: "",
                     department: "",
@@ -8770,6 +8921,7 @@ export default function AdminSettings() {
                       setCreateAccountForm({
                         role: "보험사",
                         accountType: "개인",
+                        isSuperAdmin: false,
                         name: "",
                         company: "",
                         department: "",
@@ -8958,6 +9110,7 @@ export default function AdminSettings() {
                     setCreateAccountForm({
                       role: "보험사",
                       accountType: "개인",
+                      isSuperAdmin: false,
                       name: "",
                       company: "",
                       department: "",

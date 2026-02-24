@@ -187,6 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.session) {
         req.session.userId = user.id;
         req.session.userRole = user.role;
+        req.session.isSuperAdmin = user.isSuperAdmin || false;
         req.session.rememberMe = validatedData.rememberMe;
 
         console.log("[LOGIN SUCCESS]", {
@@ -816,6 +817,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate request body with Zod
       const validatedData = updateUserSchema.parse(req.body);
 
+      // Security: Only super admin can change isSuperAdmin field
+      if (validatedData.isSuperAdmin !== undefined && validatedData.isSuperAdmin !== null) {
+        const requester = await storage.getUser(req.session.userId);
+        if (!requester?.isSuperAdmin) {
+          delete (validatedData as any).isSuperAdmin;
+        }
+      }
+
+      // Security: Force isSuperAdmin=false when role is not 관리자
+      if (validatedData.role && validatedData.role !== "관리자") {
+        (validatedData as any).isSuperAdmin = false;
+      }
+
       const updatedUser = await storage.updateUser(userId, validatedData);
 
       if (!updatedUser) {
@@ -887,6 +901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         serviceRegions: validatedData.serviceRegions,
         attachments: validatedData.attachments,
         accountType: validatedData.accountType || "개인",
+        isSuperAdmin: validatedData.role === "관리자" && req.session.isSuperAdmin ? (validatedData.isSuperAdmin || false) : false,
         status: "active",
       });
 
@@ -3739,13 +3754,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
-    // Check admin authorization
+    // Check admin authorization - only super admin can access
     if (req.session.userRole !== "관리자") {
       console.log(
         "[GET /api/role-permissions] 403: Not admin, role is:",
         req.session.userRole,
       );
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    // Check super admin
+    const reqUser = await storage.getUser(req.session.userId);
+    if (!reqUser?.isSuperAdmin) {
+      return res.status(403).json({ error: "최고관리자 권한이 필요합니다" });
     }
 
     try {
@@ -3866,6 +3887,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
     }
 
+    // Check super admin
+    const postReqUser = await storage.getUser(req.session.userId);
+    if (!postReqUser?.isSuperAdmin) {
+      return res.status(403).json({ error: "최고관리자 권한이 필요합니다" });
+    }
+
     try {
       const validatedData = insertRolePermissionSchema.parse(req.body);
       const permission = await storage.saveRolePermission(validatedData);
@@ -3897,6 +3924,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     if (req.session.userRole !== "관리자") {
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    // Check super admin
+    const delReqUser = await storage.getUser(req.session.userId);
+    if (!delReqUser?.isSuperAdmin) {
+      return res.status(403).json({ error: "최고관리자 권한이 필요합니다" });
     }
 
     try {

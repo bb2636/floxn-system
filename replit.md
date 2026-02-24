@@ -75,6 +75,14 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Database**: PostgreSQL (Neon-backed) with Drizzle ORM.
 
 ## Recent Changes (2026-02-24)
+- **최고관리자 접근권한 관리**: Super admin access control for 접근 권한 관리
+  - Added `isSuperAdmin` boolean field to users table (default: false)
+  - 계정 생성/수정 시 관리자 역할 선택 시 최고관리자/일반관리자 선택 가능
+  - 접근 권한 관리 사이드바 메뉴: 최고관리자만 표시
+  - role-permissions API (GET/POST/DELETE): 최고관리자만 접근 가능
+  - Security: Only super admins can set isSuperAdmin on other users
+  - Security: isSuperAdmin auto-resets to false when role changes from 관리자
+  - Profile card shows 최고관리자 badge for super admin users
 - **미결건 통계 과거 조회 기능**: Historical pending case lookup feature
   - New `case_status_history` table tracks every status change with timestamp
   - Status changes are recorded automatically in `updateCase` and `updateCaseStatus` storage methods

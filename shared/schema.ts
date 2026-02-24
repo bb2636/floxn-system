@@ -26,6 +26,7 @@ export const users = pgTable("users", {
   serviceRegions: text("service_regions").array(),
   attachments: text("attachments").array(),
   accountType: text("account_type").default("개인"), // "개인" | "회사"
+  isSuperAdmin: boolean("is_super_admin").notNull().default(false),
   status: text("status").notNull().default("active"), // "active" | "deleted"
   mustChangePassword: boolean("must_change_password").notNull().default(true), // 최초 로그인 시 비밀번호 변경 필요 여부
   createdAt: text("created_at").notNull(),
@@ -106,6 +107,7 @@ export const createAccountSchema = z.object({
   serviceRegions: z.array(z.string()).optional(),
   attachments: z.array(z.string()).optional(),
   accountType: z.enum(["개인", "회사"]).optional().default("개인"),
+  isSuperAdmin: z.boolean().optional().default(false),
 });
 
 export const updateUserSchema = z.object({
@@ -127,6 +129,7 @@ export const updateUserSchema = z.object({
   accountHolder: z.string().optional().nullable(),
   serviceRegions: z.array(z.string()).optional().nullable(),
   attachments: z.array(z.string()).optional().nullable(),
+  isSuperAdmin: z.boolean().optional().nullable(),
 });
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
