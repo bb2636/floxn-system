@@ -470,6 +470,7 @@ export default function AdminSettings() {
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
   });
+  const loggedInUser = user;
 
   // 마스터 데이터 카테고리 매핑 (UI 표시명 → DB 카테고리명)
   const MASTER_DATA_CATEGORIES: Record<string, string> = {
@@ -3977,7 +3978,7 @@ export default function AdminSettings() {
                     계정 생성일
                   </span>
                 </div>
-                <div className="px-2 flex-1">
+                <div className="px-2" style={{ width: "120px" }}>
                   <span
                     style={{
                       fontFamily: "Pretendard",
@@ -3990,6 +3991,21 @@ export default function AdminSettings() {
                     요청
                   </span>
                 </div>
+                {user?.isSuperAdmin && (
+                  <div className="px-2 flex-1">
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }}
+                    >
+                      관리자 위임
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Table Rows */}
@@ -4172,7 +4188,7 @@ export default function AdminSettings() {
                       {user.createdAt}
                     </span>
                   </div>
-                  <div className="px-2 flex-1">
+                  <div className="px-2" style={{ width: "120px" }}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -4201,6 +4217,67 @@ export default function AdminSettings() {
                       </span>
                     </button>
                   </div>
+                  {loggedInUser?.isSuperAdmin && (
+                    <div className="px-2 flex-1">
+                      {user.role === "관리자" && user.id !== loggedInUser?.id && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const newValue = !user.isSuperAdmin;
+                            const confirmMsg = newValue
+                              ? `${user.name || user.username}님을 최고관리자로 위임하시겠습니까?`
+                              : `${user.name || user.username}님의 최고관리자 권한을 해제하시겠습니까?`;
+                            if (!window.confirm(confirmMsg)) return;
+                            try {
+                              await apiRequest("PATCH", `/api/users/${user.id}`, { isSuperAdmin: newValue });
+                              queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                              toast({
+                                title: newValue ? "최고관리자로 위임되었습니다" : "최고관리자 권한이 해제되었습니다",
+                              });
+                            } catch (err) {
+                              toast({
+                                title: "오류가 발생했습니다",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                          className="flex items-center justify-center"
+                          style={{
+                            width: "92px",
+                            height: "28px",
+                            background: user.isSuperAdmin ? "#FFF3E0" : "#E3F2FD",
+                            border: user.isSuperAdmin ? "1px solid #FF9800" : "1px solid #008FED",
+                            borderRadius: "6px",
+                          }}
+                          data-testid={`button-delegate-super-admin-${user.id}`}
+                        >
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "13px",
+                              fontWeight: 600,
+                              letterSpacing: "-0.01em",
+                              color: user.isSuperAdmin ? "#E65100" : "#008FED",
+                            }}
+                          >
+                            {user.isSuperAdmin ? "권한 해제" : "위임"}
+                          </span>
+                        </button>
+                      )}
+                      {user.role === "관리자" && user.id === loggedInUser?.id && (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "13px",
+                            fontWeight: 500,
+                            color: "#008FED",
+                          }}
+                        >
+                          {user.isSuperAdmin ? "최고관리자" : ""}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
