@@ -335,6 +335,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     //   deletedAt: user.deletedAt,
     // });
 
+    // Sync session with latest DB values
+    req.session.userRole = user.role;
+    req.session.isSuperAdmin = user.isSuperAdmin || false;
+
     const { password, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
   });
