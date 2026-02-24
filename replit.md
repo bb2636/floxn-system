@@ -74,6 +74,17 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Backend Libraries**: Express.js, bcrypt, express-session, memorystore, Zod.
 - **Database**: PostgreSQL (Neon-backed) with Drizzle ORM.
 
+## Recent Changes (2026-02-24)
+- **미결건 통계 과거 조회 기능**: Historical pending case lookup feature
+  - New `case_status_history` table tracks every status change with timestamp
+  - Status changes are recorded automatically in `updateCase` and `updateCaseStatus` storage methods
+  - Baseline history seeded on first startup for existing cases
+  - "과거 조회" toggle button in 미결건 통계 page
+  - Date picker to select a historical date (defaults to 7 days ago)
+  - Shows which cases were 미결건 (pending) at the selected past date
+  - API endpoint: GET `/api/case-status-history`
+  - CLOSED_STATUSES = ["정산완료", "입금완료", "부분입금", "접수취소"] - everything else is 미결건
+
 ## Recent Changes (2026-01-14)
 - **Dashboard Complete Redesign**: Redesigned dashboard with new layout and styling
   - New background: `bg-[#CAD6FF]` with gradient overlay from `#DCE7FF`

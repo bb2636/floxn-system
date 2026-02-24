@@ -72,6 +72,9 @@ import {
   type EstimateExclusion,
   type InsertEstimateExclusion,
   estimateExclusions,
+  type CaseStatusHistory,
+  type InsertCaseStatusHistory,
+  caseStatusHistory,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
@@ -427,6 +430,9 @@ export interface IStorage {
   getEstimateExclusions(caseId: string, exclusionType: string): Promise<EstimateExclusion[]>;
   addEstimateExclusion(data: InsertEstimateExclusion): Promise<EstimateExclusion>;
   removeEstimateExclusion(caseId: string, exclusionType: string, deletionKey: string): Promise<boolean>;
+  recordStatusChange(caseId: string, previousStatus: string, newStatus: string): Promise<CaseStatusHistory>;
+  getStatusHistoryByCaseId(caseId: string): Promise<CaseStatusHistory[]>;
+  getAllStatusHistory(): Promise<CaseStatusHistory[]>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -2837,6 +2843,18 @@ export class MemStorage implements IStorage {
   async removeEstimateExclusion(caseId: string, exclusionType: string, deletionKey: string): Promise<boolean> {
     throw new Error("removeEstimateExclusion not implemented in MemStorage");
   }
+
+  async recordStatusChange(caseId: string, previousStatus: string, newStatus: string): Promise<CaseStatusHistory> {
+    throw new Error("recordStatusChange not implemented in MemStorage");
+  }
+
+  async getStatusHistoryByCaseId(caseId: string): Promise<CaseStatusHistory[]> {
+    throw new Error("getStatusHistoryByCaseId not implemented in MemStorage");
+  }
+
+  async getAllStatusHistory(): Promise<CaseStatusHistory[]> {
+    throw new Error("getAllStatusHistory not implemented in MemStorage");
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -2857,10 +2875,38 @@ export class DbStorage implements IStorage {
       // Always ensure essential role permissions exist
       await this.ensureEssentialPermissions();
 
-      // NOTE: 더 이상 케이스/견적 더미 데이터를 자동 생성하지 않음
-      // 사용자가 직접 데이터를 생성해야 함
+      // Seed baseline status history for existing cases (one-time)
+      await this.seedBaselineStatusHistory();
     } catch (error) {
       console.error("Database initialization error:", error);
+    }
+  }
+
+  private async seedBaselineStatusHistory() {
+    try {
+      const existingHistory = await db.select({ id: caseStatusHistory.id }).from(caseStatusHistory).limit(1);
+      if (existingHistory.length > 0) {
+        return;
+      }
+
+      const allCases = await db.select({ id: cases.id, status: cases.status, createdAt: cases.createdAt }).from(cases);
+      if (allCases.length === 0) return;
+
+      const records = allCases.map((c) => ({
+        caseId: c.id,
+        previousStatus: "배당대기",
+        newStatus: c.status,
+        changedAt: c.createdAt || getKSTTimestamp(),
+      }));
+
+      for (let i = 0; i < records.length; i += 100) {
+        const batch = records.slice(i, i + 100);
+        await db.insert(caseStatusHistory).values(batch);
+      }
+
+      console.log(`[StatusHistory] Seeded baseline status history for ${allCases.length} existing cases`);
+    } catch (error) {
+      console.error("[StatusHistory] Error seeding baseline status history:", error);
     }
   }
 
@@ -4338,6 +4384,14 @@ export class DbStorage implements IStorage {
       return null;
     }
 
+    if (existingCase && caseData.status && caseData.status !== existingCase.status) {
+      try {
+        await this.recordStatusChange(caseId, existingCase.status, caseData.status);
+      } catch (e) {
+        console.error("[StatusHistory] Failed to record status change in updateCase:", e);
+      }
+    }
+
     return result[0];
   }
 
@@ -4486,6 +4540,14 @@ export class DbStorage implements IStorage {
 
     if (result.length === 0) {
       return null;
+    }
+
+    if (existingCase && normalizedStatus !== existingCase.status) {
+      try {
+        await this.recordStatusChange(caseId, existingCase.status, normalizedStatus);
+      } catch (e) {
+        console.error("[StatusHistory] Failed to record status change in updateCaseStatus:", e);
+      }
     }
 
     return result[0];
@@ -7475,6 +7537,30 @@ export class DbStorage implements IStorage {
       ))
       .returning();
     return result.length > 0;
+  }
+
+  async recordStatusChange(caseId: string, previousStatus: string, newStatus: string): Promise<CaseStatusHistory> {
+    const changedAt = getKSTTimestamp();
+    const result = await db
+      .insert(caseStatusHistory)
+      .values({ caseId, previousStatus, newStatus, changedAt })
+      .returning();
+    return result[0];
+  }
+
+  async getStatusHistoryByCaseId(caseId: string): Promise<CaseStatusHistory[]> {
+    return await db
+      .select()
+      .from(caseStatusHistory)
+      .where(eq(caseStatusHistory.caseId, caseId))
+      .orderBy(asc(caseStatusHistory.id));
+  }
+
+  async getAllStatusHistory(): Promise<CaseStatusHistory[]> {
+    return await db
+      .select()
+      .from(caseStatusHistory)
+      .orderBy(asc(caseStatusHistory.id));
   }
 }
 

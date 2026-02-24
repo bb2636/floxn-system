@@ -2863,6 +2863,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/case-status-history", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+    try {
+      const history = await storage.getAllStatusHistory();
+      res.json(history);
+    } catch (error) {
+      console.error("Get status history error:", error);
+      res.status(500).json({ error: "상태 이력 조회 중 오류가 발생했습니다" });
+    }
+  });
+
   // Update case special notes endpoint (협력사 only)
   app.patch("/api/cases/:caseId/special-notes", async (req, res) => {
     // Check authentication

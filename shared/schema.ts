@@ -1043,5 +1043,21 @@ export const insertEstimateExclusionSchema = createInsertSchema(estimateExclusio
 export type EstimateExclusion = typeof estimateExclusions.$inferSelect;
 export type InsertEstimateExclusion = z.infer<typeof insertEstimateExclusionSchema>;
 
+// 케이스 상태 변경 이력 테이블
+export const caseStatusHistory = pgTable("case_status_history", {
+  id: serial("id").primaryKey(),
+  caseId: text("case_id").notNull(),
+  previousStatus: text("previous_status").notNull(),
+  newStatus: text("new_status").notNull(),
+  changedAt: text("changed_at").notNull(),
+});
+
+export const insertCaseStatusHistorySchema = createInsertSchema(caseStatusHistory).omit({
+  id: true,
+});
+
+export type CaseStatusHistory = typeof caseStatusHistory.$inferSelect;
+export type InsertCaseStatusHistory = z.infer<typeof insertCaseStatusHistorySchema>;
+
 // Chat models for AI integration
 export * from "./models/chat";
