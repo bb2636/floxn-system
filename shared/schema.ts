@@ -644,7 +644,7 @@ export const DOCUMENT_CATEGORIES = [
   // 증빙자료 탭
   "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
   // 청구자료 탭
-  "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
+  "복구완료 및 위임장", "도급계약서", "부가세 청구자료"
 ] as const;
 export type DocumentCategory = typeof DOCUMENT_CATEGORIES[number];
 

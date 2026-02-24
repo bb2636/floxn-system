@@ -207,7 +207,7 @@ export default function FieldDocuments() {
     | "기타증빙자료(민원일지 등)"
   >("전체");
   const [claimDataSubFilter, setClaimDataSubFilter] = useState<
-    "전체" | "위임장" | "도급계약서" | "복구완료확인서" | "부가세 청구자료"
+    "전체" | "복구완료 및 위임장" | "도급계약서" | "부가세 청구자료"
   >("전체");
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -702,7 +702,7 @@ export default function FieldDocuments() {
         ];
       case "청구자료":
         return claimEnabled
-          ? ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"]
+          ? ["복구완료 및 위임장", "도급계약서", "부가세 청구자료"]
           : [];
       case "전체":
       default:
@@ -718,7 +718,7 @@ export default function FieldDocuments() {
           "건축물대장",
           "기타증빙자료(민원일지 등)",
           ...(claimEnabled
-            ? ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"]
+            ? ["복구완료 및 위임장", "도급계약서", "부가세 청구자료"]
             : []),
         ];
         return allOptions;
@@ -746,7 +746,7 @@ export default function FieldDocuments() {
           ? "주민등록등본"
           : evidenceSubFilter;
       case "청구자료":
-        return claimDataSubFilter === "전체" ? "위임장" : claimDataSubFilter;
+        return claimDataSubFilter === "전체" ? "복구완료 및 위임장" : claimDataSubFilter;
       case "전체":
       default:
         return "현장출동사진";
@@ -1042,9 +1042,8 @@ export default function FieldDocuments() {
       "기타증빙자료(민원일지 등)",
     ];
     const claimCategories = [
-      "위임장",
+      "복구완료 및 위임장",
       "도급계약서",
-      "복구완료확인서",
       "부가세 청구자료",
     ];
 
@@ -1106,9 +1105,8 @@ export default function FieldDocuments() {
     const requiredCategories = [
       "수리중 사진",
       "복구완료 사진",
-      "위임장",
+      "복구완료 및 위임장",
       "도급계약서",
-      "복구완료확인서",
     ];
 
     for (const category of requiredCategories) {
@@ -1507,7 +1505,7 @@ export default function FieldDocuments() {
                   <div className="text-left">
                     <div className="font-semibold mb-1">필수 서류 안내</div>
                     <div>
-                      • 청구 단계: 위임장, 도급계약서, 복구완료확인서 필수
+                      • 청구 단계: 복구완료 및 위임장, 도급계약서 필수
                       (부가세 청구자료는 선택)
                     </div>
                   </div>
@@ -2029,30 +2027,30 @@ export default function FieldDocuments() {
             </button>
             <button
               type="button"
-              onClick={() => setClaimDataSubFilter("위임장")}
+              onClick={() => setClaimDataSubFilter("복구완료 및 위임장")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
                 background:
-                  claimDataSubFilter === "위임장" ? "#FDFDFD" : "transparent",
+                  claimDataSubFilter === "복구완료 및 위임장" ? "#FDFDFD" : "transparent",
                 boxShadow:
-                  claimDataSubFilter === "위임장"
+                  claimDataSubFilter === "복구완료 및 위임장"
                     ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
                     : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
-                fontWeight: claimDataSubFilter === "위임장" ? 500 : 400,
+                fontWeight: claimDataSubFilter === "복구완료 및 위임장" ? 500 : 400,
                 letterSpacing: "-0.01em",
                 color:
-                  claimDataSubFilter === "위임장"
+                  claimDataSubFilter === "복구완료 및 위임장"
                     ? "#0C0C0C"
                     : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
-              data-testid="button-claim-filter-delegation"
+              data-testid="button-claim-filter-completion-delegation"
             >
-              위임장
+              복구완료 및 위임장
             </button>
             <button
               type="button"
@@ -2082,35 +2080,6 @@ export default function FieldDocuments() {
               data-testid="button-claim-filter-contract"
             >
               도급계약서
-            </button>
-            <button
-              type="button"
-              onClick={() => setClaimDataSubFilter("복구완료확인서")}
-              className="flex items-center justify-center px-1.5 py-1"
-              style={{
-                background:
-                  claimDataSubFilter === "복구완료확인서"
-                    ? "#FDFDFD"
-                    : "transparent",
-                boxShadow:
-                  claimDataSubFilter === "복구완료확인서"
-                    ? "0px 2px 14px rgba(0, 0, 0, 0.12)"
-                    : "none",
-                borderRadius: "4px",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: claimDataSubFilter === "복구완료확인서" ? 500 : 400,
-                letterSpacing: "-0.01em",
-                color:
-                  claimDataSubFilter === "복구완료확인서"
-                    ? "#0C0C0C"
-                    : "rgba(12, 12, 12, 0.6)",
-                border: "none",
-                cursor: "pointer",
-              }}
-              data-testid="button-claim-filter-completion"
-            >
-              복구완료확인서
             </button>
             <button
               type="button"

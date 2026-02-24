@@ -460,7 +460,7 @@ export default function FieldReport() {
         "건축물대장",
         "기타증빙자료(민원일지 등)",
       ],
-      청구자료: ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"],
+      청구자료: ["복구완료 및 위임장", "도급계약서", "부가세 청구자료"],
     };
 
     if (documentTab === "전체") {
@@ -489,7 +489,7 @@ export default function FieldReport() {
         "건축물대장",
         "기타증빙자료(민원일지 등)",
       ],
-      청구자료: ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"],
+      청구자료: ["복구완료 및 위임장", "도급계약서", "부가세 청구자료"],
     };
 
     const allowedCategories = categoryMapping[tab];
@@ -511,7 +511,7 @@ export default function FieldReport() {
         "건축물대장",
         "기타증빙자료(민원일지 등)",
       ],
-      청구자료: ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"],
+      청구자료: ["복구완료 및 위임장", "도급계약서", "부가세 청구자료"],
     };
 
     const newSelected = new Set(selectedDocuments);
@@ -914,21 +914,16 @@ export default function FieldReport() {
   } => {
     const missingDocs: string[] = [];
 
-    // 청구자료 필수 서류: 위임장, 도급계약서, 복구완료확인서
-    const hasCommissionLetter = allDocuments.some(
-      (doc) => doc.category === "위임장",
+    // 청구자료 필수 서류: 복구완료 및 위임장, 도급계약서
+    const hasCompletionDelegation = allDocuments.some(
+      (doc) => doc.category === "복구완료 및 위임장",
     );
-    if (!hasCommissionLetter) missingDocs.push("위임장");
+    if (!hasCompletionDelegation) missingDocs.push("복구완료 및 위임장");
 
     const hasContract = allDocuments.some(
       (doc) => doc.category === "도급계약서",
     );
     if (!hasContract) missingDocs.push("도급계약서");
-
-    const hasCompletionConfirm = allDocuments.some(
-      (doc) => doc.category === "복구완료확인서",
-    );
-    if (!hasCompletionConfirm) missingDocs.push("복구완료확인서");
 
     return { valid: missingDocs.length === 0, missingDocs };
   };
@@ -2000,9 +1995,8 @@ export default function FieldReport() {
                         "기타증빙자료(민원일지 등)",
                       ],
                       청구자료: [
-                        "위임장",
+                        "복구완료 및 위임장",
                         "도급계약서",
-                        "복구완료확인서",
                         "부가세 청구자료",
                       ],
                     };
@@ -4279,9 +4273,8 @@ export default function FieldReport() {
                     "건축물대장",
                     "기타증빙자료(민원일지 등)",
                     // 청구자료
-                    "위임장",
+                    "복구완료 및 위임장",
                     "도급계약서",
-                    "복구완료확인서",
                     "부가세 청구자료",
                   ].map((category) => {
                     const categoryDocs = documents.filter(
