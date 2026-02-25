@@ -183,6 +183,22 @@ export default function UnsettledCaseStatistics() {
       });
     }
 
+    if (searchType === "접수번호") {
+      result = [...result].sort((a, b) =>
+        (a.caseNumber || "").localeCompare(b.caseNumber || "")
+      );
+    } else {
+      result = [...result].sort((a, b) => {
+        const dateA = a.createdAt || "";
+        const dateB = b.createdAt || "";
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        const compA = a.insuranceCompany || "";
+        const compB = b.insuranceCompany || "";
+        if (compA !== compB) return compA.localeCompare(compB);
+        return (a.insuranceAccidentNo || "").localeCompare(b.insuranceAccidentNo || "");
+      });
+    }
+
     return result;
   }, [cases, startDate, endDate, searchQuery, searchType, historicalMode, historicalUnsettledCaseIds]);
 
