@@ -1578,6 +1578,7 @@ export function InvoiceManagementPopup({
                       borderBottom: "none",
                       borderRight: "none",
                       borderTop: "none",
+                      borderLeft: "none",
                       padding: "4px 8px",
                     }}
                   >
@@ -1646,6 +1647,7 @@ export function InvoiceManagementPopup({
                       borderBottom: "none",
                       borderRight: "none",
                       borderTop: "none",
+                      borderLeft: "none",
                       padding: "4px 8px",
                     }}
                   >
