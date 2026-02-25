@@ -1550,7 +1550,7 @@ export function InvoiceManagementPopup({
                     style={{
                       ...TABLE_CELL_STYLE,
                       width: "120px",
-                      borderRight: "1px solid #E0E0E0",
+                      borderRight: "none",
                       borderBottom: "none",
                       borderLeft: "none",
                       borderTop: "none",
@@ -1566,7 +1566,7 @@ export function InvoiceManagementPopup({
                     style={{
                       ...TABLE_CELL_STYLE,
                       flex: 2,
-                      borderRight: "1px solid #E0E0E0",
+                      borderRight: "none",
                       borderBottom: "none",
                       borderTop: "none",
                     }}
@@ -1618,7 +1618,7 @@ export function InvoiceManagementPopup({
                     style={{
                       ...TABLE_CELL_STYLE,
                       width: "120px",
-                      borderRight: "1px solid #E0E0E0",
+                      borderRight: "none",
                       borderBottom: "none",
                       borderLeft: "none",
                       borderTop: "none",
@@ -1634,7 +1634,7 @@ export function InvoiceManagementPopup({
                     style={{
                       ...TABLE_CELL_STYLE,
                       flex: 2,
-                      borderRight: "1px solid #E0E0E0",
+                      borderRight: "none",
                       borderBottom: "none",
                       borderTop: "none",
                     }}
