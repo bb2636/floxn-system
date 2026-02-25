@@ -4355,6 +4355,15 @@ export class DbStorage implements IStorage {
       additionalUpdates.assignmentDate = currentDate;
     }
 
+    // 접수취소 상태로 변경 시 접수취소일 자동 기록 (기존 값 없을 때만)
+    if (
+      caseData.status === "접수취소" &&
+      existingCase &&
+      !existingCase.cancellationDate
+    ) {
+      additionalUpdates.cancellationDate = currentDate;
+    }
+
     // caseNumber도 업데이트 대상에 포함 (updatedAt은 타임스탬프로 저장)
     const updateData: any = { ...caseData, ...additionalUpdates, updatedAt: currentTimestamp };
     
