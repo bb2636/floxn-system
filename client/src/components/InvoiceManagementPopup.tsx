@@ -2123,7 +2123,7 @@ export function InvoiceManagementPopup({
                   style={SECTION_HEADER_STYLE}
                   data-testid="section-payment-management"
                 >
-                  <span>지급일자</span>
+                  <span>지급관리</span>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={handleAddPaymentRow}
@@ -2654,7 +2654,6 @@ export function InvoiceManagementPopup({
           </div>
         </div>
       </DialogContent>
-
       {/* Approval confirm dialog */}
       <AlertDialog
         open={showApprovalConfirm}
@@ -2731,7 +2730,6 @@ export function InvoiceManagementPopup({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* Closing confirm dialog */}
       <AlertDialog
         open={showClosingConfirm}
