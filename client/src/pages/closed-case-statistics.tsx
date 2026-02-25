@@ -203,7 +203,7 @@ export default function ClosedCaseStatistics() {
       "플록슨 담당자", "접수 일자",
       "의뢰사", "의뢰자", "심사사", "심사자",
       "조사사", "조사자", "협력사", "담당자", "배당일자",
-      "사고유형", "사고원인", "복구방식", "진행상태",
+      "사고유형", "사고원인", "복구방식",
       "견적금액", "견적일자", "승인금액", "승인일자",
       ...(searchType !== "접수번호" ? ["청구액", "청구일자", "입금액", "입금일자", "정산액(협력업체 지급일)", "수수료", "정산일자"] : []),
     ];
@@ -229,7 +229,6 @@ export default function ClosedCaseStatistics() {
         c.accidentType || "",
         c.accidentCause || "",
         c.restorationMethod || c.recoveryType || "",
-        c.status,
         c.estimateAmount ? parseFloat(c.estimateAmount).toLocaleString() : "",
         formatDate(c.siteInvestigationSubmitDate),
         c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : "",
@@ -453,7 +452,6 @@ export default function ClosedCaseStatistics() {
               <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>사고 유형</th>
               <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>사고 원인</th>
               <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>복구 방식</th>
-              <th rowSpan={2} style={{ ...headerStyle, width: "120px" }}>진행 상태</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>견적금액</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)", ...(searchType === "접수번호" ? { borderRight: "none" } : {}) }}>승인금액</th>
               {searchType !== "접수번호" && (
@@ -502,7 +500,7 @@ export default function ClosedCaseStatistics() {
             {filteredCases.length === 0 ? (
               <tr>
                 <td
-                  colSpan={searchType === "접수번호" ? 22 : 28}
+                  colSpan={searchType === "접수번호" ? 21 : 27}
                   style={{
                     padding: "60px 20px",
                     textAlign: "center",
@@ -543,7 +541,6 @@ export default function ClosedCaseStatistics() {
                     <td style={cellStyle}>{c.accidentType || "-"}</td>
                     <td style={cellStyle}>{c.accidentCause || "-"}</td>
                     <td style={cellStyle}>{c.restorationMethod || c.recoveryType || "-"}</td>
-                    <td style={{ ...cellStyle, fontWeight: 500 }}>{c.status}</td>
                     <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(estimateAmt)}</td>
                     <td style={cellStyle}>{formatDate(c.siteInvestigationSubmitDate)}</td>
                     <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(approvedAmt)}</td>
