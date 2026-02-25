@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -66,6 +66,10 @@ export function MaterialCostSection({
   isLoading = false,
   isReadOnly = false,
 }: MaterialCostSectionProps) {
+  // 직접입력 모드 상태: 공사명, 자재항목 각각 관리
+  const [workNameInputMode, setWorkNameInputMode] = useState<{[rowId: string]: boolean}>({});
+  const [materialItemInputMode, setMaterialItemInputMode] = useState<{[rowId: string]: boolean}>({});
+
   // 자재비 카탈로그에서 공종 목록 추출 (자재비 DB에 있는 공종만 표시)
   const materialCategoryOptions = useMemo(() => {
     const categories = new Set(catalog.map(item => item.workType));
@@ -92,6 +96,39 @@ export function MaterialCostSection({
     const names = new Set(matchingItems.map(item => item.materialName));
     return Array.from(names).sort();
   };
+
+  // 서버에서 로드된 행에 커스텀 공사명/자재항목 값이 있으면 자동으로 입력 모드 활성화
+  useEffect(() => {
+    if (!rows || rows.length === 0) return;
+    const newWorkNameModes: { [rowId: string]: boolean } = {};
+    const newMaterialModes: { [rowId: string]: boolean } = {};
+    let changed = false;
+    rows.forEach((row) => {
+      // 공사명 직접입력 감지: 값이 있고, 드롭다운 옵션에 없는 경우
+      if (row.공사명 && row.공사명 !== '' && !workNameInputMode[row.id] && !row.공종?.includes('기타')) {
+        const workNameOptions = getWorkNamesForWorkType(row.공종);
+        if (workNameOptions.length > 0 && !workNameOptions.includes(row.공사명)) {
+          newWorkNameModes[row.id] = true;
+          changed = true;
+        }
+      }
+      // 자재항목 직접입력 감지: 값이 있고, 드롭다운 옵션에 없는 경우
+      if (row.자재항목 && row.자재항목 !== '' && !materialItemInputMode[row.id] && !row.공종?.includes('기타')) {
+        const materialOptions = getMaterialNamesForWorkTypeAndWorkName(row.공종, row.공사명);
+        if (materialOptions.length > 0 && !materialOptions.includes(row.자재항목)) {
+          newMaterialModes[row.id] = true;
+          changed = true;
+        }
+      }
+    });
+    if (changed) {
+      if (Object.keys(newWorkNameModes).length > 0)
+        setWorkNameInputMode(prev => ({ ...prev, ...newWorkNameModes }));
+      if (Object.keys(newMaterialModes).length > 0)
+        setMaterialItemInputMode(prev => ({ ...prev, ...newMaterialModes }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, catalog]);
 
   // (구버전 호환용) 공종별로 필터링된 자재명 옵션
   const getMaterialNamesForWorkType = (workType: string) => {
@@ -532,41 +569,61 @@ export function MaterialCostSection({
                   
                   {/* 공사명 - 자재비는 연동 행도 수정 가능 */}
                   <td style={{ padding: "0 8px", borderBottom: groupBorderBottom, borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
-                    {row.공종?.includes("기타") ? (
-                      <Input
-                        value={row.공사명 || ""}
-                        onChange={(e) => {
-                          onRowsChange(rows.map(r => 
-                            r.id === row.id 
-                              ? { ...r, 공사명: e.target.value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
-                              : r
-                          ));
-                        }}
-                        className="h-9 border-0"
-                        style={{ 
-                          fontFamily: "Pretendard", 
-                          fontSize: "14px",
-                          ...(isLinkedRow ? {
-                            color: "rgba(59, 130, 246, 0.9)",
-                            background: "rgba(59, 130, 246, 0.08)",
-                            borderRadius: "6px",
-                            border: "1px solid rgba(59, 130, 246, 0.2)",
-                          } : {})
-                        }}
-                        placeholder="공사명 직접 입력"
-                        disabled={isReadOnly}
-                        data-testid={`input-공사명-material-${currentGlobalIndex}`}
-                      />
+                    {row.공종?.includes("기타") || workNameInputMode[row.id] ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={row.공사명 === "직접입력" ? "" : (row.공사명 || "")}
+                          onChange={(e) => {
+                            onRowsChange(rows.map(r => 
+                              r.id === row.id 
+                                ? { ...r, 공사명: e.target.value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                                : r
+                            ));
+                          }}
+                          className="h-9 border-0 flex-1"
+                          style={{ 
+                            fontFamily: "Pretendard", 
+                            fontSize: "14px",
+                          }}
+                          placeholder="공사명 직접 입력"
+                          disabled={isReadOnly}
+                          data-testid={`input-공사명-material-${currentGlobalIndex}`}
+                        />
+                        {workNameInputMode[row.id] && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWorkNameInputMode(prev => ({ ...prev, [row.id]: false }));
+                              onRowsChange(rows.map(r =>
+                                r.id === row.id
+                                  ? { ...r, 공사명: '', 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                                  : r
+                              ));
+                            }}
+                            style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: "pointer", color: "rgba(12,12,12,0.4)", fontSize: "14px" }}
+                            title="목록 선택으로 돌아가기"
+                          >×</button>
+                        )}
+                      </div>
                     ) : (
                       <Select 
                         value={row.공사명 || ''} 
                         onValueChange={(value) => {
-                          console.log('[자재비 공사명 드롭다운] 선택됨:', value, '공종:', row.공종, '연동행:', isLinkedRow);
-                          onRowsChange(rows.map(r => 
-                            r.id === row.id 
-                              ? { ...r, 공사명: value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
-                              : r
-                          ));
+                          if (value === "직접입력") {
+                            setWorkNameInputMode(prev => ({ ...prev, [row.id]: true }));
+                            setMaterialItemInputMode(prev => ({ ...prev, [row.id]: false }));
+                            onRowsChange(rows.map(r => 
+                              r.id === row.id 
+                                ? { ...r, 공사명: '', 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                                : r
+                            ));
+                          } else {
+                            onRowsChange(rows.map(r => 
+                              r.id === row.id 
+                                ? { ...r, 공사명: value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                                : r
+                            ));
+                          }
                         }}
                         disabled={!row.공종 || isReadOnly}
                       >
@@ -597,35 +654,56 @@ export function MaterialCostSection({
                   
                   {/* 자재항목 - 자재비는 연동 행도 수정 가능 */}
                   <td style={{ padding: "0 8px", borderBottom: groupBorderBottom, borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
-                    {row.공종?.includes("기타") ? (
-                      <Input
-                        value={row.자재항목 || ""}
-                        onChange={(e) => {
-                          onRowsChange(rows.map(r => 
-                            r.id === row.id 
-                              ? { ...r, 자재항목: e.target.value, 자재: e.target.value, 단위: r.단위 || 'm²' }
-                              : r
-                          ));
-                        }}
-                        className="h-9 border-0"
-                        style={{ 
-                          fontFamily: "Pretendard", 
-                          fontSize: "14px",
-                          ...(isLinkedRow ? {
-                            color: "rgba(59, 130, 246, 0.9)",
-                            background: "rgba(59, 130, 246, 0.08)",
-                            borderRadius: "6px",
-                            border: "1px solid rgba(59, 130, 246, 0.2)",
-                          } : {})
-                        }}
-                        placeholder="자재항목 직접 입력"
-                        disabled={isReadOnly}
-                        data-testid={`input-자재항목-${currentGlobalIndex}`}
-                      />
+                    {row.공종?.includes("기타") || materialItemInputMode[row.id] || workNameInputMode[row.id] ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={row.자재항목 === "직접입력" ? "" : (row.자재항목 || "")}
+                          onChange={(e) => {
+                            onRowsChange(rows.map(r => 
+                              r.id === row.id 
+                                ? { ...r, 자재항목: e.target.value, 자재: e.target.value, 단위: r.단위 || 'm²' }
+                                : r
+                            ));
+                          }}
+                          className="h-9 border-0 flex-1"
+                          style={{ 
+                            fontFamily: "Pretendard", 
+                            fontSize: "14px",
+                          }}
+                          placeholder="자재항목 직접 입력"
+                          disabled={isReadOnly}
+                          data-testid={`input-자재항목-${currentGlobalIndex}`}
+                        />
+                        {materialItemInputMode[row.id] && !workNameInputMode[row.id] && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMaterialItemInputMode(prev => ({ ...prev, [row.id]: false }));
+                              onRowsChange(rows.map(r =>
+                                r.id === row.id
+                                  ? { ...r, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                                  : r
+                              ));
+                            }}
+                            style={{ width: "20px", height: "20px", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", cursor: "pointer", color: "rgba(12,12,12,0.4)", fontSize: "14px" }}
+                            title="목록 선택으로 돌아가기"
+                          >×</button>
+                        )}
+                      </div>
                     ) : (
                       <Select 
                         value={materialItem} 
                         onValueChange={(value) => {
+                          if (value === "직접입력") {
+                            setMaterialItemInputMode(prev => ({ ...prev, [row.id]: true }));
+                            onRowsChange(rows.map(r => {
+                              if (r.id === row.id) {
+                                return { ...r, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0, isManualPriceEntry: true };
+                              }
+                              return r;
+                            }));
+                            return;
+                          }
                           const catalogItems = catalog.filter(item =>
                             item.workType === row.공종 &&
                             item.workName === row.공사명 &&
