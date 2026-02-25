@@ -147,6 +147,26 @@ export function LaborCostSection({
 }: LaborCostSectionProps) {
   const [detailItemInputMode, setDetailItemInputMode] = useState<{[rowId: string]: boolean}>({});
 
+  // 서버에서 로드된 행에 커스텀 detailItem 값이 있으면 자동으로 입력 모드 활성화
+  useEffect(() => {
+    if (!rows || rows.length === 0) return;
+    const newModes: { [rowId: string]: boolean } = {};
+    let changed = false;
+    rows.forEach((row) => {
+      if (!row.detailItem || row.detailItem === "") return;
+      if (detailItemInputMode[row.id]) return;
+      const options = getDetailItemOptions(row.category, row.workName, row.detailWork || "노무비");
+      if (!options.includes(row.detailItem)) {
+        newModes[row.id] = true;
+        changed = true;
+      }
+    });
+    if (changed) {
+      setDetailItemInputMode(prev => ({ ...prev, ...newModes }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, catalog, ilwidaegaCatalog]);
+
   // 드래그 앤 드롭 상태
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
