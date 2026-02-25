@@ -1807,6 +1807,12 @@ export class MemStorage implements IStorage {
           dateUpdates.settlementCompletedDate = currentDate;
         }
         break;
+      case "접수취소":
+        // 접수취소일 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.cancellationDate) {
+          dateUpdates.cancellationDate = currentDate;
+        }
+        break;
     }
 
     // 상태에 따라 recoveryType 자동 설정
@@ -4515,6 +4521,12 @@ export class DbStorage implements IStorage {
         // 정산완료일 자동 기록 (기존 값 없을 때만)
         if (!existingCase.settlementCompletedDate) {
           dateUpdates.settlementCompletedDate = currentDate;
+        }
+        break;
+      case "접수취소":
+        // 접수취소일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.cancellationDate) {
+          dateUpdates.cancellationDate = currentDate;
         }
         break;
     }

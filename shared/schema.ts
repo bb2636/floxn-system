@@ -277,6 +277,7 @@ export const cases = pgTable("cases", {
   paymentCompletedDate: text("payment_completed_date"), // 입금완료일 (입금완료 상태로 변경된 날짜)
   partialPaymentDate: text("partial_payment_date"), // 일부입금일 (부분입금 상태로 변경된 날짜)
   settlementCompletedDate: text("settlement_completed_date"), // 정산완료일 (정산완료 상태로 변경된 날짜)
+  cancellationDate: text("cancellation_date"), // 접수취소일 (접수취소 상태로 변경된 날짜)
   
   // 심사 관련 필드 (1차 승인)
   reviewDecision: text("review_decision"), // 심사결과: "승인" | "비승인" | null
