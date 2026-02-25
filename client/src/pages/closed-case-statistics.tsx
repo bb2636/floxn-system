@@ -23,7 +23,10 @@ const getClosedDate = (c: Case, settlement?: Settlement): string | null => {
   if (c.status === "부분입금") {
     return c.partialPaymentDate || null;
   }
-  // 접수취소 등 나머지 종결 상태
+  if (c.status === "접수취소") {
+    // 접수취소 전용 날짜 필드 없으므로 최종 수정일(상태 변경 시점) 사용
+    return c.updatedAt || c.createdAt || null;
+  }
   return c.settlementCompletedDate || c.paymentCompletedDate || c.partialPaymentDate || null;
 };
 
