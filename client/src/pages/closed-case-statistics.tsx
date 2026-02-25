@@ -13,7 +13,17 @@ const CLOSED_STATUSES = ["정산완료", "입금완료", "부분입금", "접수
 
 const isClosed = (c: Case): boolean => CLOSED_STATUSES.includes(c.status);
 
-const getClosedDate = (c: Case): string | null => {
+const getClosedDate = (c: Case, settlement?: Settlement): string | null => {
+  if (c.status === "정산완료") {
+    return settlement?.settlementDate || c.settlementCompletedDate || null;
+  }
+  if (c.status === "입금완료") {
+    return c.paymentCompletedDate || null;
+  }
+  if (c.status === "부분입금") {
+    return c.partialPaymentDate || null;
+  }
+  // 접수취소 등 나머지 종결 상태
   return c.settlementCompletedDate || c.paymentCompletedDate || c.partialPaymentDate || null;
 };
 
@@ -108,12 +118,15 @@ export default function ClosedCaseStatistics() {
     let result = cases.filter((c) => {
       if (!isClosed(c)) return false;
 
-      const closedDate = getClosedDate(c);
+      const settlement = settlementMap[c.id];
+      const closedDate = getClosedDate(c, settlement);
       if (!closedDate) return false;
 
       try {
         const d = parseISO(closedDate);
-        if (!isWithinInterval(d, { start: startDate, end: endDate })) return false;
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (!isWithinInterval(d, { start: startDate, end })) return false;
       } catch {
         return false;
       }
@@ -133,7 +146,7 @@ export default function ClosedCaseStatistics() {
     }
 
     return result;
-  }, [cases, startDate, endDate, searchQuery, searchType]);
+  }, [cases, settlementMap, startDate, endDate, searchQuery, searchType]);
 
   const getManagerName = (c: Case): string => {
     if (c.managerId && userMap[c.managerId]) {
