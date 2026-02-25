@@ -4,7 +4,7 @@ import { User, Case, Settlement, CaseStatusHistory } from "@shared/schema";
 import { Search, Calendar as CalendarIcon, ChevronRight, Star, Download, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { format, startOfMonth, endOfMonth, parseISO, isWithinInterval, subDays } from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -68,9 +68,6 @@ const cellStyle: React.CSSProperties = {
 export default function UnsettledCaseStatistics() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<"사고번호" | "접수번호">("사고번호");
-  const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
-  const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
-  const [startCalendarOpen, setStartCalendarOpen] = useState(false);
   const [historicalMode, setHistoricalMode] = useState(false);
   const [historicalDate, setHistoricalDate] = useState<Date>(subDays(new Date(), 7));
   const [historicalCalendarOpen, setHistoricalCalendarOpen] = useState(false);
@@ -158,18 +155,7 @@ export default function UnsettledCaseStatistics() {
     if (historicalMode) {
       result = cases.filter((c) => historicalUnsettledCaseIds.has(c.id));
     } else {
-      result = cases.filter((c) => {
-        if (!isUnsettled(c)) return false;
-
-        try {
-          const d = parseISO(c.createdAt);
-          if (!isWithinInterval(d, { start: startDate, end: endDate })) return false;
-        } catch {
-          return false;
-        }
-
-        return true;
-      });
+      result = cases.filter((c) => isUnsettled(c));
     }
 
     if (searchQuery.trim()) {
@@ -200,7 +186,7 @@ export default function UnsettledCaseStatistics() {
     }
 
     return result;
-  }, [cases, startDate, endDate, searchQuery, searchType, historicalMode, historicalUnsettledCaseIds]);
+  }, [cases, searchQuery, searchType, historicalMode, historicalUnsettledCaseIds]);
 
   const getManagerName = (c: Case): string => {
     if (c.managerId && userMap[c.managerId]) {
@@ -344,69 +330,6 @@ export default function UnsettledCaseStatistics() {
         </Button>
       </div>
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        {!historicalMode && (
-          <div className="flex items-center gap-2">
-            <span style={{ fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", whiteSpace: "nowrap", fontFamily: "Pretendard" }}>
-              조회 기준일 :
-            </span>
-            <Popover open={startCalendarOpen} onOpenChange={setStartCalendarOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className="flex items-center gap-2"
-                  style={{
-                    height: "36px",
-                    padding: "0 12px",
-                    border: "1px solid rgba(12, 12, 12, 0.1)",
-                    borderRadius: "6px",
-                    background: "#FFFFFF",
-                    fontSize: "13px",
-                    fontFamily: "Pretendard",
-                    color: "rgba(12, 12, 12, 0.7)",
-                    cursor: "pointer",
-                  }}
-                  data-testid="button-unsettled-start-date"
-                >
-                  <CalendarIcon size={14} style={{ color: "rgba(12, 12, 12, 0.4)" }} />
-                  {format(startDate, "yyyy.MM.dd")} - {format(endDate, "yyyy.MM.dd")}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <div className="flex gap-0">
-                  <div>
-                    <div style={{ padding: "8px 12px", fontSize: "12px", fontWeight: 600, color: "rgba(12,12,12,0.5)", fontFamily: "Pretendard", borderBottom: "1px solid rgba(12,12,12,0.06)" }}>시작일</div>
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={(date) => {
-                        if (date) {
-                          setStartDate(date);
-                          if (date > endDate) setEndDate(date);
-                        }
-                      }}
-                      locale={ko}
-                    />
-                  </div>
-                  <div style={{ borderLeft: "1px solid rgba(12,12,12,0.06)" }}>
-                    <div style={{ padding: "8px 12px", fontSize: "12px", fontWeight: 600, color: "rgba(12,12,12,0.5)", fontFamily: "Pretendard", borderBottom: "1px solid rgba(12,12,12,0.06)" }}>종료일</div>
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={(date) => {
-                        if (date) {
-                          setEndDate(date);
-                          if (date < startDate) setStartDate(date);
-                          setStartCalendarOpen(false);
-                        }
-                      }}
-                      locale={ko}
-                    />
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
-
         {historicalMode && (
           <div className="flex items-center gap-2">
             <span style={{ fontSize: "14px", fontWeight: 600, color: "#D97706", whiteSpace: "nowrap", fontFamily: "Pretendard" }}>
