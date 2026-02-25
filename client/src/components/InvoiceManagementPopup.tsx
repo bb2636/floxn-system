@@ -1565,16 +1565,7 @@ export function InvoiceManagementPopup({
                   <div
                     style={{
                       ...TABLE_CELL_STYLE,
-                      flex: 1,
-                      borderRight: "1px solid #E0E0E0",
-                      borderBottom: "none",
-                      borderTop: "none",
-                    }}
-                  ></div>
-                  <div
-                    style={{
-                      ...TABLE_CELL_STYLE,
-                      flex: 1,
+                      flex: 2,
                       borderRight: "1px solid #E0E0E0",
                       borderBottom: "none",
                       borderTop: "none",
@@ -1642,16 +1633,7 @@ export function InvoiceManagementPopup({
                   <div
                     style={{
                       ...TABLE_CELL_STYLE,
-                      flex: 1,
-                      borderRight: "1px solid #E0E0E0",
-                      borderBottom: "none",
-                      borderTop: "none",
-                    }}
-                  ></div>
-                  <div
-                    style={{
-                      ...TABLE_CELL_STYLE,
-                      flex: 1,
+                      flex: 2,
                       borderRight: "1px solid #E0E0E0",
                       borderBottom: "none",
                       borderTop: "none",
