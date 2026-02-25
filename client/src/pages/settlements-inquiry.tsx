@@ -509,7 +509,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         partnerPaymentDate: settlement?.partnerPaymentDate || "-",
         assignedPartner: caseItem.assignedPartner || "-",
         insuredName: caseItem.insuredName || "-",
-        claimDate: caseItem.invoicePdfGenerated ? caseItem.invoicePdfGenerated.substring(0, 10) : "-",
+        claimDate: caseItem.claimDate || "-",
       };
     });
 
