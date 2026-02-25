@@ -115,6 +115,7 @@ interface PaymentEntry {
   id: string;
   paymentDate: string;
   insuranceCompany: string;
+  depositAmount: number;
   paymentAmount: number;
   commission: number;
   paymentCategory: string;
@@ -202,6 +203,7 @@ const PAYMENT_COLS = {
     flex: "0 0 110px",
     width: "110px",
   } as React.CSSProperties,
+  colDeposit: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
   col3: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
   col4: { ...INLINE_COL_BASE, flex: 1 } as React.CSSProperties,
   col5: {
@@ -397,6 +399,7 @@ export function InvoiceManagementPopup({
       id: `payment-${Date.now()}`,
       paymentDate: "",
       insuranceCompany: caseData?.insuranceCompany || "전체",
+      depositAmount: 0,
       paymentAmount: 0,
       commission: 0,
       paymentCategory: "",
@@ -417,8 +420,20 @@ export function InvoiceManagementPopup({
     value: unknown,
   ) => {
     const updated = [...paymentEntries];
-    (updated[index] as Record<string, unknown>)[field] = value;
-    updated[index] = { ...updated[index] };
+    const entry = { ...updated[index], [field]: value } as PaymentEntry;
+
+    if (field === "depositAmount") {
+      const dep = (value as number) || 0;
+      const payment = Math.round(dep / 1.077);
+      const comm = dep - payment;
+      entry.paymentAmount = payment;
+      entry.commission = comm;
+    } else if (field === "paymentAmount") {
+      const payment = (value as number) || 0;
+      entry.commission = Math.round(payment * 0.077);
+    }
+
+    updated[index] = entry;
     setPaymentEntries(updated);
   };
 
@@ -2179,7 +2194,7 @@ export function InvoiceManagementPopup({
                     className="flex"
                     style={{
                       borderBottom: "1px solid #E0E0E0",
-                      minWidth: "750px",
+                      minWidth: "900px",
                     }}
                   >
                     <div
@@ -2203,6 +2218,17 @@ export function InvoiceManagementPopup({
                       }}
                     >
                       보험사
+                    </div>
+                    <div
+                      style={{
+                        ...PAYMENT_COLS.colDeposit,
+                        background: "#F5F7FA",
+                        fontWeight: 600,
+                        color: "rgba(12,12,12,0.7)",
+                        padding: "6px 4px",
+                      }}
+                    >
+                      입금액
                     </div>
                     <div
                       style={{
@@ -2272,7 +2298,7 @@ export function InvoiceManagementPopup({
                             index < paymentEntries.length - 1
                               ? "1px solid #E0E0E0"
                               : "none",
-                          minWidth: "750px",
+                          minWidth: "900px",
                         }}
                       >
                         {/* 지급일자 */}
@@ -2362,6 +2388,39 @@ export function InvoiceManagementPopup({
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                        {/* 입금액 */}
+                        <div style={PAYMENT_COLS.colDeposit}>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="text"
+                              value={
+                                entry.depositAmount
+                                  ? entry.depositAmount.toLocaleString()
+                                  : ""
+                              }
+                              onChange={(e) => {
+                                const value = e.target.value
+                                  .replace(/,/g, "")
+                                  .replace(/[^0-9]/g, "");
+                                handleUpdatePaymentEntry(
+                                  index,
+                                  "depositAmount",
+                                  parseInt(value) || 0,
+                                );
+                              }}
+                              data-testid={`input-deposit-amount-${index}`}
+                              placeholder="0"
+                              style={{
+                                height: "32px",
+                                fontSize: "12px",
+                                padding: "4px 6px",
+                                textAlign: "right",
+                                flex: 1,
+                              }}
+                            />
+                            <span style={{ fontSize: "12px", flexShrink: 0 }}>원</span>
+                          </div>
                         </div>
                         {/* 지급액 */}
                         <div style={PAYMENT_COLS.col3}>
@@ -2492,13 +2551,16 @@ export function InvoiceManagementPopup({
                     style={{
                       background: "#F5F7FA",
                       borderTop: "1px solid #E0E0E0",
-                      minWidth: "750px",
+                      minWidth: "900px",
                     }}
                   >
                     <div style={{ ...PAYMENT_COLS.col1, fontWeight: 600 }}>
                       합계
                     </div>
                     <div style={PAYMENT_COLS.col2}></div>
+                    <div style={{ ...PAYMENT_COLS.colDeposit, fontWeight: 600 }}>
+                      {paymentEntries.reduce((s, e) => s + (e.depositAmount || 0), 0).toLocaleString()}원
+                    </div>
                     <div style={{ ...PAYMENT_COLS.col3, fontWeight: 600 }}>
                       {paymentTotals.totalPayment.toLocaleString()}원
                     </div>
