@@ -236,7 +236,7 @@ export default function ClosedCaseStatistics() {
         c.estimateAmount ? parseFloat(c.estimateAmount).toLocaleString() : "",
         formatDate(c.siteInvestigationSubmitDate),
         c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : "",
-        formatDate(c.approvalDate),
+        formatDate(c.secondApprovalDate),
         ...(searchType !== "접수번호" ? [
           getClaimAmount(c) ? getClaimAmount(c).toLocaleString() : "",
           formatDate(c.claimDate),
@@ -550,7 +550,7 @@ export default function ClosedCaseStatistics() {
                     <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(estimateAmt)}</td>
                     <td style={cellStyle}>{formatDate(c.siteInvestigationSubmitDate)}</td>
                     <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(approvedAmt)}</td>
-                    <td style={{ ...cellStyle, ...(searchType === "접수번호" ? { borderRight: "none" } : {}) }}>{formatDate(c.approvalDate)}</td>
+                    <td style={{ ...cellStyle, ...(searchType === "접수번호" ? { borderRight: "none" } : {}) }}>{formatDate(c.secondApprovalDate)}</td>
                     {searchType !== "접수번호" && (
                       <>
                         <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(claimAmt)}</td>
