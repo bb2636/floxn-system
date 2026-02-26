@@ -2834,7 +2834,20 @@ export default function ComprehensiveProgress() {
                             { label: "청구일", value: selectedCase?.claimDate },
                             {
                               label: "일부입금일(최초)",
-                              value: selectedCase?.partialPaymentDate,
+                              value: (() => {
+                                if (!selectedCase) return undefined;
+                                if (selectedCase.partialPaymentDate) return selectedCase.partialPaymentDate;
+                                const settlement = allSettlements.find(
+                                  (s) => s.caseId === selectedCase.id,
+                                );
+                                if (!settlement?.depositEntries) return undefined;
+                                const entries = settlement.depositEntries as Array<{ depositDate?: string }>;
+                                const dates = entries
+                                  .map((e) => e.depositDate)
+                                  .filter((d): d is string => !!d)
+                                  .sort();
+                                return dates[0] || undefined;
+                              })(),
                             },
                             {
                               label: "일부지급일(최초)",
