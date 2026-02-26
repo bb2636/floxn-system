@@ -6,6 +6,7 @@ import {
   CaseWithLatestProgress,
   type UserFavorite,
   type Invoice,
+  type Settlement,
 } from "@shared/schema";
 import { Search, Cloud, Star, Plus, CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
@@ -292,6 +293,10 @@ export default function ComprehensiveProgress() {
   // 승인된 인보이스 목록 가져오기
   const { data: approvedInvoices = [] } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices/approved"],
+  });
+
+  const { data: allSettlements = [] } = useQuery<Settlement[]>({
+    queryKey: ["/api/settlements"],
   });
 
   // 사용자 ID로 이름 가져오기
@@ -2830,6 +2835,22 @@ export default function ComprehensiveProgress() {
                             {
                               label: "일부입금일(최초)",
                               value: selectedCase?.partialPaymentDate,
+                            },
+                            {
+                              label: "일부지급일(최초)",
+                              value: (() => {
+                                if (!selectedCase) return undefined;
+                                const settlement = allSettlements.find(
+                                  (s) => s.caseId === selectedCase.id,
+                                );
+                                if (!settlement?.paymentEntries) return undefined;
+                                const entries = settlement.paymentEntries as Array<{ paymentDate?: string }>;
+                                const dates = entries
+                                  .map((e) => e.paymentDate)
+                                  .filter((d): d is string => !!d)
+                                  .sort();
+                                return dates[0] || undefined;
+                              })(),
                             },
                             {
                               label: "입금완료일",
