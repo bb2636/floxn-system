@@ -463,6 +463,7 @@ export default function AdminSettings() {
   const [showDeleteAttachmentsConfirm, setShowDeleteAttachmentsConfirm] = useState(false);
   const [regionSearchTerm, setRegionSearchTerm] = useState("");
   const [showRegionModal, setShowRegionModal] = useState(false);
+  const [regionModalForEdit, setRegionModalForEdit] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState("서울");
   const [tempSelectedRegions, setTempSelectedRegions] = useState<string[]>([]);
   
@@ -5707,8 +5708,7 @@ export default function AdminSettings() {
                       </div>
 
                       {/* Row 6: Service Regions */}
-                      {selectedUser.serviceRegions &&
-                        selectedUser.serviceRegions.length > 0 && (
+                      {(isEditMode || (selectedUser.serviceRegions && selectedUser.serviceRegions.length > 0)) && (
                           <div className="flex gap-5">
                             <div className="flex-1 flex flex-col gap-2">
                               <span
@@ -5722,32 +5722,89 @@ export default function AdminSettings() {
                               >
                                 출동가능지역
                               </span>
-                              <div className="flex flex-wrap gap-2">
-                                {selectedUser.serviceRegions.map(
-                                  (region, index) => (
-                                    <div
-                                      key={index}
-                                      className="px-3 py-1.5"
+                              {isEditMode ? (
+                                <div
+                                  className="px-4 py-3 cursor-pointer flex flex-wrap gap-2 min-h-[46px]"
+                                  style={{
+                                    background: "#FDFDFD",
+                                    border: "2px solid rgba(12, 12, 12, 0.08)",
+                                    borderRadius: "8px",
+                                  }}
+                                  onClick={() => {
+                                    const currentRegions = editedUserData.serviceRegions || selectedUser.serviceRegions || [];
+                                    setTempSelectedRegions([...currentRegions]);
+                                    setRegionModalForEdit(true);
+                                    setShowRegionModal(true);
+                                  }}
+                                  data-testid="button-edit-region-selector"
+                                >
+                                  {(editedUserData.serviceRegions || selectedUser.serviceRegions || []).length === 0 ? (
+                                    <span
                                       style={{
-                                        background: "#E3F2FD",
-                                        borderRadius: "6px",
+                                        fontFamily: "Pretendard",
+                                        fontSize: "14px",
+                                        fontWeight: 400,
+                                        letterSpacing: "-0.02em",
+                                        color: "rgba(12, 12, 12, 0.4)",
                                       }}
-                                      data-testid={`detail-region-${index}`}
                                     >
-                                      <span
+                                      지역 선택
+                                    </span>
+                                  ) : (
+                                    (editedUserData.serviceRegions || selectedUser.serviceRegions || []).map(
+                                      (region, index) => (
+                                        <div
+                                          key={index}
+                                          className="px-3 py-1.5"
+                                          style={{
+                                            background: "#E3F2FD",
+                                            borderRadius: "6px",
+                                          }}
+                                          data-testid={`edit-region-${index}`}
+                                        >
+                                          <span
+                                            style={{
+                                              fontFamily: "Pretendard",
+                                              fontSize: "13px",
+                                              fontWeight: 400,
+                                              color: "#008FED",
+                                            }}
+                                          >
+                                            {region}
+                                          </span>
+                                        </div>
+                                      ),
+                                    )
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="flex flex-wrap gap-2">
+                                  {(selectedUser.serviceRegions || []).map(
+                                    (region, index) => (
+                                      <div
+                                        key={index}
+                                        className="px-3 py-1.5"
                                         style={{
-                                          fontFamily: "Pretendard",
-                                          fontSize: "13px",
-                                          fontWeight: 400,
-                                          color: "#008FED",
+                                          background: "#E3F2FD",
+                                          borderRadius: "6px",
                                         }}
+                                        data-testid={`detail-region-${index}`}
                                       >
-                                        {region}
-                                      </span>
-                                    </div>
-                                  ),
-                                )}
-                              </div>
+                                        <span
+                                          style={{
+                                            fontFamily: "Pretendard",
+                                            fontSize: "13px",
+                                            fontWeight: 400,
+                                            color: "#008FED",
+                                          }}
+                                        >
+                                          {region}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -9498,10 +9555,18 @@ export default function AdminSettings() {
                   borderRadius: "6px",
                 }}
                 onClick={() => {
-                  setCreateAccountForm({
-                    ...createAccountForm,
-                    serviceRegions: tempSelectedRegions,
-                  });
+                  if (regionModalForEdit) {
+                    setEditedUserData({
+                      ...editedUserData,
+                      serviceRegions: tempSelectedRegions,
+                    });
+                    setRegionModalForEdit(false);
+                  } else {
+                    setCreateAccountForm({
+                      ...createAccountForm,
+                      serviceRegions: tempSelectedRegions,
+                    });
+                  }
                   setShowRegionModal(false);
                 }}
                 data-testid="button-region-confirm"
