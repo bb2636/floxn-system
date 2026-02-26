@@ -177,7 +177,10 @@ export default function ComprehensiveProgress() {
   const [selectedStatus, setSelectedStatus] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedManager, setSelectedManager] = useState<string>("__INIT__");
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("caseId") || null;
+  });
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [detailTab, setDetailTab] = useState("기본정보");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

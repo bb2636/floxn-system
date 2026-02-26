@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   User,
   CaseWithLatestProgress,
@@ -87,6 +88,7 @@ interface SettlementsInquiryProps {
 }
 
 export default function SettlementsInquiry({ filterMode = "claim" }: SettlementsInquiryProps) {
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [settlementStatus, setSettlementStatus] = useState("전체");
   const [insuranceCompany, setInsuranceCompany] = useState("전체");
@@ -1405,7 +1407,11 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleOpenManagement(row);
+                              if (filterMode === "closed") {
+                                setLocation(`/comprehensive-progress?caseId=${row.id}`);
+                              } else {
+                                handleOpenManagement(row);
+                              }
                             }}
                             data-testid={`button-management-${row.id}`}
                             style={{
