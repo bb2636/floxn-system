@@ -1049,7 +1049,7 @@ export default function Dashboard() {
                                 <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
                                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 hidden group-hover/ins:block">
                                   <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
-                                    접수완료 ~ 부분입금 상태의 건 (오늘 기준)
+                                    청구자료제출 건 중 보험사 미입금
                                     <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
                                   </div>
                                 </div>
@@ -1063,7 +1063,7 @@ export default function Dashboard() {
                                 <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
                                 <div className="absolute right-0 top-full mt-1.5 z-50 hidden group-hover/partner:block">
                                   <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
-                                    접수완료 ~ 부분입금/일부지급 상태의 건 (오늘 기준)
+                                    보험사 입금 건 중 계산서 미발행
                                     <div className="absolute right-2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
                                   </div>
                                 </div>
