@@ -1415,7 +1415,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                               fontFamily: "Pretendard",
                             }}
                           >
-                            관리
+                            {filterMode === "closed" ? "자세히 보기" : "관리"}
                           </Button>
                         </td>
                       )}
