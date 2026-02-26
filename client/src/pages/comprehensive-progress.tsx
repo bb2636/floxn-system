@@ -192,10 +192,14 @@ export default function ComprehensiveProgress() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const [showFieldReportPdfDialog, setShowFieldReportPdfDialog] = useState(false);
+  const [showFieldReportPdfDialog, setShowFieldReportPdfDialog] =
+    useState(false);
   const [showInvoicePdfDialog, setShowInvoicePdfDialog] = useState(false);
-  const [fieldReportPdfData, setFieldReportPdfData] = useState<ArrayBuffer | null>(null);
-  const [invoicePdfData, setInvoicePdfData] = useState<ArrayBuffer | null>(null);
+  const [fieldReportPdfData, setFieldReportPdfData] =
+    useState<ArrayBuffer | null>(null);
+  const [invoicePdfData, setInvoicePdfData] = useState<ArrayBuffer | null>(
+    null,
+  );
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
 
@@ -909,7 +913,8 @@ export default function ComprehensiveProgress() {
   });
 
   const filteredByManager = filteredDataUnsorted.filter((caseItem) => {
-    const managerValue = selectedManager === "__INIT__" ? "전체" : selectedManager;
+    const managerValue =
+      selectedManager === "__INIT__" ? "전체" : selectedManager;
     if (managerValue === "전체") return true;
     return (caseItem.managerName || "") === managerValue;
   });
@@ -1269,7 +1274,14 @@ export default function ComprehensiveProgress() {
               검색
             </button>
 
-            <div style={{ width: "1px", height: "32px", background: "rgba(12,12,12,0.1)", flexShrink: 0 }} />
+            <div
+              style={{
+                width: "1px",
+                height: "32px",
+                background: "rgba(12,12,12,0.1)",
+                flexShrink: 0,
+              }}
+            />
 
             <span
               style={{
@@ -1284,7 +1296,10 @@ export default function ComprehensiveProgress() {
               담당자
             </span>
 
-            <Select value={selectedManager === "__INIT__" ? "전체" : selectedManager} onValueChange={setSelectedManager}>
+            <Select
+              value={selectedManager === "__INIT__" ? "전체" : selectedManager}
+              onValueChange={setSelectedManager}
+            >
               <SelectTrigger
                 className="w-[140px] h-[52px]"
                 style={{
@@ -1301,7 +1316,9 @@ export default function ComprehensiveProgress() {
                 <SelectValue placeholder="담당자 선택" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="전체" data-testid="option-manager-all">전체</SelectItem>
+                <SelectItem value="전체" data-testid="option-manager-all">
+                  전체
+                </SelectItem>
                 {adminUsers.map((admin) => (
                   <SelectItem
                     key={admin.id}
@@ -1562,7 +1579,9 @@ export default function ComprehensiveProgress() {
                     fontSize: "13px",
                     color: "rgba(12, 12, 12, 0.6)",
                   }}
-                >수행업무</div>
+                >
+                  수행업무
+                </div>
               )}
               <div
                 style={{
@@ -1572,7 +1591,9 @@ export default function ComprehensiveProgress() {
                   color: "rgba(12, 12, 12, 0.6)",
                   textAlign: "center",
                 }}
-              >자세히 보기</div>
+              >
+                자세히 보기
+              </div>
             </div>
 
             {/* Table Body */}
@@ -1715,9 +1736,7 @@ export default function ComprehensiveProgress() {
                         />
                       </div>
                     )}
-                    {!canDeleteCases && (
-                      <div style={{ width: "40px" }} />
-                    )}
+                    {!canDeleteCases && <div style={{ width: "40px" }} />}
                     <div
                       style={{
                         fontFamily: "Pretendard",
@@ -2039,7 +2058,7 @@ export default function ComprehensiveProgress() {
                     <div>
                       {caseItem.status === "배당대기" ? (
                         // 배당대기 상태 - 임시 저장 건이므로 이어서 작성하기 버튼
-                        (<button
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             localStorage.setItem("editCaseId", caseItem.id);
@@ -2058,11 +2077,12 @@ export default function ComprehensiveProgress() {
                             whiteSpace: "nowrap",
                           }}
                           data-testid={`button-continue-draft-${caseItem.id}`}
-                        >이어서 작성하기
-                                                  </button>)
+                        >
+                          이어서 작성하기
+                        </button>
                       ) : (
                         // 접수완료 이후 상태 - 상세보기 버튼 및 청구하기 버튼
-                        (<div
+                        <div
                           style={{
                             display: "flex",
                             gap: "8px",
@@ -2117,7 +2137,7 @@ export default function ComprehensiveProgress() {
                                 청구하기
                               </button>
                             )}
-                        </div>)
+                        </div>
                       )}
                     </div>
                   </div>
@@ -2169,26 +2189,28 @@ export default function ComprehensiveProgress() {
               </SheetTitle>
               <div style={{ display: "flex", gap: "8px" }}>
                 {/* 접수완료 이후 상태에서만 접수건 상세보기 버튼 표시 (심사사/조사사는 숨김) */}
-                {user?.role !== "심사사" && user?.role !== "조사사" && (() => {
-                  const currentCase = cases?.find(
-                    (c) => c.id === selectedCaseId,
-                  );
-                  const status = currentCase?.status || "";
-                  const isAfterReceptionComplete = status !== "배당대기";
-                  return isAfterReceptionComplete ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setIsReceptionEditMode(false); // 수정모드 리셋
-                        setShowReceptionDetailDialog(true);
-                      }}
-                      data-testid="button-reception-detail"
-                    >
-                      접수건 상세보기
-                    </Button>
-                  ) : null;
-                })()}
+                {user?.role !== "심사사" &&
+                  user?.role !== "조사사" &&
+                  (() => {
+                    const currentCase = cases?.find(
+                      (c) => c.id === selectedCaseId,
+                    );
+                    const status = currentCase?.status || "";
+                    const isAfterReceptionComplete = status !== "배당대기";
+                    return isAfterReceptionComplete ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setIsReceptionEditMode(false); // 수정모드 리셋
+                          setShowReceptionDetailDialog(true);
+                        }}
+                        data-testid="button-reception-detail"
+                      >
+                        접수건 상세보기
+                      </Button>
+                    ) : null;
+                  })()}
               </div>
             </div>
           </SheetHeader>
@@ -2209,7 +2231,10 @@ export default function ComprehensiveProgress() {
                       padding: "0 20px",
                     }}
                   >
-                    {(user?.role === "심사사" || user?.role === "조사사" ? ["기본정보", "일자", "진행단계"] : ["기본정보", "일자", "진행단계", "진행메모"]).map((tab) => (
+                    {(user?.role === "심사사" || user?.role === "조사사"
+                      ? ["기본정보", "일자", "진행단계"]
+                      : ["기본정보", "일자", "진행단계", "진행메모"]
+                    ).map((tab) => (
                       <button
                         key={tab}
                         onClick={() => setDetailTab(tab)}
@@ -2586,8 +2611,16 @@ export default function ComprehensiveProgress() {
                           </div>
 
                           {/* 심사사/조사사: 두 개의 PDF 팝업 버튼 표시 */}
-                          {(user?.role === "심사사" || user?.role === "조사사") ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "16px" }}>
+                          {user?.role === "심사사" ||
+                          user?.role === "조사사" ? (
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "8px",
+                                marginTop: "16px",
+                              }}
+                            >
                               <button
                                 onClick={async () => {
                                   setShowFieldReportPdfDialog(true);
@@ -2595,15 +2628,28 @@ export default function ComprehensiveProgress() {
                                   setPdfError(null);
                                   setFieldReportPdfData(null);
                                   try {
-                                    const response = await fetch(`/api/view-field-report-pdf/${selectedCase.id}`, { credentials: "include" });
+                                    const response = await fetch(
+                                      `/api/view-field-report-pdf/${selectedCase.id}`,
+                                      { credentials: "include" },
+                                    );
                                     if (!response.ok) {
-                                      const errData = await response.json().catch(() => null);
-                                      throw new Error(errData?.error || `PDF 생성 실패 (${response.status})`);
+                                      const errData = await response
+                                        .json()
+                                        .catch(() => null);
+                                      throw new Error(
+                                        errData?.error ||
+                                          `PDF 생성 실패 (${response.status})`,
+                                      );
                                     }
-                                    const arrayBuffer = await response.arrayBuffer();
+                                    const arrayBuffer =
+                                      await response.arrayBuffer();
                                     setFieldReportPdfData(arrayBuffer);
                                   } catch (err) {
-                                    setPdfError(err instanceof Error ? err.message : "PDF를 불러올 수 없습니다");
+                                    setPdfError(
+                                      err instanceof Error
+                                        ? err.message
+                                        : "PDF를 불러올 수 없습니다",
+                                    );
                                   } finally {
                                     setPdfLoading(false);
                                   }
@@ -2631,32 +2677,77 @@ export default function ComprehensiveProgress() {
                                   setPdfError(null);
                                   setInvoicePdfData(null);
                                   try {
-                                    const response = await fetch(`/api/view-invoice-pdf/${selectedCase.id}`, { credentials: "include" });
+                                    const response = await fetch(
+                                      `/api/view-invoice-pdf/${selectedCase.id}`,
+                                      { credentials: "include" },
+                                    );
                                     if (!response.ok) {
-                                      const errData = await response.json().catch(() => null);
-                                      throw new Error(errData?.error || `PDF 생성 실패 (${response.status})`);
+                                      const errData = await response
+                                        .json()
+                                        .catch(() => null);
+                                      throw new Error(
+                                        errData?.error ||
+                                          `PDF 생성 실패 (${response.status})`,
+                                      );
                                     }
-                                    const arrayBuffer = await response.arrayBuffer();
+                                    const arrayBuffer =
+                                      await response.arrayBuffer();
                                     setInvoicePdfData(arrayBuffer);
                                   } catch (err) {
-                                    setPdfError(err instanceof Error ? err.message : "PDF를 불러올 수 없습니다");
+                                    setPdfError(
+                                      err instanceof Error
+                                        ? err.message
+                                        : "PDF를 불러올 수 없습니다",
+                                    );
                                   } finally {
                                     setPdfLoading(false);
                                   }
                                 }}
-                                disabled={!["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "")}
+                                disabled={
+                                  ![
+                                    "청구",
+                                    "입금완료",
+                                    "부분입금",
+                                    "정산완료",
+                                    "종결",
+                                  ].includes(selectedCase.status || "")
+                                }
                                 style={{
                                   width: "100%",
                                   padding: "14px",
-                                  background: ["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "") ? "#008FED" : "#ccc",
+                                  background: [
+                                    "청구",
+                                    "입금완료",
+                                    "부분입금",
+                                    "정산완료",
+                                    "종결",
+                                  ].includes(selectedCase.status || "")
+                                    ? "#008FED"
+                                    : "#ccc",
                                   borderRadius: "8px",
                                   border: "none",
                                   fontFamily: "Pretendard",
                                   fontWeight: 600,
                                   fontSize: "16px",
                                   color: "#FFFFFF",
-                                  cursor: ["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "") ? "pointer" : "not-allowed",
-                                  opacity: ["청구", "입금완료", "부분입금", "정산완료", "종결"].includes(selectedCase.status || "") ? 1 : 0.6,
+                                  cursor: [
+                                    "청구",
+                                    "입금완료",
+                                    "부분입금",
+                                    "정산완료",
+                                    "종결",
+                                  ].includes(selectedCase.status || "")
+                                    ? "pointer"
+                                    : "not-allowed",
+                                  opacity: [
+                                    "청구",
+                                    "입금완료",
+                                    "부분입금",
+                                    "정산완료",
+                                    "종결",
+                                  ].includes(selectedCase.status || "")
+                                    ? 1
+                                    : 0.6,
                                 }}
                                 data-testid="button-view-invoice-pdf"
                               >
@@ -2737,7 +2828,7 @@ export default function ComprehensiveProgress() {
                             },
                             { label: "청구일", value: selectedCase?.claimDate },
                             {
-                              label: "일부입금일",
+                              label: "일부입금일(최초)",
                               value: selectedCase?.partialPaymentDate,
                             },
                             {
@@ -2745,7 +2836,7 @@ export default function ComprehensiveProgress() {
                               value: selectedCase?.paymentCompletedDate,
                             },
                             {
-                              label: "정산완료일",
+                              label: "지급완료일(정산)",
                               value: selectedCase?.settlementCompletedDate,
                             },
                           ].map((item) => (
@@ -3378,7 +3469,11 @@ export default function ComprehensiveProgress() {
                                   type="checkbox"
                                   checked={true}
                                   readOnly
-                                  style={{ accentColor: "#008FED", width: "14px", height: "14px" }}
+                                  style={{
+                                    accentColor: "#008FED",
+                                    width: "14px",
+                                    height: "14px",
+                                  }}
                                 />
                                 <div
                                   style={{
@@ -3425,82 +3520,127 @@ export default function ComprehensiveProgress() {
                                   </div>
                                   <select
                                     value={lmsMessageType}
-                                    onChange={(e) => setLmsMessageType(e.target.value)}
+                                    onChange={(e) =>
+                                      setLmsMessageType(e.target.value)
+                                    }
                                     style={{
                                       flex: 1,
                                       minWidth: "140px",
                                       padding: "8px 12px",
                                       background: "#FFFFFF",
-                                      border: "1px solid rgba(12, 12, 12, 0.15)",
+                                      border:
+                                        "1px solid rgba(12, 12, 12, 0.15)",
                                       borderRadius: "6px",
                                       fontFamily: "Pretendard",
                                       fontSize: "13px",
-                                      color: lmsMessageType ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.4)",
+                                      color: lmsMessageType
+                                        ? "rgba(12, 12, 12, 0.9)"
+                                        : "rgba(12, 12, 12, 0.4)",
                                     }}
                                     data-testid="select-lms-message-type"
                                   >
                                     <option value="">내용을 선택하세요</option>
-                                    <option value="청구금액 독촉">청구금액 독촉</option>
-                                    <option value="중복보험 일부금 독촉">중복보험 일부금 독촉</option>
+                                    <option value="청구금액 독촉">
+                                      청구금액 독촉
+                                    </option>
+                                    <option value="중복보험 일부금 독촉">
+                                      중복보험 일부금 독촉
+                                    </option>
                                   </select>
 
                                   <select
                                     value={lmsRecipientType}
-                                    onChange={(e) => setLmsRecipientType(e.target.value)}
+                                    onChange={(e) =>
+                                      setLmsRecipientType(e.target.value)
+                                    }
                                     style={{
                                       minWidth: "140px",
                                       padding: "8px 12px",
                                       background: "#FFFFFF",
-                                      border: "1px solid rgba(12, 12, 12, 0.15)",
+                                      border:
+                                        "1px solid rgba(12, 12, 12, 0.15)",
                                       borderRadius: "6px",
                                       fontFamily: "Pretendard",
                                       fontSize: "13px",
-                                      color: lmsRecipientType ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.4)",
+                                      color: lmsRecipientType
+                                        ? "rgba(12, 12, 12, 0.9)"
+                                        : "rgba(12, 12, 12, 0.4)",
                                     }}
                                     data-testid="select-lms-recipient-type"
                                   >
                                     <option value="">수신자 선택</option>
                                     {selectedCase?.assessorTeam && (
                                       <option value="심사자">
-                                        심사자: {selectedCase.assessorId ? `(${selectedCase.assessorId}) ` : ""}{selectedCase.assessorTeam}
+                                        심사자:{" "}
+                                        {selectedCase.assessorId
+                                          ? `(${selectedCase.assessorId}) `
+                                          : ""}
+                                        {selectedCase.assessorTeam}
                                       </option>
                                     )}
                                     {selectedCase?.investigatorTeamName && (
                                       <option value="조사자">
-                                        조사자: {selectedCase.investigatorTeam ? `(${selectedCase.investigatorTeam}) ` : ""}{selectedCase.investigatorTeamName}
+                                        조사자:{" "}
+                                        {selectedCase.investigatorTeam
+                                          ? `(${selectedCase.investigatorTeam}) `
+                                          : ""}
+                                        {selectedCase.investigatorTeamName}
                                       </option>
                                     )}
-                                    {!selectedCase?.assessorTeam && !selectedCase?.investigatorTeamName && (
-                                      <option value="" disabled>배정된 심사자/조사자가 없습니다</option>
-                                    )}
+                                    {!selectedCase?.assessorTeam &&
+                                      !selectedCase?.investigatorTeamName && (
+                                        <option value="" disabled>
+                                          배정된 심사자/조사자가 없습니다
+                                        </option>
+                                      )}
                                   </select>
                                 </div>
 
-                                <div style={{ display: "flex", justifyContent: "center" }}>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                  }}
+                                >
                                   <button
                                     onClick={() => {
                                       if (lmsMessageType && lmsRecipientType) {
                                         setShowLmsConfirmDialog(true);
                                       }
                                     }}
-                                    disabled={!lmsMessageType || !lmsRecipientType || sendLmsMutation.isPending}
+                                    disabled={
+                                      !lmsMessageType ||
+                                      !lmsRecipientType ||
+                                      sendLmsMutation.isPending
+                                    }
                                     style={{
                                       display: "flex",
                                       alignItems: "center",
                                       gap: "6px",
                                       padding: "8px 20px",
-                                      background: lmsMessageType && lmsRecipientType ? "#008FED" : "rgba(12, 12, 12, 0.15)",
+                                      background:
+                                        lmsMessageType && lmsRecipientType
+                                          ? "#008FED"
+                                          : "rgba(12, 12, 12, 0.15)",
                                       border: "none",
                                       borderRadius: "6px",
                                       fontFamily: "Pretendard",
                                       fontWeight: 600,
                                       fontSize: "13px",
-                                      color: lmsMessageType && lmsRecipientType ? "#FFFFFF" : "rgba(12, 12, 12, 0.4)",
-                                      cursor: lmsMessageType && lmsRecipientType ? "pointer" : "not-allowed",
+                                      color:
+                                        lmsMessageType && lmsRecipientType
+                                          ? "#FFFFFF"
+                                          : "rgba(12, 12, 12, 0.4)",
+                                      cursor:
+                                        lmsMessageType && lmsRecipientType
+                                          ? "pointer"
+                                          : "not-allowed",
                                     }}
                                     data-testid="button-send-lms"
                                   >
-                                    {sendLmsMutation.isPending ? "발송 중..." : "발송하기"}
+                                    {sendLmsMutation.isPending
+                                      ? "발송 중..."
+                                      : "발송하기"}
                                   </button>
                                 </div>
                               </div>
@@ -3510,8 +3650,14 @@ export default function ComprehensiveProgress() {
                                 let lmsHistory: any[] = [];
                                 try {
                                   if (selectedCase.lmsSendHistory) {
-                                    lmsHistory = JSON.parse(selectedCase.lmsSendHistory as string);
-                                    lmsHistory.sort((a: any, b: any) => (b.sentAt || "").localeCompare(a.sentAt || ""));
+                                    lmsHistory = JSON.parse(
+                                      selectedCase.lmsSendHistory as string,
+                                    );
+                                    lmsHistory.sort((a: any, b: any) =>
+                                      (b.sentAt || "").localeCompare(
+                                        a.sentAt || "",
+                                      ),
+                                    );
                                   }
                                 } catch {}
 
@@ -3536,7 +3682,8 @@ export default function ComprehensiveProgress() {
                                       <thead>
                                         <tr
                                           style={{
-                                            background: "rgba(12, 12, 12, 0.04)",
+                                            background:
+                                              "rgba(12, 12, 12, 0.04)",
                                             position: "sticky",
                                             top: 0,
                                           }}
@@ -3547,7 +3694,8 @@ export default function ComprehensiveProgress() {
                                               textAlign: "left",
                                               fontWeight: 600,
                                               color: "rgba(12, 12, 12, 0.7)",
-                                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                                              borderBottom:
+                                                "1px solid rgba(12, 12, 12, 0.1)",
                                               whiteSpace: "nowrap",
                                             }}
                                           >
@@ -3559,7 +3707,8 @@ export default function ComprehensiveProgress() {
                                               textAlign: "left",
                                               fontWeight: 600,
                                               color: "rgba(12, 12, 12, 0.7)",
-                                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                                              borderBottom:
+                                                "1px solid rgba(12, 12, 12, 0.1)",
                                               whiteSpace: "nowrap",
                                             }}
                                           >
@@ -3571,7 +3720,8 @@ export default function ComprehensiveProgress() {
                                               textAlign: "left",
                                               fontWeight: 600,
                                               color: "rgba(12, 12, 12, 0.7)",
-                                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                                              borderBottom:
+                                                "1px solid rgba(12, 12, 12, 0.1)",
                                               whiteSpace: "nowrap",
                                             }}
                                           >
@@ -3594,40 +3744,49 @@ export default function ComprehensiveProgress() {
                                             </td>
                                           </tr>
                                         ) : (
-                                          lmsHistory.map((entry: any, idx: number) => (
-                                            <tr
-                                              key={entry.id || idx}
-                                              style={{
-                                                borderBottom: idx < lmsHistory.length - 1 ? "1px solid rgba(12, 12, 12, 0.06)" : "none",
-                                              }}
-                                            >
-                                              <td
+                                          lmsHistory.map(
+                                            (entry: any, idx: number) => (
+                                              <tr
+                                                key={entry.id || idx}
                                                 style={{
-                                                  padding: "10px 12px",
-                                                  color: "rgba(12, 12, 12, 0.8)",
-                                                  whiteSpace: "nowrap",
+                                                  borderBottom:
+                                                    idx < lmsHistory.length - 1
+                                                      ? "1px solid rgba(12, 12, 12, 0.06)"
+                                                      : "none",
                                                 }}
                                               >
-                                                {entry.sentAt || ""}
-                                              </td>
-                                              <td
-                                                style={{
-                                                  padding: "10px 12px",
-                                                  color: "rgba(12, 12, 12, 0.8)",
-                                                }}
-                                              >
-                                                {entry.messageType || ""}
-                                              </td>
-                                              <td
-                                                style={{
-                                                  padding: "10px 12px",
-                                                  color: "rgba(12, 12, 12, 0.8)",
-                                                }}
-                                              >
-                                                {entry.recipientCompany} {entry.recipientName}
-                                              </td>
-                                            </tr>
-                                          ))
+                                                <td
+                                                  style={{
+                                                    padding: "10px 12px",
+                                                    color:
+                                                      "rgba(12, 12, 12, 0.8)",
+                                                    whiteSpace: "nowrap",
+                                                  }}
+                                                >
+                                                  {entry.sentAt || ""}
+                                                </td>
+                                                <td
+                                                  style={{
+                                                    padding: "10px 12px",
+                                                    color:
+                                                      "rgba(12, 12, 12, 0.8)",
+                                                  }}
+                                                >
+                                                  {entry.messageType || ""}
+                                                </td>
+                                                <td
+                                                  style={{
+                                                    padding: "10px 12px",
+                                                    color:
+                                                      "rgba(12, 12, 12, 0.8)",
+                                                  }}
+                                                >
+                                                  {entry.recipientCompany}{" "}
+                                                  {entry.recipientName}
+                                                </td>
+                                              </tr>
+                                            ),
+                                          )
                                         )}
                                       </tbody>
                                     </table>
@@ -3646,14 +3805,19 @@ export default function ComprehensiveProgress() {
         </SheetContent>
       </Sheet>
       {/* LMS 발송 확인 다이얼로그 */}
-      <AlertDialog open={showLmsConfirmDialog} onOpenChange={setShowLmsConfirmDialog}>
+      <AlertDialog
+        open={showLmsConfirmDialog}
+        onOpenChange={setShowLmsConfirmDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>LMS 발송 확인</AlertDialogTitle>
             <AlertDialogDescription>
               {(() => {
                 if (!selectedCaseId) return "";
-                const caseItem = cases?.find((c: CaseWithLatestProgress) => c.id === selectedCaseId);
+                const caseItem = cases?.find(
+                  (c: CaseWithLatestProgress) => c.id === selectedCaseId,
+                );
                 if (!caseItem) return "";
                 let recipientCompany = "";
                 let recipientName = "";
@@ -4154,35 +4318,69 @@ export default function ComprehensiveProgress() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Dialog open={showFieldReportPdfDialog} onOpenChange={(open) => {
-        setShowFieldReportPdfDialog(open);
-        if (!open) {
-          setFieldReportPdfData(null);
-          setPdfError(null);
-        }
-      }}>
-        <DialogContent style={{ maxWidth: "95vw", width: "1100px", height: "90vh", padding: 0, display: "flex", flexDirection: "column" }}>
+      <Dialog
+        open={showFieldReportPdfDialog}
+        onOpenChange={(open) => {
+          setShowFieldReportPdfDialog(open);
+          if (!open) {
+            setFieldReportPdfData(null);
+            setPdfError(null);
+          }
+        }}
+      >
+        <DialogContent
+          style={{
+            maxWidth: "95vw",
+            width: "1100px",
+            height: "90vh",
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <DialogHeader className="sr-only">
             <DialogTitle>현장출동보고서 PDF</DialogTitle>
           </DialogHeader>
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <PdfCanvasViewer pdfData={fieldReportPdfData} loading={pdfLoading} error={pdfError} fileName="현장출동보고서.pdf" />
+            <PdfCanvasViewer
+              pdfData={fieldReportPdfData}
+              loading={pdfLoading}
+              error={pdfError}
+              fileName="현장출동보고서.pdf"
+            />
           </div>
         </DialogContent>
       </Dialog>
-      <Dialog open={showInvoicePdfDialog} onOpenChange={(open) => {
-        setShowInvoicePdfDialog(open);
-        if (!open) {
-          setInvoicePdfData(null);
-          setPdfError(null);
-        }
-      }}>
-        <DialogContent style={{ maxWidth: "95vw", width: "1100px", height: "90vh", padding: 0, display: "flex", flexDirection: "column" }}>
+      <Dialog
+        open={showInvoicePdfDialog}
+        onOpenChange={(open) => {
+          setShowInvoicePdfDialog(open);
+          if (!open) {
+            setInvoicePdfData(null);
+            setPdfError(null);
+          }
+        }}
+      >
+        <DialogContent
+          style={{
+            maxWidth: "95vw",
+            width: "1100px",
+            height: "90vh",
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
           <DialogHeader className="sr-only">
             <DialogTitle>Invoice(청구서) PDF</DialogTitle>
           </DialogHeader>
           <div style={{ flex: 1, overflow: "hidden" }}>
-            <PdfCanvasViewer pdfData={invoicePdfData} loading={pdfLoading} error={pdfError} fileName="Invoice_청구서.pdf" />
+            <PdfCanvasViewer
+              pdfData={invoicePdfData}
+              loading={pdfLoading}
+              error={pdfError}
+              fileName="Invoice_청구서.pdf"
+            />
           </div>
         </DialogContent>
       </Dialog>
