@@ -386,6 +386,9 @@ export default function Dashboard() {
       existing.reception++;
     });
 
+    const INSURANCE_SETTLED = ["정산완료", "입금완료", "종결", "접수취소"];
+    const PARTNER_SETTLED = ["정산완료", "종결", "접수취소"];
+
     activeCases.forEach((c) => {
       const companyName = c.insuranceCompany || "미지정";
       const existing = companyCounts.get(companyName)!;
@@ -395,14 +398,10 @@ export default function Dashboard() {
         c.status !== "부분입금" &&
         c.status !== "정산완료" &&
         c.status !== "접수취소" &&
+        c.status !== "종결" &&
         c.status !== "취소";
-      const insuranceStatus = (c as any).insuranceSettlementStatus;
-      const partnerStatus = (c as any).partnerSettlementStatus;
-      const isInsuranceUnsettled =
-        c.status === "완료" &&
-        (!insuranceStatus || insuranceStatus === "미정산");
-      const isPartnerUnsettled =
-        c.status === "완료" && (!partnerStatus || partnerStatus === "미정산");
+      const isInsuranceUnsettled = !INSURANCE_SETTLED.includes(c.status);
+      const isPartnerUnsettled = !PARTNER_SETTLED.includes(c.status);
       if (isPending) existing.pending++;
       if (isInsuranceUnsettled) existing.insuranceUnsettled++;
       if (isPartnerUnsettled) existing.partnerUnsettled++;
@@ -1050,8 +1049,7 @@ export default function Dashboard() {
                                 <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
                                 <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 hidden group-hover/ins:block">
                                   <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
-                                    청구자료 제출 건 중 보험사 미입금
-                                    <br />
+                                    접수완료 ~ 부분입금 상태의 건 (오늘 기준)
                                     <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
                                   </div>
                                 </div>
@@ -1065,7 +1063,7 @@ export default function Dashboard() {
                                 <HelpCircle className="h-3.5 w-3.5 text-slate-400 cursor-help" />
                                 <div className="absolute right-0 top-full mt-1.5 z-50 hidden group-hover/partner:block">
                                   <div className="bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
-                                    보험사 입금 건 중 계산서 미발행
+                                    접수완료 ~ 부분입금/일부지급 상태의 건 (오늘 기준)
                                     <div className="absolute right-2 -top-1 w-2 h-2 bg-slate-800 rotate-45" />
                                   </div>
                                 </div>
