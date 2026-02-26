@@ -345,8 +345,9 @@ export function SmsNotificationDialog({
 
 위 접수건이 종결되었음을 알려드립니다.
 지급금액 : (정산조회 데이터)원
+자기부담금 : (정산조회 데이터)원
 수수료 : (정산조회 데이터)원
-합계금액 : (지급금액+수수료)원`;
+합계금액 : (지급금액+자기부담금+수수료)원`;
     } else {
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}

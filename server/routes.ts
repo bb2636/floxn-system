@@ -13254,10 +13254,15 @@ https://www.floxn.co.kr/
             : 0;
         }
 
-        const totalAmountNum = paymentAmountNum + commissionNum;
+        const deductibleNum = latestSettlement?.deductible
+          ? Number(latestSettlement.deductible)
+          : 0;
+        const totalAmountNum = paymentAmountNum + commissionNum + deductibleNum;
 
         const paymentAmountStr =
           paymentAmountNum > 0 ? paymentAmountNum.toLocaleString() : "-";
+        const deductibleStr =
+          deductibleNum > 0 ? deductibleNum.toLocaleString() : "-";
         const commissionStr =
           commissionNum > 0 ? commissionNum.toLocaleString() : "-";
         const totalAmountStr =
@@ -13272,6 +13277,7 @@ https://www.floxn.co.kr/
 사고장소 : ${getFullAddress()}
 
 지급금액 : ${paymentAmountStr}원
+자기부담금 : ${deductibleStr}원
 수수료 : ${commissionStr}원
 합계금액 : ${totalAmountStr}원`;
       } else if (stage === "반려" || stage === "승인반려") {
