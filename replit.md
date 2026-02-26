@@ -91,7 +91,7 @@ The system is a full-stack web application utilizing a React-based frontend and 
   - Date picker to select a historical date (defaults to 7 days ago)
   - Shows which cases were 미결건 (pending) at the selected past date
   - API endpoint: GET `/api/case-status-history`
-  - CLOSED_STATUSES = ["정산완료", "입금완료", "부분입금", "접수취소"] - everything else is 미결건
+  - CLOSED_STATUSES = ["정산완료", "입금완료", "부분입금", "접수취소", "종결"] - everything else is 미결건
 
 ## Recent Changes (2026-01-14)
 - **Dashboard Complete Redesign**: Redesigned dashboard with new layout and styling

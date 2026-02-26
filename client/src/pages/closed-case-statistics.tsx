@@ -9,7 +9,7 @@ import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-const CLOSED_STATUSES = ["정산완료", "입금완료", "부분입금", "접수취소"];
+const CLOSED_STATUSES = ["정산완료", "입금완료", "부분입금", "접수취소", "종결"];
 
 const isClosed = (c: Case): boolean => CLOSED_STATUSES.includes(c.status);
 
@@ -25,6 +25,9 @@ const getClosedDate = (c: Case, settlement?: Settlement): string | null => {
   }
   if (c.status === "접수취소") {
     return c.cancellationDate || null;
+  }
+  if (c.status === "종결") {
+    return c.settlementCompletedDate || settlement?.settlementDate || null;
   }
   return c.settlementCompletedDate || c.paymentCompletedDate || c.partialPaymentDate || null;
 };
