@@ -12662,52 +12662,46 @@ Front·Line·Ops·Xpert·Net
           .filter((v) => v.isProperty && v.recoveryType === "직접복구")
           .reduce((sum, v) => sum + v.approvedValue, 0);
 
-        if (allNoRepair) {
-          // 선견적요청(출동비 청구) 건: fieldDispatchInvoiceAmount 사용
-          const fieldDispatchAmount = parseAmt(caseData.fieldDispatchInvoiceAmount);
-          claimAmountText = fieldDispatchAmount > 0
-            ? `${fieldDispatchAmount.toLocaleString()}원`
-            : "";
-        } else {
-          const calculatedTotalApproved = hasDirectRepair
-            ? preventionApproved + propertyApproved
+        const calculatedTotalApproved = hasDirectRepair
+          ? preventionApproved + propertyApproved
+          : allNoRepair
+            ? 100000
             : 0;
 
-          // 자기부담금 합산 (정산 테이블)
-          let totalSettlementDeductible = 0;
-          for (const c of allCasesInGroup) {
-            try {
-              const setts = await storage.getSettlementsByCaseId(c.id);
-              for (const s of setts) {
-                totalSettlementDeductible += parseAmt(s.deductible);
-              }
-            } catch {}
-          }
-
-          // 인보이스에 저장된 값이 있으면 우선 사용
-          let invoiceTotalApproved = 0;
-          let invoiceDeductible = 0;
+        // 자기부담금 합산 (정산 테이블)
+        let totalSettlementDeductible = 0;
+        for (const c of allCasesInGroup) {
           try {
-            const invoice = await storage.getInvoiceByCaseGroupPrefix(prefix);
-            if (invoice) {
-              invoiceTotalApproved = invoice.totalApprovedAmount
-                ? parseInt(invoice.totalApprovedAmount)
-                : 0;
-              invoiceDeductible = invoice.deductible
-                ? parseInt(invoice.deductible)
-                : 0;
+            const setts = await storage.getSettlementsByCaseId(c.id);
+            for (const s of setts) {
+              totalSettlementDeductible += parseAmt(s.deductible);
             }
           } catch {}
-
-          const finalApproved =
-            invoiceTotalApproved > 0
-              ? invoiceTotalApproved
-              : calculatedTotalApproved;
-          const finalDeductible =
-            invoiceDeductible > 0 ? invoiceDeductible : totalSettlementDeductible;
-          const claimAmount = finalApproved - finalDeductible;
-          claimAmountText = `${claimAmount.toLocaleString()}원`;
         }
+
+        // 인보이스에 저장된 값이 있으면 우선 사용
+        let invoiceTotalApproved = 0;
+        let invoiceDeductible = 0;
+        try {
+          const invoice = await storage.getInvoiceByCaseGroupPrefix(prefix);
+          if (invoice) {
+            invoiceTotalApproved = invoice.totalApprovedAmount
+              ? parseInt(invoice.totalApprovedAmount)
+              : 0;
+            invoiceDeductible = invoice.deductible
+              ? parseInt(invoice.deductible)
+              : 0;
+          }
+        } catch {}
+
+        const finalApproved =
+          invoiceTotalApproved > 0
+            ? invoiceTotalApproved
+            : calculatedTotalApproved;
+        const finalDeductible =
+          invoiceDeductible > 0 ? invoiceDeductible : totalSettlementDeductible;
+        const claimAmount = finalApproved - finalDeductible;
+        claimAmountText = `${claimAmount.toLocaleString()}원`;
       } catch {
         claimAmountText = caseData.estimateAmount || "";
       }
