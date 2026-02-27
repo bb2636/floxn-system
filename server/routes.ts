@@ -12848,6 +12848,64 @@ Front·Line·Ops·Xpert·Net
   });
 
   // ==========================================
+  // POST /api/cases/:id/manual-history - 진행관리 수기 이력 추가
+  // ==========================================
+  const manualHistorySchema = z.object({
+    date: z.string().min(1),
+    content: z.string().min(1),
+    recipient: z.string().optional().default(""),
+  });
+
+  app.post("/api/cases/:id/manual-history", async (req, res) => {
+    try {
+      if (!req.session?.user) {
+        return res.status(401).json({ error: "인증이 필요합니다" });
+      }
+
+      const caseId = parseInt(req.params.id);
+      const { date, content, recipient } = manualHistorySchema.parse(req.body);
+
+      const caseData = await storage.getCase(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "사건을 찾을 수 없습니다" });
+      }
+
+      const newEntry = {
+        id: `manual-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        sentAt: date,
+        messageType: content,
+        recipientType: "수기입력",
+        recipientCompany: "",
+        recipientName: recipient,
+        recipientPhone: "",
+        senderName: req.session.user.name || req.session.user.username,
+        isManual: true,
+      };
+
+      let history: any[] = [];
+      try {
+        if (caseData.lmsSendHistory) {
+          history = JSON.parse(caseData.lmsSendHistory as string);
+        }
+      } catch {}
+
+      history.unshift(newEntry);
+
+      await storage.updateCase(caseId, {
+        lmsSendHistory: JSON.stringify(history),
+      });
+
+      res.json({ success: true, message: "수기 이력이 추가되었습니다", entry: newEntry });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다" });
+      }
+      console.error("[manual-history] Error:", error);
+      res.status(500).json({ error: "수기 이력 추가에 실패했습니다" });
+    }
+  });
+
+  // ==========================================
   // POST /api/send-account-notification - 계정 생성 안내 발송 (이메일/SMS)
   // ==========================================
   const accountNotificationSchema = z.object({

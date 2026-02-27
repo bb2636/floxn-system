@@ -740,6 +740,10 @@ export default function ComprehensiveProgress() {
   const [lmsMessageType, setLmsMessageType] = useState("");
   const [lmsRecipientType, setLmsRecipientType] = useState("");
   const [showLmsConfirmDialog, setShowLmsConfirmDialog] = useState(false);
+  const [showManualHistoryForm, setShowManualHistoryForm] = useState(false);
+  const [manualHistoryDate, setManualHistoryDate] = useState("");
+  const [manualHistoryContent, setManualHistoryContent] = useState("");
+  const [manualHistoryRecipient, setManualHistoryRecipient] = useState("");
 
   const sendLmsMutation = useMutation({
     mutationFn: async ({
@@ -771,6 +775,44 @@ export default function ComprehensiveProgress() {
       toast({
         title: "LMS 발송 실패",
         description: error?.message || "LMS 발송 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addManualHistoryMutation = useMutation({
+    mutationFn: async ({
+      caseId,
+      date,
+      content,
+      recipient,
+    }: {
+      caseId: string;
+      date: string;
+      content: string;
+      recipient: string;
+    }) => {
+      return await apiRequest("POST", `/api/cases/${caseId}/manual-history`, {
+        date,
+        content,
+        recipient,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      setShowManualHistoryForm(false);
+      setManualHistoryDate("");
+      setManualHistoryContent("");
+      setManualHistoryRecipient("");
+      toast({
+        variant: "snackbar",
+        title: "수기 이력이 추가되었습니다",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "수기 이력 추가 실패",
+        description: error?.message || "수기 이력 추가 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     },
@@ -3655,6 +3697,7 @@ export default function ComprehensiveProgress() {
                                   style={{
                                     display: "flex",
                                     justifyContent: "center",
+                                    gap: "8px",
                                   }}
                                 >
                                   <button
@@ -3697,7 +3740,235 @@ export default function ComprehensiveProgress() {
                                       ? "발송 중..."
                                       : "발송하기"}
                                   </button>
+                                  <button
+                                    onClick={() => {
+                                      setShowManualHistoryForm(!showManualHistoryForm);
+                                      if (!manualHistoryDate) {
+                                        const now = new Date();
+                                        const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+                                        setManualHistoryDate(kst.toISOString().slice(0, 10));
+                                      }
+                                    }}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "6px",
+                                      padding: "8px 20px",
+                                      background: showManualHistoryForm
+                                        ? "rgba(12, 12, 12, 0.08)"
+                                        : "#FFFFFF",
+                                      border: "1px solid rgba(12, 12, 12, 0.15)",
+                                      borderRadius: "6px",
+                                      fontFamily: "Pretendard",
+                                      fontWeight: 600,
+                                      fontSize: "13px",
+                                      color: "rgba(12, 12, 12, 0.7)",
+                                      cursor: "pointer",
+                                    }}
+                                    data-testid="button-toggle-manual-history"
+                                  >
+                                    수기입력
+                                  </button>
                                 </div>
+
+                                {showManualHistoryForm && (
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: "8px",
+                                      padding: "12px",
+                                      background: "#FFFFFF",
+                                      border: "1px solid rgba(12, 12, 12, 0.12)",
+                                      borderRadius: "6px",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: "8px",
+                                        alignItems: "center",
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          fontFamily: "Pretendard",
+                                          fontSize: "12px",
+                                          fontWeight: 500,
+                                          color: "rgba(12, 12, 12, 0.5)",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
+                                        일자
+                                      </div>
+                                      <input
+                                        type="date"
+                                        value={manualHistoryDate}
+                                        onChange={(e) => setManualHistoryDate(e.target.value)}
+                                        style={{
+                                          padding: "6px 10px",
+                                          background: "#FFFFFF",
+                                          border: "1px solid rgba(12, 12, 12, 0.15)",
+                                          borderRadius: "6px",
+                                          fontFamily: "Pretendard",
+                                          fontSize: "13px",
+                                          color: "rgba(12, 12, 12, 0.9)",
+                                          minWidth: "130px",
+                                        }}
+                                        data-testid="input-manual-history-date"
+                                      />
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: "8px",
+                                        alignItems: "center",
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          fontFamily: "Pretendard",
+                                          fontSize: "12px",
+                                          fontWeight: 500,
+                                          color: "rgba(12, 12, 12, 0.5)",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
+                                        내용
+                                      </div>
+                                      <input
+                                        type="text"
+                                        value={manualHistoryContent}
+                                        onChange={(e) => setManualHistoryContent(e.target.value)}
+                                        placeholder="이력 내용을 입력하세요"
+                                        style={{
+                                          flex: 1,
+                                          minWidth: "140px",
+                                          padding: "6px 10px",
+                                          background: "#FFFFFF",
+                                          border: "1px solid rgba(12, 12, 12, 0.15)",
+                                          borderRadius: "6px",
+                                          fontFamily: "Pretendard",
+                                          fontSize: "13px",
+                                          color: "rgba(12, 12, 12, 0.9)",
+                                        }}
+                                        data-testid="input-manual-history-content"
+                                      />
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: "8px",
+                                        alignItems: "center",
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          fontFamily: "Pretendard",
+                                          fontSize: "12px",
+                                          fontWeight: 500,
+                                          color: "rgba(12, 12, 12, 0.5)",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
+                                        수신자
+                                      </div>
+                                      <input
+                                        type="text"
+                                        value={manualHistoryRecipient}
+                                        onChange={(e) => setManualHistoryRecipient(e.target.value)}
+                                        placeholder="수신자 (선택)"
+                                        style={{
+                                          flex: 1,
+                                          minWidth: "140px",
+                                          padding: "6px 10px",
+                                          background: "#FFFFFF",
+                                          border: "1px solid rgba(12, 12, 12, 0.15)",
+                                          borderRadius: "6px",
+                                          fontFamily: "Pretendard",
+                                          fontSize: "13px",
+                                          color: "rgba(12, 12, 12, 0.9)",
+                                        }}
+                                        data-testid="input-manual-history-recipient"
+                                      />
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "flex-end",
+                                        gap: "6px",
+                                      }}
+                                    >
+                                      <button
+                                        onClick={() => {
+                                          setShowManualHistoryForm(false);
+                                          setManualHistoryDate("");
+                                          setManualHistoryContent("");
+                                          setManualHistoryRecipient("");
+                                        }}
+                                        style={{
+                                          padding: "6px 14px",
+                                          background: "#FFFFFF",
+                                          border: "1px solid rgba(12, 12, 12, 0.15)",
+                                          borderRadius: "6px",
+                                          fontFamily: "Pretendard",
+                                          fontWeight: 500,
+                                          fontSize: "12px",
+                                          color: "rgba(12, 12, 12, 0.6)",
+                                          cursor: "pointer",
+                                        }}
+                                        data-testid="button-cancel-manual-history"
+                                      >
+                                        취소
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          if (selectedCase && manualHistoryDate && manualHistoryContent) {
+                                            addManualHistoryMutation.mutate({
+                                              caseId: String(selectedCase.id),
+                                              date: manualHistoryDate,
+                                              content: manualHistoryContent,
+                                              recipient: manualHistoryRecipient,
+                                            });
+                                          }
+                                        }}
+                                        disabled={
+                                          !manualHistoryDate ||
+                                          !manualHistoryContent ||
+                                          addManualHistoryMutation.isPending
+                                        }
+                                        style={{
+                                          padding: "6px 14px",
+                                          background:
+                                            manualHistoryDate && manualHistoryContent
+                                              ? "#008FED"
+                                              : "rgba(12, 12, 12, 0.15)",
+                                          border: "none",
+                                          borderRadius: "6px",
+                                          fontFamily: "Pretendard",
+                                          fontWeight: 600,
+                                          fontSize: "12px",
+                                          color:
+                                            manualHistoryDate && manualHistoryContent
+                                              ? "#FFFFFF"
+                                              : "rgba(12, 12, 12, 0.4)",
+                                          cursor:
+                                            manualHistoryDate && manualHistoryContent
+                                              ? "pointer"
+                                              : "not-allowed",
+                                        }}
+                                        data-testid="button-save-manual-history"
+                                      >
+                                        {addManualHistoryMutation.isPending
+                                          ? "저장 중..."
+                                          : "저장"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                               {/* LMS 발송 이력 테이블 */}
@@ -3827,6 +4098,21 @@ export default function ComprehensiveProgress() {
                                                       "rgba(12, 12, 12, 0.8)",
                                                   }}
                                                 >
+                                                  {entry.isManual && (
+                                                    <span
+                                                      style={{
+                                                        display: "inline-block",
+                                                        padding: "1px 5px",
+                                                        background: "rgba(12, 12, 12, 0.06)",
+                                                        borderRadius: "3px",
+                                                        fontSize: "11px",
+                                                        color: "rgba(12, 12, 12, 0.5)",
+                                                        marginRight: "4px",
+                                                      }}
+                                                    >
+                                                      수기
+                                                    </span>
+                                                  )}
                                                   {entry.messageType || ""}
                                                 </td>
                                                 <td
@@ -3836,8 +4122,9 @@ export default function ComprehensiveProgress() {
                                                       "rgba(12, 12, 12, 0.8)",
                                                   }}
                                                 >
-                                                  {entry.recipientCompany}{" "}
-                                                  {entry.recipientName}
+                                                  {entry.isManual
+                                                    ? (entry.recipientName || "")
+                                                    : (<>{entry.recipientCompany}{" "}{entry.recipientName}</>)}
                                                 </td>
                                               </tr>
                                             ),
