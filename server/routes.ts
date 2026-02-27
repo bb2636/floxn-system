@@ -12709,7 +12709,25 @@ Front·Line·Ops·Xpert·Net
       let messageText = "";
 
       if (messageType === "청구금액 지급요청") {
-        const invoiceDate = caseData.firstInvoiceDate || "";
+        let invoiceDate = "";
+        try {
+          const caseNumber = caseData.caseNumber || "";
+          const prefix = caseNumber.replace(/-\d+$/, "");
+          const relatedCases = await storage.getCasesByPrefix(prefix);
+          const relatedIds = relatedCases.map((c: any) => c.id);
+          for (const rid of relatedIds) {
+            const history = await storage.getStatusHistoryByCaseId(rid);
+            const submitEntry = history.find((h: any) => h.newStatus === "현장정보제출");
+            if (submitEntry) {
+              const dateStr = submitEntry.changedAt;
+              invoiceDate = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+              break;
+            }
+          }
+        } catch {}
+        if (!invoiceDate) {
+          invoiceDate = caseData.firstInvoiceDate || "";
+        }
         messageText = `[청구금액 지급요청]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건은 복구공사가 이미 완료되었으며, 공사금액 관련 자료는 ${invoiceDate} 이메일로 송부드린 바 있습니다.\n\n현재까지 공사금액 지급이 이루어지지 않아 확인 차 재안내 드리오니 신속한 검토 후 지급을 부탁드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 소재지: ${caseData.insuredAddress || ""}\n▷ 청구금액: ${claimAmountText}\n\n※ 문의사항이 있으신 경우 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시기 바랍니다.\n\n감사합니다.`;
       } else {
         // 중복보험 일부금 독촉
