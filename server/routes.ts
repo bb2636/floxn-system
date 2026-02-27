@@ -12858,7 +12858,12 @@ Front·Line·Ops·Xpert·Net
 
   app.post("/api/cases/:id/manual-history", async (req, res) => {
     try {
-      if (!req.session?.user) {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "인증이 필요합니다" });
+      }
+
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
         return res.status(401).json({ error: "인증이 필요합니다" });
       }
 
@@ -12878,7 +12883,7 @@ Front·Line·Ops·Xpert·Net
         recipientCompany: "",
         recipientName: recipient,
         recipientPhone: "",
-        senderName: req.session.user.name || req.session.user.username,
+        senderName: currentUser.name || currentUser.username,
         isManual: true,
       };
 
