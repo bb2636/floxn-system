@@ -3614,24 +3614,34 @@ export default function ComprehensiveProgress() {
                                     data-testid="select-lms-recipient-type"
                                   >
                                     <option value="">수신자 선택</option>
-                                    {selectedCase?.assessorTeam && (
-                                      <option value="심사자">
-                                        심사자:{" "}
-                                        {selectedCase.assessorId
-                                          ? `(${selectedCase.assessorId}) `
-                                          : ""}
-                                        {selectedCase.assessorTeam}
-                                      </option>
-                                    )}
-                                    {selectedCase?.investigatorTeamName && (
-                                      <option value="조사자">
-                                        조사자:{" "}
-                                        {selectedCase.investigatorTeam
-                                          ? `(${selectedCase.investigatorTeam}) `
-                                          : ""}
-                                        {selectedCase.investigatorTeamName}
-                                      </option>
-                                    )}
+                                    {selectedCase?.assessorTeam && (() => {
+                                      const phone = (selectedCase.assessorContact || "").replace(/[^0-9]/g, "");
+                                      const isValidMobile = /^01[016789]\d{7,8}$/.test(phone);
+                                      return (
+                                        <option value="심사자" disabled={!isValidMobile}>
+                                          심사자:{" "}
+                                          {selectedCase.assessorId
+                                            ? `(${selectedCase.assessorId}) `
+                                            : ""}
+                                          {selectedCase.assessorTeam}
+                                          {!isValidMobile ? " [연락처 없음]" : ""}
+                                        </option>
+                                      );
+                                    })()}
+                                    {selectedCase?.investigatorTeamName && (() => {
+                                      const phone = (selectedCase.investigatorContact || "").replace(/[^0-9]/g, "");
+                                      const isValidMobile = /^01[016789]\d{7,8}$/.test(phone);
+                                      return (
+                                        <option value="조사자" disabled={!isValidMobile}>
+                                          조사자:{" "}
+                                          {selectedCase.investigatorTeam
+                                            ? `(${selectedCase.investigatorTeam}) `
+                                            : ""}
+                                          {selectedCase.investigatorTeamName}
+                                          {!isValidMobile ? " [연락처 없음]" : ""}
+                                        </option>
+                                      );
+                                    })()}
                                     {!selectedCase?.assessorTeam &&
                                       !selectedCase?.investigatorTeamName && (
                                         <option value="" disabled>
