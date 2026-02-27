@@ -742,6 +742,7 @@ export default function ComprehensiveProgress() {
   const [showLmsConfirmDialog, setShowLmsConfirmDialog] = useState(false);
   const [showManualHistoryForm, setShowManualHistoryForm] = useState(false);
   const [manualHistoryDate, setManualHistoryDate] = useState("");
+  const [manualHistoryMedium, setManualHistoryMedium] = useState("");
   const [manualHistoryContent, setManualHistoryContent] = useState("");
   const [manualHistoryRecipient, setManualHistoryRecipient] = useState("");
 
@@ -784,16 +785,19 @@ export default function ComprehensiveProgress() {
     mutationFn: async ({
       caseId,
       date,
+      medium,
       content,
       recipient,
     }: {
       caseId: string;
       date: string;
+      medium: string;
       content: string;
       recipient: string;
     }) => {
       return await apiRequest("POST", `/api/cases/${caseId}/manual-history`, {
         date,
+        medium,
         content,
         recipient,
       });
@@ -802,6 +806,7 @@ export default function ComprehensiveProgress() {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       setShowManualHistoryForm(false);
       setManualHistoryDate("");
+      setManualHistoryMedium("");
       setManualHistoryContent("");
       setManualHistoryRecipient("");
       toast({
@@ -3836,6 +3841,49 @@ export default function ComprehensiveProgress() {
                                           whiteSpace: "nowrap",
                                         }}
                                       >
+                                        매체
+                                      </div>
+                                      <select
+                                        value={manualHistoryMedium}
+                                        onChange={(e) => setManualHistoryMedium(e.target.value)}
+                                        style={{
+                                          padding: "6px 10px",
+                                          background: "#FFFFFF",
+                                          border: "1px solid rgba(12, 12, 12, 0.15)",
+                                          borderRadius: "6px",
+                                          fontFamily: "Pretendard",
+                                          fontSize: "13px",
+                                          color: manualHistoryMedium
+                                            ? "rgba(12, 12, 12, 0.9)"
+                                            : "rgba(12, 12, 12, 0.4)",
+                                          minWidth: "130px",
+                                        }}
+                                        data-testid="select-manual-history-medium"
+                                      >
+                                        <option value="">매체 선택</option>
+                                        <option value="문자">문자</option>
+                                        <option value="카톡">카톡</option>
+                                        <option value="전화">전화</option>
+                                        <option value="이메일">이메일</option>
+                                      </select>
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        gap: "8px",
+                                        alignItems: "center",
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          fontFamily: "Pretendard",
+                                          fontSize: "12px",
+                                          fontWeight: 500,
+                                          color: "rgba(12, 12, 12, 0.5)",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
                                         내용
                                       </div>
                                       <input
@@ -3906,6 +3954,7 @@ export default function ComprehensiveProgress() {
                                         onClick={() => {
                                           setShowManualHistoryForm(false);
                                           setManualHistoryDate("");
+                                          setManualHistoryMedium("");
                                           setManualHistoryContent("");
                                           setManualHistoryRecipient("");
                                         }}
@@ -3930,6 +3979,7 @@ export default function ComprehensiveProgress() {
                                             addManualHistoryMutation.mutate({
                                               caseId: String(selectedCase.id),
                                               date: manualHistoryDate,
+                                              medium: manualHistoryMedium,
                                               content: manualHistoryContent,
                                               recipient: manualHistoryRecipient,
                                             });
@@ -4038,6 +4088,19 @@ export default function ComprehensiveProgress() {
                                               whiteSpace: "nowrap",
                                             }}
                                           >
+                                            매체
+                                          </th>
+                                          <th
+                                            style={{
+                                              padding: "10px 12px",
+                                              textAlign: "left",
+                                              fontWeight: 600,
+                                              color: "rgba(12, 12, 12, 0.7)",
+                                              borderBottom:
+                                                "1px solid rgba(12, 12, 12, 0.1)",
+                                              whiteSpace: "nowrap",
+                                            }}
+                                          >
                                             발송유형
                                           </th>
                                           <th
@@ -4059,7 +4122,7 @@ export default function ComprehensiveProgress() {
                                         {lmsHistory.length === 0 ? (
                                           <tr>
                                             <td
-                                              colSpan={3}
+                                              colSpan={4}
                                               style={{
                                                 padding: "20px 12px",
                                                 textAlign: "center",
@@ -4090,6 +4153,18 @@ export default function ComprehensiveProgress() {
                                                   }}
                                                 >
                                                   {entry.sentAt || ""}
+                                                </td>
+                                                <td
+                                                  style={{
+                                                    padding: "10px 12px",
+                                                    color:
+                                                      "rgba(12, 12, 12, 0.8)",
+                                                    whiteSpace: "nowrap",
+                                                  }}
+                                                >
+                                                  {entry.isManual
+                                                    ? (entry.medium || "")
+                                                    : "문자"}
                                                 </td>
                                                 <td
                                                   style={{

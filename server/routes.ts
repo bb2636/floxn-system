@@ -12852,6 +12852,7 @@ Front·Line·Ops·Xpert·Net
   // ==========================================
   const manualHistorySchema = z.object({
     date: z.string().min(1),
+    medium: z.string().optional().default(""),
     content: z.string().min(1),
     recipient: z.string().optional().default(""),
   });
@@ -12868,7 +12869,7 @@ Front·Line·Ops·Xpert·Net
       }
 
       const caseId = req.params.id;
-      const { date, content, recipient } = manualHistorySchema.parse(req.body);
+      const { date, medium, content, recipient } = manualHistorySchema.parse(req.body);
 
       const caseData = await storage.getCaseById(caseId);
       if (!caseData) {
@@ -12878,6 +12879,7 @@ Front·Line·Ops·Xpert·Net
       const newEntry = {
         id: `manual-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         sentAt: date,
+        medium: medium || "",
         messageType: content,
         recipientType: "수기입력",
         recipientCompany: "",
