@@ -29,7 +29,7 @@ import {
 import { z } from "zod";
 import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
-import { sql, inArray } from "drizzle-orm";
+import { sql, inArray, eq, and } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import https from "https";
 import crypto from "crypto";
@@ -837,10 +837,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (validatedData as any).isSuperAdmin = false;
       }
 
+      const oldUser = await storage.getUser(userId);
+      if (!oldUser) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+
       const updatedUser = await storage.updateUser(userId, validatedData);
 
       if (!updatedUser) {
-        return res.status(404).json({ error: "사용자를 찾을  a� 없습니다" });
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+
+      try {
+        const role = updatedUser.role;
+        if (role === "심사사") {
+          await db
+            .update(cases)
+            .set({
+              assessorTeam: updatedUser.name,
+              assessorContact: updatedUser.phone || "",
+              assessorEmail: updatedUser.email || "",
+              assessorDepartment: updatedUser.department || "",
+            })
+            .where(
+              and(
+                eq(cases.assessorId, updatedUser.company),
+                eq(cases.assessorTeam, oldUser.name),
+              ),
+            );
+          console.log(`[UserUpdate] Updated cases for assessor: ${updatedUser.name} (${updatedUser.company})`);
+        } else if (role === "조사사") {
+          await db
+            .update(cases)
+            .set({
+              investigatorTeamName: updatedUser.name,
+              investigatorContact: updatedUser.phone || "",
+              investigatorEmail: updatedUser.email || "",
+              investigatorDepartment: updatedUser.department || "",
+            })
+            .where(
+              and(
+                eq(cases.investigatorTeam, updatedUser.company),
+                eq(cases.investigatorTeamName, oldUser.name),
+              ),
+            );
+          console.log(`[UserUpdate] Updated cases for investigator: ${updatedUser.name} (${updatedUser.company})`);
+        } else if (role === "협력사") {
+          await db
+            .update(cases)
+            .set({
+              assignedPartnerManager: updatedUser.name,
+              assignedPartnerContact: updatedUser.phone || "",
+            })
+            .where(
+              and(
+                eq(cases.assignedPartner, updatedUser.company),
+                eq(cases.assignedPartnerManager, oldUser.name),
+              ),
+            );
+          console.log(`[UserUpdate] Updated cases for partner: ${updatedUser.name} (${updatedUser.company})`);
+        } else if (role === "의뢰사") {
+          await db
+            .update(cases)
+            .set({
+              clientName: updatedUser.name,
+              clientContact: updatedUser.phone || "",
+            })
+            .where(eq(cases.clientName, oldUser.name));
+          console.log(`[UserUpdate] Updated cases for client: ${updatedUser.name}`);
+        }
+      } catch (syncError) {
+        console.error("[UserUpdate] Failed to sync cases:", syncError);
       }
 
       const { password, ...userWithoutPassword } = updatedUser;
