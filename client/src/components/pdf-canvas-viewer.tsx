@@ -180,7 +180,7 @@ export function PdfCanvasViewer({ pdfData, loading, error, fileName }: PdfCanvas
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "8px 16px",
+        padding: "8px 48px 8px 16px",
         borderBottom: "1px solid #e5e7eb",
         background: "#f8f9fa",
         flexShrink: 0,
