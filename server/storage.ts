@@ -2970,8 +2970,8 @@ export class DbStorage implements IStorage {
       {
         roleName: "조사사",
         permissions: JSON.stringify({
-          "홈": { enabled: true, items: {} },
-          "새로운접수": { enabled: true, items: {} },
+          "홈": { enabled: false, items: {} },
+          "새로운접수": { enabled: false, items: {} },
           "종합진행관리": { enabled: true, items: {} },
           "정산 및 통계": { enabled: false, items: {} },
           "관리자 설정": { enabled: false, items: {} }
@@ -2980,9 +2980,9 @@ export class DbStorage implements IStorage {
       {
         roleName: "의뢰사",
         permissions: JSON.stringify({
-          "홈": { enabled: true, items: {} },
-          "새로운접수": { enabled: true, items: {} },
-          "종합진행관리": { enabled: true, items: {} },
+          "홈": { enabled: false, items: {} },
+          "새로운접수": { enabled: false, items: {} },
+          "종합진행관리": { enabled: false, items: {} },
           "정산 및 통계": { enabled: false, items: {} },
           "관리자 설정": { enabled: false, items: {} }
         })
