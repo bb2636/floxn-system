@@ -3588,10 +3588,10 @@ export default function ComprehensiveProgress() {
                                     data-testid="select-lms-message-type"
                                   >
                                     <option value="">내용을 선택하세요</option>
-                                    <option value="청구금액 독촉">
+                                    <option value="청구금액 지급요청">
                                       청구금액 지급요청
                                     </option>
-                                    <option value="중복보험 일부금 독촉">
+                                    <option value="중복보험 미지급금 요청">
                                       중복보험 미지급금 요청
                                     </option>
                                   </select>
