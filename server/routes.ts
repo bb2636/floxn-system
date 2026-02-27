@@ -822,7 +822,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = updateUserSchema.parse(req.body);
 
       // Security: Only super admin can change isSuperAdmin field
-      if (validatedData.isSuperAdmin !== undefined && validatedData.isSuperAdmin !== null) {
+      if (
+        validatedData.isSuperAdmin !== undefined &&
+        validatedData.isSuperAdmin !== null
+      ) {
         const requester = await storage.getUser(req.session.userId);
         if (!requester?.isSuperAdmin) {
           delete (validatedData as any).isSuperAdmin;
@@ -864,7 +867,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const { targetUserId } = req.body;
     if (!targetUserId) {
-      return res.status(400).json({ error: "위임 대상 사용자 ID가 필요합니다" });
+      return res
+        .status(400)
+        .json({ error: "위임 대상 사용자 ID가 필요합니다" });
     }
 
     const targetUser = await storage.getUser(targetUserId);
@@ -872,7 +877,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ error: "대상 사용자를 찾을 수 없습니다" });
     }
     if (targetUser.role !== "관리자") {
-      return res.status(400).json({ error: "관리자 역할의 사용자에게만 위임할 수 있습니다" });
+      return res
+        .status(400)
+        .json({ error: "관리자 역할의 사용자에게만 위임할 수 있습니다" });
     }
 
     try {
@@ -945,7 +952,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         serviceRegions: validatedData.serviceRegions,
         attachments: validatedData.attachments,
         accountType: validatedData.accountType || "개인",
-        isSuperAdmin: validatedData.role === "관리자" && req.session.isSuperAdmin ? (validatedData.isSuperAdmin || false) : false,
+        isSuperAdmin:
+          validatedData.role === "관리자" && req.session.isSuperAdmin
+            ? validatedData.isSuperAdmin || false
+            : false,
         status: "active",
       });
 
@@ -8582,7 +8592,9 @@ FLOXN`;
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      console.log(`[View Field Report PDF] Generating PDF for case ${caseData.caseNumber}`);
+      console.log(
+        `[View Field Report PDF] Generating PDF for case ${caseData.caseNumber}`,
+      );
 
       const pdfBuffer = await generatePdfWithSizeLimitPdfLib({
         caseId,
@@ -8600,14 +8612,22 @@ FLOXN`;
         },
       });
 
-      console.log(`[View Field Report PDF] PDF generated, size: ${pdfBuffer.length} bytes`);
+      console.log(
+        `[View Field Report PDF] PDF generated, size: ${pdfBuffer.length} bytes`,
+      );
 
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `inline; filename="field-report-${caseData.caseNumber || caseId}.pdf"`);
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="field-report-${caseData.caseNumber || caseId}.pdf"`,
+      );
       res.send(pdfBuffer);
     } catch (error) {
       console.error("[View Field Report PDF] Error:", error);
-      const errorMessage = error instanceof Error ? error.message : "PDF 생성 중 오류가 발생했습니다";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "PDF 생성 중 오류가 발생했습니다";
       res.status(500).json({ error: errorMessage });
     }
   });
@@ -8636,7 +8656,10 @@ FLOXN`;
 
       let allRelatedCases: any[] = [caseData];
       if (caseData.insuranceAccidentNo) {
-        const relatedCases = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
+        const relatedCases = await storage.getCasesByAccidentNo(
+          caseData.insuranceAccidentNo,
+          caseId,
+        );
         allRelatedCases = [caseData, ...relatedCases];
       }
 
@@ -8644,23 +8667,36 @@ FLOXN`;
         const match = caseNumber?.match(/-(\d+)$/);
         return match ? parseInt(match[1], 10) : 999;
       };
-      allRelatedCases.sort((a, b) => getCaseSuffix(a.caseNumber || "") - getCaseSuffix(b.caseNumber || ""));
+      allRelatedCases.sort(
+        (a, b) =>
+          getCaseSuffix(a.caseNumber || "") - getCaseSuffix(b.caseNumber || ""),
+      );
 
-      const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
+      const particulars: Array<{
+        title: string;
+        detail?: string;
+        amount: number;
+      }> = [];
       let calculatedTotal = 0;
 
       for (let i = 0; i < allRelatedCases.length; i++) {
         const relatedCase = allRelatedCases[i];
-        const damageAmount = Number(relatedCase.invoiceDamagePreventionAmount) || 0;
-        const repairAmount = Number(relatedCase.invoicePropertyRepairAmount) || 0;
-        const fieldDispatchAmount = Number(relatedCase.fieldDispatchInvoiceAmount) || 0;
+        const damageAmount =
+          Number(relatedCase.invoiceDamagePreventionAmount) || 0;
+        const repairAmount =
+          Number(relatedCase.invoicePropertyRepairAmount) || 0;
+        const fieldDispatchAmount =
+          Number(relatedCase.fieldDispatchInvoiceAmount) || 0;
         const caseTotal = damageAmount + repairAmount + fieldDispatchAmount;
         calculatedTotal += caseTotal;
 
         if (caseTotal > 0) {
           particulars.push({
             title: relatedCase.caseNumber || `Case ${i + 1}`,
-            detail: relatedCase.victimDetailAddress || relatedCase.victimAddress || "",
+            detail:
+              relatedCase.victimDetailAddress ||
+              relatedCase.victimAddress ||
+              "",
             amount: caseTotal,
           });
         }
@@ -8670,7 +8706,8 @@ FLOXN`;
         recipientName: caseData.insuranceCompany || "-",
         caseNumber: caseData.caseNumber || "-",
         acceptanceDate: caseData.accidentDate || new Date().toISOString(),
-        submissionDate: caseData.invoicePdfGenerated || new Date().toISOString(),
+        submissionDate:
+          caseData.invoicePdfGenerated || new Date().toISOString(),
         insuranceAccidentNo: accidentNo || undefined,
         particulars,
         totalAmount: calculatedTotal,
@@ -8680,11 +8717,17 @@ FLOXN`;
       const pdfBuffer = await generateInvoicePdf(invoiceData);
 
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `inline; filename="invoice-${accidentNo || caseId}.pdf"`);
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="invoice-${accidentNo || caseId}.pdf"`,
+      );
       res.send(Buffer.from(pdfBuffer));
     } catch (error) {
       console.error("[View Invoice PDF] Error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Invoice PDF 생성 중 오류가 발생했습니다";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Invoice PDF 생성 중 오류가 발생했습니다";
       res.status(500).json({ error: errorMessage });
     }
   });
@@ -10810,7 +10853,7 @@ Front·Line·Ops·Xpert·Net
       }
 
       // Log attachment summary before sending
-      console.log(`\n========== SMTP 첨부 파일 요약 ==========`);
+      console.log(`\n========== SMTP 첨부   ���일 요약 ==========`);
       console.log(
         `${invoiceFilename}: ${Math.round((pdfBuffer.length / 1024 / 1024) * 1000) / 1000}MB`,
       );
@@ -11716,7 +11759,7 @@ FLOXN 드림`;
         sections,
         evidence,
         skipEvidence: false, // 증빙자료 이미지 포함
-        skipPdfAttachments: false, // 업로드된 PDF 파일도 포함
+        skipPdfAttachments: false, // p��로드된 PDF 파일도 포함
       });
       console.log(
         `[send-field-report-email-v2] PDF generated: ${Math.round(mainPdfBuffer.length / 1024)}KB (${(mainPdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`,
@@ -12470,12 +12513,10 @@ Front·Line·Ops·Xpert·Net
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
-        return res
-          .status(400)
-          .json({
-            error: "요청 데이터가 올바르지 않습니다",
-            details: error.errors,
-          });
+        return res.status(400).json({
+          error: "요청 데이터가 올바르지 않습니다",
+          details: error.errors,
+        });
       }
       console.error("[send-custom-sms] Error:", error);
       res.status(500).json({ error: "문자 전송에 실패했습니다" });
@@ -12486,7 +12527,7 @@ Front·Line·Ops·Xpert·Net
   // POST /api/cases/:id/send-lms - 진행관리 LMS 발송
   // ==========================================
   const sendCaseLmsSchema = z.object({
-    messageType: z.enum(["청구금액 독촉", "중복보험 일부금 독촉"]),
+    messageType: z.enum(["청구금액 지급요청", "중복보험 미지급금 요청"]),
     recipientType: z.enum(["심사자", "조사자"]),
   });
 
@@ -12527,11 +12568,9 @@ Front·Line·Ops·Xpert·Net
       }
 
       if (!recipientPhone) {
-        return res
-          .status(400)
-          .json({
-            error: `${recipientType}의 연락처가 등록되어 있지 않습니다`,
-          });
+        return res.status(400).json({
+          error: `${recipientType}의 연락처가 등록되어 있지 않습니다`,
+        });
       }
 
       const senderName = currentUser.name || "플록슨 담당자";
@@ -12548,7 +12587,10 @@ Front·Line·Ops·Xpert·Net
       const getSuffix = (cn: string | null): number => {
         if (!cn) return 0;
         const di = cn.lastIndexOf("-");
-        if (di > 0) { const s = parseInt(cn.substring(di + 1), 10); return isNaN(s) ? 0 : s; }
+        if (di > 0) {
+          const s = parseInt(cn.substring(di + 1), 10);
+          return isNaN(s) ? 0 : s;
+        }
         return 0;
       };
 
@@ -12557,14 +12599,26 @@ Front·Line·Ops·Xpert·Net
         const caseNumber = caseData.caseNumber || "";
         const prefix = caseNumber.replace(/-\d+$/, "");
         const relatedCases = await storage.getCasesByPrefix(prefix);
-        const filteredCases = relatedCases.filter((c: any) => c.status !== "접수취소");
-        const allCasesInGroup = filteredCases.length > 0 ? filteredCases : [caseData];
+        const filteredCases = relatedCases.filter(
+          (c: any) => c.status !== "접수취소",
+        );
+        const allCasesInGroup =
+          filteredCases.length > 0 ? filteredCases : [caseData];
 
-        const hasDirectRepair = allCasesInGroup.some((c: any) => c.recoveryType === "직접복구");
-        const allNoRepair = allCasesInGroup.every((c: any) => c.recoveryType === "선견적요청");
+        const hasDirectRepair = allCasesInGroup.some(
+          (c: any) => c.recoveryType === "직접복구",
+        );
+        const allNoRepair = allCasesInGroup.every(
+          (c: any) => c.recoveryType === "선견적요청",
+        );
 
         // 각 케이스별 승인금액 계산 (정산조회와 동일)
-        const caseApprovedValues: { approvedValue: number; isPrevention: boolean; isProperty: boolean; recoveryType: string | null; }[] = [];
+        const caseApprovedValues: {
+          approvedValue: number;
+          isPrevention: boolean;
+          isProperty: boolean;
+          recoveryType: string | null;
+        }[] = [];
         for (const c of allCasesInGroup) {
           const suffix = getSuffix(c.caseNumber);
           const isPrevention = suffix === 0;
@@ -12572,17 +12626,32 @@ Front·Line·Ops·Xpert·Net
 
           let estimateTotal = 0;
           const initialEst = (c as any).initialEstimateAmount;
-          if (initialEst !== null && initialEst !== undefined && initialEst !== "") {
+          if (
+            initialEst !== null &&
+            initialEst !== undefined &&
+            initialEst !== ""
+          ) {
             estimateTotal = parseAmt(initialEst);
           } else {
             estimateTotal = parseAmt(c.estimateAmount);
           }
 
           const caseApprovedAmount = parseAmt(c.approvedAmount);
-          const isApproved = c.reviewDecision === "승인" || caseApprovedAmount > 0;
-          const approvedValue = caseApprovedAmount > 0 ? caseApprovedAmount : (isApproved ? estimateTotal : 0);
+          const isApproved =
+            c.reviewDecision === "승인" || caseApprovedAmount > 0;
+          const approvedValue =
+            caseApprovedAmount > 0
+              ? caseApprovedAmount
+              : isApproved
+                ? estimateTotal
+                : 0;
 
-          caseApprovedValues.push({ approvedValue, isPrevention, isProperty, recoveryType: c.recoveryType });
+          caseApprovedValues.push({
+            approvedValue,
+            isPrevention,
+            isProperty,
+            recoveryType: c.recoveryType,
+          });
         }
 
         // 손해방지비용 + 대물비용 승인액 (직접복구 건만)
@@ -12595,7 +12664,9 @@ Front·Line·Ops·Xpert·Net
 
         const calculatedTotalApproved = hasDirectRepair
           ? preventionApproved + propertyApproved
-          : allNoRepair ? 100000 : 0;
+          : allNoRepair
+            ? 100000
+            : 0;
 
         // 자기부담금 합산 (정산 테이블)
         let totalSettlementDeductible = 0;
@@ -12614,13 +12685,21 @@ Front·Line·Ops·Xpert·Net
         try {
           const invoice = await storage.getInvoiceByCaseGroupPrefix(prefix);
           if (invoice) {
-            invoiceTotalApproved = invoice.totalApprovedAmount ? parseInt(invoice.totalApprovedAmount) : 0;
-            invoiceDeductible = invoice.deductible ? parseInt(invoice.deductible) : 0;
+            invoiceTotalApproved = invoice.totalApprovedAmount
+              ? parseInt(invoice.totalApprovedAmount)
+              : 0;
+            invoiceDeductible = invoice.deductible
+              ? parseInt(invoice.deductible)
+              : 0;
           }
         } catch {}
 
-        const finalApproved = invoiceTotalApproved > 0 ? invoiceTotalApproved : calculatedTotalApproved;
-        const finalDeductible = invoiceDeductible > 0 ? invoiceDeductible : totalSettlementDeductible;
+        const finalApproved =
+          invoiceTotalApproved > 0
+            ? invoiceTotalApproved
+            : calculatedTotalApproved;
+        const finalDeductible =
+          invoiceDeductible > 0 ? invoiceDeductible : totalSettlementDeductible;
         const claimAmount = finalApproved - finalDeductible;
         claimAmountText = `${claimAmount.toLocaleString()}원`;
       } catch {
@@ -12629,9 +12708,9 @@ Front·Line·Ops·Xpert·Net
 
       let messageText = "";
 
-      if (messageType === "청구금액 독촉") {
+      if (messageType === "청구금액 지급요청") {
         const invoiceDate = caseData.firstInvoiceDate || "";
-        messageText = `[청구금액 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건은 복구공사가 이미 완료되었으며, 공사금액 관련 자료는 ${invoiceDate} 이메일로 송부드린 바 있습니다.\n\n현재까지 공사금액 지급이 이루어지지 않아 확인 차 재안내 드리오니 신속한 검토 후 지급을 부탁드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 소재지: ${caseData.insuredAddress || ""}\n▷ 청구금액: ${claimAmountText}\n\n※ 문의사항이 있으신 경우 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시기 바랍니다.\n\n감사합니다.`;
+        messageText = `[청구금액 지급요청]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건은 복구공사가 이미 완료되었으며, 공사금액 관련 자료는 ${invoiceDate} 이메일로 송부드린 바 있습니다.\n\n현재까지 공사금액 지급이 이루어지지 않아 확인 차 재안내 드리오니 신속한 검토 후 지급을 부탁드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 소재지: ${caseData.insuredAddress || ""}\n▷ 청구금액: ${claimAmountText}\n\n※ 문의사항이 있으신 경우 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시기 바랍니다.\n\n감사합니다.`;
       } else {
         // 중복보험 일부금 독촉
         let depositInfo = "";
@@ -12659,7 +12738,7 @@ Front·Line·Ops·Xpert·Net
           }
         } catch {}
 
-        messageText = `[중복보험 일부금 독촉]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건과 관련하여 중복보험금 일부만 입금된 것으로 확인되어 안내드립니다.\n\n협력업체와의 원활한 업무 진행을 위해, 미지급 금액에 대한 신속한 지급을 요청드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 청구금액: ${claimAmountText}\n▷ 입금금액: ${depositInfo}\n\n※ 관련 문의사항은 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시면 재 안내드리겠습니다.\n\n감사합니다.`;
+        messageText = `[중복보험  미지급금 요청]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건과 관련하여 중복보험금 일부만 입금된 것으로 확인되어 안내드립니다.\n\n협력업체와의 원활한 업무 진행을 위해, 미지급 금액에 대한 신속한 지급을 요청드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 청구금액: ${claimAmountText}\n▷ 입금금액: ${depositInfo}\n\n※ 관련 문의사항은 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시면 재 안내드리겠습니다.\n\n감사합니다.`;
       }
 
       // Send LMS via Solapi

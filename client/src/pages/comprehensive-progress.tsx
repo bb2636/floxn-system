@@ -2841,12 +2841,17 @@ export default function ComprehensiveProgress() {
                               label: "일부입금일(최초)",
                               value: (() => {
                                 if (!selectedCase) return undefined;
-                                if (selectedCase.partialPaymentDate) return selectedCase.partialPaymentDate;
+                                if (selectedCase.partialPaymentDate)
+                                  return selectedCase.partialPaymentDate;
                                 const settlement = allSettlements.find(
                                   (s) => s.caseId === selectedCase.id,
                                 );
-                                if (!settlement?.depositEntries) return undefined;
-                                const entries = settlement.depositEntries as Array<{ depositDate?: string }>;
+                                if (!settlement?.depositEntries)
+                                  return undefined;
+                                const entries =
+                                  settlement.depositEntries as Array<{
+                                    depositDate?: string;
+                                  }>;
                                 const dates = entries
                                   .map((e) => e.depositDate)
                                   .filter((d): d is string => !!d)
@@ -2861,8 +2866,12 @@ export default function ComprehensiveProgress() {
                                 const settlement = allSettlements.find(
                                   (s) => s.caseId === selectedCase.id,
                                 );
-                                if (!settlement?.paymentEntries) return undefined;
-                                const entries = settlement.paymentEntries as Array<{ paymentDate?: string }>;
+                                if (!settlement?.paymentEntries)
+                                  return undefined;
+                                const entries =
+                                  settlement.paymentEntries as Array<{
+                                    paymentDate?: string;
+                                  }>;
                                 const dates = entries
                                   .map((e) => e.paymentDate)
                                   .filter((d): d is string => !!d)
@@ -3580,10 +3589,10 @@ export default function ComprehensiveProgress() {
                                   >
                                     <option value="">내용을 선택하세요</option>
                                     <option value="청구금액 독촉">
-                                      청구금액 독촉
+                                      청구금액 지급요청
                                     </option>
                                     <option value="중복보험 일부금 독촉">
-                                      중복보험 일부금 독촉
+                                      중복보험 미지급금 요청
                                     </option>
                                   </select>
 
