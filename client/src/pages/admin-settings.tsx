@@ -1100,8 +1100,19 @@ export default function AdminSettings() {
     mutationFn: async ({ userId, data }: { userId: string; data: Partial<Omit<User, 'id' | 'username' | 'password' | 'company' | 'createdAt' | 'status'>> }) => {
       return await apiRequest("PATCH", `/api/users/${userId}`, data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    onSuccess: async (_data, variables) => {
+      console.log("[UserEdit] onSuccess called", {
+        editedDataPhone: editedUserData.phone,
+        editedDataKeys: Object.keys(editedUserData),
+        variablesUserId: variables.userId,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      const freshUsers = queryClient.getQueryData<any[]>(["/api/users"]);
+      const freshUser = freshUsers?.find((u: any) => u.id === variables.userId);
+      console.log("[UserEdit] Fresh user from cache:", {
+        phone: freshUser?.phone,
+        name: freshUser?.name,
+      });
       setIsEditMode(false);
       setEditedUserData({});
       toast({
@@ -1120,12 +1131,14 @@ export default function AdminSettings() {
           fontWeight: 500,
         } as React.CSSProperties,
       });
-      // Update the selected user with new data
-      if (selectedUser) {
+      if (freshUser) {
+        setSelectedUser(freshUser);
+      } else if (selectedUser) {
         setSelectedUser(prev => prev ? { ...prev, ...editedUserData } : null);
       }
     },
     onError: (error: any) => {
+      console.log("[UserEdit] onError called", error);
       toast({
         title: "수정 실패",
         description: error.message || "계정 정보 수정 중 오류가 발생했습니다.",
@@ -6081,6 +6094,12 @@ export default function AdminSettings() {
                     }}
                     onClick={() => {
                       if (selectedUser) {
+                        console.log("[UserEdit] Save clicked", {
+                          userId: selectedUser.id,
+                          editedPhone: editedUserData.phone,
+                          editedName: editedUserData.name,
+                          allKeys: Object.keys(editedUserData),
+                        });
                         updateUserMutation.mutate({
                           userId: selectedUser.id.toString(),
                           data: editedUserData,

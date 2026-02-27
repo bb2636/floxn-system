@@ -820,6 +820,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate request body with Zod
       const validatedData = updateUserSchema.parse(req.body);
+      console.log(`[UserUpdate] PATCH /api/users/${userId}`, {
+        bodyKeys: Object.keys(req.body),
+        validatedPhone: validatedData.phone,
+        validatedName: validatedData.name,
+        validatedKeys: Object.keys(validatedData),
+      });
 
       // Security: Only super admin can change isSuperAdmin field
       if (
@@ -843,6 +849,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedUser = await storage.updateUser(userId, validatedData);
+      console.log(`[UserUpdate] Result:`, {
+        oldPhone: oldUser.phone,
+        newPhone: updatedUser?.phone,
+        oldName: oldUser.name,
+        newName: updatedUser?.name,
+      });
 
       if (!updatedUser) {
         return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
