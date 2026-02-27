@@ -12867,10 +12867,10 @@ Front·Line·Ops·Xpert·Net
         return res.status(401).json({ error: "인증이 필요합니다" });
       }
 
-      const caseId = parseInt(req.params.id);
+      const caseId = req.params.id;
       const { date, content, recipient } = manualHistorySchema.parse(req.body);
 
-      const caseData = await storage.getCase(caseId);
+      const caseData = await storage.getCaseById(caseId);
       if (!caseData) {
         return res.status(404).json({ error: "사건을 찾을 수 없습니다" });
       }
