@@ -851,9 +851,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const role = updatedUser.role;
         if (role === "심사사") {
-          await db
+          const result = await db
             .update(cases)
             .set({
+              assessorId: updatedUser.company,
               assessorTeam: updatedUser.name,
               assessorContact: updatedUser.phone || "",
               assessorEmail: updatedUser.email || "",
@@ -861,15 +862,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             })
             .where(
               and(
-                eq(cases.assessorId, updatedUser.company),
+                eq(cases.assessorId, oldUser.company),
                 eq(cases.assessorTeam, oldUser.name),
               ),
             );
-          console.log(`[UserUpdate] Updated cases for assessor: ${updatedUser.name} (${updatedUser.company})`);
+          console.log(`[UserUpdate] Synced cases for assessor: ${oldUser.name} → ${updatedUser.name} (${updatedUser.company}), rows: ${(result as any).rowCount ?? 'unknown'}`);
         } else if (role === "조사사") {
-          await db
+          const result = await db
             .update(cases)
             .set({
+              investigatorTeam: updatedUser.company,
               investigatorTeamName: updatedUser.name,
               investigatorContact: updatedUser.phone || "",
               investigatorEmail: updatedUser.email || "",
@@ -877,34 +879,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
             })
             .where(
               and(
-                eq(cases.investigatorTeam, updatedUser.company),
+                eq(cases.investigatorTeam, oldUser.company),
                 eq(cases.investigatorTeamName, oldUser.name),
               ),
             );
-          console.log(`[UserUpdate] Updated cases for investigator: ${updatedUser.name} (${updatedUser.company})`);
+          console.log(`[UserUpdate] Synced cases for investigator: ${oldUser.name} → ${updatedUser.name} (${updatedUser.company}), rows: ${(result as any).rowCount ?? 'unknown'}`);
         } else if (role === "협력사") {
-          await db
+          const result = await db
             .update(cases)
             .set({
+              assignedPartner: updatedUser.company,
               assignedPartnerManager: updatedUser.name,
               assignedPartnerContact: updatedUser.phone || "",
             })
             .where(
               and(
-                eq(cases.assignedPartner, updatedUser.company),
+                eq(cases.assignedPartner, oldUser.company),
                 eq(cases.assignedPartnerManager, oldUser.name),
               ),
             );
-          console.log(`[UserUpdate] Updated cases for partner: ${updatedUser.name} (${updatedUser.company})`);
+          console.log(`[UserUpdate] Synced cases for partner: ${oldUser.name} → ${updatedUser.name} (${updatedUser.company}), rows: ${(result as any).rowCount ?? 'unknown'}`);
         } else if (role === "의뢰사") {
-          await db
+          const result = await db
             .update(cases)
             .set({
+              clientResidence: updatedUser.company,
               clientName: updatedUser.name,
               clientContact: updatedUser.phone || "",
+              clientDepartment: updatedUser.department || "",
             })
-            .where(eq(cases.clientName, oldUser.name));
-          console.log(`[UserUpdate] Updated cases for client: ${updatedUser.name}`);
+            .where(
+              and(
+                eq(cases.clientResidence, oldUser.company),
+                eq(cases.clientName, oldUser.name),
+              ),
+            );
+          console.log(`[UserUpdate] Synced cases for client: ${oldUser.name} → ${updatedUser.name} (${updatedUser.company}), rows: ${(result as any).rowCount ?? 'unknown'}`);
         }
       } catch (syncError) {
         console.error("[UserUpdate] Failed to sync cases:", syncError);
