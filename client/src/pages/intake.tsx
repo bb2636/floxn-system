@@ -2595,6 +2595,7 @@ export default function Intake({
                 justifyContent: "center",
                 zIndex: 999999,
                 padding: "16px",
+                pointerEvents: "auto" as const,
               }}
               onClick={() => setIsPartnerSearchOpen(false)}
             >
@@ -2748,9 +2749,7 @@ export default function Intake({
               </div>
             </div>
           );
-          return isModal
-            ? modalContent
-            : createPortal(modalContent, document.body);
+          return createPortal(modalContent, document.body);
         })()}
       {/* 의뢰사 검색 팝업 */}
       {isClientSearchOpen &&
@@ -2768,6 +2767,7 @@ export default function Intake({
               justifyContent: "center",
               zIndex: 999999,
               padding: "16px",
+              pointerEvents: "auto",
             }}
             onClick={() => setIsClientSearchOpen(false)}
           >
@@ -2920,6 +2920,7 @@ export default function Intake({
               justifyContent: "center",
               zIndex: 999999,
               padding: "16px",
+              pointerEvents: "auto",
             }}
             onClick={() => setIsAssessorSearchOpen(false)}
           >
@@ -3073,6 +3074,7 @@ export default function Intake({
               justifyContent: "center",
               zIndex: 999999,
               padding: "16px",
+              pointerEvents: "auto",
             }}
             onClick={() => setIsInvestigatorSearchOpen(false)}
           >
