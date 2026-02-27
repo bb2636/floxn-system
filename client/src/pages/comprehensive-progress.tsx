@@ -2068,7 +2068,7 @@ export default function ComprehensiveProgress() {
                     <div>
                       {caseItem.status === "배당대기" ? (
                         // 배당대기 상태 - 임시 저장 건이므로 이어서 작성하기 버튼
-                        <button
+                        (<button
                           onClick={(e) => {
                             e.stopPropagation();
                             localStorage.setItem("editCaseId", caseItem.id);
@@ -2087,12 +2087,11 @@ export default function ComprehensiveProgress() {
                             whiteSpace: "nowrap",
                           }}
                           data-testid={`button-continue-draft-${caseItem.id}`}
-                        >
-                          이어서 작성하기
-                        </button>
+                        >이어서 작성하기
+                                                  </button>)
                       ) : (
                         // 접수완료 이후 상태 - 상세보기 버튼 및 청구하기 버튼
-                        <div
+                        (<div
                           style={{
                             display: "flex",
                             gap: "8px",
@@ -2147,7 +2146,7 @@ export default function ComprehensiveProgress() {
                                 청구하기
                               </button>
                             )}
-                        </div>
+                        </div>)
                       )}
                     </div>
                   </div>
@@ -3531,9 +3530,7 @@ export default function ComprehensiveProgress() {
                                     letterSpacing: "-0.02em",
                                     color: "rgba(12, 12, 12, 0.9)",
                                   }}
-                                >
-                                  진행관리 LMS 발송
-                                </div>
+                                >진행관리이력</div>
                               </div>
 
                               <div
