@@ -7315,15 +7315,16 @@ export class DbStorage implements IStorage {
   }
 
   async updateLaborRateTiers(updates: UpdateLaborRateTier[]): Promise<LaborRateTier[]> {
-    for (const update of updates) {
-      await db
-        .update(laborRateTiers)
-        .set({
-          minRatio: update.minRatio,
-          rateMultiplier: update.rateMultiplier,
-          updatedAt: new Date(),
-        })
-        .where(eq(laborRateTiers.id, update.id));
+    await db.delete(laborRateTiers);
+
+    for (let i = 0; i < updates.length; i++) {
+      const update = updates[i];
+      await db.insert(laborRateTiers).values({
+        minRatio: update.minRatio,
+        rateMultiplier: update.rateMultiplier,
+        sortOrder: i + 1,
+        updatedAt: new Date(),
+      });
     }
     
     return await this.getLaborRateTiers();
