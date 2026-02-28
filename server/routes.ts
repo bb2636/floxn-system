@@ -8756,26 +8756,88 @@ FLOXN`;
       }> = [];
       let calculatedTotal = 0;
 
+      const getCaseSuffixNum = (caseNumber: string): number => {
+        const match = caseNumber?.match(/-(\d+)$/);
+        return match ? parseInt(match[1], 10) : 999;
+      };
+
       for (let i = 0; i < allRelatedCases.length; i++) {
         const relatedCase = allRelatedCases[i];
-        const damageAmount =
-          Number(relatedCase.invoiceDamagePreventionAmount) || 0;
-        const repairAmount =
-          Number(relatedCase.invoicePropertyRepairAmount) || 0;
-        const fieldDispatchAmount =
-          Number(relatedCase.fieldDispatchInvoiceAmount) || 0;
-        const caseTotal = damageAmount + repairAmount + fieldDispatchAmount;
-        calculatedTotal += caseTotal;
+        const caseSuffix = getCaseSuffixNum(relatedCase.caseNumber || "");
 
-        if (caseTotal > 0) {
+        if (relatedCase.status === "접수취소") {
+          continue;
+        }
+
+        if (relatedCase.recoveryType === "선견적요청") {
+          continue;
+        }
+
+        let addressLabel = "-";
+        if (caseSuffix === 0) {
+          addressLabel = relatedCase.insuredAddressDetail || "-";
+        } else {
+          addressLabel = relatedCase.victimAddressDetail || "-";
+        }
+
+        const caseApprovedAmt = parseInt(relatedCase.approvedAmount || "0") || 0;
+        const caseEstimateAmt = parseInt(relatedCase.estimateAmount || "0") || 0;
+
+        if (caseSuffix === 0) {
+          let caseDamagePreventionAmt = 0;
+          if (caseApprovedAmt > 0) {
+            caseDamagePreventionAmt = caseApprovedAmt;
+          } else if (caseEstimateAmt > 0) {
+            caseDamagePreventionAmt = caseEstimateAmt;
+          }
+          if (caseDamagePreventionAmt > 0) {
+            particulars.push({
+              title: `[${addressLabel}] - 손해방지비용`,
+              amount: caseDamagePreventionAmt,
+            });
+            calculatedTotal += caseDamagePreventionAmt;
+          }
+        }
+
+        if (caseSuffix > 0) {
+          let casePropertyRepairAmt = 0;
+          if (caseApprovedAmt > 0) {
+            casePropertyRepairAmt = caseApprovedAmt;
+          } else if (caseEstimateAmt > 0) {
+            casePropertyRepairAmt = caseEstimateAmt;
+          }
+          if (casePropertyRepairAmt > 0) {
+            particulars.push({
+              title: `[${addressLabel}] - 대물복구비용`,
+              amount: casePropertyRepairAmt,
+            });
+            calculatedTotal += casePropertyRepairAmt;
+          }
+        }
+      }
+
+      if (particulars.length === 0) {
+        const mainAddressLabel =
+          caseData.victimAddressDetail ||
+          caseData.victimAddress ||
+          caseData.insuredAddressDetail ||
+          caseData.insuredAddress ||
+          "-";
+        const damageAmount = Number(caseData.invoiceDamagePreventionAmount) || 0;
+        const repairAmount = Number(caseData.invoicePropertyRepairAmount) || 0;
+        if (damageAmount > 0) {
           particulars.push({
-            title: relatedCase.caseNumber || `Case ${i + 1}`,
-            detail:
-              relatedCase.victimDetailAddress ||
-              relatedCase.victimAddress ||
-              "",
-            amount: caseTotal,
+            title: `[${mainAddressLabel}] - 손해방지비용`,
+            amount: damageAmount,
           });
+          calculatedTotal += damageAmount;
+        }
+        if (repairAmount > 0) {
+          particulars.push({
+            title: `[${mainAddressLabel}] - 대물복구비용`,
+            amount: repairAmount,
+          });
+          calculatedTotal += repairAmount;
         }
       }
 
