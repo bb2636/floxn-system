@@ -37,8 +37,20 @@ function Router() {
       <Route path="/mobile-home" component={MobileHome} />
       <Route path="/forbidden" component={Forbidden} />
       
-      <Route path="/home" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/home">
+        {() => (
+          <ProtectedRoute category="홈">
+            <Dashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/dashboard">
+        {() => (
+          <ProtectedRoute category="홈">
+            <Dashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
       
       <Route path="/admin-settings">
         {() => (
