@@ -2043,12 +2043,11 @@ export default function ComprehensiveProgress() {
                         gap: "4px",
                       }}
                     >
-                      {/* 협력사 특이사항 빨간색 점 (관리자가 확인하지 않은 경우만 표시) */}
+                      {/* 협력사 특이사항 빨간색 점 (협력사 메모가 1개라도 있으면 항상 표시) */}
                       {(caseItem.specialNotes ||
                         safeParseNotesHistory(
                           caseItem.partnerNotesHistory as string,
-                        ).length > 0) &&
-                        caseItem.partnerNotesAckedByAdmin !== "true" && (
+                        ).length > 0) && (
                           <div
                             style={{
                               width: "8px",
