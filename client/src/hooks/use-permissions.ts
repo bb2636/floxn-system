@@ -88,8 +88,8 @@ export function usePermissions() {
     const items = permissions[category].items;
     // If specific item is explicitly true, allow access regardless of category enabled
     if (items && items[item] === true) return true;
-    // If category enabled but no items defined, allow all
-    if (permissions[category].enabled && !items) return true;
+    // If category enabled but no items defined or empty items, allow all
+    if (permissions[category].enabled && (!items || Object.keys(items).length === 0)) return true;
     return false;
   };
 

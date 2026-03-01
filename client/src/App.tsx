@@ -78,7 +78,7 @@ function Router() {
       
       <Route path="/statistics">
         {() => (
-          <ProtectedRoute category="정산 및 통계">
+          <ProtectedRoute category="정산 및 통계" item="통계">
             <StatisticsLayout>
               <ClosedCaseStatistics />
             </StatisticsLayout>
@@ -89,7 +89,7 @@ function Router() {
 
       <Route path="/statistics/closed">
         {() => (
-          <ProtectedRoute category="정산 및 통계">
+          <ProtectedRoute category="정산 및 통계" item="통계">
             <StatisticsLayout>
               <ClosedCaseStatistics />
             </StatisticsLayout>
@@ -99,7 +99,7 @@ function Router() {
 
       <Route path="/statistics/unsettled">
         {() => (
-          <ProtectedRoute category="정산 및 통계">
+          <ProtectedRoute category="정산 및 통계" item="통계">
             <StatisticsLayout>
               <UnsettledCaseStatistics />
             </StatisticsLayout>
@@ -109,7 +109,7 @@ function Router() {
       
       <Route path="/settlements">
         {() => (
-          <ProtectedRoute category="정산 및 통계">
+          <ProtectedRoute category="정산 및 통계" item="정산조회">
             <StatisticsLayout>
               <SettlementsInquiry filterMode="claim" />
             </StatisticsLayout>
@@ -119,7 +119,7 @@ function Router() {
 
       <Route path="/settlements/claim">
         {() => (
-          <ProtectedRoute category="정산 및 통계">
+          <ProtectedRoute category="정산 및 통계" item="정산조회">
             <StatisticsLayout>
               <SettlementsInquiry filterMode="claim" />
             </StatisticsLayout>
@@ -129,7 +129,7 @@ function Router() {
 
       <Route path="/settlements/closed">
         {() => (
-          <ProtectedRoute category="정산 및 통계">
+          <ProtectedRoute category="정산 및 통계" item="정산조회">
             <StatisticsLayout>
               <SettlementsInquiry filterMode="closed" />
             </StatisticsLayout>
@@ -139,7 +139,7 @@ function Router() {
       
       <Route path="/statistics/settlements-inquiry">
         {() => (
-          <ProtectedRoute category="정산 및 통계">
+          <ProtectedRoute category="정산 및 통계" item="정산조회">
             <StatisticsLayout>
               <SettlementsInquiry filterMode="claim" />
             </StatisticsLayout>
@@ -149,7 +149,7 @@ function Router() {
       
       <Route path="/statistics/settlement-action">
         {() => (
-          <ProtectedRoute category="정산 및 통계">
+          <ProtectedRoute category="정산 및 통계" item="정산조회">
             <StatisticsLayout>
               <SettlementAction />
             </StatisticsLayout>

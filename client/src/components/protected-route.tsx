@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 interface ProtectedRouteProps {
   category: string;
+  item?: string;
   children: React.ReactNode;
 }
 
@@ -16,9 +17,11 @@ const categoryRouteMap: { category: string; path: string }[] = [
   { category: "관리자 설정", path: "/admin-settings" },
 ];
 
-export function ProtectedRoute({ category, children }: ProtectedRouteProps) {
-  const { hasCategory, isLoading, user } = usePermissions();
+export function ProtectedRoute({ category, item, children }: ProtectedRouteProps) {
+  const { hasCategory, hasItem, isLoading, user } = usePermissions();
   const [, setLocation] = useLocation();
+
+  const hasAccess = hasCategory(category) && (!item || hasItem(category, item));
 
   useEffect(() => {
     if (isLoading) return;
@@ -28,7 +31,7 @@ export function ProtectedRoute({ category, children }: ProtectedRouteProps) {
       return;
     }
 
-    if (!hasCategory(category)) {
+    if (!hasAccess) {
       const fallback = categoryRouteMap.find(
         (r) => r.category !== category && hasCategory(r.category)
       );
@@ -39,9 +42,9 @@ export function ProtectedRoute({ category, children }: ProtectedRouteProps) {
       }
       return;
     }
-  }, [isLoading, user, category, hasCategory, setLocation]);
+  }, [isLoading, user, category, item, hasAccess, hasCategory, setLocation]);
 
-  if (isLoading || !user || !hasCategory(category)) {
+  if (isLoading || !user || !hasAccess) {
     return null;
   }
 
