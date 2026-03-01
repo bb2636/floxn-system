@@ -969,7 +969,17 @@ export default function ComprehensiveProgress() {
     );
   });
 
-  const filteredByManager = filteredDataUnsorted.filter((caseItem) => {
+  const filteredByRole = filteredDataUnsorted.filter((caseItem) => {
+    if (user?.role === "심사사") {
+      return (caseItem.assessorId || "") === (user.company || "");
+    }
+    if (user?.role === "조사사") {
+      return (caseItem.investigatorTeam || "") === (user.company || "");
+    }
+    return true;
+  });
+
+  const filteredByManager = filteredByRole.filter((caseItem) => {
     const managerValue =
       selectedManager === "__INIT__" ? "전체" : selectedManager;
     if (managerValue === "전체") return true;
@@ -1129,8 +1139,12 @@ export default function ComprehensiveProgress() {
   }, [detailTab, selectedCase, user?.role, specialNotesForm]);
 
   useEffect(() => {
-    if (selectedManager === "__INIT__" && user?.name) {
-      setSelectedManager(user.name);
+    if (selectedManager === "__INIT__" && user) {
+      if (user.role === "협력사" || user.role === "심사사" || user.role === "조사사") {
+        setSelectedManager("전체");
+      } else if (user.name) {
+        setSelectedManager(user.name);
+      }
     }
   }, [user, selectedManager]);
 
