@@ -4032,27 +4032,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.roleName,
       );
 
-      if (validatedData.roleName === "관리자") {
-        const allPerms = await storage.getAllRolePermissions();
-        const individualAdminPerms = allPerms.filter(p => p.roleName.startsWith("관리자_"));
-        const newPerms = JSON.parse(validatedData.permissions);
-        for (const indPerm of individualAdminPerms) {
-          try {
-            const existingPerms = typeof indPerm.permissions === 'string' ? JSON.parse(indPerm.permissions) : indPerm.permissions;
-            for (const [category, value] of Object.entries(newPerms)) {
-              existingPerms[category] = JSON.parse(JSON.stringify(value));
-            }
-            await storage.saveRolePermission({
-              roleName: indPerm.roleName,
-              permissions: JSON.stringify(existingPerms),
-            });
-            console.log(`[POST /api/role-permissions] Synced individual admin: ${indPerm.roleName}`);
-          } catch (syncErr) {
-            console.error(`[POST /api/role-permissions] Failed to sync ${indPerm.roleName}:`, syncErr);
-          }
-        }
-      }
-
       res.json(permission);
     } catch (error) {
       if (error instanceof z.ZodError) {
