@@ -1495,6 +1495,9 @@ export default function AdminSettings() {
                                 fontSize: "14px",
                                 fontWeight: 500,
                                 color: "#0C0C0C",
+                                maxWidth: "300px",
+                                wordBreak: "break-all",
+                                overflowWrap: "break-word",
                               }}
                             >
                               {inquiry.title}
@@ -1761,6 +1764,8 @@ export default function AdminSettings() {
                           fontWeight: 600,
                           letterSpacing: "-0.02em",
                           color: "#0C0C0C",
+                          wordBreak: "break-all",
+                          overflowWrap: "break-word",
                         }}
                       >
                         {selectedInquiry.title}
@@ -1773,6 +1778,8 @@ export default function AdminSettings() {
                           background: "rgba(12, 12, 12, 0.04)",
                           borderRadius: "8px",
                           whiteSpace: "pre-wrap",
+                          wordBreak: "break-all",
+                          overflowWrap: "break-word",
                         }}
                       >
                         <p
@@ -1852,6 +1859,8 @@ export default function AdminSettings() {
                                 borderRadius: "8px",
                                 border: "1px solid rgba(0, 143, 237, 0.2)",
                                 whiteSpace: "pre-wrap",
+                                wordBreak: "break-all",
+                                overflowWrap: "break-word",
                               }}
                             >
                               <p

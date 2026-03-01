@@ -727,7 +727,7 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
                                         {/* 문의 내용 전체 */}
                                         <div className="p-4 bg-white rounded-lg border border-gray-200">
                                           <p className="text-sm font-medium text-gray-700 mb-2">문의 내용</p>
-                                          <p className="text-sm text-gray-600 whitespace-pre-wrap">{inquiry.content}</p>
+                                          <p className="text-sm text-gray-600 whitespace-pre-wrap break-all">{inquiry.content}</p>
                                         </div>
 
                                         {/* 관리자 답변 */}
@@ -742,9 +742,9 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
                                               )}
                                             </div>
                                             {inquiry.responseTitle && (
-                                              <p className="font-medium text-gray-900 mb-1">{inquiry.responseTitle}</p>
+                                              <p className="font-medium text-gray-900 mb-1 break-all">{inquiry.responseTitle}</p>
                                             )}
-                                            <p className="text-sm text-gray-600 whitespace-pre-wrap">{inquiry.response}</p>
+                                            <p className="text-sm text-gray-600 whitespace-pre-wrap break-all">{inquiry.response}</p>
                                           </div>
                                         )}
 
