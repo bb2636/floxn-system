@@ -54,12 +54,11 @@ export function AppSidebarStatistics() {
   const { hasItem, isAdmin, permissions } = usePermissions();
 
   const menuItems = useMemo(() => {
-    if (isAdmin) return allMenuItems;
     return allMenuItems.filter((item) => {
       if (!item.permissionItem) return true;
       return hasItem("정산 및 통계", item.permissionItem);
     });
-  }, [isAdmin, permissions, hasItem]);
+  }, [permissions, hasItem]);
 
   const isSettlementActive = location.startsWith("/settlements");
 

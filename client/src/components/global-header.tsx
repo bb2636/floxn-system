@@ -12,7 +12,7 @@ export function GlobalHeader() {
   const [, setLocation] = useLocation();
   const [location] = useLocation();
   const { toast } = useToast();
-  const { hasCategory, isLoading: permissionsLoading } = usePermissions();
+  const { hasCategory, hasItem, isLoading: permissionsLoading } = usePermissions();
   const [myPageOpen, setMyPageOpen] = useState(false);
 
   const { data: user } = useQuery<User>({
@@ -277,7 +277,11 @@ export function GlobalHeader() {
                   } else if (item.name === "관리자 설정") {
                     setLocation("/admin-settings");
                   } else if (item.name === "정산 및 통계") {
-                    setLocation("/settlements/claim");
+                    if (hasItem("정산 및 통계", "정산조회")) {
+                      setLocation("/settlements/claim");
+                    } else if (hasItem("정산 및 통계", "통계")) {
+                      setLocation("/statistics/closed");
+                    }
                   }
                 }}
                 className="px-6 py-3 rounded-lg transition-colors"

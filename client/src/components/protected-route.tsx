@@ -17,6 +17,11 @@ const categoryRouteMap: { category: string; path: string }[] = [
   { category: "관리자 설정", path: "/admin-settings" },
 ];
 
+const itemRouteMap: { category: string; item: string; path: string }[] = [
+  { category: "정산 및 통계", item: "정산조회", path: "/settlements/claim" },
+  { category: "정산 및 통계", item: "통계", path: "/statistics/closed" },
+];
+
 export function ProtectedRoute({ category, item, children }: ProtectedRouteProps) {
   const { hasCategory, hasItem, isLoading, user } = usePermissions();
   const [, setLocation] = useLocation();
@@ -32,6 +37,16 @@ export function ProtectedRoute({ category, item, children }: ProtectedRouteProps
     }
 
     if (!hasAccess) {
+      if (item && hasCategory(category)) {
+        const sameCategoryFallback = itemRouteMap.find(
+          (r) => r.category === category && r.item !== item && hasItem(category, r.item)
+        );
+        if (sameCategoryFallback) {
+          setLocation(sameCategoryFallback.path);
+          return;
+        }
+      }
+
       const fallback = categoryRouteMap.find(
         (r) => r.category !== category && hasCategory(r.category)
       );
@@ -42,7 +57,7 @@ export function ProtectedRoute({ category, item, children }: ProtectedRouteProps
       }
       return;
     }
-  }, [isLoading, user, category, item, hasAccess, hasCategory, setLocation]);
+  }, [isLoading, user, category, item, hasAccess, hasCategory, hasItem, setLocation]);
 
   if (isLoading || !user || !hasAccess) {
     return null;
