@@ -642,7 +642,7 @@ export function AccessControlPanel() {
                         }}
                         data-testid={`text-category-${category}`}
                       >
-                        {category}
+                        {category === "새로운접수" ? "접수하기" : category}
                       </span>
                     </div>
                     {hasItems && (
