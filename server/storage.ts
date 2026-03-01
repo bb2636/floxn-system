@@ -2926,7 +2926,7 @@ export class DbStorage implements IStorage {
       "홈": { enabled: true, items: {} },
       "새로운접수": { enabled: true, items: {} },
       "종합진행관리": { enabled: true, items: { "종합진행관리": true, "접수건 삭제 권한": true } },
-      "정산 및 통계": { enabled: true, items: {} },
+      "정산 및 통계": { enabled: true, items: { "통계": true, "정산조회": true } },
       "관리자 설정": { enabled: true, items: {} }
     };
 
