@@ -875,74 +875,19 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         style={{
           background: "rgba(255, 255, 255, 0.7)",
           borderRadius: "12px",
-          padding: "24px",
+          padding: "16px 24px",
           border: "1px solid rgba(12, 12, 12, 0.08)",
         }}
       >
-        {/* Search */}
-        <div className="mb-6">
-          <label
-            className="block mb-2"
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "rgba(12, 12, 12, 0.7)",
-            }}
-          >
-            검색
-          </label>
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2"
-                size={20}
-                style={{ color: "rgba(12, 12, 12, 0.4)" }}
-              />
-              <Input
-                type="text"
-                placeholder="검색어를 직접 검색"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  height: "48px",
-                  paddingLeft: "48px",
-                  background: "#FAFAFA",
-                  border: "1px solid rgba(12, 12, 12, 0.1)",
-                  borderRadius: "8px",
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                }}
-                data-testid="input-search-settlements"
-              />
-            </div>
-            <Button
-              style={{
-                height: "48px",
-                padding: "0 32px",
-                background: "#008FED",
-                borderRadius: "8px",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 600,
-                color: "#FFFFFF",
-              }}
-              data-testid="button-search-settlements"
-            >
-              검색
-            </Button>
-          </div>
-        </div>
-
-        {/* Filters - All in one row */}
-        <div className="flex items-end gap-3">
+        {/* Filters + Search - All in one row */}
+        <div className="flex items-end gap-3 flex-wrap">
           {/* 정산여부 */}
-          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
+          <div style={{ flex: "0 0 auto", minWidth: "100px" }}>
             <label
               className="block mb-2"
               style={{
                 fontFamily: "Pretendard",
-                fontSize: "14px",
+                fontSize: "13px",
                 fontWeight: 500,
                 color: "rgba(12, 12, 12, 0.7)",
               }}
@@ -983,12 +928,12 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           </div>
 
           {/* 보험사 */}
-          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
+          <div style={{ flex: "0 0 auto", minWidth: "100px" }}>
             <label
               className="block mb-2"
               style={{
                 fontFamily: "Pretendard",
-                fontSize: "14px",
+                fontSize: "13px",
                 fontWeight: 500,
                 color: "rgba(12, 12, 12, 0.7)",
               }}
@@ -1024,12 +969,12 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           </div>
 
           {/* 심사사 */}
-          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
+          <div style={{ flex: "0 0 auto", minWidth: "100px" }}>
             <label
               className="block mb-2"
               style={{
                 fontFamily: "Pretendard",
-                fontSize: "14px",
+                fontSize: "13px",
                 fontWeight: 500,
                 color: "rgba(12, 12, 12, 0.7)",
               }}
@@ -1062,12 +1007,12 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           </div>
 
           {/* 담당자 */}
-          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
+          <div style={{ flex: "0 0 auto", minWidth: "100px" }}>
             <label
               className="block mb-2"
               style={{
                 fontFamily: "Pretendard",
-                fontSize: "14px",
+                fontSize: "13px",
                 fontWeight: 500,
                 color: "rgba(12, 12, 12, 0.7)",
               }}
@@ -1100,12 +1045,12 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           </div>
 
           {/* 날짜 선택 */}
-          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
+          <div style={{ flex: "0 0 auto" }}>
             <label
               className="block mb-2"
               style={{
                 fontFamily: "Pretendard",
-                fontSize: "14px",
+                fontSize: "13px",
                 fontWeight: 500,
                 color: "rgba(12, 12, 12, 0.7)",
               }}
@@ -1176,42 +1121,81 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
             </Popover>
           </div>
 
-          {/* Spacer */}
-          <div style={{ flex: "1 1 auto" }}></div>
+          {/* 초기화 */}
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            style={{
+              height: "40px",
+              padding: "0 16px",
+              borderRadius: "8px",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+            }}
+            data-testid="button-reset"
+          >
+            초기화
+          </Button>
 
-          {/* Buttons */}
-          <div className="flex gap-2" style={{ flex: "0 0 auto" }}>
-            <Button
-              variant="outline"
-              onClick={handleReset}
+          {/* 선택된 조건 검색하기 */}
+          <Button
+            style={{
+              height: "40px",
+              padding: "0 20px",
+              background: "#008FED",
+              borderRadius: "8px",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "#FFFFFF",
+              whiteSpace: "nowrap",
+            }}
+            data-testid="button-search-with-filters"
+          >
+            선택된 조건 검색하기
+          </Button>
+
+          {/* Search input */}
+          <div className="relative" style={{ flex: "1 1 auto", minWidth: "180px" }}>
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2"
+              size={16}
+              style={{ color: "rgba(12, 12, 12, 0.4)" }}
+            />
+            <Input
+              type="text"
+              placeholder="검색어를 직접 검색"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 height: "40px",
-                padding: "0 24px",
+                paddingLeft: "36px",
+                background: "#FAFAFA",
+                border: "1px solid rgba(12, 12, 12, 0.1)",
                 borderRadius: "8px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
               }}
-              data-testid="button-reset"
-            >
-              초기화
-            </Button>
-            <Button
-              style={{
-                height: "40px",
-                padding: "0 24px",
-                background: "#008FED",
-                borderRadius: "8px",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 600,
-                color: "#FFFFFF",
-                whiteSpace: "nowrap",
-              }}
-              data-testid="button-search-with-filters"
-            >
-              선택된 조건 검색하기
-            </Button>
+              data-testid="input-search-settlements"
+            />
           </div>
+
+          {/* 검색 버튼 */}
+          <Button
+            style={{
+              height: "40px",
+              padding: "0 24px",
+              background: "#008FED",
+              borderRadius: "8px",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "#FFFFFF",
+            }}
+            data-testid="button-search-settlements"
+          >
+            검색
+          </Button>
         </div>
       </div>
       {/* Results Count */}
