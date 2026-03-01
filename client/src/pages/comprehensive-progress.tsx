@@ -970,6 +970,9 @@ export default function ComprehensiveProgress() {
   });
 
   const filteredByRole = filteredDataUnsorted.filter((caseItem) => {
+    if (user?.role === "협력사") {
+      return (caseItem.assignedPartner || "") === (user.company || "");
+    }
     if (user?.role === "심사사") {
       return (caseItem.assessorId || "") === (user.company || "");
     }
