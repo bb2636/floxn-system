@@ -2925,7 +2925,7 @@ export class DbStorage implements IStorage {
     const fullPermissions = {
       "홈": { enabled: true, items: {} },
       "새로운접수": { enabled: true, items: {} },
-      "종합진행관리": { enabled: true, items: { "접수건 삭제 권한": true } },
+      "종합진행관리": { enabled: true, items: { "종합진행관리": true, "접수건 삭제 권한": true } },
       "정산 및 통계": { enabled: true, items: {} },
       "관리자 설정": { enabled: true, items: {} }
     };
@@ -3049,6 +3049,20 @@ export class DbStorage implements IStorage {
             if (!(category in existingPermissions)) {
               existingPermissions[category] = defaultPermissions[category];
               needsUpdate = true;
+            } else {
+              // 기존 카테고리에 없는 하위 항목 추가 (기존 설정 보존)
+              const defaultItems = defaultPermissions[category]?.items || {};
+              const existingItems = existingPermissions[category]?.items || {};
+              for (const itemKey of Object.keys(defaultItems)) {
+                if (!(itemKey in existingItems)) {
+                  if (!existingPermissions[category].items) {
+                    existingPermissions[category].items = {};
+                  }
+                  // "종합진행관리" 하위 항목은 기존 enabled 값을 따름
+                  existingPermissions[category].items[itemKey] = existingPermissions[category].enabled || false;
+                  needsUpdate = true;
+                }
+              }
             }
           }
           
