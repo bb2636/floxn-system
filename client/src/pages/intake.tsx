@@ -1725,6 +1725,10 @@ export default function Intake({
                     handleInputChange("insuredContact", "");
                     handleInputChange("insuredAddress", "");
                     handleInputChange("insuredAddressDetail", "");
+                    handleInputChange("victimName", "");
+                    handleInputChange("victimContact", "");
+                    handleInputChange("victimAddress", "");
+                    handleInputChange("victimAddressDetail", "");
                   }}
                   className="pb-2 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
                   data-testid="button-reset-insurance"
