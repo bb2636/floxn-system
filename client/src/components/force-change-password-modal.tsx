@@ -100,7 +100,7 @@ export function ForceChangePasswordModal({
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="sm:max-w-[460px] max-h-[90vh] overflow-y-auto" 
+        className="sm:max-w-[460px] max-h-[90vh] overflow-y-auto [&>button[class*='absolute']]:hidden" 
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
