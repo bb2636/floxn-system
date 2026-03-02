@@ -35,6 +35,7 @@ export default function Login() {
   const [showForceChangePassword, setShowForceChangePassword] = useState(false);
   const [saveUsername, setSaveUsername] = useState(false);
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
+  const [termsOfServiceOpen, setTermsOfServiceOpen] = useState(false);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -444,7 +445,12 @@ export default function Login() {
                       data-testid="button-privacy-policy"
                     >개인정보처리방침</span>
                     <span>|</span>
-                    <span>서비스 이용약관</span>
+                    <span
+                      className="cursor-pointer hover:underline"
+                      style={{ color: "rgba(12, 12, 12, 0.7)" }}
+                      onClick={() => setTermsOfServiceOpen(true)}
+                      data-testid="button-terms-of-service"
+                    >서비스 이용약관</span>
                   </div>
                   <p>
                     회사명: ©플록슨 대표이사: 송기원 사업자등록번호:
@@ -586,6 +592,86 @@ export default function Login() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={termsOfServiceOpen} onOpenChange={setTermsOfServiceOpen}>
+        <DialogContent className="sm:max-w-[640px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">서비스 이용약관</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-slate-700 leading-relaxed space-y-4" style={{ fontFamily: 'Pretendard' }}>
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1">제1조 (목적)</h4>
+              <p>본 약관은 주식회사 플록슨(이하 "회사")가 제공하는 플록슨 ELS(이하 "서비스")을 이용함에 있어 "회사"와 "이용고객(기업)" 간의 권리, 의무 및 책임 사항을 규정함을 목적으로 합니다.</p>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1">제2조 (용어의 정의)</h4>
+              <ul className="list-disc list-inside mt-1 space-y-1 text-slate-600">
+                <li>서비스: "회사"가 제공하는 업무 관리/지원 웹 시스템을 의미합니다.</li>
+                <li>이용고객: 본 약관에 동의하고 "회사"로부터 이용 권한을 부여받은 기업 또는 단체를 의미합니다.</li>
+                <li>구성원(User): 이용고객으로부터 서비스 접근 권한을 부여받은 임직원 등을 의미합니다.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1">제3조 (이용계약의 체결 및 거절)</h4>
+              <p>이용계약은 "이용고객"이 "회사"에 계정 생성을 요청하고 본 약관에 동의함으로써 성립합니다.</p>
+              <p className="mt-1">"회사"는 "이용고객"으로부터 제공받은 기본 정보를 바탕으로 초기 아이디(ID)와 임시 비밀번호를 생성하여 전달합니다.</p>
+              <p className="mt-1">"이용고객"은 임시 비밀번호를 수령한 후 시스템에 최초 접속 시 반드시 비밀번호를 본인이 직접 변경하여야 하며, 이를 이행하지 않아 발생하는 보안 사고의 책임은 "이용고객"에게 있습니다.</p>
+              <p className="mt-1">"회사"는 다음 각 호에 해당하는 신청에 대하여는 승낙을 하지 않거나 사후에 이용계약을 해지할 수 있습니다.</p>
+              <ul className="list-disc list-inside mt-1 space-y-1 text-slate-600 ml-2">
+                <li>제공받은 기본 정보가 허위인 경우</li>
+                <li>본 서비스의 목적에 부합하지 않는 주체가 신청한 경우</li>
+                <li>수리·복구 서비스를 위한 '제휴업체 협력' 계약이 해지된 경우</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1">제4조 (서비스의 제공 및 변경)</h4>
+              <p>서비스는 회사의 기술적·업무적 특별한 지장이 없는 한 상시 제공을 원칙으로 합니다.</p>
+              <p className="mt-1">회사는 서비스 개선이나 설비의 긴급 보수, 장애 대응 등 부득이한 사유가 발생한 경우 사전 예고 없이 서비스를 일시 중지할 수 있습니다. 이 경우 회사는 서비스 내 게시판이나 팝업 등을 통해 사후에 지체 없이 관련 사실을 공지합니다.</p>
+              <p className="mt-1">회사는 고의 또는 중과실이 없는 한, 서비스 일시 중지로 인하여 이용자가 입은 부수적 손해(기회비용 상실 등)에 대하여 책임을 지지 않습니다.</p>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1">제5조 (데이터의 소유권 및 관리)</h4>
+              <p>"이용고객"이 본 서비스를 통해 입력, 생성 또는 보고한 모든 데이터(이하 "보고 데이터")에 대한 소유권, 지식재산권 및 처분권은 "회사"에게 귀속됩니다. "이용고객"은 서비스 이용 기간 중 업무 목적으로 해당 데이터를 사용할 권한만을 가집니다.</p>
+              <p className="mt-1">"이용고객"은 이미 보고 등이 완료된 데이터에 대하여 임의로 수정, 삭제 또는 파기를 요구할 수 없습니다. 다만, "회사"는 이미 보고 등이 완료된 데이터를 관련 법령과 내부적으로 정한 기한에 따라 삭제(또는 파기) 합니다.</p>
+              <p className="mt-1">"회사"는 데이터를 서비스의 고도화, 통계 분석 및 기타 시스템 운영 목적으로 활용할 수 있으며, "이용고객"은 이에 대해 어떠한 권리 주장이나 보상을 요구할 수 없습니다.</p>
+              <p className="mt-1">서비스 이용 계약이 해지 또는 종료되더라도 "이용고객"은 "보고 데이터"의 반환이나 삭제를 청구할 수 없습니다. "회사"는 관련 법령에 따른 보존 의무 기간 동안 데이터를 보관하며, 그 이후의 처리는 "회사"의 정책에 따릅니다.</p>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1">제6조 (의무 및 금지사항)</h4>
+              <p>"이용고객" 및 "구성원"은 아이디와 비밀번호를 엄격히 관리해야 하며, 제3자에게 공유해서는 안 됩니다.</p>
+              <p className="mt-1">서비스의 역설계(Reverse Engineering), 해킹 시도, 데이터 무단 크롤링 등 시스템에 위해를 가하는 행위는 엄격히 금지됩니다.</p>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1">제7조 (책임 제한)</h4>
+              <p>"회사"는 천재지변, 기간통신사업자의 회선 장애, 클라우드 서비스 자체의 기술적 결함 등 "회사"의 통제 범위를 벗어난 사유로 발생한 손해에 대해서는 책임을 지지 않습니다.</p>
+              <p className="mt-1">"회사"는 "이용고객" 에게 공사 중개를 위한 시스템만을 제공할 뿐, "이용고객"을 대리하지 않습니다. 성립된 공사 계약 및 그에 따른 이행, 하자 보수 등 모든 업무적·법적 책임은 계약의 당사자인 "이용고객"에게 있습니다.</p>
+              <p className="mt-1">"회사"는 어떠한 경우에도 서비스 이용과 관련하여 발생한 부수적 손해, 결과적 손해, 특별 손해 또는 징벌적 손해에 대해 책임을 지지 않습니다.</p>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1">제8조 (비밀 유지)</h4>
+              <p>"회사"와 "이용고객"은 서비스 이용 과정에서 알게 된 상대방의 업무상 비밀을 서비스 이용 목적 외의 용도로 사용하거나 제3자에게 누설하여서는 안 됩니다.</p>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1">제9조 (준거법 및 재판관할)</h4>
+              <p>본 약관은 대한민국 법령에 의하여 해석되며, 발생한 분쟁에 대해서는 회사의 본점 주소지를 관할하는 법원으로 합니다.</p>
+            </div>
+
+            <div className="border-t border-slate-200 pt-3">
+              <h4 className="font-bold text-slate-900 mb-1">부 칙</h4>
+              <p>제1조 (시행일) 이 약관은 2026년 3월 1일부터 시행합니다.</p>
+              <p className="mt-1">제2조 (개정 이력)</p>
+              <p className="text-slate-600 ml-2">v1.0 제정: 2026. 03. 01. (최초 서비스 런칭)</p>
             </div>
           </div>
         </DialogContent>
