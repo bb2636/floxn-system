@@ -1708,6 +1708,23 @@ export default function Intake({
                     handleInputChange("insuranceCompany", "");
                     handleInputChange("insurancePolicyNo", "");
                     handleInputChange("insuranceAccidentNo", "");
+                    handleInputChange("clientResidence", "");
+                    handleInputChange("clientDepartment", "");
+                    handleInputChange("clientName", "");
+                    handleInputChange("clientContact", "");
+                    handleInputChange("assessorId", "");
+                    handleInputChange("assessorDepartment", "");
+                    handleInputChange("assessorTeam", "");
+                    handleInputChange("assessorContact", "");
+                    handleInputChange("investigatorTeam", "");
+                    handleInputChange("investigatorDepartment", "");
+                    handleInputChange("investigatorTeamName", "");
+                    handleInputChange("investigatorContact", "");
+                    handleInputChange("policyHolderName", "");
+                    handleInputChange("insuredName", "");
+                    handleInputChange("insuredContact", "");
+                    handleInputChange("insuredAddress", "");
+                    handleInputChange("insuredAddressDetail", "");
                   }}
                   className="pb-2 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
                   data-testid="button-reset-insurance"
