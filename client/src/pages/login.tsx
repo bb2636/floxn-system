@@ -408,6 +408,17 @@ export default function Login() {
                     "로그인"
                   )}
                 </Button>
+
+                <div className="mt-6 text-center" style={{ fontFamily: 'Pretendard', fontSize: '12px', color: 'rgba(12, 12, 12, 0.45)', lineHeight: '1.8' }}>
+                  <div className="flex items-center justify-center gap-3 mb-2" style={{ fontSize: '13px', color: 'rgba(12, 12, 12, 0.55)' }}>
+                    <span>개인정보처리방침</span>
+                    <span>|</span>
+                    <span>서비스 이용약관</span>
+                  </div>
+                  <p>회사명: ©플록슨 대표이사: 송기원 사업자등록번호: 517-87-03490</p>
+                  <p>(07256) 서울 영등포구 당산로 133, 3층 302호 Tel. 070-7778-0925</p>
+                  <p>Copyright FLOXN Co., Ltd. All rights reserved.</p>
+                </div>
               </form>
             </Form>
           </div>
