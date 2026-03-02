@@ -7,7 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Lock, AlertTriangle } from "lucide-react";
+import { Loader2, Eye, EyeOff, Lock, AlertTriangle, ShieldCheck, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,10 @@ export function ForceChangePasswordModal({
   const { toast } = useToast();
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const [termsExpanded, setTermsExpanded] = useState(false);
+  const [privacyExpanded, setPrivacyExpanded] = useState(false);
 
   const form = useForm<ForceChangePasswordInput>({
     resolver: zodResolver(forceChangePasswordSchema),
@@ -70,6 +74,14 @@ export function ForceChangePasswordModal({
   });
 
   const onSubmit = async (data: ForceChangePasswordInput) => {
+    if (!termsAgreed || !privacyAgreed) {
+      toast({
+        title: "약관 동의 필요",
+        description: "서비스 이용약관과 개인정보 처리방침에 모두 동의해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
     changePasswordMutation.mutate(data);
   };
 
@@ -83,13 +95,108 @@ export function ForceChangePasswordModal({
     }
   };
 
+  const allAgreed = termsAgreed && privacyAgreed;
+
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent 
-        className="sm:max-w-[425px]" 
+        className="sm:max-w-[460px] max-h-[90vh] overflow-y-auto" 
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
+        <div className="mb-4 p-4 rounded-lg" style={{ background: '#F0F5FF', border: '1px solid #D6E4FF' }}>
+          <div className="flex items-start gap-3 mb-3">
+            <div className="p-1.5 bg-blue-100 rounded-full mt-0.5">
+              <ShieldCheck className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 leading-snug">
+                서비스약관 동의 및<br />개인정보처리방침 고지 확인
+              </h3>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2.5 bg-white rounded-md" style={{ border: '1px solid #E5E7EB' }}>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={termsAgreed}
+                  onChange={(e) => setTermsAgreed(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                  data-testid="checkbox-terms-agree"
+                />
+                <span className="text-xs text-blue-600 font-medium">(필수)</span>
+                서비스 이용약관 동의
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTermsExpanded(!termsExpanded)}
+                  className="text-xs text-blue-500 hover:text-blue-700 underline"
+                  data-testid="button-terms-detail"
+                >
+                  전문 보기
+                </button>
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: termsAgreed ? '#16A34A' : '#9CA3AF' }}
+                >
+                  {termsAgreed ? '동의' : '미확인'}
+                </span>
+              </div>
+            </div>
+            {termsExpanded && (
+              <div className="p-3 bg-white rounded-md text-xs text-slate-600 leading-relaxed max-h-[150px] overflow-y-auto" style={{ border: '1px solid #E5E7EB' }}>
+                <p className="font-semibold mb-1">서비스 이용약관</p>
+                <p>제1조 (목적) 이 약관은 플록슨(이하 "회사")이 제공하는 누수 사고 관리 시스템 서비스(이하 "서비스")의 이용조건 및 절차에 관한 사항을 규정함을 목적으로 합니다.</p>
+                <p className="mt-1">제2조 (이용계약의 성립) 서비스 이용계약은 이용자가 본 약관에 동의하고 회사가 승인함으로써 성립됩니다.</p>
+                <p className="mt-1">제3조 (서비스의 내용) 회사는 보험 사고 접수, 현장조사, 견적, 정산 등의 업무를 지원하는 통합 관리 플랫폼을 제공합니다.</p>
+                <p className="mt-1">제4조 (이용자의 의무) 이용자는 서비스 이용 시 관련 법령 및 본 약관을 준수해야 하며, 타인의 정보를 부정하게 사용하거나 서비스를 방해하는 행위를 해서는 안 됩니다.</p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between p-2.5 bg-white rounded-md" style={{ border: '1px solid #E5E7EB' }}>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={privacyAgreed}
+                  onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-200"
+                  data-testid="checkbox-privacy-agree"
+                />
+                <span className="text-xs text-blue-600 font-medium">(필수)</span>
+                개인정보 처리방침 고지 확인
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPrivacyExpanded(!privacyExpanded)}
+                  className="text-xs text-blue-500 hover:text-blue-700 underline"
+                  data-testid="button-privacy-detail"
+                >
+                  전문 보기
+                </button>
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: privacyAgreed ? '#16A34A' : '#9CA3AF' }}
+                >
+                  {privacyAgreed ? '확인' : '미확인'}
+                </span>
+              </div>
+            </div>
+            {privacyExpanded && (
+              <div className="p-3 bg-white rounded-md text-xs text-slate-600 leading-relaxed max-h-[150px] overflow-y-auto" style={{ border: '1px solid #E5E7EB' }}>
+                <p className="font-semibold mb-1">개인정보 처리방침</p>
+                <p>플록슨(이하 "회사")은 개인정보보호법에 따라 이용자의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 다음과 같이 개인정보 처리방침을 수립·공개합니다.</p>
+                <p className="mt-1">1. 수집하는 개인정보 항목: 이름, 연락처, 이메일, 소속회사, 부서명 등 서비스 이용에 필요한 최소한의 정보를 수집합니다.</p>
+                <p className="mt-1">2. 개인정보의 수집 및 이용목적: 서비스 제공, 본인 확인, 업무 연락, 서비스 개선 등을 위해 개인정보를 이용합니다.</p>
+                <p className="mt-1">3. 개인정보의 보유 및 이용기간: 회원 탈퇴 시까지 보유하며, 관련 법령에 따른 보존 의무가 있는 경우 해당 기간 동안 보관합니다.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2">
             <div className="p-2 bg-amber-100 rounded-full">
@@ -205,7 +312,7 @@ export function ForceChangePasswordModal({
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={changePasswordMutation.isPending}
+                disabled={changePasswordMutation.isPending || !allAgreed}
                 data-testid="button-change-password"
               >
                 {changePasswordMutation.isPending ? (
