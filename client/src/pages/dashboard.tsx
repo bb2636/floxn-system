@@ -429,8 +429,9 @@ export default function Dashboard() {
 
     const isPartner = user.role === "협력사";
 
-    // 먼저 담당자로 필터링
+    // 먼저 담당자로 필터링 (배당대기/DRAFT 건 제외)
     let filteredCases = allCases.filter((c) => {
+      if (c.status === "배당대기" || (c.caseNumber && c.caseNumber.startsWith("DRAFT-"))) return false;
       if (c.assignedTo === user.id) return true;
       if (c.managerId === user.id) return true;
       if (isPartner && c.assignedPartnerManager === user.name) return true;
