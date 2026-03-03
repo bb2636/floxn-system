@@ -102,7 +102,7 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    console.error("[ERROR]", err);
   });
 
   // importantly only setup vite in development and after
@@ -114,29 +114,11 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // 기존 케이스 날짜 자동 채우기 마이그레이션 (서버 시작 시 한 번만 실행)
-  try {
-    const migratedCount = await storage.migrateExistingCaseDates();
-    if (migratedCount > 0) {
-      log(`Date migration completed: ${migratedCount} cases updated`);
-    }
-  } catch (error) {
-    console.error("Date migration failed:", error);
-  }
-
-  // Initialize Hiworks email transporter
-  initializeEmailTransporter();
-
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
   
-  // 대용량 파일 처리를 위해 타임아웃 대폭 증가 (5분)
-  server.timeout = 300000; // 300초 = 5분
-  server.keepAliveTimeout = 120000; // 120초 = 2분
-  server.headersTimeout = 310000; // timeout보다 약간 길게
+  server.timeout = 300000;
+  server.keepAliveTimeout = 120000;
+  server.headersTimeout = 310000;
   
   server.listen({
     port,
@@ -144,5 +126,18 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port} (timeout: ${server.timeout}ms)`);
+
+    (async () => {
+      try {
+        const migratedCount = await storage.migrateExistingCaseDates();
+        if (migratedCount > 0) {
+          log(`Date migration completed: ${migratedCount} cases updated`);
+        }
+      } catch (error) {
+        console.error("Date migration failed:", error);
+      }
+
+      initializeEmailTransporter();
+    })();
   });
 })();
