@@ -203,49 +203,18 @@ export default function Login() {
       <div className="relative flex gap-0 px-8 py-0 max-w-[1856px] mx-auto">
         {/* Left Panel - Illustration */}
         <div
-          className="hidden lg:block bg-white overflow-hidden flex-1"
+          className="hidden lg:block overflow-hidden flex-1"
           style={{
             height: "990px",
             borderRadius: "12px",
             position: "relative",
           }}
         >
-          {/* Blur orbs inside left panel */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div
-              className="absolute"
-              style={{
-                width: "1095px",
-                height: "777px",
-                left: "-609px",
-                top: "-300px",
-                background: "rgba(254, 240, 230, 0.40)",
-                borderRadius: "9999px",
-                filter: "blur(212px)",
-              }}
-            />
-            <div
-              className="absolute"
-              style={{
-                width: "1335px",
-                height: "1323px",
-                left: "200px",
-                top: "160px",
-                background: "rgba(233, 230, 254, 0.50)",
-                borderRadius: "9999px",
-                filter: "blur(212px)",
-              }}
-            />
-          </div>
-
-          {/* Illustration */}
-          <div className="relative z-10 flex items-center justify-center h-full p-12">
-            <img
-              src={loginIllustration}
-              alt="Login Illustration"
-              className="max-w-2xl w-full h-auto object-contain"
-            />
-          </div>
+          <img
+            src={loginIllustration}
+            alt="Login Illustration"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         </div>
 
         {/* Right Panel - Login Form */}
