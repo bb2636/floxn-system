@@ -26,7 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ForceChangePasswordModal } from "@/components/force-change-password-modal";
-import loginIllustration from "@assets/Vector_1762217883452.png";
+import loginIllustration from "@assets/1771911650223.jpg";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 
 export default function Login() {
