@@ -56,6 +56,10 @@ app.use(session({
   },
 }));
 
+app.get("/_health", (_req, res) => {
+  res.status(200).send("OK");
+});
+
 app.use(express.json({
   limit: '500mb', // 대용량 파일 처리를 위해 크기 제한 대폭 증가
   verify: (req, _res, buf) => {
@@ -108,10 +112,10 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
+  if (isProduction) {
     serveStatic(app);
+  } else {
+    await setupVite(app, server);
   }
 
   const port = parseInt(process.env.PORT || '5000', 10);
