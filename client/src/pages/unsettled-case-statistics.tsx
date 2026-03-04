@@ -212,7 +212,12 @@ export default function UnsettledCaseStatistics() {
 
     const groups: Record<string, Case[]> = {};
     cases.forEach((c) => {
-      const key = c.insuranceAccidentNo || c.caseNumber || `no-acc-${c.id}`;
+      let key = c.insuranceAccidentNo;
+      if (!key) {
+        const cn = c.caseNumber || "";
+        const dashIdx = cn.lastIndexOf("-");
+        key = dashIdx > 0 ? cn.substring(0, dashIdx) : cn || `no-acc-${c.id}`;
+      }
       if (!groups[key]) groups[key] = [];
       groups[key].push(c);
     });
