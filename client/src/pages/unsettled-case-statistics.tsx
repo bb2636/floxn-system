@@ -37,6 +37,41 @@ const formatDate = (dateStr: string | null | undefined): string => {
   }
 };
 
+const getRepresentativeCase = (groupCases: Case[]): Case => {
+  const sorted = [...groupCases].sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
+  const zeroCase = sorted.find(c => (c.caseNumber || "").endsWith("-0"));
+  if (zeroCase) return zeroCase;
+  const oneCase = sorted.find(c => (c.caseNumber || "").endsWith("-1"));
+  return oneCase || sorted[0];
+};
+
+const getGroupEstimateAmount = (groupCases: Case[]): number => {
+  return groupCases.reduce((sum, c) => {
+    if (c.status === "청구") {
+      return sum + getClaimAmount(c);
+    }
+    return sum + (parseFloat(c.estimateAmount || "0") || 0);
+  }, 0);
+};
+
+const getGroupApprovedAmount = (groupCases: Case[]): number => {
+  return groupCases.reduce((sum, c) => {
+    if (c.status === "청구") {
+      return sum + getClaimAmount(c);
+    }
+    return sum + (parseFloat(c.approvedAmount || "0") || 0);
+  }, 0);
+};
+
+interface GroupedRow {
+  accidentNo: string;
+  rep: Case;
+  cases: Case[];
+  totalEstimate: number;
+  totalApproved: number;
+  totalClaim: number;
+}
+
 const headerStyle: React.CSSProperties = {
   padding: "12px 8px",
   fontFamily: "Pretendard",
@@ -150,6 +185,8 @@ export default function UnsettledCaseStatistics() {
   }, [historicalMode, historicalDate, cases, statusHistory]);
 
   const filteredCases = useMemo(() => {
+    if (searchType !== "접수번호") return [];
+
     let result: Case[];
 
     if (historicalMode) {
@@ -160,33 +197,64 @@ export default function UnsettledCaseStatistics() {
 
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
-      result = result.filter((c) => {
-        if (searchType === "사고번호") {
-          return (c.insuranceAccidentNo || "").toLowerCase().includes(q);
-        } else {
-          return (c.caseNumber || "").toLowerCase().includes(q);
-        }
-      });
+      result = result.filter((c) => (c.caseNumber || "").toLowerCase().includes(q));
     }
 
-    if (searchType === "접수번호") {
-      result = [...result].sort((a, b) =>
-        (a.caseNumber || "").localeCompare(b.caseNumber || "")
-      );
-    } else {
-      result = [...result].sort((a, b) => {
-        const dateA = a.createdAt || "";
-        const dateB = b.createdAt || "";
-        if (dateA !== dateB) return dateA.localeCompare(dateB);
-        const compA = a.insuranceCompany || "";
-        const compB = b.insuranceCompany || "";
-        if (compA !== compB) return compA.localeCompare(compB);
-        return (a.insuranceAccidentNo || "").localeCompare(b.insuranceAccidentNo || "");
-      });
-    }
+    result = [...result].sort((a, b) =>
+      (a.caseNumber || "").localeCompare(b.caseNumber || "")
+    );
 
     return result;
   }, [cases, searchQuery, searchType, historicalMode, historicalUnsettledCaseIds]);
+
+  const groupedRows = useMemo((): GroupedRow[] => {
+    if (searchType !== "사고번호") return [];
+
+    const groups: Record<string, Case[]> = {};
+    cases.forEach((c) => {
+      const key = c.insuranceAccidentNo || c.caseNumber || `no-acc-${c.id}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(c);
+    });
+
+    let entries = Object.entries(groups).filter(([, groupCases]) => {
+      if (historicalMode) {
+        return groupCases.some((c) => historicalUnsettledCaseIds.has(c.id));
+      }
+      return groupCases.some((c) => isUnsettled(c));
+    });
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      entries = entries.filter(([accNo]) => accNo.toLowerCase().includes(q));
+    }
+
+    const rows: GroupedRow[] = entries.map(([accNo, groupCases]) => {
+      const rep = getRepresentativeCase(groupCases);
+      return {
+        accidentNo: accNo,
+        rep,
+        cases: groupCases,
+        totalEstimate: getGroupEstimateAmount(groupCases),
+        totalApproved: getGroupApprovedAmount(groupCases),
+        totalClaim: groupCases.reduce((sum, c) => sum + getClaimAmount(c), 0),
+      };
+    });
+
+    rows.sort((a, b) => {
+      const dateA = a.rep.createdAt || "";
+      const dateB = b.rep.createdAt || "";
+      if (dateA !== dateB) return dateA.localeCompare(dateB);
+      const compA = a.rep.insuranceCompany || "";
+      const compB = b.rep.insuranceCompany || "";
+      if (compA !== compB) return compA.localeCompare(compB);
+      return a.accidentNo.localeCompare(b.accidentNo);
+    });
+
+    return rows;
+  }, [cases, searchQuery, searchType, historicalMode, historicalUnsettledCaseIds]);
+
+  const displayCount = searchType === "사고번호" ? groupedRows.length : filteredCases.length;
 
   const getManagerName = (c: Case): string => {
     if (c.managerId && userMap[c.managerId]) {
@@ -218,6 +286,36 @@ export default function UnsettledCaseStatistics() {
     return { amount: 0, date: "-" };
   };
 
+  const getGroupDepositInfo = (groupCases: Case[]): { amount: number; date: string } => {
+    let totalAmount = 0;
+    let latestDate = "";
+    groupCases.forEach((c) => {
+      const info = getDepositInfo(c);
+      totalAmount += info.amount;
+      if (info.date !== "-" && info.date > latestDate) {
+        latestDate = info.date;
+      }
+    });
+    return { amount: totalAmount, date: latestDate || "-" };
+  };
+
+  const getGroupSettlementTotals = (groupCases: Case[]) => {
+    let partnerPayment = 0;
+    let commission = 0;
+    let latestPartnerDate = "";
+    let latestSettlementDate = "";
+    groupCases.forEach((c) => {
+      const s = settlementMap[c.id];
+      if (s) {
+        partnerPayment += parseFloat(s.partnerPaymentAmount || "0") || 0;
+        commission += parseFloat(s.commission || "0") || 0;
+        if (s.partnerPaymentDate && s.partnerPaymentDate > latestPartnerDate) latestPartnerDate = s.partnerPaymentDate;
+        if (s.settlementDate && s.settlementDate > latestSettlementDate) latestSettlementDate = s.settlementDate;
+      }
+    });
+    return { partnerPayment, commission, partnerPaymentDate: latestPartnerDate || null, settlementDate: latestSettlementDate || null };
+  };
+
   const handleExcelDownload = () => {
     const headers = [
       "보험사", "사고번호",
@@ -230,43 +328,74 @@ export default function UnsettledCaseStatistics() {
       ...(searchType !== "접수번호" ? ["청구액", "청구일자", "입금액", "부분입금일자", "정산액(협력업체 지급일)", "수수료", "정산일자"] : []),
     ];
 
-    const rows = filteredCases.map((c) => {
-      const deposit = getDepositInfo(c);
-      const settlement = settlementMap[c.id];
-      return [
-        c.insuranceCompany || "",
-        c.insuranceAccidentNo || "",
-        ...(searchType === "접수번호" ? [c.caseNumber || ""] : []),
-        getManagerName(c),
-        formatDate(c.createdAt),
-        c.clientResidence || "",
-        c.clientName || "",
-        c.assessorId || "",
-        c.assessorTeam || "",
-        c.investigatorTeam || "",
-        c.investigatorTeamName || "",
-        c.assignedPartner || "",
-        c.assignedPartnerManager || "",
-        formatDate(c.assignmentDate),
-        c.accidentType || "",
-        c.accidentCause || "",
-        c.restorationMethod || c.recoveryType || "",
-        c.status,
-        c.estimateAmount ? parseFloat(c.estimateAmount).toLocaleString() : "",
-        formatDate(c.siteInvestigationSubmitDate),
-        c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : "",
-        formatDate(c.secondApprovalDate),
-        ...(searchType !== "접수번호" ? [
-          getClaimAmount(c) ? getClaimAmount(c).toLocaleString() : "",
-          formatDate(c.claimDate),
+    let rows: string[][];
+
+    if (searchType === "접수번호") {
+      rows = filteredCases.map((c) => {
+        const deposit = getDepositInfo(c);
+        const settlement = settlementMap[c.id];
+        return [
+          c.insuranceCompany || "",
+          c.insuranceAccidentNo || "",
+          c.caseNumber || "",
+          getManagerName(c),
+          formatDate(c.createdAt),
+          c.clientResidence || "",
+          c.clientName || "",
+          c.assessorId || "",
+          c.assessorTeam || "",
+          c.investigatorTeam || "",
+          c.investigatorTeamName || "",
+          c.assignedPartner || "",
+          c.assignedPartnerManager || "",
+          formatDate(c.assignmentDate),
+          c.accidentType || "",
+          c.accidentCause || "",
+          c.restorationMethod || c.recoveryType || "",
+          c.status,
+          c.estimateAmount ? parseFloat(c.estimateAmount).toLocaleString() : "",
+          formatDate(c.siteInvestigationSubmitDate),
+          c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : "",
+          formatDate(c.secondApprovalDate),
+        ];
+      });
+    } else {
+      rows = groupedRows.map((g) => {
+        const rep = g.rep;
+        const deposit = getGroupDepositInfo(g.cases);
+        const sett = getGroupSettlementTotals(g.cases);
+        return [
+          rep.insuranceCompany || "",
+          g.accidentNo,
+          getManagerName(rep),
+          formatDate(rep.createdAt),
+          rep.clientResidence || "",
+          rep.clientName || "",
+          rep.assessorId || "",
+          rep.assessorTeam || "",
+          rep.investigatorTeam || "",
+          rep.investigatorTeamName || "",
+          rep.assignedPartner || "",
+          rep.assignedPartnerManager || "",
+          formatDate(rep.assignmentDate),
+          rep.accidentType || "",
+          rep.accidentCause || "",
+          rep.restorationMethod || rep.recoveryType || "",
+          rep.status,
+          g.totalEstimate ? g.totalEstimate.toLocaleString() : "",
+          formatDate(rep.siteInvestigationSubmitDate),
+          g.totalApproved ? g.totalApproved.toLocaleString() : "",
+          formatDate(rep.secondApprovalDate),
+          g.totalClaim ? g.totalClaim.toLocaleString() : "",
+          formatDate(rep.claimDate),
           deposit.amount ? deposit.amount.toLocaleString() : "",
           formatDate(deposit.date),
-          settlement?.partnerPaymentAmount ? `${parseFloat(settlement.partnerPaymentAmount).toLocaleString()} (${formatDate(settlement.partnerPaymentDate)})` : "",
-          settlement?.commission ? parseFloat(settlement.commission).toLocaleString() : "",
-          formatDate(settlement?.settlementDate),
-        ] : []),
-      ];
-    });
+          sett.partnerPayment ? `${sett.partnerPayment.toLocaleString()} (${formatDate(sett.partnerPaymentDate)})` : "",
+          sett.commission ? sett.commission.toLocaleString() : "",
+          formatDate(sett.settlementDate),
+        ];
+      });
+    }
 
     const csvContent = [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
     const BOM = "\uFEFF";
@@ -278,6 +407,82 @@ export default function UnsettledCaseStatistics() {
     link.download = `미결건_통계${suffix}_${format(new Date(), "yyyyMMdd")}.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const renderGroupedRow = (g: GroupedRow) => {
+    const rep = g.rep;
+    const deposit = getGroupDepositInfo(g.cases);
+    const sett = getGroupSettlementTotals(g.cases);
+
+    return (
+      <tr key={g.accidentNo} data-testid={`row-unsettled-group-${g.accidentNo}`}>
+        <td style={cellStyle}>{rep.insuranceCompany || "-"}</td>
+        <td style={{ ...cellStyle, fontSize: "12px" }}>{g.accidentNo || "-"}</td>
+        <td style={cellStyle}>{getManagerName(rep)}</td>
+        <td style={cellStyle}>{formatDate(rep.createdAt)}</td>
+        <td style={cellStyle}>{rep.clientResidence || "-"}</td>
+        <td style={cellStyle}>{rep.clientName || "-"}</td>
+        <td style={cellStyle}>{rep.assessorId || "-"}</td>
+        <td style={cellStyle}>{rep.assessorTeam || "-"}</td>
+        <td style={cellStyle}>{rep.investigatorTeam || "-"}</td>
+        <td style={cellStyle}>{rep.investigatorTeamName || "-"}</td>
+        <td style={cellStyle}>{rep.assignedPartner || "-"}</td>
+        <td style={cellStyle}>{rep.assignedPartnerManager || "-"}</td>
+        <td style={cellStyle}>{formatDate(rep.assignmentDate)}</td>
+        <td style={cellStyle}>{rep.accidentType || "-"}</td>
+        <td style={cellStyle}>{rep.accidentCause || "-"}</td>
+        <td style={cellStyle}>{rep.restorationMethod || rep.recoveryType || "-"}</td>
+        <td style={{ ...cellStyle, fontWeight: 500 }}>{rep.status}</td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(g.totalEstimate)}</td>
+        <td style={cellStyle}>{formatDate(rep.siteInvestigationSubmitDate)}</td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(g.totalApproved)}</td>
+        <td style={cellStyle}>{formatDate(rep.secondApprovalDate)}</td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(g.totalClaim)}</td>
+        <td style={cellStyle}>{formatDate(rep.claimDate)}</td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(deposit.amount)}</td>
+        <td style={cellStyle}>{formatDate(deposit.date)}</td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>
+          {formatAmount(sett.partnerPayment)}
+          {sett.partnerPaymentDate ? <div style={{ fontSize: "11px", color: "rgba(12,12,12,0.4)", marginTop: "2px" }}>({formatDate(sett.partnerPaymentDate)})</div> : null}
+        </td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(sett.commission)}</td>
+        <td style={{ ...cellStyle, borderRight: "none" }}>{formatDate(sett.settlementDate)}</td>
+      </tr>
+    );
+  };
+
+  const renderIndividualRow = (c: Case) => {
+    const deposit = getDepositInfo(c);
+    const settlement = settlementMap[c.id];
+    const estimateAmt = parseFloat(c.estimateAmount || "0") || 0;
+    const approvedAmt = parseFloat(c.approvedAmount || "0") || 0;
+
+    return (
+      <tr key={c.id} data-testid={`row-unsettled-case-${c.id}`}>
+        <td style={cellStyle}>{c.insuranceCompany || "-"}</td>
+        <td style={{ ...cellStyle, fontSize: "12px" }}>{c.insuranceAccidentNo || "-"}</td>
+        <td style={{ ...cellStyle, fontSize: "12px" }}>{c.caseNumber || "-"}</td>
+        <td style={cellStyle}>{getManagerName(c)}</td>
+        <td style={cellStyle}>{formatDate(c.createdAt)}</td>
+        <td style={cellStyle}>{c.clientResidence || "-"}</td>
+        <td style={cellStyle}>{c.clientName || "-"}</td>
+        <td style={cellStyle}>{c.assessorId || "-"}</td>
+        <td style={cellStyle}>{c.assessorTeam || "-"}</td>
+        <td style={cellStyle}>{c.investigatorTeam || "-"}</td>
+        <td style={cellStyle}>{c.investigatorTeamName || "-"}</td>
+        <td style={cellStyle}>{c.assignedPartner || "-"}</td>
+        <td style={cellStyle}>{c.assignedPartnerManager || "-"}</td>
+        <td style={cellStyle}>{formatDate(c.assignmentDate)}</td>
+        <td style={cellStyle}>{c.accidentType || "-"}</td>
+        <td style={cellStyle}>{c.accidentCause || "-"}</td>
+        <td style={cellStyle}>{c.restorationMethod || c.recoveryType || "-"}</td>
+        <td style={{ ...cellStyle, fontWeight: 500 }}>{c.status}</td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(estimateAmt)}</td>
+        <td style={cellStyle}>{formatDate(c.siteInvestigationSubmitDate)}</td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(approvedAmt)}</td>
+        <td style={{ ...cellStyle, borderRight: "none" }}>{formatDate(c.secondApprovalDate)}</td>
+      </tr>
+    );
   };
 
   return (
@@ -469,7 +674,7 @@ export default function UnsettledCaseStatistics() {
 
       <div className="flex items-center justify-between mb-3">
         <div style={{ fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", fontFamily: "Pretendard" }}>
-          총 <span style={{ fontWeight: 700, color: "rgba(12, 12, 12, 0.8)" }}>{filteredCases.length}</span>개의 통계
+          총 <span style={{ fontWeight: 700, color: "rgba(12, 12, 12, 0.8)" }}>{displayCount}</span>개의 통계
           {historicalMode && (
             <span style={{ marginLeft: "8px", color: "#D97706", fontWeight: 600 }}>
               ({format(historicalDate, "yyyy.MM.dd")} 기준)
@@ -561,7 +766,7 @@ export default function UnsettledCaseStatistics() {
             </tr>
           </thead>
           <tbody>
-            {filteredCases.length === 0 ? (
+            {displayCount === 0 ? (
               <tr>
                 <td
                   colSpan={searchType === "접수번호" ? 22 : 28}
@@ -578,57 +783,10 @@ export default function UnsettledCaseStatistics() {
                     : "해당 기간의 미결건이 없습니다."}
                 </td>
               </tr>
+            ) : searchType === "사고번호" ? (
+              groupedRows.map((g) => renderGroupedRow(g))
             ) : (
-              filteredCases.map((c) => {
-                const deposit = getDepositInfo(c);
-                const settlement = settlementMap[c.id];
-                const estimateAmt = parseFloat(c.estimateAmount || "0") || 0;
-                const approvedAmt = parseFloat(c.approvedAmount || "0") || 0;
-                const claimAmt = getClaimAmount(c);
-
-                return (
-                  <tr key={c.id} data-testid={`row-unsettled-case-${c.id}`}>
-                    <td style={cellStyle}>{c.insuranceCompany || "-"}</td>
-                    <td style={{ ...cellStyle, fontSize: "12px" }}>{c.insuranceAccidentNo || "-"}</td>
-                    {searchType === "접수번호" && (
-                      <td style={{ ...cellStyle, fontSize: "12px" }}>{c.caseNumber || "-"}</td>
-                    )}
-                    <td style={cellStyle}>{getManagerName(c)}</td>
-                    <td style={cellStyle}>{formatDate(c.createdAt)}</td>
-                    <td style={cellStyle}>{c.clientResidence || "-"}</td>
-                    <td style={cellStyle}>{c.clientName || "-"}</td>
-                    <td style={cellStyle}>{c.assessorId || "-"}</td>
-                    <td style={cellStyle}>{c.assessorTeam || "-"}</td>
-                    <td style={cellStyle}>{c.investigatorTeam || "-"}</td>
-                    <td style={cellStyle}>{c.investigatorTeamName || "-"}</td>
-                    <td style={cellStyle}>{c.assignedPartner || "-"}</td>
-                    <td style={cellStyle}>{c.assignedPartnerManager || "-"}</td>
-                    <td style={cellStyle}>{formatDate(c.assignmentDate)}</td>
-                    <td style={cellStyle}>{c.accidentType || "-"}</td>
-                    <td style={cellStyle}>{c.accidentCause || "-"}</td>
-                    <td style={cellStyle}>{c.restorationMethod || c.recoveryType || "-"}</td>
-                    <td style={{ ...cellStyle, fontWeight: 500 }}>{c.status}</td>
-                    <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(estimateAmt)}</td>
-                    <td style={cellStyle}>{formatDate(c.siteInvestigationSubmitDate)}</td>
-                    <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(approvedAmt)}</td>
-                    <td style={{ ...cellStyle, ...(searchType === "접수번호" ? { borderRight: "none" } : {}) }}>{formatDate(c.secondApprovalDate)}</td>
-                    {searchType !== "접수번호" && (
-                      <>
-                        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(claimAmt)}</td>
-                        <td style={cellStyle}>{formatDate(c.claimDate)}</td>
-                        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(deposit.amount)}</td>
-                        <td style={cellStyle}>{formatDate(deposit.date)}</td>
-                        <td style={{ ...cellStyle, textAlign: "right" }}>
-                          {formatAmount(parseFloat(settlement?.partnerPaymentAmount || "0") || 0)}
-                          {settlement?.partnerPaymentDate ? <div style={{ fontSize: "11px", color: "rgba(12,12,12,0.4)", marginTop: "2px" }}>({formatDate(settlement.partnerPaymentDate)})</div> : null}
-                        </td>
-                        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(parseFloat(settlement?.commission || "0") || 0)}</td>
-                        <td style={{ ...cellStyle, borderRight: "none" }}>{formatDate(settlement?.settlementDate)}</td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })
+              filteredCases.map((c) => renderIndividualRow(c))
             )}
           </tbody>
         </table>
