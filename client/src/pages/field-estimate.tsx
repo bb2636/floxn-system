@@ -1557,7 +1557,7 @@ export default function FieldEstimate() {
   // 협력사는 제출 후 수정 불가 (반려 시 수정 가능)
   const isReadOnly = isPartner && isSubmitted && !isRejected;
   
-  const DAMAGE_PREVENTION_KEYWORDS = ['누수탐지', '원인철거', '원인공사'];
+  const DAMAGE_PREVENTION_KEYWORDS = ['누수탐지', '원인철거', '원인공사', '원인(기타)'];
 
   const DAMAGE_PREVENTION_WORK_TYPES = useMemo(() => {
     if (laborCategories.length === 0) return DAMAGE_PREVENTION_KEYWORDS;
