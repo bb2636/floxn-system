@@ -5812,6 +5812,7 @@ export default function FieldEstimate() {
                 onSelectAll={toggleSelectAllMaterialRows}
                 isLoading={isLoadingMaterialCatalog}
                 isReadOnly={isReadOnly}
+                caseNumber={selectedCase?.caseNumber || ''}
               />
             </div>
 
@@ -6659,6 +6660,7 @@ export default function FieldEstimate() {
               onSelectAll={toggleSelectAllMaterialRows}
               isLoading={isLoadingMaterialCatalog}
               isReadOnly={isReadOnly}
+              caseNumber={selectedCase?.caseNumber || ''}
             />
 
             {/* 하단 버튼 */}

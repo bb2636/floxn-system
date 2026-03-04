@@ -53,6 +53,7 @@ interface MaterialCostSectionProps {
   onSelectAll: () => void;
   isLoading?: boolean;
   isReadOnly?: boolean; // 읽기 전용 모드
+  caseNumber?: string;
 }
 
 export function MaterialCostSection({
@@ -65,18 +66,26 @@ export function MaterialCostSection({
   onSelectAll,
   isLoading = false,
   isReadOnly = false,
+  caseNumber = '',
 }: MaterialCostSectionProps) {
   // 직접입력 모드 상태: 공사명, 자재항목 각각 관리
   const [workNameInputMode, setWorkNameInputMode] = useState<{[rowId: string]: boolean}>({});
   const [materialItemInputMode, setMaterialItemInputMode] = useState<{[rowId: string]: boolean}>({});
 
-  // 자재비 카탈로그에서 공종 목록 추출 (자재비 DB에 있는 공종만 표시)
+  const isLossPreventionCase = useMemo(() => /-0$/.test(caseNumber), [caseNumber]);
+
   const materialCategoryOptions = useMemo(() => {
     const categories = new Set(catalog.map(item => item.workType));
-    const sorted = Array.from(categories).sort();
-    console.log('[자재비 공종 드롭다운] catalog 개수:', catalog.length, '공종 목록:', sorted);
+    let sorted = Array.from(categories).sort();
+    if (caseNumber) {
+      if (isLossPreventionCase) {
+        sorted = sorted.filter(c => c === '원인공사');
+      } else {
+        sorted = sorted.filter(c => c !== '원인공사');
+      }
+    }
     return sorted;
-  }, [catalog]);
+  }, [catalog, caseNumber, isLossPreventionCase]);
 
   // 공종별로 필터링된 공사명 옵션
   const getWorkNamesForWorkType = (workType: string) => {
