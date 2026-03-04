@@ -342,7 +342,7 @@ export default function ClosedCaseStatistics() {
         const sett = getGroupSettlementTotals(g.cases);
         return [
           rep.insuranceCompany || "",
-          g.accidentNo,
+          g.accidentNo.startsWith("no-acc-") ? "-" : g.accidentNo,
           getManagerName(rep),
           formatDate(rep.createdAt),
           rep.clientResidence || "",
@@ -392,7 +392,7 @@ export default function ClosedCaseStatistics() {
     return (
       <tr key={g.accidentNo} data-testid={`row-closed-group-${g.accidentNo}`}>
         <td style={cellStyle}>{rep.insuranceCompany || "-"}</td>
-        <td style={{ ...cellStyle, fontSize: "12px" }}>{g.accidentNo || "-"}</td>
+        <td style={{ ...cellStyle, fontSize: "12px" }}>{g.accidentNo.startsWith("no-acc-") ? "-" : (g.accidentNo || "-")}</td>
         <td style={cellStyle}>{getManagerName(rep)}</td>
         <td style={cellStyle}>{formatDate(rep.createdAt)}</td>
         <td style={cellStyle}>{rep.clientResidence || "-"}</td>
