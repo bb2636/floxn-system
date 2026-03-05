@@ -118,6 +118,8 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   접수취소: { partner: false, manager: false, assessorInvestigator: true },
   입금완료: { partner: true, manager: false, assessorInvestigator: false },
   부분입금: { partner: true, manager: false, assessorInvestigator: false },
+  부분지급: { partner: true, manager: false, assessorInvestigator: false },
+  지급완료: { partner: true, manager: false, assessorInvestigator: false },
   정산완료: { partner: true, manager: true, assessorInvestigator: false },
   선견적요청: { partner: true, manager: true, assessorInvestigator: false },
   종결: { partner: true, manager: false, assessorInvestigator: false },
@@ -141,6 +143,8 @@ const CASE_STATUSES = [
   "청구",
   "입금완료",
   "부분입금",
+  "부분지급",
+  "지급완료",
   "정산완료",
   "종결",
   "접수취소",
@@ -157,7 +161,13 @@ const getStatusColor = (status: string | null | undefined) => {
   if (status === "1차승인") return "#008FED"; // 파란색
   if (status === "복구요청(2차승인)") return "#00C853"; // 초록색
   if (status === "접수취소" || status === "반려") return "#ED1C00"; // 빨간색
-  if (status === "입금완료" || status === "정산완료" || status === "종결")
+  if (
+    status === "입금완료" ||
+    status === "부분지급" ||
+    status === "지급완료" ||
+    status === "정산완료" ||
+    status === "종결"
+  )
     return "#4CAF50"; // 완료 초록색
   return "rgba(12, 12, 12, 0.7)"; // 기본 회색
 };
@@ -339,6 +349,8 @@ export default function ComprehensiveProgress() {
       "출동비청구(선견적)",
       "입금완료",
       "부분입금",
+      "부분지급",
+      "지급완료",
       "정산완료",
     ];
 
@@ -594,6 +606,8 @@ export default function ComprehensiveProgress() {
           청구: "청구",
           입금완료: "입금완료",
           부분입금: "부분입금",
+          부분지급: "부분지급",
+          지급완료: "지급완료",
           정산완료: "정산완료",
           접수취소: "접수취소",
           종결: "종결",
@@ -2782,6 +2796,8 @@ export default function ComprehensiveProgress() {
                                     "청구",
                                     "입금완료",
                                     "부분입금",
+                                    "부분지급",
+                                    "지급완료",
                                     "정산완료",
                                     "종결",
                                   ].includes(selectedCase.status || "")
@@ -2793,6 +2809,8 @@ export default function ComprehensiveProgress() {
                                     "청구",
                                     "입금완료",
                                     "부분입금",
+                                    "부분지급",
+                                    "지급완료",
                                     "정산완료",
                                     "종결",
                                   ].includes(selectedCase.status || "")

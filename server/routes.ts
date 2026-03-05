@@ -2994,6 +2994,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "청구",
         "입금완료",
         "부분입금",
+        "부분지급",
+        "지급완료",
         "정산완료",
         "접수취소",
       ];
@@ -4864,7 +4866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "부가세 청구자료",
       ];
       // 정산 관련 상태 목록 (이미 정산 프로세스에 있는 상태들)
-      const settlementStatuses = ["청구", "입금완료", "부분입금", "정산완료"];
+      const settlementStatuses = ["청구", "입금완료", "부분입금", "부분지급", "지급완료", "정산완료"];
 
       // parentCategory 체크 - 프론트엔드에서 전송한 탭 정보 (스키마에서 검증됨)
       const parentCategory = validatedData.parentCategory;
@@ -7482,6 +7484,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "청구",
         "입금완료",
         "부분입금",
+        "부분지급",
+        "지급완료",
         "정산완료",
         "접수취소",
         "종결",
@@ -7608,9 +7612,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         0,
       );
 
-      // 협력사 미정산: 보험사 입금은 됐으나 협력사 미정산 건 ('입금완료' + '부분입금')
+      // 협력사 미정산: 협력사에 일부 또는 최종 지급 중인 건 ('부분지급' + '지급완료')
       const partnerUnsettledCases = activeCases.filter(
-        (c) => c.status === "입금완료" || c.status === "부분입금",
+        (c) => c.status === "부분지급" || c.status === "지급완료",
       );
       const partnerUnsettledAmount = partnerUnsettledCases.reduce((sum, c) => {
         const estimate = latestEstimatesByCaseId.get(c.id);
@@ -7697,7 +7701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(cases)
         .where(
-          sql`(${cases.status} IN ('정산완료', '입금완료', '부분입금')) AND (${cases.recoveryType} = '직접복구' OR ${cases.status} = '직접복구')`,
+          sql`(${cases.status} IN ('정산완료', '입금완료', '부분입금', '부분지급', '지급완료')) AND (${cases.recoveryType} = '직접복구' OR ${cases.status} = '직접복구')`,
         );
 
       if (!completedCases.length) {
@@ -13304,6 +13308,8 @@ https://www.floxn.co.kr/
       "접수취소",
       "입금완료",
       "부분입금",
+      "부분지급",
+      "지급완료",
       "정산완료",
       "선견적요청",
       "종결",
@@ -14854,6 +14860,8 @@ FLOXN`;
         "청구",
         "입금완료",
         "부분입금",
+        "부분지급",
+        "지급완료",
         "정산완료",
       ];
 

@@ -289,6 +289,8 @@ export default function Dashboard() {
             c.status !== "청구" &&
             c.status !== "입금완료" &&
             c.status !== "부분입금" &&
+            c.status !== "부분지급" &&
+            c.status !== "지급완료" &&
             c.status !== "정산완료" &&
             c.status !== "접수취소" &&
             c.status !== "종결" &&
@@ -300,7 +302,7 @@ export default function Dashboard() {
         );
       case "partner":
         return activeCases.filter(
-          (c) => c.status === "입금완료" || c.status === "부분입금",
+          (c) => c.status === "부분지급" || c.status === "지급완료",
         );
       default:
         return activeCases;
@@ -402,6 +404,8 @@ export default function Dashboard() {
         c.status !== "청구" &&
         c.status !== "입금완료" &&
         c.status !== "부분입금" &&
+        c.status !== "부분지급" &&
+        c.status !== "지급완료" &&
         c.status !== "정산완료" &&
         c.status !== "접수취소" &&
         c.status !== "종결" &&
@@ -409,7 +413,7 @@ export default function Dashboard() {
       const isInsuranceUnsettled =
         c.status === "청구" || c.status === "부분입금";
       const isPartnerUnsettled =
-        c.status === "입금완료" || c.status === "부분입금";
+        c.status === "부분지급" || c.status === "지급완료";
       if (isPending) existing.pending++;
       if (isInsuranceUnsettled) existing.insuranceUnsettled++;
       if (isPartnerUnsettled) existing.partnerUnsettled++;

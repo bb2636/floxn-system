@@ -32,6 +32,8 @@ type NotificationStage =
   | "접수취소"
   | "입금완료"
   | "부분입금"
+  | "부분지급"
+  | "지급완료"
   | "정산완료"
   | "선견적요청"
   | "종결";
@@ -61,6 +63,8 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   접수취소: { partner: false, manager: false, assessorInvestigator: true },
   입금완료: { partner: true, manager: false, assessorInvestigator: false },
   부분입금: { partner: true, manager: false, assessorInvestigator: false },
+  부분지급: { partner: true, manager: false, assessorInvestigator: false },
+  지급완료: { partner: true, manager: false, assessorInvestigator: false },
   정산완료: { partner: true, manager: true, assessorInvestigator: false },
   선견적요청: { partner: true, manager: true, assessorInvestigator: false },
   종결: { partner: true, manager: false, assessorInvestigator: false },

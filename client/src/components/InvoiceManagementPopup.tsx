@@ -550,14 +550,27 @@ export function InvoiceManagementPopup({
         ? format(taxInvoiceDate, "yyyy-MM-dd")
         : null;
 
+      const hasMaxPayment = paymentEntries.some(
+        (e) => e.paymentCategory === "최종액",
+      );
+      const hasPartialPaymentOnly =
+        paymentEntries.length > 0 &&
+        paymentEntries.every((e) => e.paymentCategory === "일부");
+
       if (
         settlementStatus === "정산" ||
         settlementStatus === "부분입금" ||
-        hasTaxInvoiceDate
+        hasTaxInvoiceDate ||
+        hasMaxPayment ||
+        hasPartialPaymentOnly
       ) {
         let newStatus: string;
         if (hasTaxInvoiceDate) {
           newStatus = "종결";
+        } else if (hasMaxPayment) {
+          newStatus = "지급완료";
+        } else if (hasPartialPaymentOnly) {
+          newStatus = "부분지급";
         } else if (settlementStatus === "정산") {
           newStatus = "입금완료";
         } else {

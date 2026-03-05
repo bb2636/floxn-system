@@ -91,7 +91,11 @@ The system is a full-stack web application utilizing a React-based frontend and 
   - Date picker to select a historical date (defaults to 7 days ago)
   - Shows which cases were 미결건 (pending) at the selected past date
   - API endpoint: GET `/api/case-status-history`
-  - CLOSED_STATUSES = ["정산완료", "입금완료", "부분입금", "접수취소", "종결"] - everything else is 미결건
+  - CLOSED_STATUSES = ["정산완료", "입금완료", "부분입금", "부분지급", "지급완료", "접수취소", "종결"] - everything else is 미결건
+  - 케이스 상태 흐름 (정산): 청구 → 입금완료 → 부분지급 → 지급완료 → 정산완료
+  - 부분지급: 지급관리 paymentEntries에 "일부"만 있는 경우 (InvoiceManagementPopup 저장 시 자동 설정)
+  - 지급완료: 지급관리 paymentEntries에 "최종액"이 있는 경우 (InvoiceManagementPopup 저장 시 자동 설정)
+  - 협력사 미정산 = 부분지급 + 지급완료 상태
 
 ## Recent Changes (2026-01-14)
 - **Dashboard Complete Redesign**: Redesigned dashboard with new layout and styling
