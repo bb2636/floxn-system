@@ -3028,6 +3028,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
+      // 정산 관련 상태 변경 시 같은 사고번호의 관련건에도 상태 및 날짜 동기화
+      const PAYMENT_STATUSES = ["청구", "입금완료", "부분입금", "부분지급", "지급완료", "정산완료"];
+      const normalizedForSync = status === "미복구" ? "출동비 청구" : status;
+      if (PAYMENT_STATUSES.includes(normalizedForSync) && updatedCase.insuranceAccidentNo) {
+        try {
+          const allCases = await storage.getAllCases();
+          const siblingCases = allCases.filter(
+            (c) => c.id !== caseId && c.insuranceAccidentNo === updatedCase.insuranceAccidentNo && c.status !== "접수취소"
+          );
+          // 날짜 동기화 필드 결정
+          const dateSyncData: Record<string, string> = {};
+          if (updatedCase.partialPaymentDate && (normalizedForSync === "부분입금" || normalizedForSync === "부분지급")) {
+            dateSyncData.partialPaymentDate = updatedCase.partialPaymentDate;
+          }
+          if (updatedCase.paymentCompletedDate && (normalizedForSync === "입금완료" || normalizedForSync === "지급완료")) {
+            dateSyncData.paymentCompletedDate = updatedCase.paymentCompletedDate;
+          }
+          if (updatedCase.settlementCompletedDate && normalizedForSync === "정산완료") {
+            dateSyncData.settlementCompletedDate = updatedCase.settlementCompletedDate;
+          }
+          if (updatedCase.claimDate && normalizedForSync === "청구") {
+            dateSyncData.claimDate = updatedCase.claimDate;
+          }
+          for (const sibling of siblingCases) {
+            // 상태 동기화
+            await storage.updateCaseStatus(sibling.id, normalizedForSync);
+            // 날짜 동기화 (별도로 업데이트)
+            if (Object.keys(dateSyncData).length > 0) {
+              await storage.updateCase(sibling.id, dateSyncData as any);
+            }
+          }
+          if (siblingCases.length > 0) {
+            console.log(`[Status Sync] Synced status "${normalizedForSync}" to ${siblingCases.length} sibling cases (accidentNo: ${updatedCase.insuranceAccidentNo})`);
+          }
+        } catch (syncError) {
+          console.error("Failed to sync status to sibling cases:", syncError);
+        }
+      }
+
       // SMS 알림은 이제 클라이언트의 다이얼로그를 통해 확인 후 발송됩니다
       // 자동 발송 코드는 제거되었습니다
 

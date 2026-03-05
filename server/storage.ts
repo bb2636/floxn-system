@@ -4535,9 +4535,16 @@ export class DbStorage implements IStorage {
         }
         break;
       case "부분입금":
-        // 일부입금일 자동 기록 (기존 값 없을 때만)
+      case "부분지급":
+        // 일부지급일 자동 기록 (기존 값 없을 때만)
         if (!existingCase.partialPaymentDate) {
           dateUpdates.partialPaymentDate = currentDate;
+        }
+        break;
+      case "지급완료":
+        // 지급완료일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.paymentCompletedDate) {
+          dateUpdates.paymentCompletedDate = currentDate;
         }
         break;
       case "정산완료":
