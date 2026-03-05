@@ -48,7 +48,8 @@ const getRepresentativeCase = (groupCases: Case[]): Case => {
 const getGroupEstimateAmount = (groupCases: Case[]): number => {
   return groupCases.reduce((sum, c) => {
     if (c.status === "청구") {
-      return sum + getClaimAmount(c);
+      const claimAmt = getClaimAmount(c);
+      if (claimAmt > 0) return sum + claimAmt;
     }
     return sum + (parseFloat(c.estimateAmount || "0") || 0);
   }, 0);
@@ -57,9 +58,10 @@ const getGroupEstimateAmount = (groupCases: Case[]): number => {
 const getGroupApprovedAmount = (groupCases: Case[]): number => {
   return groupCases.reduce((sum, c) => {
     if (c.status === "청구") {
-      return sum + getClaimAmount(c);
+      const claimAmt = getClaimAmount(c);
+      if (claimAmt > 0) return sum + claimAmt;
     }
-    return sum + (parseFloat(c.approvedAmount || "0") || 0);
+    return sum + (parseFloat(c.approvedAmount || c.estimateAmount || "0") || 0);
   }, 0);
 };
 
