@@ -668,6 +668,20 @@ export function InvoiceManagementPopup({
   const handleSaveDeposits = async () => {
     if (!caseData) return;
 
+    const missingCategory = depositEntries.some(
+      (entry) =>
+        (entry.depositDate || entry.depositAmount > 0) &&
+        !entry.depositCategory,
+    );
+    if (missingCategory) {
+      toast({
+        title: "입력 오류",
+        description: "입금구분을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const settlementResponse = await fetch(
@@ -739,6 +753,20 @@ export function InvoiceManagementPopup({
 
   const handleSavePayments = async () => {
     if (!caseData) return;
+
+    const missingCategory = paymentEntries.some(
+      (entry) =>
+        (entry.paymentAmount > 0 || entry.commission > 0) &&
+        !entry.paymentCategory,
+    );
+    if (missingCategory) {
+      toast({
+        title: "입력 오류",
+        description: "지급구분을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
