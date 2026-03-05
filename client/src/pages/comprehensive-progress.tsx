@@ -8,7 +8,7 @@ import {
   type Invoice,
   type Settlement,
 } from "@shared/schema";
-import { Search, Cloud, Star, Plus, CalendarIcon, X, ChevronDown } from "lucide-react";
+import { Search, Cloud, Star, Plus, CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -196,7 +196,6 @@ export default function ComprehensiveProgress() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
-  const [showClosedSection, setShowClosedSection] = useState(false);
   const [showReceptionDetailDialog, setShowReceptionDetailDialog] =
     useState(false);
   const [isReceptionEditMode, setIsReceptionEditMode] = useState(false);
@@ -916,7 +915,6 @@ export default function ComprehensiveProgress() {
   // 진행상태 필터링 + 협력사 필터링 (모든 케이스 표시)
   const filteredByStatus = (cases || []).filter((caseItem) => {
     if (caseItem.status === "종결") return false;
-    if (caseItem.status === "접수취소") return false;
 
     // 협력사인 경우: 자신에게 배정된 모든 케이스 표시 (배당대기 제외)
     if (user?.role === "협력사") {
@@ -1021,54 +1019,6 @@ export default function ComprehensiveProgress() {
   });
 
   const totalCount = filteredData.length;
-
-  // 정산 종결 케이스 (종결 + 접수취소), 검색/담당자 필터 동일 적용
-  const closedCases = (() => {
-    const baseList = (cases || []).filter(
-      (c) => c.status === "종결" || c.status === "접수취소",
-    );
-
-    const afterSearch = baseList.filter((caseItem) => {
-      const normalizedQuery = searchQuery.trim().toLowerCase();
-      if (normalizedQuery === "") return true;
-      const insuranceCompany = (caseItem.insuranceCompany || "").toLowerCase();
-      const insuranceAccidentNo = (caseItem.insuranceAccidentNo || "").toLowerCase();
-      const caseNumber = (caseItem.caseNumber || "").toLowerCase();
-      const insuredName = (caseItem.insuredName || "").toLowerCase();
-      const managerName = (caseItem.managerName || "").toLowerCase();
-      const queries = normalizedQuery.split(",").map((q) => q.trim()).filter(Boolean);
-      return queries.some(
-        (q) =>
-          insuranceCompany.includes(q) ||
-          insuranceAccidentNo.includes(q) ||
-          caseNumber.includes(q) ||
-          insuredName.includes(q) ||
-          managerName.includes(q),
-      );
-    });
-
-    const afterRole = afterSearch.filter((caseItem) => {
-      if (user?.role === "협력사") return (caseItem.assignedPartner || "") === (user.company || "");
-      if (user?.role === "심사사") return (caseItem.assessorId || "") === (user.company || "");
-      if (user?.role === "조사사") return (caseItem.investigatorTeam || "") === (user.company || "");
-      return true;
-    });
-
-    const afterManager = afterRole.filter((caseItem) => {
-      const managerValue = selectedManager === "__INIT__" ? "전체" : selectedManager;
-      if (managerValue === "전체") return true;
-      return (caseItem.managerName || "") === managerValue;
-    });
-
-    return [...afterManager].sort((a, b) => {
-      const extractNumericValue = (caseNumber: string | null) => {
-        if (!caseNumber) return 0;
-        const numericStr = caseNumber.replace(/-/g, "");
-        return parseInt(numericStr, 10) || 0;
-      };
-      return extractNumericValue(b.caseNumber) - extractNumericValue(a.caseNumber);
-    });
-  })();
 
   // 협력사가 변경 가능한 상태 목록
   const PARTNER_ALLOWED_STATUSES = ["직접복구", "선견적요청"];
@@ -2285,169 +2235,6 @@ export default function ComprehensiveProgress() {
           </div>
         </div>
       </div>
-      {/* 정산 종결 섹션 (종결 + 접수취소 건) */}
-      {closedCases.length > 0 && (
-        <div style={{ marginTop: "16px" }}>
-          {/* 헤더 (접기/펼치기) */}
-          <button
-            onClick={() => setShowClosedSection((v) => !v)}
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "14px 20px",
-              background: "#FFFFFF",
-              border: "none",
-              borderRadius: showClosedSection ? "12px 12px 0 0" : "12px",
-              boxShadow: "0px 0px 20px #DBE9F5",
-              cursor: "pointer",
-              fontFamily: "Pretendard",
-              fontWeight: 600,
-              fontSize: "15px",
-              color: "rgba(12,12,12,0.75)",
-            }}
-            data-testid="button-toggle-closed-section"
-          >
-            <span>정산 종결 ({closedCases.length}건)</span>
-            <ChevronDown
-              size={18}
-              style={{
-                transition: "transform 0.2s",
-                transform: showClosedSection ? "rotate(180deg)" : "rotate(0deg)",
-                color: "rgba(12,12,12,0.4)",
-              }}
-            />
-          </button>
-
-          {showClosedSection && (
-            <div
-              style={{
-                background: "#FFFFFF",
-                boxShadow: "0px 4px 20px #DBE9F5",
-                borderRadius: "0 0 12px 12px",
-                overflow: "hidden",
-              }}
-            >
-              {/* 테이블 헤더 */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "100px 110px 100px 80px 1fr 90px 90px 130px 160px",
-                  padding: "12px 20px",
-                  background: "rgba(12,12,12,0.04)",
-                  borderBottom: "1px solid rgba(12,12,12,0.08)",
-                  gap: "8px",
-                }}
-              >
-                {["사고번호","접수번호","보험사","피보험자","주소","담당자","협력사","진행상태","자세히 보기"].map((col) => (
-                  <div
-                    key={col}
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 600,
-                      fontSize: "13px",
-                      color: "rgba(12,12,12,0.6)",
-                    }}
-                  >
-                    {col}
-                  </div>
-                ))}
-              </div>
-              {/* 테이블 바디 */}
-              {closedCases.map((caseItem) => {
-                const caseNumberSuffix = caseItem.caseNumber?.match(/-(\d+)$/)?.[1] || "0";
-                const suffixNum = parseInt(caseNumberSuffix);
-                const isInsuredCase = suffixNum === 0;
-                const addressText = isInsuredCase
-                  ? [caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(" ") || "-"
-                  : ([caseItem.victimAddress, caseItem.victimAddressDetail].filter(Boolean).join(" ")) ||
-                    [caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(" ") || "-";
-
-                return (
-                  <div
-                    key={caseItem.id}
-                    onClick={() => setSelectedCaseId(caseItem.id)}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "100px 110px 100px 80px 1fr 90px 90px 130px 160px",
-                      padding: "12px 20px",
-                      borderBottom: "1px solid rgba(12,12,12,0.06)",
-                      gap: "8px",
-                      alignItems: "center",
-                      cursor: "pointer",
-                      opacity: 0.8,
-                    }}
-                    data-testid={`closed-case-row-${caseItem.id}`}
-                  >
-                    <div style={{ fontFamily:"Pretendard", fontSize:"13px", color:"rgba(12,12,12,0.7)" }}>
-                      {caseItem.insuranceAccidentNo || "-"}
-                    </div>
-                    <div style={{ fontFamily:"Pretendard", fontSize:"13px", color:"rgba(12,12,12,0.7)" }}>
-                      {formatCaseNumber(caseItem.caseNumber) || "-"}
-                    </div>
-                    <div style={{ fontFamily:"Pretendard", fontSize:"13px", color:"rgba(12,12,12,0.7)" }}>
-                      {caseItem.insuranceCompany || "-"}
-                    </div>
-                    <div style={{ fontFamily:"Pretendard", fontSize:"13px", color:"rgba(12,12,12,0.7)" }}>
-                      {caseItem.insuredName || "-"}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily:"Pretendard",
-                        fontSize: addressText.length > 40 ? "11px" : "13px",
-                        color:"rgba(12,12,12,0.7)",
-                        lineHeight:"1.4",
-                        display:"-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient:"vertical",
-                        overflow:"hidden",
-                      }}
-                      title={addressText}
-                    >
-                      {addressText}
-                    </div>
-                    <div style={{ fontFamily:"Pretendard", fontSize:"13px", color:"rgba(12,12,12,0.7)" }}>
-                      {caseItem.managerName || "-"}
-                    </div>
-                    <div style={{ fontFamily:"Pretendard", fontSize:"13px", color:"rgba(12,12,12,0.7)" }}>
-                      {caseItem.assignedPartner || "-"}
-                    </div>
-                    <div>
-                      <span
-                        style={{
-                          display: "inline-block",
-                          padding: "3px 10px",
-                          borderRadius: "100px",
-                          background: caseItem.status === "접수취소" ? "#FEE2E2" : "rgba(12,12,12,0.08)",
-                          color: caseItem.status === "접수취소" ? "#ED1C00" : "rgba(12,12,12,0.6)",
-                          fontFamily: "Pretendard",
-                          fontSize: "12px",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {caseItem.status}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        fontFamily:"Pretendard",
-                        fontSize:"13px",
-                        color:"#008FED",
-                        cursor:"pointer",
-                        textDecoration:"underline",
-                      }}
-                    >
-                      상세보기
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* 상세보기 Sheet */}
       <Sheet
         open={selectedCaseId !== null}
