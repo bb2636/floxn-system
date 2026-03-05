@@ -3028,15 +3028,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // 정산 관련 상태 변경 시 같은 사고번호의 관련건에도 상태 및 날짜 동기화
+      // 정산 관련 상태 변경 시 같은 케이스번호 prefix의 관련건에도 상태 및 날짜 동기화
       const PAYMENT_STATUSES = ["청구", "입금완료", "부분입금", "부분지급", "지급완료", "정산완료"];
       const normalizedForSync = status === "미복구" ? "출동비 청구" : status;
-      if (PAYMENT_STATUSES.includes(normalizedForSync) && updatedCase.insuranceAccidentNo) {
+      if (PAYMENT_STATUSES.includes(normalizedForSync) && updatedCase.caseNumber) {
         try {
-          const allCases = await storage.getAllCases();
-          const siblingCases = allCases.filter(
-            (c) => c.id !== caseId && c.insuranceAccidentNo === updatedCase.insuranceAccidentNo && c.status !== "접수취소"
-          );
+          // 케이스번호 prefix로 관련건 조회 (예: CLM-1234567890-1 → prefix: CLM-1234567890)
+          const caseNumberParts = updatedCase.caseNumber.split("-");
+          const prefix = caseNumberParts.length >= 2
+            ? caseNumberParts.slice(0, -1).join("-")
+            : updatedCase.caseNumber;
+          const siblingCasesRaw = await storage.getCasesByPrefix(prefix, caseId);
+          const siblingCases = siblingCasesRaw.filter((c) => c.status !== "접수취소");
           // 날짜 동기화 필드 결정
           const dateSyncData: Record<string, string> = {};
           if (updatedCase.partialPaymentDate && (normalizedForSync === "부분입금" || normalizedForSync === "부분지급")) {
