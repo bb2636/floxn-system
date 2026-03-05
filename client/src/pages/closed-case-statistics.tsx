@@ -27,7 +27,7 @@ const getClosedDate = (c: Case, settlement?: Settlement): string | null => {
     return c.cancellationDate || null;
   }
   if (c.status === "종결") {
-    return c.settlementCompletedDate || settlement?.settlementDate || null;
+    return c.taxInvoiceConfirmDate || c.settlementCompletedDate || settlement?.settlementDate || null;
   }
   return c.settlementCompletedDate || c.paymentCompletedDate || c.partialPaymentDate || null;
 };
@@ -288,7 +288,11 @@ export default function ClosedCaseStatistics() {
         partnerPayment += parseFloat(s.partnerPaymentAmount || "0") || 0;
         commission += parseFloat(s.commission || "0") || 0;
         if (s.partnerPaymentDate && s.partnerPaymentDate > latestPartnerDate) latestPartnerDate = s.partnerPaymentDate;
-        if (s.settlementDate && s.settlementDate > latestSettlementDate) latestSettlementDate = s.settlementDate;
+        const settDate = s.settlementDate || c.taxInvoiceConfirmDate || c.settlementCompletedDate || "";
+        if (settDate && settDate > latestSettlementDate) latestSettlementDate = settDate;
+      } else {
+        const fallbackDate = c.taxInvoiceConfirmDate || c.settlementCompletedDate || "";
+        if (fallbackDate && fallbackDate > latestSettlementDate) latestSettlementDate = fallbackDate;
       }
     });
     return { partnerPayment, commission, partnerPaymentDate: latestPartnerDate || null, settlementDate: latestSettlementDate || null };
