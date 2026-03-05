@@ -628,14 +628,12 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         (sum, c) => sum + c.settlementAmount,
         0,
       );
-      // 수수료: 지급관리에 입력된 값이 있으면 합산, 없으면 -1 (화면에서 '-' 표시)
+      // 수수료/협력업체 지급액: 인보이스 관리의 대표 케이스(직접복구 우선)의 paymentEntries만 사용
       const directRepairCases = casesInGroup.filter(
         (c) => c.recoveryType === "직접복구",
       );
-      const hasAnyPaymentData = casesInGroup.some((c) => c.settlementCommission >= 0);
-      const totalSettlementCommission = hasAnyPaymentData
-        ? casesInGroup.filter((c) => c.settlementCommission >= 0).reduce((sum, c) => sum + c.settlementCommission, 0)
-        : -1;
+      const representativeCase = casesInGroup.find((c) => c.recoveryType === "직접복구") || casesInGroup[0];
+      const totalSettlementCommission = representativeCase.settlementCommission;
       // 사용료: 모든 건이 선견적요청일 때만 10만원, 직접복구 건이 하나라도 있으면 0
       const totalUsageFee = allNoRepair ? 100000 : 0;
       const totalSettlementDeposit = casesInGroup.reduce(
@@ -677,11 +675,8 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
       // 청구액 = 총 승인금액 (자기부담금 차감 없이 인보이스 합계와 동일하게 표시)
       const claimAmount = totalApprovedAmount;
 
-      // 협력업체 지급 정보 합산: 지급관리에 입력된 값이 있으면 합산, 없으면 -1
-      const hasAnyPartnerPayment = casesInGroup.some((c) => c.partnerPaymentAmount >= 0);
-      const totalPartnerPaymentAmount = hasAnyPartnerPayment
-        ? casesInGroup.filter((c) => c.partnerPaymentAmount >= 0).reduce((sum, c) => sum + c.partnerPaymentAmount, 0)
-        : -1;
+      // 협력업체 지급 정보: 대표 케이스의 paymentEntries 합계만 사용
+      const totalPartnerPaymentAmount = representativeCase.partnerPaymentAmount;
 
       combinedRows.push({
         id: primaryCase.id,
