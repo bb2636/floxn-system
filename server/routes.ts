@@ -12954,32 +12954,67 @@ Front·Line·Ops·Xpert·Net
         messageText = `[청구금액 지급요청]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건은 복구공사가 이미 완료되었으며, 공사금액 관련 자료는 ${invoiceDate} 이메일로 송부드린 바 있습니다.\n\n현재까지 공사금액 지급이 이루어지지 않아 확인 차 재안내 드리오니 신속한 검토 후 지급을 부탁드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 소재지: ${caseData.insuredAddress || ""}\n▷ 견적금액: ${estimateAmountText}\n\n※ 문의사항이 있으신 경우 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시기 바랍니다.\n\n감사합니다.`;
       } else {
         // 중복보험 일부금 독촉
+        // 정산청구 입금액(settlement.discount) + 입금일을 관련건 전체에서 합산
         let depositInfo = "";
         try {
-          const settlements = await storage.getSettlementsByCaseId(caseId);
-          if (settlements && settlements.length > 0) {
-            const settlement = settlements[0];
-            if (settlement.depositEntries) {
-              const entries = settlement.depositEntries as any[];
-              const deposited = entries.filter(
-                (e: any) => e.depositStatus === "입금" && e.depositAmount > 0,
-              );
-              if (deposited.length > 0) {
-                const totalDeposit = deposited.reduce(
-                  (sum: number, e: any) => sum + (Number(e.depositAmount) || 0),
-                  0,
-                );
-                const lastDate =
-                  deposited.sort((a: any, b: any) =>
-                    (b.depositDate || "").localeCompare(a.depositDate || ""),
-                  )[0]?.depositDate || "";
-                depositInfo = `${totalDeposit.toLocaleString()}원 (${lastDate})`;
+          const caseNumber = caseData.caseNumber || "";
+          const prefix = caseNumber.replace(/-\d+$/, "");
+          const relatedCasesForDeposit = await storage.getCasesByPrefix(prefix);
+          const filteredForDeposit = relatedCasesForDeposit.filter(
+            (c: any) => c.status !== "접수취소",
+          );
+          const groupCases = filteredForDeposit.length > 0 ? filteredForDeposit : [caseData];
+
+          let totalDiscount = 0;
+          let latestDepositDate = "";
+
+          for (const gc of groupCases) {
+            try {
+              const setts = await storage.getSettlementsByCaseId(gc.id);
+              if (setts && setts.length > 0) {
+                const s = setts[0];
+                // 입금액: settlement.discount (정산청구 입금액 컬럼과 동일)
+                const discountVal = parseAmt((s as any).discount || "0");
+                totalDiscount += discountVal;
+
+                // 입금일: depositEntries 중 가장 최근 depositDate
+                const entries = (s as any).depositEntries;
+                if (Array.isArray(entries) && entries.length > 0) {
+                  const sorted = [...entries]
+                    .filter((e: any) => e.depositDate)
+                    .sort((a: any, b: any) =>
+                      (b.depositDate || "").localeCompare(a.depositDate || ""),
+                    );
+                  if (sorted.length > 0 && sorted[0].depositDate > latestDepositDate) {
+                    latestDepositDate = sorted[0].depositDate;
+                  }
+                }
+                // depositEntries 없으면 settlementDate 사용
+                if (!latestDepositDate && (s as any).settlementDate) {
+                  latestDepositDate = (s as any).settlementDate;
+                }
+              }
+            } catch {}
+          }
+
+          if (totalDiscount > 0) {
+            // 날짜 포맷: YYYY-MM-DD → yy.mm.dd
+            let dateStr = "";
+            if (latestDepositDate && latestDepositDate !== "-") {
+              const parts = latestDepositDate.split("-");
+              if (parts.length === 3) {
+                dateStr = `${parts[0].slice(2)}.${parts[1]}.${parts[2]}`;
+              } else {
+                dateStr = latestDepositDate;
               }
             }
+            depositInfo = dateStr
+              ? `${totalDiscount.toLocaleString()}원(${dateStr})`
+              : `${totalDiscount.toLocaleString()}원`;
           }
         } catch {}
 
-        messageText = `[중복보험  미지급금 요청]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건과 관련하여 중복보험금 일부만 입금된 것으로 확인되어 안내드립니다.\n\n협력업체와의 원활한 업무 진행을 위해, 미지급 금액에 대한 신속한 지급을 요청드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 청구금액: ${claimAmountText}\n▷ 입금금액: ${depositInfo}\n\n※ 관련 문의사항은 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시면 재 안내드리겠습니다.\n\n감사합니다.`;
+        messageText = `[중복보험  미지급금 요청]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건과 관련하여 중복보험금 일부만 입금된 것으로 확인되어 안내드립니다.\n\n협력업체와의 원활한 업무 진행을 위해, 미지급 금액에 대한 신속한 지급을 요청드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 견적금액: ${estimateAmountText}\n▷ 입금금액: ${depositInfo}\n\n※ 관련 문의사항은 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시면 재 안내드리겠습니다.\n\n감사합니다.`;
       }
 
       // Send LMS via Solapi
