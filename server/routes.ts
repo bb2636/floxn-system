@@ -7475,8 +7475,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (c) => c.status !== "작성중",
       );
 
-      // 미결건 제외 상태 (청구, 입금완료, 부분입금, 정산완료, 접수취소, 종결, 취소)
+      // 미결건 제외 상태 (청구자료제출 단계 이후 + 종결/취소)
       const pendingExcluded = [
+        "청구자료제출(복구)",
+        "출동비청구(선견적)",
         "청구",
         "입금완료",
         "부분입금",
