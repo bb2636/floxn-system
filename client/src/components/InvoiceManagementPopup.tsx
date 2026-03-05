@@ -707,6 +707,16 @@ export function InvoiceManagementPopup({
         await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
           paymentCompletedDate: finalEntry.depositDate,
         });
+        if (relatedCases && relatedCases.length > 0) {
+          const rcPromises = relatedCases
+            .filter((rc) => rc.id !== caseData.id)
+            .map((rc) =>
+              apiRequest("PATCH", `/api/cases/${rc.id}`, {
+                paymentCompletedDate: finalEntry.depositDate,
+              }),
+            );
+          await Promise.all(rcPromises);
+        }
         queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       }
 
