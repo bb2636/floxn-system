@@ -2884,6 +2884,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Don't fail the request if sync fails
       }
 
+      // 입금/지급 관련 날짜 동기화: 같은 사고번호의 모든 건에 자동 연동
+      const paymentSyncFields = ["partialPaymentDate", "paymentCompletedDate", "settlementCompletedDate"] as const;
+      const paymentSyncData: Record<string, string> = {};
+      for (const field of paymentSyncFields) {
+        if (field in updateData && updateData[field]) {
+          paymentSyncData[field] = updateData[field];
+        }
+      }
+      if (Object.keys(paymentSyncData).length > 0 && updatedCase.insuranceAccidentNo) {
+        try {
+          const allCasesForSync = await storage.getAllCases();
+          const siblingCases = allCasesForSync.filter(
+            (c) => c.id !== id && c.insuranceAccidentNo === updatedCase.insuranceAccidentNo
+          );
+          for (const sibling of siblingCases) {
+            await storage.updateCase(sibling.id, paymentSyncData as any);
+          }
+          if (siblingCases.length > 0) {
+            console.log(
+              `[Payment Sync] Synced ${Object.keys(paymentSyncData).join(", ")} to ${siblingCases.length} sibling cases (accidentNo: ${updatedCase.insuranceAccidentNo})`,
+            );
+          }
+        } catch (syncError) {
+          console.error("Failed to sync payment dates to sibling cases:", syncError);
+        }
+      }
+
       res.json({ success: true, case: updatedCase });
     } catch (error) {
       console.error("Update case error:", error);
