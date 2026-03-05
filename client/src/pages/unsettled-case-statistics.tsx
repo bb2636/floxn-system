@@ -47,12 +47,18 @@ const getRepresentativeCase = (groupCases: Case[]): Case => {
 
 const getGroupEstimateAmount = (groupCases: Case[]): number => {
   return groupCases.reduce((sum, c) => {
+    if (c.status === "청구") {
+      return sum + getClaimAmount(c);
+    }
     return sum + (parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0);
   }, 0);
 };
 
 const getGroupApprovedAmount = (groupCases: Case[]): number => {
   return groupCases.reduce((sum, c) => {
+    if (c.status === "청구") {
+      return sum + getClaimAmount(c);
+    }
     return sum + (parseFloat(c.approvedAmount || "0") || 0);
   }, 0);
 };
@@ -347,9 +353,9 @@ export default function UnsettledCaseStatistics() {
           c.accidentCause || "",
           c.restorationMethod || c.recoveryType || "",
           c.status,
-          (c.initialEstimateAmount || c.estimateAmount) ? parseFloat(c.initialEstimateAmount || c.estimateAmount || "0").toLocaleString() : "",
+          c.status === "청구" ? getClaimAmount(c).toLocaleString() : ((c.initialEstimateAmount || c.estimateAmount) ? parseFloat(c.initialEstimateAmount || c.estimateAmount || "0").toLocaleString() : ""),
           formatDate(c.siteInvestigationSubmitDate),
-          c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : "",
+          c.status === "청구" ? getClaimAmount(c).toLocaleString() : (c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : ""),
           formatDate(c.secondApprovalDate),
         ];
       });
@@ -448,8 +454,8 @@ export default function UnsettledCaseStatistics() {
   const renderIndividualRow = (c: Case) => {
     const deposit = getDepositInfo(c);
     const settlement = settlementMap[c.id];
-    const estimateAmt = parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0;
-    const approvedAmt = parseFloat(c.approvedAmount || "0") || 0;
+    const estimateAmt = c.status === "청구" ? getClaimAmount(c) : (parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0);
+    const approvedAmt = c.status === "청구" ? getClaimAmount(c) : (parseFloat(c.approvedAmount || "0") || 0);
 
     return (
       <tr key={c.id} data-testid={`row-unsettled-case-${c.id}`}>
