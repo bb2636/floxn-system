@@ -13596,6 +13596,7 @@ https://www.floxn.co.kr/
           totalAmountNum > 0 ? totalAmountNum.toLocaleString() : "-";
 
         subject = "지급 알림";
+        const deductibleLine = deductibleNum > 0 ? `\n자기부담금 : ${deductibleStr}원` : "";
         messageText = `<지급 알림>
 
 보험사 : ${caseData.insuranceCompany || "-"}
@@ -13603,8 +13604,7 @@ https://www.floxn.co.kr/
 피보험자 : ${caseData.insuredName || "-"}
 사고장소 : ${getFullAddress()}
 
-지급금액 : ${paymentAmountStr}원
-자기부담금 : ${deductibleStr}원
+지급금액 : ${paymentAmountStr}원${deductibleLine}
 수수료 : ${commissionStr}원
 합계금액 : ${totalAmountStr}원`;
       } else if (stage === "반려" || stage === "승인반려") {
