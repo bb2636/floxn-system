@@ -12841,6 +12841,7 @@ Front·Line·Ops·Xpert·Net
           isProperty: boolean;
           recoveryType: string | null;
         }[] = [];
+        let totalEstimate = 0;
         for (const c of allCasesInGroup) {
           const suffix = getSuffix(c.caseNumber);
           const isPrevention = suffix === 0;
@@ -12857,6 +12858,7 @@ Front·Line·Ops·Xpert·Net
           } else {
             estimateTotal = parseAmt(c.estimateAmount);
           }
+          totalEstimate += estimateTotal;
 
           const caseApprovedAmount = parseAmt(c.approvedAmount);
           const isApproved =
@@ -12875,6 +12877,7 @@ Front·Line·Ops·Xpert·Net
             recoveryType: c.recoveryType,
           });
         }
+        const estimateAmountText = totalEstimate > 0 ? `${totalEstimate.toLocaleString()}원` : (caseData.estimateAmount || "");
 
         // 손해방지비용 + 대물비용 승인액 (직접복구 건만)
         const preventionApproved = caseApprovedValues
@@ -12948,7 +12951,7 @@ Front·Line·Ops·Xpert·Net
           }
         } catch {}
         
-        messageText = `[청구금액 지급요청]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건은 복구공사가 이미 완료되었으며, 공사금액 관련 자료는 ${invoiceDate} 이메일로 송부드린 바 있습니다.\n\n현재까지 공사금액 지급이 이루어지지 않아 확인 차 재안내 드리오니 신속한 검토 후 지급을 부탁드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 소재지: ${caseData.insuredAddress || ""}\n▷ 청구금액: ${claimAmountText}\n\n※ 문의사항이 있으신 경우 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시기 바랍니다.\n\n감사합니다.`;
+        messageText = `[청구금액 지급요청]\nTO. ${recipientName}\n\n안녕하세요. 플록슨 ${senderName}입니다.\n\n아래 사고 건은 복구공사가 이미 완료되었으며, 공사금액 관련 자료는 ${invoiceDate} 이메일로 송부드린 바 있습니다.\n\n현재까지 공사금액 지급이 이루어지지 않아 확인 차 재안내 드리오니 신속한 검토 후 지급을 부탁드립니다.\n\n▷ 사고번호: ${caseData.insuranceAccidentNo || ""}\n▷ 피보험자: ${caseData.insuredName || ""}\n▷ 소재지: ${caseData.insuredAddress || ""}\n▷ 견적금액: ${estimateAmountText}\n\n※ 문의사항이 있으신 경우 당사 담당자 (${senderName} / ${senderPhone})에게 연락 주시기 바랍니다.\n\n감사합니다.`;
       } else {
         // 중복보험 일부금 독촉
         let depositInfo = "";
