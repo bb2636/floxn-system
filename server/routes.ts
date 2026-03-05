@@ -7606,10 +7606,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         0,
       );
 
-      // 협력사 미정산: 당일 기준 상태가 정산완료/종결/접수취소가 아닌 건
-      const PARTNER_SETTLED_STATUSES = ["정산완료", "종결", "접수취소"];
+      // 협력사 미정산: 보험사 입금은 됐으나 협력사 미정산 건 ('입금완료' + '부분입금')
       const partnerUnsettledCases = activeCases.filter(
-        (c) => !PARTNER_SETTLED_STATUSES.includes(c.status),
+        (c) => c.status === "입금완료" || c.status === "부분입금",
       );
       const partnerUnsettledAmount = partnerUnsettledCases.reduce((sum, c) => {
         const estimate = latestEstimatesByCaseId.get(c.id);
