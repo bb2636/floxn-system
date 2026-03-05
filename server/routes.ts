@@ -2885,7 +2885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 입금/지급 관련 날짜 동기화: 같은 사고번호의 모든 건에 자동 연동
-      const paymentSyncFields = ["partialPaymentDate", "paymentCompletedDate", "settlementCompletedDate"] as const;
+      const paymentSyncFields = ["partialPaymentDate", "paymentCompletedDate", "settlementCompletedDate", "taxInvoiceConfirmDate", "claimDate"] as const;
       const paymentSyncData: Record<string, string> = {};
       for (const field of paymentSyncFields) {
         if (field in updateData && updateData[field]) {
