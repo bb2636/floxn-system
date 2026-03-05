@@ -7587,10 +7587,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // 보험사 미정산: 당일 기준 상태가 정산완료/입금완료/종결/접수취소가 아닌 건
-      const INSURANCE_SETTLED_STATUSES = ["정산완료", "입금완료", "종결", "접수취소"];
+      // 보험사 미정산: '청구' ~ '부분입금' 상태 건 (청구했지만 입금 최종액이 없는 건)
       const insuranceUnsettledCases = activeCases.filter(
-        (c) => !INSURANCE_SETTLED_STATUSES.includes(c.status),
+        (c) => c.status === "청구" || c.status === "부분입금",
       );
       const insuranceUnsettledAmount = insuranceUnsettledCases.reduce(
         (sum, c) => {
