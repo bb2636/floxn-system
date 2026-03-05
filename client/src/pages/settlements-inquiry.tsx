@@ -100,6 +100,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
   const [managementDialogOpen, setManagementDialogOpen] = useState(false);
   const [selectedCaseForManagement, setSelectedCaseForManagement] =
     useState<SettlementRow | null>(null);
+  const [reportPopoverOpen, setReportPopoverOpen] = useState<Record<string, boolean>>({});
 
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [showFieldDispatchInvoiceDialog, setShowFieldDispatchInvoiceDialog] =
@@ -1220,7 +1221,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
       {/* Wide Table with Horizontal Scroll and Sticky Header/Columns */}
       {(() => {
         const stickyHeaders = ["보험사", "증권번호", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체"];
-        const scrollHeaders = ["청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", ...(isPartner ? [] : ["관리"])];
+        const scrollHeaders = ["청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", ...(isPartner ? [] : ["관리"]), ...(filterMode === "closed" && !isPartner ? ["보고서열람"] : [])];
         const allHeaders = [...stickyHeaders, ...scrollHeaders];
         const stickyColWidths = [100, 110, 130, 90, 110, 150, 110];
         const stickyColLefts = stickyColWidths.map((_, i) => stickyColWidths.slice(0, i).reduce((a, b) => a + b, 0));
@@ -1380,7 +1381,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                       <td style={amountStyle}>{renderAmount(row.settlementCommission)}</td>
                       <td style={{ ...cellStyle, borderRight: isPartner ? "none" : cellStyle.borderRight }}>{row.settlementInvoiceDate}</td>
                       {!isPartner && (
-                        <td style={{ ...cellStyle, borderRight: "none" }}>
+                        <td style={{ ...cellStyle, borderRight: filterMode === "closed" ? "1px solid rgba(12, 12, 12, 0.08)" : "none" }}>
                           <Button
                             variant="outline"
                             size="sm"
@@ -1398,6 +1399,80 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                           >
                             관리
                           </Button>
+                        </td>
+                      )}
+                      {filterMode === "closed" && !isPartner && (
+                        <td style={{ ...cellStyle, borderRight: "none" }}>
+                          <Popover
+                            open={!!reportPopoverOpen[row.id]}
+                            onOpenChange={(open) =>
+                              setReportPopoverOpen((prev) => ({ ...prev, [row.id]: open }))
+                            }
+                          >
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => e.stopPropagation()}
+                                data-testid={`button-report-${row.id}`}
+                                style={{
+                                  padding: "4px 12px",
+                                  height: "28px",
+                                  fontSize: "12px",
+                                  fontFamily: "Pretendard",
+                                  background: "#E8F5E9",
+                                  borderColor: "#4CAF50",
+                                  color: "#2E7D32",
+                                }}
+                              >
+                                보고서열람
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-64 p-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div style={{ fontFamily: "Pretendard", fontSize: "12px", padding: "4px 8px", color: "rgba(12,12,12,0.5)", fontWeight: 600 }}>
+                                접수건 선택
+                              </div>
+                              {row.caseIds.map((caseId) => {
+                                const c = cases.find((x) => x.id === caseId);
+                                if (!c) return null;
+                                const suffix = c.caseNumber?.match(/-(\d+)$/)?.[1] ?? "";
+                                const label = suffix === "0" ? "손해방지" : `직접복구${suffix !== "1" ? ` (${suffix})` : ""}`;
+                                return (
+                                  <button
+                                    key={caseId}
+                                    onClick={() => {
+                                      setReportPopoverOpen((prev) => ({ ...prev, [row.id]: false }));
+                                      localStorage.setItem("selectedFieldSurveyCaseId", caseId);
+                                      localStorage.setItem("returnToComprehensiveProgress", "true");
+                                      setLocation("/field-survey/report");
+                                    }}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "8px",
+                                      width: "100%",
+                                      padding: "8px 12px",
+                                      background: "none",
+                                      border: "none",
+                                      borderRadius: "6px",
+                                      cursor: "pointer",
+                                      fontFamily: "Pretendard",
+                                      fontSize: "13px",
+                                      textAlign: "left",
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(0,0,0,0.05)"; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = "none"; }}
+                                  >
+                                    <span style={{ color: "rgba(12,12,12,0.45)", fontSize: "11px", minWidth: "28px" }}>{c.caseNumber?.split("-").slice(-2).join("-")}</span>
+                                    <span style={{ color: "rgba(12,12,12,0.85)" }}>{label}</span>
+                                  </button>
+                                );
+                              })}
+                            </PopoverContent>
+                          </Popover>
                         </td>
                       )}
                     </tr>
