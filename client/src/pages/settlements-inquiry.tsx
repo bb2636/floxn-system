@@ -1386,11 +1386,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (filterMode === "closed") {
-                                setLocation(`/comprehensive-progress?caseId=${row.id}`);
-                              } else {
-                                handleOpenManagement(row);
-                              }
+                              handleOpenManagement(row);
                             }}
                             data-testid={`button-management-${row.id}`}
                             style={{
@@ -1400,7 +1396,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                               fontFamily: "Pretendard",
                             }}
                           >
-                            {filterMode === "closed" ? "자세히 보기" : "관리"}
+                            관리
                           </Button>
                         </td>
                       )}
