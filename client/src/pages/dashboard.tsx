@@ -284,17 +284,24 @@ export default function Dashboard() {
       case "pending":
         return activeCases.filter(
           (c) =>
+            c.status !== "청구자료제출(복구)" &&
+            c.status !== "출동비청구(선견적)" &&
             c.status !== "청구" &&
             c.status !== "입금완료" &&
             c.status !== "부분입금" &&
             c.status !== "정산완료" &&
             c.status !== "접수취소" &&
+            c.status !== "종결" &&
             c.status !== "취소",
         );
       case "insurance":
-        return activeCases.filter((c) => c.status === "완료");
+        return activeCases.filter(
+          (c) => c.status === "청구" || c.status === "부분입금",
+        );
       case "partner":
-        return activeCases.filter((c) => c.status === "완료");
+        return activeCases.filter(
+          (c) => c.status === "입금완료" || c.status === "부분입금",
+        );
       default:
         return activeCases;
     }
@@ -386,13 +393,12 @@ export default function Dashboard() {
       existing.reception++;
     });
 
-    const INSURANCE_SETTLED = ["정산완료", "입금완료", "종결", "접수취소"];
-    const PARTNER_SETTLED = ["정산완료", "종결", "접수취소"];
-
     activeCases.forEach((c) => {
       const companyName = c.insuranceCompany || "미지정";
       const existing = companyCounts.get(companyName)!;
       const isPending =
+        c.status !== "청구자료제출(복구)" &&
+        c.status !== "출동비청구(선견적)" &&
         c.status !== "청구" &&
         c.status !== "입금완료" &&
         c.status !== "부분입금" &&
@@ -400,8 +406,10 @@ export default function Dashboard() {
         c.status !== "접수취소" &&
         c.status !== "종결" &&
         c.status !== "취소";
-      const isInsuranceUnsettled = !INSURANCE_SETTLED.includes(c.status);
-      const isPartnerUnsettled = !PARTNER_SETTLED.includes(c.status);
+      const isInsuranceUnsettled =
+        c.status === "청구" || c.status === "부분입금";
+      const isPartnerUnsettled =
+        c.status === "입금완료" || c.status === "부분입금";
       if (isPending) existing.pending++;
       if (isInsuranceUnsettled) existing.insuranceUnsettled++;
       if (isPartnerUnsettled) existing.partnerUnsettled++;
