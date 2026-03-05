@@ -64,22 +64,28 @@ const getRepresentativeCase = (groupCases: Case[]): Case => {
   return oneCase || sorted[0];
 };
 
+const getCaseEstimateForStats = (c: Case): number => {
+  if (c.status === "청구") {
+    const claimAmt = getClaimAmount(c);
+    if (claimAmt > 0) return claimAmt;
+  }
+  return parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0;
+};
+
+const getCaseApprovedForStats = (c: Case): number => {
+  if (c.status === "청구") {
+    const claimAmt = getClaimAmount(c);
+    if (claimAmt > 0) return claimAmt;
+  }
+  return parseFloat(c.approvedAmount || "0") || 0;
+};
+
 const getGroupEstimateAmount = (groupCases: Case[]): number => {
-  return groupCases.reduce((sum, c) => {
-    if (c.status === "청구") {
-      return sum + getClaimAmount(c);
-    }
-    return sum + (parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0);
-  }, 0);
+  return groupCases.reduce((sum, c) => sum + getCaseEstimateForStats(c), 0);
 };
 
 const getGroupApprovedAmount = (groupCases: Case[]): number => {
-  return groupCases.reduce((sum, c) => {
-    if (c.status === "청구") {
-      return sum + getClaimAmount(c);
-    }
-    return sum + (parseFloat(c.approvedAmount || "0") || 0);
-  }, 0);
+  return groupCases.reduce((sum, c) => sum + getCaseApprovedForStats(c), 0);
 };
 
 interface GroupedRow {
@@ -333,9 +339,9 @@ export default function ClosedCaseStatistics() {
           c.accidentCause || "",
           c.restorationMethod || c.recoveryType || "",
           c.status,
-          c.status === "청구" ? getClaimAmount(c).toLocaleString() : ((c.initialEstimateAmount || c.estimateAmount) ? parseFloat(c.initialEstimateAmount || c.estimateAmount || "0").toLocaleString() : ""),
+          getCaseEstimateForStats(c) ? getCaseEstimateForStats(c).toLocaleString() : "",
           formatDate(c.siteInvestigationSubmitDate),
-          c.status === "청구" ? getClaimAmount(c).toLocaleString() : (c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : ""),
+          getCaseApprovedForStats(c) ? getCaseApprovedForStats(c).toLocaleString() : "",
           formatDate(c.secondApprovalDate),
         ];
       });
@@ -433,8 +439,8 @@ export default function ClosedCaseStatistics() {
   const renderIndividualRow = (c: Case) => {
     const deposit = getDepositInfo(c);
     const settlement = settlementMap[c.id];
-    const estimateAmt = c.status === "청구" ? getClaimAmount(c) : (parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0);
-    const approvedAmt = c.status === "청구" ? getClaimAmount(c) : (parseFloat(c.approvedAmount || "0") || 0);
+    const estimateAmt = getCaseEstimateForStats(c);
+    const approvedAmt = getCaseApprovedForStats(c);
 
     return (
       <tr key={c.id} data-testid={`row-case-${c.id}`}>
