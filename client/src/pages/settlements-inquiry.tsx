@@ -648,7 +648,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         0,
       );
 
-      // Total claim amount = 총 승인금액 - 자기부담금
+      // 청구액 = 인보이스 청구금액 합계 (총 승인금액)와 동일 (자기부담금 차감하지 않음)
       // 인보이스에 저장된 totalApprovedAmount가 있으면 그것을 사용 (인보이스 관리에서 수정한 값)
       const invoice = invoicesByPrefixMap.get(prefix);
       const invoiceTotalApproved = invoice?.totalApprovedAmount
@@ -675,7 +675,8 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
       const finalDeductible =
         invoiceDeductible > 0 ? invoiceDeductible : totalSettlementDeductible;
 
-      const claimAmount = totalApprovedAmount - finalDeductible;
+      // 청구액 = 총 승인금액 (자기부담금 차감 없이 인보이스 합계와 동일하게 표시)
+      const claimAmount = totalApprovedAmount;
 
       // 협력업체 지급 정보 합산
       const totalPartnerPaymentAmount = casesInGroup.reduce(
