@@ -69,7 +69,7 @@ const getGroupEstimateAmount = (groupCases: Case[]): number => {
     if (c.status === "청구") {
       return sum + getClaimAmount(c);
     }
-    return sum + (parseFloat(c.estimateAmount || "0") || 0);
+    return sum + (parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0);
   }, 0);
 };
 
@@ -333,7 +333,7 @@ export default function ClosedCaseStatistics() {
           c.accidentCause || "",
           c.restorationMethod || c.recoveryType || "",
           c.status,
-          c.estimateAmount ? parseFloat(c.estimateAmount).toLocaleString() : "",
+          (c.initialEstimateAmount || c.estimateAmount) ? parseFloat(c.initialEstimateAmount || c.estimateAmount || "0").toLocaleString() : "",
           formatDate(c.siteInvestigationSubmitDate),
           c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : "",
           formatDate(c.secondApprovalDate),
@@ -433,7 +433,7 @@ export default function ClosedCaseStatistics() {
   const renderIndividualRow = (c: Case) => {
     const deposit = getDepositInfo(c);
     const settlement = settlementMap[c.id];
-    const estimateAmt = parseFloat(c.estimateAmount || "0") || 0;
+    const estimateAmt = parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0;
     const approvedAmt = parseFloat(c.approvedAmount || "0") || 0;
 
     return (

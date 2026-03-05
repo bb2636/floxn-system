@@ -47,7 +47,7 @@ const getRepresentativeCase = (groupCases: Case[]): Case => {
 
 const getGroupEstimateAmount = (groupCases: Case[]): number => {
   return groupCases.reduce((sum, c) => {
-    return sum + (parseFloat(c.estimateAmount || "0") || 0);
+    return sum + (parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0);
   }, 0);
 };
 
@@ -347,7 +347,7 @@ export default function UnsettledCaseStatistics() {
           c.accidentCause || "",
           c.restorationMethod || c.recoveryType || "",
           c.status,
-          c.estimateAmount ? parseFloat(c.estimateAmount).toLocaleString() : "",
+          (c.initialEstimateAmount || c.estimateAmount) ? parseFloat(c.initialEstimateAmount || c.estimateAmount || "0").toLocaleString() : "",
           formatDate(c.siteInvestigationSubmitDate),
           c.approvedAmount ? parseFloat(c.approvedAmount).toLocaleString() : "",
           formatDate(c.secondApprovalDate),
@@ -448,7 +448,7 @@ export default function UnsettledCaseStatistics() {
   const renderIndividualRow = (c: Case) => {
     const deposit = getDepositInfo(c);
     const settlement = settlementMap[c.id];
-    const estimateAmt = parseFloat(c.estimateAmount || "0") || 0;
+    const estimateAmt = parseFloat(c.initialEstimateAmount || c.estimateAmount || "0") || 0;
     const approvedAmt = parseFloat(c.approvedAmount || "0") || 0;
 
     return (
