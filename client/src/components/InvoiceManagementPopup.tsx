@@ -700,6 +700,16 @@ export function InvoiceManagementPopup({
         });
       }
 
+      const finalEntry = depositEntries.find(
+        (entry) => entry.depositCategory === "최종액",
+      );
+      if (finalEntry && finalEntry.depositDate && caseData.id) {
+        await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
+          paymentCompletedDate: finalEntry.depositDate,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      }
+
       queryClient.invalidateQueries({ queryKey: ["/api/settlements"] });
 
       toast({
