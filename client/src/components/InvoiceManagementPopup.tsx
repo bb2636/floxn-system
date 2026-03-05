@@ -491,14 +491,17 @@ export function InvoiceManagementPopup({
         0,
       );
 
+      const savedCommission = paymentTotals.totalCommission > 0 ? paymentTotals.totalCommission.toString() : "0";
+      const savedPartnerPayment = paymentTotals.totalPayment > 0 ? paymentTotals.totalPayment.toString() : "0";
+
       if (settlementData && settlementData.id) {
         const settlementUpdateData: Record<string, unknown> = {
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(),
           depositEntries: depositEntries,
           paymentEntries: paymentEntries,
-          commission: feeAmount.toString(),
-          partnerPaymentAmount: partnerPaymentAmount.toString(),
+          commission: savedCommission,
+          partnerPaymentAmount: savedPartnerPayment,
         };
 
         if (settlementStatus === "정산") {
@@ -526,8 +529,8 @@ export function InvoiceManagementPopup({
           discount: totalDepositAmount.toString(),
           depositEntries: depositEntries,
           paymentEntries: paymentEntries,
-          commission: feeAmount.toString(),
-          partnerPaymentAmount: partnerPaymentAmount.toString(),
+          commission: savedCommission,
+          partnerPaymentAmount: savedPartnerPayment,
         };
 
         if (settlementStatus === "정산") {
@@ -1170,14 +1173,17 @@ export function InvoiceManagementPopup({
         0,
       );
 
+      const savedCommission2 = paymentTotals.totalCommission > 0 ? paymentTotals.totalCommission.toString() : "0";
+      const savedPartnerPayment2 = paymentTotals.totalPayment > 0 ? paymentTotals.totalPayment.toString() : "0";
+
       if (settlementData && settlementData.id) {
         const settlementUpdateData: Record<string, unknown> = {
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(),
           depositEntries: depositEntries,
           paymentEntries: paymentEntries,
-          commission: feeAmount.toString(),
-          partnerPaymentAmount: partnerPaymentAmount.toString(),
+          commission: savedCommission2,
+          partnerPaymentAmount: savedPartnerPayment2,
         };
 
         if (settlementStatus === "정산") {
@@ -1205,8 +1211,8 @@ export function InvoiceManagementPopup({
           discount: totalDepositAmount.toString(),
           depositEntries: depositEntries,
           paymentEntries: paymentEntries,
-          commission: feeAmount.toString(),
-          partnerPaymentAmount: partnerPaymentAmount.toString(),
+          commission: savedCommission2,
+          partnerPaymentAmount: savedPartnerPayment2,
         };
 
         if (settlementStatus === "정산") {

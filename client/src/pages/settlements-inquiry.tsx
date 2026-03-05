@@ -444,14 +444,14 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
       const settlementAmount = settlement
         ? parseAmountValue(settlement.settlementAmount)
         : 0;
-      // 미수리(선견적요청)일 때: 수수료 = 4만원, 사용료 = 10만원
-      // 수리(직접복구)일 때: 수수료 = DB값, 사용료 = 0
+      // 수수료/협력업체 지급액: 지급관리(paymentEntries)의 합계를 직접 계산
+      // paymentEntries가 없으면 -1로 마킹하여 화면에서 '-' 표시
       const isNoRepair = caseItem.recoveryType === "선견적요청";
-      const settlementCommission = isNoRepair
-        ? 40000
-        : settlement
-          ? parseAmountValue(settlement.commission)
-          : 0;
+      const paymentEntriesArr = (settlement?.paymentEntries && Array.isArray(settlement.paymentEntries)) ? settlement.paymentEntries as any[] : [];
+      const hasPaymentEntries = paymentEntriesArr.length > 0;
+      const settlementCommission = hasPaymentEntries
+        ? paymentEntriesArr.reduce((sum: number, e: any) => sum + (parseAmountValue(e.commission) || 0), 0)
+        : -1;
       const usageFee = isNoRepair ? 100000 : 0;
       const settlementDeposit = settlement
         ? parseAmountValue(settlement.discount)
@@ -505,9 +505,9 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           caseItem.taxInvoiceConfirmDate || settlement?.invoiceDate || "-",
         settlementMemo: settlement?.memo || "",
         status: caseItem.status,
-        partnerPaymentAmount: settlement
-          ? parseAmountValue(settlement.partnerPaymentAmount)
-          : 0,
+        partnerPaymentAmount: hasPaymentEntries
+          ? paymentEntriesArr.reduce((sum: number, e: any) => sum + (parseAmountValue(e.paymentAmount) || 0), 0)
+          : -1,
         partnerPaymentDate: settlement?.partnerPaymentDate || "-",
         assignedPartner: caseItem.assignedPartner || "-",
         insuredName: caseItem.insuredName || "-",
@@ -628,15 +628,14 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         (sum, c) => sum + c.settlementAmount,
         0,
       );
-      // 수수료: 직접복구 건이 있으면 해당 건들의 수수료 합산, 선견적요청이면 4만원
+      // 수수료: 지급관리에 입력된 값이 있으면 합산, 없으면 -1 (화면에서 '-' 표시)
       const directRepairCases = casesInGroup.filter(
         (c) => c.recoveryType === "직접복구",
       );
-      const totalSettlementCommission = hasDirectRepair
-        ? directRepairCases.reduce((sum, c) => sum + c.settlementCommission, 0)
-        : allNoRepair
-          ? 40000
-          : 0;
+      const hasAnyPaymentData = casesInGroup.some((c) => c.settlementCommission >= 0);
+      const totalSettlementCommission = hasAnyPaymentData
+        ? casesInGroup.filter((c) => c.settlementCommission >= 0).reduce((sum, c) => sum + c.settlementCommission, 0)
+        : -1;
       // 사용료: 모든 건이 선견적요청일 때만 10만원, 직접복구 건이 하나라도 있으면 0
       const totalUsageFee = allNoRepair ? 100000 : 0;
       const totalSettlementDeposit = casesInGroup.reduce(
@@ -678,11 +677,11 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
       // 청구액 = 총 승인금액 (자기부담금 차감 없이 인보이스 합계와 동일하게 표시)
       const claimAmount = totalApprovedAmount;
 
-      // 협력업체 지급 정보 합산
-      const totalPartnerPaymentAmount = casesInGroup.reduce(
-        (sum, c) => sum + c.partnerPaymentAmount,
-        0,
-      );
+      // 협력업체 지급 정보 합산: 지급관리에 입력된 값이 있으면 합산, 없으면 -1
+      const hasAnyPartnerPayment = casesInGroup.some((c) => c.partnerPaymentAmount >= 0);
+      const totalPartnerPaymentAmount = hasAnyPartnerPayment
+        ? casesInGroup.filter((c) => c.partnerPaymentAmount >= 0).reduce((sum, c) => sum + c.partnerPaymentAmount, 0)
+        : -1;
 
       combinedRows.push({
         id: primaryCase.id,
@@ -1347,7 +1346,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                     textAlign: "right",
                   };
                   const renderAmount = (val: number) =>
-                    val > 0 ? val.toLocaleString() + "원" : "-";
+                    val < 0 ? "-" : val > 0 ? val.toLocaleString() + "원" : "-";
 
                   return (
                     <tr
