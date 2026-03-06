@@ -18,6 +18,7 @@ import { AccessControlPanel } from "@/components/access-control-panel";
 import * as XLSX from "xlsx";
 import JSZip from "jszip";
 import { LaborRateTiersButton } from "@/components/labor-rate-tiers-modal";
+import { usePermissions } from "@/hooks/use-permissions";
 
 // Fallback xlsx parser for files with XML namespace prefixes that xlsx library can't handle
 async function parseXlsxFallback(file: File): Promise<{ headers: string[], data: any[][] }> {
@@ -372,6 +373,7 @@ const KOREA_REGIONS: Record<string, string[]> = {
 export default function AdminSettings() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { hasItem: hasPermItem, isLoading: permissionsLoading } = usePermissions();
   const [activeMenu, setActiveMenu] = useState("사용자 계정 관리");
   const [roleFilter, setRoleFilter] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
@@ -887,15 +889,29 @@ export default function AdminSettings() {
     };
   }, []);
 
-  const sidebarMenus = [
-    { name: "사용자 계정 관리", active: true },
-    ...(user?.isSuperAdmin ? [{ name: "접근 권한 관리", active: false }] : []),
-    { name: "1:1 문의 관리", active: false },
-    { name: "공지사항 관리", active: false },
-    { name: "DB 관리", active: false },
-    { name: "기준정보 관리", active: false },
-    { name: "변경 로그 관리", active: false },
+  const allSidebarMenus = [
+    { name: "사용자 계정 관리", active: true, permissionItem: "계정관리" },
+    ...(user?.isSuperAdmin ? [{ name: "접근 권한 관리", active: false, permissionItem: null }] : []),
+    { name: "1:1 문의 관리", active: false, permissionItem: null },
+    { name: "공지사항 관리", active: false, permissionItem: null },
+    { name: "DB 관리", active: false, permissionItem: "DB관리" },
+    { name: "기준정보 관리", active: false, permissionItem: "기준정보 관리" },
+    { name: "변경 로그 관리", active: false, permissionItem: null },
   ];
+
+  const sidebarMenus = allSidebarMenus.filter((menu) => {
+    if (permissionsLoading) return true;
+    if (!menu.permissionItem) return true;
+    return hasPermItem("관리자 설정", menu.permissionItem);
+  });
+
+  useEffect(() => {
+    if (permissionsLoading) return;
+    const isCurrentMenuVisible = sidebarMenus.some((m) => m.name === activeMenu);
+    if (!isCurrentMenuVisible && sidebarMenus.length > 0) {
+      setActiveMenu(sidebarMenus[0].name);
+    }
+  }, [permissionsLoading, sidebarMenus.map(m => m.name).join(",")]);
 
   // Excel data mutations
   const saveExcelDataMutation = useMutation({

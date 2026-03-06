@@ -1,35 +1,51 @@
 import { useLocation } from "wouter";
+import { usePermissions } from "@/hooks/use-permissions";
 
 const menuItems = [
   {
     title: "현장입력",
     url: "/field-survey/management",
     testId: "submenu-field-management",
+    permissionItem: "현장입력",
   },
   {
     title: "도면작성",
     url: "/field-survey/drawing",
     testId: "submenu-drawing",
+    permissionItem: "도면작성",
   },
   {
     title: "증빙자료 등록",
     url: "/field-survey/documents",
     testId: "submenu-documents",
+    permissionItem: "증빙자료 업로드",
   },
   {
     title: "견적서 작성",
     url: "/field-survey/estimate",
     testId: "submenu-estimate",
+    permissionItem: "견적서 작성",
   },
   {
     title: "현장출동보고서",
     url: "/field-survey/report",
     testId: "submenu-report",
+    permissionItem: "보고서 작성",
   },
 ];
 
 export function AppSidebarFieldSurvey() {
   const [location, setLocation] = useLocation();
+  const { hasItem, hasCategory, isAdmin, isLoading } = usePermissions();
+
+  const visibleItems = menuItems.filter((item) => {
+    if (isLoading) return false;
+    if (isAdmin) {
+      return hasItem("현장조사", item.permissionItem);
+    }
+    if (!hasCategory("현장조사")) return false;
+    return hasItem("현장조사", item.permissionItem);
+  });
 
   return (
     <div
@@ -40,7 +56,6 @@ export function AppSidebarFieldSurvey() {
         borderRight: "1px solid rgba(0, 143, 237, 0.2)",
       }}
     >
-      {/* Section Header */}
       <div className="px-8 py-4">
         <span
           style={{
@@ -55,9 +70,8 @@ export function AppSidebarFieldSurvey() {
         </span>
       </div>
 
-      {/* Menu Items */}
       <div className="flex flex-col px-3 gap-2">
-        {menuItems.map((item) => (
+        {visibleItems.map((item) => (
           <button
             type="button"
             key={item.title}

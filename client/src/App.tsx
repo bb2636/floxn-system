@@ -172,7 +172,7 @@ function Router() {
         
         <Route path="/field-survey/management">
           {() => (
-            <ProtectedRoute category="현장조사">
+            <ProtectedRoute category="현장조사" item="현장입력">
               <FieldSurveyLayout>
                 <FieldManagement />
               </FieldSurveyLayout>
@@ -182,7 +182,7 @@ function Router() {
         
         <Route path="/field-survey/drawing">
           {() => (
-            <ProtectedRoute category="현장조사">
+            <ProtectedRoute category="현장조사" item="도면작성">
               <DrawingLayout>
                 <FieldDrawing />
               </DrawingLayout>
@@ -192,7 +192,7 @@ function Router() {
         
         <Route path="/field-survey/documents">
           {() => (
-            <ProtectedRoute category="현장조사">
+            <ProtectedRoute category="현장조사" item="증빙자료 업로드">
               <FieldSurveyLayout>
                 <FieldDocuments />
               </FieldSurveyLayout>
@@ -202,7 +202,7 @@ function Router() {
         
         <Route path="/field-survey/estimate">
           {() => (
-            <ProtectedRoute category="현장조사">
+            <ProtectedRoute category="현장조사" item="견적서 작성">
               <FieldEstimate />
             </ProtectedRoute>
           )}
@@ -210,7 +210,7 @@ function Router() {
         
         <Route path="/field-survey/report">
           {() => (
-            <ProtectedRoute category="현장조사">
+            <ProtectedRoute category="현장조사" item="보고서 작성">
               <FieldSurveyLayout>
                 <FieldReport />
               </FieldSurveyLayout>
