@@ -1380,9 +1380,7 @@ export default function ComprehensiveProgress() {
                 color: "#0C0C0C",
                 whiteSpace: "nowrap",
               }}
-            >
-              담당자
-            </span>
+            >구분</span>
 
             <Select
               value={selectedManager === "__INIT__" ? "전체" : selectedManager}
