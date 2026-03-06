@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { activeUserSessions, sessionStore } from "./session-store";
 import {
   loginSchema,
   updatePasswordSchema,
@@ -185,6 +186,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (req.session) {
+        // 중복 로그인 방지: 기존 세션이 있으면 파괴
+        const existingSessionId = activeUserSessions.get(user.id);
+        if (existingSessionId && existingSessionId !== req.sessionID) {
+          sessionStore.destroy(existingSessionId, (err) => {
+            if (err) {
+              console.error("[LOGIN] Failed to destroy existing session:", err);
+            } else {
+              console.log("[LOGIN] Destroyed existing session for userId:", user.id, "sessionId:", existingSessionId);
+            }
+          });
+        }
+
         req.session.userId = user.id;
         req.session.userRole = user.role;
         req.session.isSuperAdmin = user.isSuperAdmin || false;
@@ -213,6 +226,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               .status(500)
               .json({ error: "세션 저장 중 오류가 발생했습니다" });
           }
+          // 새 세션ID 등록
+          activeUserSessions.set(user.id, req.sessionID);
           console.log(
             "[LOGIN] Session saved successfully, sessionId:",
             req.sessionID,
@@ -241,6 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Logout endpoint
   app.post("/api/logout", async (req, res) => {
     if (req.session) {
+      const userId = req.session.userId;
       req.session.destroy((err) => {
         if (err) {
           console.error("Logout error:", err);
@@ -248,6 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .status(500)
             .json({ error: "로그아웃 중 오류가 발생했습니다" });
         }
+        if (userId) activeUserSessions.delete(userId);
         res.clearCookie("connect.sid");
         res.json({ success: true });
       });

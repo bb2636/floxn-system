@@ -1,10 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
-import createMemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 import { initializeEmailTransporter } from "./hiworks-email";
+import { sessionStore } from "./session-store";
 
 const app = express();
 
@@ -22,8 +22,6 @@ declare module 'express-session' {
     rememberMe: boolean;
   }
 }
-
-const MemoryStore = createMemoryStore(session);
 
 // Determine production mode - check both NODE_ENV and REPLIT_DEPLOYMENT
 const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
@@ -45,9 +43,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'insurance-system-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
-  store: new MemoryStore({
-    checkPeriod: 86400000,
-  }),
+  store: sessionStore,
   cookie: {
     secure: isProduction,
     httpOnly: true,
