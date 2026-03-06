@@ -3816,6 +3816,46 @@ export async function generatePdfWithPdfLib(
     }
   }
 
+  if (sections.estimate) {
+    try {
+      const estimateList = await db
+        .select()
+        .from(estimates)
+        .where(eq(estimates.caseId, caseId))
+        .orderBy(estimates.version);
+
+      let estimateData: any = null;
+      let estimateRowsData: any[] = [];
+
+      if (estimateList.length > 0) {
+        estimateData = estimateList[estimateList.length - 1];
+        estimateRowsData = await db
+          .select()
+          .from(estimateRows)
+          .where(eq(estimateRows.estimateId, estimateData.id))
+          .orderBy(estimateRows.rowOrder);
+      }
+
+      if (estimateRowsData.length > 0) {
+        await renderRecoveryAreaPage(pdfDoc, fonts, caseData, estimateRowsData);
+        console.log("[pdf-lib] 복구면적 산출표 페이지 생성 완료");
+      }
+
+      await renderEstimatePage(
+        pdfDoc,
+        fonts,
+        caseData,
+        estimateData,
+        estimateRowsData,
+        partnerData,
+      );
+      console.log("[pdf-lib] 견적서 페이지 생성 완료");
+    } catch (err: any) {
+      console.error("[pdf-lib] 견적서 섹션 생성 실패:", err.message);
+      renderErrorPage(pdfDoc, fonts, "견적서", err.message);
+    }
+  }
+
   // skipEvidence가 true면 증빙 섹션 스킵 (이메일 용량 제한용)
   if (
     sections.evidence &&
@@ -3932,46 +3972,6 @@ export async function generatePdfWithPdfLib(
     } catch (err: any) {
       console.error("[pdf-lib] 증빙자료 섹션 생성 실패:", err.message);
       renderErrorPage(pdfDoc, fonts, "증빙자료", err.message);
-    }
-  }
-
-  if (sections.estimate) {
-    try {
-      const estimateList = await db
-        .select()
-        .from(estimates)
-        .where(eq(estimates.caseId, caseId))
-        .orderBy(estimates.version);
-
-      let estimateData: any = null;
-      let estimateRowsData: any[] = [];
-
-      if (estimateList.length > 0) {
-        estimateData = estimateList[estimateList.length - 1];
-        estimateRowsData = await db
-          .select()
-          .from(estimateRows)
-          .where(eq(estimateRows.estimateId, estimateData.id))
-          .orderBy(estimateRows.rowOrder);
-      }
-
-      if (estimateRowsData.length > 0) {
-        await renderRecoveryAreaPage(pdfDoc, fonts, caseData, estimateRowsData);
-        console.log("[pdf-lib] 복구면적 산출표 페이지 생성 완료");
-      }
-
-      await renderEstimatePage(
-        pdfDoc,
-        fonts,
-        caseData,
-        estimateData,
-        estimateRowsData,
-        partnerData,
-      );
-      console.log("[pdf-lib] 견적서 페이지 생성 완료");
-    } catch (err: any) {
-      console.error("[pdf-lib] 견적서 섹션 생성 실패:", err.message);
-      renderErrorPage(pdfDoc, fonts, "견적서", err.message);
     }
   }
 
