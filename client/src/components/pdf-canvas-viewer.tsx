@@ -30,7 +30,7 @@ export function PdfCanvasViewer({ pdfData, loading, error, fileName }: PdfCanvas
   const renderPdf = useCallback(async (data: ArrayBuffer) => {
     setRendering(true);
     try {
-      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(data) }).promise;
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(data.slice(0)) }).promise;
       setTotalPages(pdf.numPages);
       setCurrentPage(1);
       const results: PageData[] = [];
