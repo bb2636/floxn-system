@@ -4546,230 +4546,51 @@ export default function FieldReport() {
                       <div className="flex gap-2">
                         <button
                           onClick={async () => {
-                            // PDF 다운로드 - 체크된 항목만 포함 (html2canvas 사용)
-                            const dateStr = estimate.estimate?.createdAt
-                              ? new Date(estimate.estimate.createdAt)
-                                  .toISOString()
-                                  .split("T")[0]
-                              : new Date().toISOString().split("T")[0];
                             const caseNo = caseData?.caseNumber || "estimate";
-
-                            // 체크된 항목 필터링
-                            const checkedAreaRows = estimate.rows.filter(
-                              (_, idx) => areaChecked[idx] !== false,
-                            );
-                            const checkedLaborRows = parsedLaborCosts.filter(
-                              (_, idx) => laborChecked[idx] !== false,
-                            );
-                            const checkedMaterialRows =
-                              parsedMaterialCosts.filter(
-                                (_, idx) => materialChecked[idx] !== false,
-                              );
-
-                            // 임시 HTML 컨테이너 생성
-                            const container = document.createElement("div");
-                            container.style.cssText =
-                              "position: absolute; left: -9999px; top: 0; width: 1100px; background: white; padding: 40px; font-family: Pretendard, sans-serif;";
-
-                            // HTML 내용 생성
-                            let html = `
-                          <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 30px; color: #0C0C0C;">견적서 ${dateStr}</h1>
-                        `;
-
-                            // 복구면적 산출표
-                            if (checkedAreaRows.length > 0) {
-                              html += `
-                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">복구면적 산출표 ${dateStr}</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 30px;">
-                              <thead>
-                                <tr style="background: rgba(12,12,12,0.03);">
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">장소</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">위치</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사내용</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(m)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(m)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">면적(㎡)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(m)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(m)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">면적(㎡)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">비고</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                ${checkedAreaRows
-                                  .map(
-                                    (row) => `
-                                  <tr>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.category || "-"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.location || "-"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || "-"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageWidth || "0"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageHeight || "0"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageArea ? parseFloat(String(row.damageArea)).toFixed(2) : "0"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairWidth || "0"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairHeight || "0"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairArea ? parseFloat(String(row.repairArea)).toFixed(2) : "0"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.note || "-"}</td>
-                                  </tr>
-                                `,
-                                  )
-                                  .join("")}
-                              </tbody>
-                            </table>
-                          `;
-                            }
-
-                            // 노무비
-                            if (checkedLaborRows.length > 0) {
-                              html += `
-                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">노무비 ${dateStr}</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 30px;">
-                              <thead>
-                                <tr style="background: rgba(12,12,12,0.03);">
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공종</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사명</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">노임항목</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">복구면적</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">적용단가</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">수량(인)</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">합계</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">경비 여부</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">비고</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                ${checkedLaborRows
-                                  .map(
-                                    (row) => `
-                                  <tr>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.category || "-"}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || "-"}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.detailItem || "-"}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.damageArea || 0).toLocaleString()}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.standardPrice || 0).toLocaleString()}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${(row.standardPrice > 0 ? (row.amount || 0) / row.standardPrice : 0).toFixed(2)}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.amount || 0).toLocaleString()}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.includeInEstimate ? "부" : "여"}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.request || "-"}</td>
-                                  </tr>
-                                `,
-                                  )
-                                  .join("")}
-                              </tbody>
-                            </table>
-                          `;
-                            }
-
-                            // 자재비
-                            if (checkedMaterialRows.length > 0) {
-                              html += `
-                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">자재비 ${dateStr}</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 30px;">
-                              <thead>
-                                <tr style="background: rgba(12,12,12,0.03);">
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공종</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사명</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">자재항목</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단가</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">수량</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단위</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">합계</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">비고</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                ${checkedMaterialRows
-                                  .map(
-                                    (row) => `
-                                  <tr>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.공종 || "-"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.공사명 || "-"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.자재항목 || row.자재 || "-"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.단가 || row.기준단가 || 0).toLocaleString()}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.수량 || 0}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.단위 || "-"}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.합계 || row.금액 || 0).toLocaleString()}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.비고 || "-"}</td>
-                                  </tr>
-                                `,
-                                  )
-                                  .join("")}
-                              </tbody>
-                            </table>
-                          `;
-                            }
-
-                            // 합계 (page-break-inside: avoid로 페이지 분할 방지)
-                            html += `
-                          <div style="page-break-inside: avoid;">
-                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">합계</h2>
-                            <table style="width: 320px; border-collapse: collapse; font-size: 14px; margin-left: auto;">
-                              <tbody>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">소계</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.subtotal.toLocaleString()} 원</td></tr>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">일반관리비 (6%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.managementFee.toLocaleString()} 원</td></tr>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">이윤 (15%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.profit.toLocaleString()} 원</td></tr>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">만원단위 절사</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">-${calculateTotals.truncation.toLocaleString()} 원</td></tr>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">VAT (10%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.vat.toLocaleString()} 원</td></tr>
-                                <tr style="background: rgba(0,143,237,0.05);"><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 700; font-size: 16px;">총계 (VAT 포함)</td><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 700; font-size: 16px; color: #008FED;">${calculateTotals.total.toLocaleString()} 원</td></tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        `;
-
-                            container.innerHTML = html;
-                            document.body.appendChild(container);
-
+                            toast({
+                              title: "PDF 생성 중",
+                              description: "잠시만 기다려주세요...",
+                            });
                             try {
-                              // html2canvas로 캡처
-                              const canvas = await html2canvas(container, {
-                                scale: 2,
-                                useCORS: true,
-                                logging: false,
-                                backgroundColor: "#ffffff",
+                              const response = await fetch("/api/pdf/download", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  caseId: selectedCaseId,
+                                  sections: {
+                                    cover: false,
+                                    fieldReport: false,
+                                    drawing: false,
+                                    evidence: false,
+                                    estimate: true,
+                                    etc: false,
+                                  },
+                                  evidence: { tab: "전체", selectedFileIds: [] },
+                                }),
                               });
-
-                              // PDF 생성 - 내용 길이에 따라 페이지 크기 자동 조절
-                              const imgWidth = 277; // A4 가로 (landscape)
-                              const imgHeight =
-                                (canvas.height * imgWidth) / canvas.width;
-
-                              // 페이지 높이를 내용에 맞게 설정 (단일 페이지)
-                              const pageWidth = 297; // A4 가로
-                              const pageHeight = Math.max(210, imgHeight + 20); // 최소 A4 세로 or 내용 높이
-
-                              const doc = new jsPDF({
-                                orientation: "landscape",
-                                unit: "mm",
-                                format: [pageWidth, pageHeight],
-                              });
-                              const imgData = canvas.toDataURL("image/png");
-
-                              doc.addImage(
-                                imgData,
-                                "PNG",
-                                10,
-                                10,
-                                imgWidth,
-                                imgHeight,
-                              );
-
-                              doc.save(`견적서_${caseNo}_${dateStr}.pdf`);
-
+                              if (!response.ok) {
+                                throw new Error("PDF 생성 실패");
+                              }
+                              const blob = await response.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = `견적서_${caseNo}.pdf`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              window.URL.revokeObjectURL(url);
                               toast({
                                 title: "PDF 다운로드 완료",
-                                description:
-                                  "체크된 항목만 포함된 견적서가 다운로드되었습니다.",
+                                description: "견적서가 다운로드되었습니다.",
                               });
                             } catch (error) {
                               console.error("PDF 생성 오류:", error);
                               toast({
                                 title: "PDF 생성 실패",
-                                description:
-                                  "PDF 파일 생성 중 오류가 발생했습니다.",
+                                description: "PDF 파일 생성 중 오류가 발생했습니다.",
                                 variant: "destructive",
                               });
-                            } finally {
-                              document.body.removeChild(container);
                             }
                           }}
                           className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
