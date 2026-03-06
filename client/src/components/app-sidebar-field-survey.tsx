@@ -36,7 +36,7 @@ const menuItems = [
 
 export function AppSidebarFieldSurvey() {
   const [location, setLocation] = useLocation();
-  const { hasItem, hasCategory, isAdmin, isLoading } = usePermissions();
+  const { hasItem, hasCategory, isAdmin, isLoading, user } = usePermissions();
 
   const visibleItems = menuItems.filter((item) => {
     if (isLoading) return false;
@@ -46,6 +46,8 @@ export function AppSidebarFieldSurvey() {
     if (!hasCategory("현장조사")) return false;
     return hasItem("현장조사", item.permissionItem);
   });
+
+  const isPartner = user?.role === "협력사";
 
   return (
     <div
@@ -97,6 +99,86 @@ export function AppSidebarFieldSurvey() {
           </button>
         ))}
       </div>
+
+      {isPartner && (
+        <div
+          className="mx-3 mt-4 rounded-lg p-4"
+          style={{
+            background: "rgba(0, 143, 237, 0.06)",
+            border: "1px solid rgba(0, 143, 237, 0.2)",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "#008FED",
+              marginBottom: "6px",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            현장출동보고서 절차
+          </p>
+          <div
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "11px",
+              fontWeight: 400,
+              color: "rgba(12, 12, 12, 0.75)",
+              lineHeight: "1.7",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            <p>① 현장입력</p>
+            <p>② 도면작성</p>
+            <p>③ 증빙자료 등록</p>
+            <p style={{ paddingLeft: "12px" }}>▷ 사진 (현장출동사진)</p>
+            <p style={{ paddingLeft: "12px" }}>▷ 기타자료</p>
+            <p style={{ paddingLeft: "12px" }}>▷ 증빙자료</p>
+            <p>④ 견적서 작성</p>
+            <p>⑤ 현장출동보고서 (제출)</p>
+          </div>
+
+          <div
+            style={{
+              borderTop: "1px solid rgba(0, 143, 237, 0.2)",
+              marginTop: "10px",
+              paddingTop: "10px",
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "#008FED",
+                marginBottom: "6px",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              복구 완료 후 자료제출 절차
+            </p>
+            <div
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "11px",
+                fontWeight: 400,
+                color: "rgba(12, 12, 12, 0.75)",
+                lineHeight: "1.7",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              <p>① 증빙자료 등록</p>
+              <p style={{ paddingLeft: "12px" }}>▷ 사진 (수리중 사진, 복구완료 사진)</p>
+              <p style={{ paddingLeft: "12px" }}>▷ 청구자료</p>
+              <p>② 증빙자료 등록 화면의</p>
+              <p>　우측 상단의</p>
+              <p>　(청구자료)제출 버튼 클릭</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
