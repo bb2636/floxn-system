@@ -561,9 +561,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const users = await storage.getAllUsers();
-      // Return only basic info: id, name, username, phone, role, bankName, accountNumber
+      // Return only basic info: id, name, username, phone, role, bankName, accountNumber, company
       const basicUsers = users.map(
-        ({ id, name, username, phone, role, bankName, accountNumber }) => ({
+        ({ id, name, username, phone, role, bankName, accountNumber, company }) => ({
           id,
           name,
           username,
@@ -571,6 +571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role,
           bankName,
           accountNumber,
+          company,
         }),
       );
       res.json(basicUsers);

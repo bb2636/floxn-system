@@ -296,6 +296,7 @@ export default function ComprehensiveProgress() {
     role: string;
     bankName: string | null;
     accountNumber: string | null;
+    company: string | null;
   };
 
   // 사용자 목록 가져오기 (담당자 이름 표시용) - 협력사도 접근 가능한 basic 엔드포인트 사용
@@ -1000,6 +1001,15 @@ export default function ComprehensiveProgress() {
     const managerValue =
       selectedManager === "__INIT__" ? "전체" : selectedManager;
     if (managerValue === "전체") return true;
+    if (user?.role === "협력사") {
+      return (caseItem.assignedPartnerManager || "") === managerValue;
+    }
+    if (user?.role === "심사사") {
+      return (caseItem.assessorTeam || "") === managerValue;
+    }
+    if (user?.role === "조사사") {
+      return (caseItem.investigatorTeamName || "") === managerValue;
+    }
     return (caseItem.managerName || "") === managerValue;
   });
 
@@ -1166,6 +1176,21 @@ export default function ComprehensiveProgress() {
   }, [user, selectedManager]);
 
   const adminUsers = allUsers.filter((u) => u.role === "관리자");
+
+  // 로그인한 유저 역할에 따라 드롭다운에 표시할 유저 목록
+  const dropdownUsers = (() => {
+    if (!user) return adminUsers;
+    if (user.role === "협력사") {
+      return allUsers.filter((u) => u.role === "협력사" && u.company === user.company);
+    }
+    if (user.role === "심사사") {
+      return allUsers.filter((u) => u.role === "심사사" && u.company === user.company);
+    }
+    if (user.role === "조사사") {
+      return allUsers.filter((u) => u.role === "조사사" && u.company === user.company);
+    }
+    return adminUsers;
+  })();
 
   // 당일차 계산 (접수일부터 오늘까지)
   const calculateDays = (createdAt: string | null) => {
@@ -1405,13 +1430,13 @@ export default function ComprehensiveProgress() {
                 <SelectItem value="전체" data-testid="option-manager-all">
                   전체
                 </SelectItem>
-                {adminUsers.map((admin) => (
+                {dropdownUsers.map((u) => (
                   <SelectItem
-                    key={admin.id}
-                    value={admin.name || admin.username}
-                    data-testid={`option-manager-${admin.id}`}
+                    key={u.id}
+                    value={u.name || u.username}
+                    data-testid={`option-manager-${u.id}`}
                   >
-                    {admin.name || admin.username}
+                    {u.name || u.username}
                   </SelectItem>
                 ))}
               </SelectContent>
