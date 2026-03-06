@@ -2382,24 +2382,26 @@ export default function FieldReport() {
                         queryKey: ["/api/cases"],
                       });
 
-                      // 현장정보제출 상태 변경 시 심사자/조사자에게 SMS 발송
-                      try {
-                        await apiRequest(
-                          "POST",
-                          "/api/send-stage-notification",
-                          {
-                            caseId: selectedCaseId,
-                            stage: "현장정보제출",
-                            recipients: {
-                              partner: false,
-                              manager: false,
-                              assessorInvestigator: true,
+                      // 현장정보제출 상태 변경 시 심사자/조사자에게 SMS 발송 (협력사 제외)
+                      if (currentUser?.role !== "협력사") {
+                        try {
+                          await apiRequest(
+                            "POST",
+                            "/api/send-stage-notification",
+                            {
+                              caseId: selectedCaseId,
+                              stage: "현장정보제출",
+                              recipients: {
+                                partner: false,
+                                manager: false,
+                                assessorInvestigator: true,
+                              },
                             },
-                          },
-                        );
-                        console.log("현장정보제출 SMS 발송 완료 (PDF 다운로드)");
-                      } catch (smsError) {
-                        console.error("SMS 발송 오류:", smsError);
+                          );
+                          console.log("현장정보제출 SMS 발송 완료 (PDF 다운로드)");
+                        } catch (smsError) {
+                          console.error("SMS 발송 오류:", smsError);
+                        }
                       }
                     } catch (statusError) {
                       console.error("상태 업데이트 오류:", statusError);
@@ -2862,24 +2864,26 @@ export default function FieldReport() {
                         queryKey: ["/api/cases"],
                       });
 
-                      // 현장정보제출 상태 변경 시 심사자/조사자에게 SMS 발송
-                      try {
-                        await apiRequest(
-                          "POST",
-                          "/api/send-stage-notification",
-                          {
-                            caseId: selectedCaseId,
-                            stage: "현장정보제출",
-                            recipients: {
-                              partner: false,
-                              manager: false,
-                              assessorInvestigator: true,
+                      // 현장정보제출 상태 변경 시 심사자/조사자에게 SMS 발송 (협력사 제외)
+                      if (currentUser?.role !== "협력사") {
+                        try {
+                          await apiRequest(
+                            "POST",
+                            "/api/send-stage-notification",
+                            {
+                              caseId: selectedCaseId,
+                              stage: "현장정보제출",
+                              recipients: {
+                                partner: false,
+                                manager: false,
+                                assessorInvestigator: true,
+                              },
                             },
-                          },
-                        );
-                        console.log("현장정보제출 SMS 발송 완료");
-                      } catch (smsError) {
-                        console.error("SMS 발송 오류:", smsError);
+                          );
+                          console.log("현장정보제출 SMS 발송 완료");
+                        } catch (smsError) {
+                          console.error("SMS 발송 오류:", smsError);
+                        }
                       }
                     } catch (statusError) {
                       console.error("상태 업데이트 오류:", statusError);
