@@ -309,7 +309,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
   }, [allUsers]);
 
   const settlementStatuses = filterMode === "closed"
-    ? ["종결", "접수취소"]
+    ? ["종결"]
     : ["청구", "입금완료", "부분입금", "부분지급", "지급완료", "정산완료"];
   const claimCases = cases.filter((c) => settlementStatuses.includes(c.status));
   const caseIds = claimCases.map((c) => c.id);
@@ -912,7 +912,6 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                 {filterMode === "closed" ? (
                   <>
                     <SelectItem value="종결">종결</SelectItem>
-                    <SelectItem value="접수취소">접수취소</SelectItem>
                   </>
                 ) : (
                   <>
