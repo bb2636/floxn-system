@@ -3685,15 +3685,25 @@ interface PdfGenerationPayload {
     tab: string;
     selectedFileIds: string[];
   };
+  sectionOrder?: string[]; // 섹션 출력 순서 (한글 키: 현장입력, 도면, 증빙자료, 견적서, 기타사항)
   skipEvidence?: boolean; // 본문 PDF에서 증빙 이미지 제외 (이메일 용량 제한용)
   skipPdfAttachments?: boolean; // PDF 첨부 파일 제외 (이미지만 포함, 이메일 용량 제한용)
 }
+
+const KO_TO_SECTION_KEY: Record<string, string> = {
+  현장입력: "fieldReport",
+  도면: "drawing",
+  증빙자료: "evidence",
+  견적서: "estimate",
+  기타사항: "etc",
+};
+const DEFAULT_SECTION_ORDER = ["현장입력", "도면", "증빙자료", "견적서", "기타사항"];
 
 export async function generatePdfWithPdfLib(
   payload: PdfGenerationPayload,
   processingLevel: number = 0,
 ): Promise<Buffer> {
-  const { caseId, sections, evidence, skipEvidence, skipPdfAttachments } =
+  const { caseId, sections, evidence, sectionOrder, skipEvidence, skipPdfAttachments } =
     payload;
   const processingConfig =
     PROCESSING_LEVELS[processingLevel] || PROCESSING_LEVELS[0];
@@ -3758,6 +3768,7 @@ export async function generatePdfWithPdfLib(
     fonts = { regular: fallbackFont, bold: fallbackFont };
   }
 
+  // 표지는 항상 첫 번째 (순서 조정 대상 아님)
   if (sections.cover) {
     try {
       await renderCoverPage(pdfDoc, fonts, caseData, partnerData);
@@ -3768,74 +3779,81 @@ export async function generatePdfWithPdfLib(
     }
   }
 
-  if (sections.fieldReport) {
-    try {
-      let repairItems: any[] = [];
-      const estimateList = await db
-        .select()
-        .from(estimates)
-        .where(eq(estimates.caseId, caseId))
-        .orderBy(estimates.version);
+  // 섹션 렌더링 순서 결정
+  const orderedSectionKoNames = (sectionOrder && sectionOrder.length > 0)
+    ? sectionOrder
+    : DEFAULT_SECTION_ORDER;
+  const orderedSectionKeys = orderedSectionKoNames
+    .map((ko) => KO_TO_SECTION_KEY[ko])
+    .filter(Boolean);
 
-      if (estimateList.length > 0) {
-        const latestEstimate = estimateList[estimateList.length - 1];
-        repairItems = await db
+  // 섹션별 렌더링 함수 매핑
+  const sectionRenderers: Record<string, () => Promise<void>> = {
+    fieldReport: async () => {
+      if (!sections.fieldReport) return;
+      try {
+        let repairItems: any[] = [];
+        const estimateList = await db
           .select()
-          .from(estimateRows)
-          .where(eq(estimateRows.estimateId, latestEstimate.id))
-          .orderBy(estimateRows.rowOrder);
-      }
+          .from(estimates)
+          .where(eq(estimates.caseId, caseId))
+          .orderBy(estimates.version);
 
-      await renderFieldReportPage(
-        pdfDoc,
-        fonts,
-        caseData,
-        partnerData,
-        repairItems,
-      );
-      console.log("[pdf-lib] 출동확인서 페이지 생성 완료");
-    } catch (err: any) {
-      console.error("[pdf-lib] 출동확인서 페이지 생성 실패:", err.message);
-      renderErrorPage(pdfDoc, fonts, "출동확인서", err.message);
-    }
-  }
+        if (estimateList.length > 0) {
+          const latestEstimate = estimateList[estimateList.length - 1];
+          repairItems = await db
+            .select()
+            .from(estimateRows)
+            .where(eq(estimateRows.estimateId, latestEstimate.id))
+            .orderBy(estimateRows.rowOrder);
+        }
 
-  if (sections.drawing) {
-    try {
-      // Get drawing data for this case
-      const [drawingData] = await db
-        .select()
-        .from(drawings)
-        .where(eq(drawings.caseId, caseId));
-
-      await renderDrawingPage(pdfDoc, fonts, caseData, drawingData);
-      console.log("[pdf-lib] 도면 페이지 생성 완료");
-    } catch (err: any) {
-      console.error("[pdf-lib] 도면 페이지 생성 실패:", err.message);
-      renderErrorPage(pdfDoc, fonts, "현장 피해상황 도면", err.message);
-    }
-  }
-
-  // skipEvidence가 true면 증빙 섹션 스킵 (이메일 용량 제한용)
-  if (
-    sections.evidence &&
-    evidence.selectedFileIds.length > 0 &&
-    !skipEvidence
-  ) {
-    try {
-      console.log(
-        `[pdf-lib] 증빙자료 조회 - caseId: ${caseId}, selectedFileIds: ${evidence.selectedFileIds.length}개`,
-      );
-
-      const selectedDocs = await db
-        .select()
-        .from(caseDocuments)
-        .where(
-          and(
-            eq(caseDocuments.caseId, caseId),
-            inArray(caseDocuments.id, evidence.selectedFileIds),
-          ),
+        await renderFieldReportPage(
+          pdfDoc,
+          fonts,
+          caseData,
+          partnerData,
+          repairItems,
         );
+        console.log("[pdf-lib] 출동확인서 페이지 생성 완료");
+      } catch (err: any) {
+        console.error("[pdf-lib] 출동확인서 페이지 생성 실패:", err.message);
+        renderErrorPage(pdfDoc, fonts, "출동확인서", err.message);
+      }
+    },
+
+    drawing: async () => {
+      if (!sections.drawing) return;
+      try {
+        const [drawingData] = await db
+          .select()
+          .from(drawings)
+          .where(eq(drawings.caseId, caseId));
+        await renderDrawingPage(pdfDoc, fonts, caseData, drawingData);
+        console.log("[pdf-lib] 도면 페이지 생성 완료");
+      } catch (err: any) {
+        console.error("[pdf-lib] 도면 페이지 생성 실패:", err.message);
+        renderErrorPage(pdfDoc, fonts, "현장 피해상황 도면", err.message);
+      }
+    },
+
+    evidence: async () => {
+      // skipEvidence가 true면 증빙 섹션 스킵 (이메일 용량 제한용)
+      if (!sections.evidence || evidence.selectedFileIds.length === 0 || skipEvidence) return;
+      try {
+        console.log(
+          `[pdf-lib] 증빙자료 조회 - caseId: ${caseId}, selectedFileIds: ${evidence.selectedFileIds.length}개`,
+        );
+
+        const selectedDocs = await db
+          .select()
+          .from(caseDocuments)
+          .where(
+            and(
+              eq(caseDocuments.caseId, caseId),
+              inArray(caseDocuments.id, evidence.selectedFileIds),
+            ),
+          );
 
       // 디버그 로그: 각 문서의 caseId 확인
       console.log(`[pdf-lib] 조회된 증빙자료 ${selectedDocs.length}개:`);
