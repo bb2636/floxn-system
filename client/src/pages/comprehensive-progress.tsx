@@ -2090,11 +2090,10 @@ export default function ComprehensiveProgress() {
                             data-testid={`partner-notes-indicator-${caseItem.id}`}
                           />
                         )}
-                      {/* 관리자 특이사항 파란색 점 (협력사가 확인하지 않은 경우만 표시) */}
+                      {/* 관리자 특이사항 파란색 점 (관리자 메모가 있으면 항상 표시) */}
                       {safeParseNotesHistory(
                         caseItem.adminNotesHistory as string,
-                      ).length > 0 &&
-                        caseItem.adminNotesAckedByPartner !== "true" && (
+                      ).length > 0 && (
                           <div
                             style={{
                               width: "8px",
@@ -2102,7 +2101,7 @@ export default function ComprehensiveProgress() {
                               borderRadius: "50%",
                               background: "#008FED",
                             }}
-                            title="관리자 특이사항 (미확인)"
+                            title="관리자 특이사항"
                             data-testid={`admin-notes-indicator-${caseItem.id}`}
                           />
                         )}
