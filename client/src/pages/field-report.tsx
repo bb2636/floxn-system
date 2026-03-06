@@ -757,29 +757,6 @@ export default function FieldReport() {
       });
       setShowSubmitDialog(false);
 
-      // 플록슨 담당자에게 SMS 자동 발송 (다이얼로그 없이)
-      try {
-        await apiRequest("POST", "/api/send-stage-notification", {
-          caseId: selectedCaseId,
-          stage: "현장정보제출",
-          recipients: {
-            partner: false,
-            manager: false,
-            assessorInvestigator: true,
-          },
-        });
-        toast({
-          title: "문자 발송 완료",
-          description: "플록슨 담당자에게 현장정보제출 알림이 발송되었습니다.",
-        });
-      } catch (error) {
-        console.error("SMS 자동 발송 실패:", error);
-        toast({
-          title: "문자 발송 실패",
-          description: "문자 발송 중 오류가 발생했습니다.",
-          variant: "destructive",
-        });
-      }
     },
     onError: (error: Error) => {
       toast({
