@@ -49,7 +49,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   현장정보입력: { partner: false, manager: false, assessorInvestigator: false },
   반려: { partner: false, manager: false, assessorInvestigator: false },
   승인반려: { partner: false, manager: false, assessorInvestigator: false },
-  현장정보제출: { partner: false, manager: false, assessorInvestigator: true },
+  현장정보제출: { partner: false, manager: false, assessorInvestigator: false },
   복구요청: { partner: true, manager: false, assessorInvestigator: false },
   직접복구: { partner: false, manager: false, assessorInvestigator: false },
   미복구: { partner: false, manager: false, assessorInvestigator: false },

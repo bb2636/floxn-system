@@ -229,6 +229,21 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
         } catch (e) {
           console.error("청구 상태 업데이트 실패:", e);
         }
+
+        // 청구 상태 변경 시 심사자/조사자 SMS 자동 발송
+        try {
+          await apiRequest("POST", "/api/send-stage-notification", {
+            caseId: caseData?.id,
+            stage: "청구",
+            recipients: {
+              partner: false,
+              manager: false,
+              assessorInvestigator: true,
+            },
+          });
+        } catch (e) {
+          console.error("청구 SMS 발송 실패:", e);
+        }
         
         onOpenChange(false);
       } else {

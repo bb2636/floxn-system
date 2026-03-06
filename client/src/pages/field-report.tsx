@@ -855,11 +855,15 @@ export default function FieldReport() {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       setShowApprovalDialog(false);
 
-      // 비승인(승인반려) 시 SMS 알림 다이얼로그 표시
+      // 승인/비승인 시 SMS 알림 다이얼로그 표시
       if (approvalDecision === "비승인") {
         // 반려 전 상태 저장 (현재 상태)
         setSmsPreviousStatus(caseData?.status || "현장정보제출");
         setSmsStage("승인반려");
+        setSmsDialogOpen(true);
+      } else if (approvalDecision === "승인") {
+        // 복구요청(2차승인) 시 협력업체 SMS 알림 다이얼로그 표시
+        setSmsStage("복구요청");
         setSmsDialogOpen(true);
       }
 
