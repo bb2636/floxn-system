@@ -1,6 +1,8 @@
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 interface ProtectedRouteProps {
   category: string;
@@ -22,11 +24,45 @@ const itemRouteMap: { category: string; item: string; path: string }[] = [
   { category: "정산 및 통계", item: "통계", path: "/statistics/closed" },
 ];
 
+const SESSION_POLL_INTERVAL = 30000;
+
 export function ProtectedRoute({ category, item, children }: ProtectedRouteProps) {
   const { hasCategory, hasItem, isLoading, user } = usePermissions();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const isRedirectingRef = useRef(false);
 
   const hasAccess = hasCategory(category) && (!item || hasItem(category, item));
+
+  // 세션 폴링: 30초마다 세션 유효성 체크 (중복 로그인 감지)
+  useEffect(() => {
+    if (!user) return;
+
+    const checkSession = async () => {
+      if (isRedirectingRef.current) return;
+      try {
+        const res = await fetch("/api/check-session", { credentials: "include" });
+        const data = await res.json();
+        if (!data.authenticated) {
+          isRedirectingRef.current = true;
+          queryClient.clear();
+          toast({
+            title: "자동 로그아웃",
+            description: "다른 기기에서 로그인되어 자동으로 로그아웃됩니다.",
+            variant: "destructive",
+          });
+          setTimeout(() => {
+            setLocation("/");
+          }, 1500);
+        }
+      } catch {
+        // 네트워크 오류는 무시
+      }
+    };
+
+    const interval = setInterval(checkSession, SESSION_POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [user, setLocation, toast]);
 
   useEffect(() => {
     if (isLoading) return;
