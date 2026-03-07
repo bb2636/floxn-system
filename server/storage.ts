@@ -2920,8 +2920,7 @@ export class DbStorage implements IStorage {
     console.log("[Essential Permissions] Checking and creating essential role permissions...");
     const currentDate = getKSTTimestamp();
 
-    // 기본 권한 구조 - 메뉴 카테고리에 맞춤 (global-header.tsx의 allMenuItems와 일치)
-    // 카테고리: 홈, 새로운접수, 종합진행관리, 정산 및 통계, 관리자 설정
+    // 관리자 전체 권한 구조
     const fullPermissions = {
       "홈": { enabled: true, items: {} },
       "새로운접수": { enabled: true, items: {} },
@@ -2930,64 +2929,80 @@ export class DbStorage implements IStorage {
       "관리자 설정": { enabled: true, items: {} }
     };
 
-    // 역할별 기본 권한 (관리자는 전체, 다른 역할은 제한적)
+    // 관리자 역할만 기본값 설정 (다른 역할은 관리자가 직접 부여한 권한만 적용)
     const rolePermissionsData = [
       {
         roleName: "관리자",
         permissions: JSON.stringify(fullPermissions)
-      },
-      {
-        roleName: "보험사",
-        permissions: JSON.stringify({
-          "홈": { enabled: true, items: {} },
-          "새로운접수": { enabled: true, items: {} },
-          "종합진행관리": { enabled: true, items: {} },
-          "정산 및 통계": { enabled: true, items: {} },
-          "관리자 설정": { enabled: false, items: {} }
-        })
-      },
-      {
-        roleName: "협력사",
-        permissions: JSON.stringify({
-          "홈": { enabled: true, items: {} },
-          "새로운접수": { enabled: false, items: {} },
-          "현장조사": { enabled: true, items: { "현장입력": true, "도면작성": true, "증빙자료 업로드": true, "견적서 작성": true, "보고서 작성": true } },
-          "종합진행관리": { enabled: true, items: {} },
-          "정산 및 통계": { enabled: false, items: { "통계": false, "정산조회": false, "정산하기": false } },
-          "관리자 설정": { enabled: false, items: { "계정관리": false, "DB관리": false, "기준정보 관리": false, "접근권한관리": false } }
-        })
-      },
-      {
-        roleName: "심사사",
-        permissions: JSON.stringify({
-          "홈": { enabled: true, items: {} },
-          "새로운접수": { enabled: true, items: {} },
-          "종합진행관리": { enabled: true, items: {} },
-          "정산 및 통계": { enabled: false, items: {} },
-          "관리자 설정": { enabled: false, items: {} }
-        })
-      },
-      {
-        roleName: "조사사",
-        permissions: JSON.stringify({
-          "홈": { enabled: false, items: {} },
-          "새로운접수": { enabled: false, items: {} },
-          "종합진행관리": { enabled: true, items: {} },
-          "정산 및 통계": { enabled: false, items: {} },
-          "관리자 설정": { enabled: false, items: {} }
-        })
-      },
-      {
-        roleName: "의뢰사",
-        permissions: JSON.stringify({
-          "홈": { enabled: false, items: {} },
-          "새로운접수": { enabled: false, items: {} },
-          "종합진행관리": { enabled: false, items: {} },
-          "정산 및 통계": { enabled: false, items: {} },
-          "관리자 설정": { enabled: false, items: {} }
-        })
       }
     ];
+
+    // 자동 시딩된 비관리자 역할 권한 레코드 정리 (관리자가 직접 설정하지 않은 기본값 제거)
+    const autoSeededDefaults: Record<string, string> = {
+      "보험사": JSON.stringify({
+        "홈": { enabled: true, items: {} },
+        "새로운접수": { enabled: true, items: {} },
+        "종합진행관리": { enabled: true, items: {} },
+        "정산 및 통계": { enabled: true, items: {} },
+        "관리자 설정": { enabled: false, items: {} }
+      }),
+      "협력사": JSON.stringify({
+        "홈": { enabled: true, items: {} },
+        "새로운접수": { enabled: false, items: {} },
+        "현장조사": { enabled: true, items: { "현장입력": true, "도면작성": true, "증빙자료 업로드": true, "견적서 작성": true, "보고서 작성": true } },
+        "종합진행관리": { enabled: true, items: {} },
+        "정산 및 통계": { enabled: false, items: { "통계": false, "정산조회": false, "정산하기": false } },
+        "관리자 설정": { enabled: false, items: { "계정관리": false, "DB관리": false, "기준정보 관리": false, "접근권한관리": false } }
+      }),
+      "심사사": JSON.stringify({
+        "홈": { enabled: true, items: {} },
+        "새로운접수": { enabled: true, items: {} },
+        "종합진행관리": { enabled: true, items: {} },
+        "정산 및 통계": { enabled: false, items: {} },
+        "관리자 설정": { enabled: false, items: {} }
+      }),
+      "조사사": JSON.stringify({
+        "홈": { enabled: false, items: {} },
+        "새로운접수": { enabled: false, items: {} },
+        "종합진행관리": { enabled: true, items: {} },
+        "정산 및 통계": { enabled: false, items: {} },
+        "관리자 설정": { enabled: false, items: {} }
+      }),
+      "의뢰사": JSON.stringify({
+        "홈": { enabled: false, items: {} },
+        "새로운접수": { enabled: false, items: {} },
+        "종합진행관리": { enabled: false, items: {} },
+        "정산 및 통계": { enabled: false, items: {} },
+        "관리자 설정": { enabled: false, items: {} }
+      })
+    };
+
+    // 일회성 마이그레이션: 자동 시딩된 비관리자 역할 권한 레코드 삭제
+    // (_migration_cleanup_v1 레코드가 없을 때만 실행)
+    const migrationKey = "_migration_cleanup_v1";
+    const migrationDone = await this.getRolePermission(migrationKey);
+    if (!migrationDone) {
+      for (const [roleName] of Object.entries(autoSeededDefaults)) {
+        try {
+          const existing = await this.getRolePermission(roleName);
+          if (existing) {
+            await db.delete(rolePermissions).where(eq(rolePermissions.roleName, roleName));
+            console.log(`[Essential Permissions] Migration: removed auto-seeded default for: ${roleName}`);
+          }
+        } catch (error) {
+          console.error(`[Essential Permissions] Error cleaning up ${roleName}:`, error);
+        }
+      }
+      // 마이그레이션 완료 플래그 저장
+      await db.insert(rolePermissions).values({
+        id: randomUUID(),
+        roleName: migrationKey,
+        permissions: JSON.stringify({ done: true }),
+        createdAt: currentDate,
+        updatedAt: currentDate
+      });
+      console.log(`[Essential Permissions] Migration cleanup_v1 completed`);
+    }
 
     let createdCount = 0;
     let existingCount = 0;
@@ -3012,7 +3027,6 @@ export class DbStorage implements IStorage {
             existing.permissions.includes('"1":"');
           
           if (isCorrupted) {
-            // Corrupted data detected - replace with fresh default permissions
             console.log(`[Essential Permissions] CORRUPTED data detected for ${roleData.roleName}, replacing...`);
             await db.update(rolePermissions)
               .set({ 
@@ -3024,59 +3038,8 @@ export class DbStorage implements IStorage {
             existingCount++;
             continue;
           }
-          
-          // 기존 권한이 있으면 없는 카테고리만 추가 (사용자 설정 보존)
-          let existingPermissions: Record<string, any> = {};
-          if (typeof existing.permissions === 'string') {
-            existingPermissions = JSON.parse(existing.permissions);
-          } else if (existing.permissions && typeof existing.permissions === 'object') {
-            existingPermissions = existing.permissions as Record<string, any>;
-          }
-          
-          // roleData.permissions is already JSON.stringify'd - need to parse it
-          const defaultPermissions = JSON.parse(roleData.permissions);
-          let needsUpdate = false;
-          
-          // 레거시 카테고리 "통계 및 정산" 삭제 (이름이 "정산 및 통계"로 변경됨)
-          if ("통계 및 정산" in existingPermissions) {
-            delete existingPermissions["통계 및 정산"];
-            needsUpdate = true;
-            console.log(`[Essential Permissions] Removed legacy category "통계 및 정산" from ${roleData.roleName}`);
-          }
-          
-          // 기본 카테고리 중 없는 것만 추가
-          for (const category of Object.keys(defaultPermissions)) {
-            if (!(category in existingPermissions)) {
-              existingPermissions[category] = defaultPermissions[category];
-              needsUpdate = true;
-            } else {
-              // 기존 카테고리에 없는 하위 항목 추가 (기존 설정 보존)
-              const defaultItems = defaultPermissions[category]?.items || {};
-              const existingItems = existingPermissions[category]?.items || {};
-              for (const itemKey of Object.keys(defaultItems)) {
-                if (!(itemKey in existingItems)) {
-                  if (!existingPermissions[category].items) {
-                    existingPermissions[category].items = {};
-                  }
-                  // "종합진행관리" 하위 항목은 기존 enabled 값을 따름
-                  existingPermissions[category].items[itemKey] = existingPermissions[category].enabled || false;
-                  needsUpdate = true;
-                }
-              }
-            }
-          }
-          
-          if (needsUpdate) {
-            await db.update(rolePermissions)
-              .set({ 
-                permissions: JSON.stringify(existingPermissions),
-                updatedAt: currentDate
-              })
-              .where(eq(rolePermissions.roleName, roleData.roleName));
-            console.log(`[Essential Permissions] Merged missing categories: ${roleData.roleName}`);
-          } else {
-            console.log(`[Essential Permissions] Already up-to-date: ${roleData.roleName}`);
-          }
+
+          console.log(`[Essential Permissions] Already up-to-date: ${roleData.roleName}`);
           existingCount++;
         }
       } catch (error) {
