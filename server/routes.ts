@@ -8962,7 +8962,7 @@ FLOXN`;
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `inline; filename="invoice-${accidentNo || caseId}.pdf"`,
+        `inline; filename="${encodeURIComponent(`invoice-${accidentNo || caseId}.pdf`)}"`,
       );
       res.send(Buffer.from(pdfBuffer));
     } catch (error) {
