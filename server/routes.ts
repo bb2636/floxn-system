@@ -8774,19 +8774,22 @@ FLOXN`;
         `[View Field Report PDF] Generating PDF for case ${caseData.caseNumber}`,
       );
 
+      const allDocs = await storage.getDocumentsByCaseId(caseId);
+      const allDocIds = allDocs.map((d) => d.id);
+
       const pdfBuffer = await generatePdfWithSizeLimitPdfLib({
         caseId,
         sections: {
           cover: true,
           fieldReport: true,
           drawing: true,
-          evidence: true,
+          evidence: allDocIds.length > 0,
           estimate: true,
           etc: false,
         },
         evidence: {
           tab: "전체",
-          selectedFileIds: [],
+          selectedFileIds: allDocIds,
         },
       });
 
