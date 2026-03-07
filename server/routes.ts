@@ -12835,6 +12835,7 @@ Front·Line·Ops·Xpert·Net
       };
 
       let claimAmountText = "";
+      let estimateAmountText = "";
       try {
         const caseNumber = caseData.caseNumber || "";
         const prefix = caseNumber.replace(/-\d+$/, "");
@@ -12895,7 +12896,7 @@ Front·Line·Ops·Xpert·Net
             recoveryType: c.recoveryType,
           });
         }
-        const estimateAmountText = totalEstimate > 0 ? `${totalEstimate.toLocaleString()}원` : (caseData.estimateAmount || "");
+        estimateAmountText = totalEstimate > 0 ? `${totalEstimate.toLocaleString()}원` : (caseData.estimateAmount || "");
 
         // 손해방지비용 + 대물비용 승인액 (직접복구 건만)
         const preventionApproved = caseApprovedValues
