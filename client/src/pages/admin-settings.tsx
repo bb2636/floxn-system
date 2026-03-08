@@ -720,8 +720,12 @@ export default function AdminSettings() {
         throw err;
       }
     },
-    retry: 5,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    retry: 10,
+    retryDelay: (attemptIndex) => {
+      if (attemptIndex < 3) return 2000;
+      if (attemptIndex < 6) return 3000;
+      return 5000;
+    },
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
   });
@@ -729,10 +733,10 @@ export default function AdminSettings() {
 
   useEffect(() => {
     if (usersError && allUsers.length === 0) {
-      console.error("[AdminSettings] Users query failed, auto-retrying in 3s:", usersQueryError?.message);
+      console.error("[AdminSettings] Users query failed, auto-retrying in 5s:", usersQueryError?.message);
       const timer = setTimeout(() => {
         refetchUsers();
-      }, 3000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [usersError, allUsers.length, usersQueryError, refetchUsers]);
