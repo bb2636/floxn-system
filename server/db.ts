@@ -33,6 +33,6 @@ console.log(`[DB] Connected to ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} da
 
 export const pool = new Pool({ 
   connectionString: databaseUrl,
-  max: 10,
+  max: 20,
 });
 export const db = drizzle({ client: pool, schema });

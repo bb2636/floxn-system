@@ -33,7 +33,13 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Design Guidelines**: Adherence to a strict design guide emphasizing consistent spacing, blur effects, and Noto Sans KR font, prioritizing accessibility.
 
 ### Technical Implementations
-- **Authentication**: Username-based login, bcrypt for password hashing, express-session with PostgreSQL session store (connect-pg-simple) for persistent session management, and robust role-based access control (Assessor, Investigator, Insurer, Partner, Client, Administrator) with protected routes. Sessions survive server restarts/redeployments.
+- **Authentication**: Username-based login, bcrypt for password hashing, express-session with PostgreSQL session store (connect-pg-simple) for persistent session management, and robust role-based access control (Assessor, Investigator, Insurer, Partner, Client, Administrator) with protected routes. Sessions survive server restarts/redeployments. Session store uses in-memory cache with PG persistence (thundering herd protection, 60s cache TTL, 5min touch throttle, non-blocking set). Separate connection pool (max:5) for session queries.
+- **Server-side Caching**: Multi-layer caching strategy for performance:
+  - Users cache (5min TTL, deduplication) - warm on startup
+  - Cases + ProgressUpdates cache (30s TTL, deduplication) - warm on startup
+  - `getUser()` and `getUserByUsername()` use cached users with DB fallback
+  - Cache invalidation on create/update/delete operations
+  - Main DB pool: max 20 connections
 - **User Management (Admin)**: Features a user account table with search and role-based filtering, a detailed right-sliding modal for viewing/editing, and a two-step account creation flow with validation, password generation, and soft deletion.
 - **Case Intake System**: Multi-section collapsible form for new insurance claim cases, including automatic case number generation (CLM-{timestamp}), and extensive fields for various information categories.
 - **Date Handling**: All date creations are in Korean Standard Time (KST).

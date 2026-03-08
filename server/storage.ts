@@ -117,11 +117,50 @@ async function getCachedUsers(): Promise<User[]> {
   return usersCacheFetching;
 }
 
+const CASES_CACHE_TTL = 30 * 1000;
+let casesRawCache: { cases: any[]; progress: any[]; ts: number } | null = null;
+let casesRawFetching: Promise<{ cases: any[]; progress: any[] }> | null = null;
+
+async function getCachedCasesRaw(): Promise<{ cases: any[]; progress: any[] }> {
+  const now = Date.now();
+  if (casesRawCache && (now - casesRawCache.ts) < CASES_CACHE_TTL) {
+    return { cases: casesRawCache.cases, progress: casesRawCache.progress };
+  }
+  if (casesRawFetching) {
+    return casesRawFetching;
+  }
+  casesRawFetching = (async () => {
+    try {
+      const [allCases, allProgress] = await Promise.all([
+        db.select().from(cases).orderBy(asc(cases.createdAt)),
+        db.select().from(progressUpdates),
+      ]);
+      casesRawCache = { cases: allCases, progress: allProgress, ts: Date.now() };
+      return { cases: allCases, progress: allProgress };
+    } finally {
+      casesRawFetching = null;
+    }
+  })();
+  return casesRawFetching;
+}
+
+export function invalidateCasesCache() {
+  casesRawCache = null;
+}
+
 export function warmUpUsersCache() {
   getCachedUsers().then(() => {
     console.log("[CACHE] Users cache warmed up successfully");
   }).catch((err) => {
     console.error("[CACHE] Users cache warm-up failed:", err);
+  });
+}
+
+export function warmUpCasesCache() {
+  getCachedCasesRaw().then(() => {
+    console.log("[CACHE] Cases cache warmed up successfully");
+  }).catch((err) => {
+    console.error("[CACHE] Cases cache warm-up failed:", err);
   });
 }
 
@@ -3824,11 +3863,17 @@ export class DbStorage implements IStorage {
   }
 
   async getUser(id: string): Promise<User | undefined> {
+    const cached = await getCachedUsers();
+    const found = cached.find(u => u.id === id);
+    if (found) return found;
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
+    const cached = await getCachedUsers();
+    const found = cached.find(u => u.username === username);
+    if (found) return found;
     const result = await db
       .select()
       .from(users)
@@ -4255,13 +4300,14 @@ export class DbStorage implements IStorage {
     };
 
     const result = await db.insert(cases).values(newCase).returning();
+    invalidateCasesCache();
     return result[0];
   }
 
   async getAllCases(user?: User): Promise<CaseWithLatestProgress[]> {
-    let allCases = await db.select().from(cases).orderBy(asc(cases.createdAt));
+    const rawData = await getCachedCasesRaw();
+    let allCases = [...rawData.cases];
 
-    // 권한별 필터링 (accountType: "개인" = 본인 건만, "회사" = 회사 전체건)
     if (user) {
       const isPersonal = user.accountType === "개인";
       switch (user.role) {
@@ -4269,55 +4315,53 @@ export class DbStorage implements IStorage {
           break;
         case "협력사":
           if (isPersonal) {
-            allCases = allCases.filter((c) =>
+            allCases = allCases.filter((c: any) =>
               c.assignedPartner === user.company &&
               (c.assignedPartnerManager === user.name || c.createdBy === user.id || c.assignedTo === user.id)
             );
           } else {
-            allCases = allCases.filter((c) => c.assignedPartner === user.company);
+            allCases = allCases.filter((c: any) => c.assignedPartner === user.company);
           }
           break;
         case "보험사":
           if (isPersonal) {
-            allCases = allCases.filter((c) =>
+            allCases = allCases.filter((c: any) =>
               c.insuranceCompany === user.company &&
               (c.managerId === user.id || c.createdBy === user.id)
             );
           } else {
-            allCases = allCases.filter((c) => c.insuranceCompany === user.company);
+            allCases = allCases.filter((c: any) => c.insuranceCompany === user.company);
           }
           break;
         case "심사사":
           if (isPersonal) {
-            allCases = allCases.filter((c) => c.assessorId === user.company && c.assessorTeam === user.name);
+            allCases = allCases.filter((c: any) => c.assessorId === user.company && c.assessorTeam === user.name);
           } else {
-            allCases = allCases.filter((c) => c.assessorId === user.company);
+            allCases = allCases.filter((c: any) => c.assessorId === user.company);
           }
           break;
         case "조사사":
           if (isPersonal) {
-            allCases = allCases.filter((c) => c.investigatorTeam === user.company && c.investigatorTeamName === user.name);
+            allCases = allCases.filter((c: any) => c.investigatorTeam === user.company && c.investigatorTeamName === user.name);
           } else {
-            allCases = allCases.filter((c) => c.investigatorTeam === user.company);
+            allCases = allCases.filter((c: any) => c.investigatorTeam === user.company);
           }
           break;
         case "의뢰사":
           if (isPersonal) {
-            allCases = allCases.filter((c) => c.clientName === user.name);
+            allCases = allCases.filter((c: any) => c.clientName === user.name);
           } else {
-            allCases = allCases.filter((c) => c.clientResidence === user.company);
+            allCases = allCases.filter((c: any) => c.clientResidence === user.company);
           }
           break;
         default:
           return [];
       }
     }
-    const allProgressUpdates = await db.select().from(progressUpdates);
+    const allProgressUpdates = rawData.progress;
 
-    // 담당자 이름 조회용 사용자 목록 가져오기
-    const allUsers = await db.select().from(users);
+    const allUsers = await getCachedUsers();
     const userMap = new Map(allUsers.map((u) => [u.id, u]));
-    console.log(`[getAllCases] Total users in userMap: ${userMap.size}`);
 
     // 각 케이스의 최신 진행상황 찾기
     const casesWithProgress: CaseWithLatestProgress[] = allCases.map(
@@ -4335,10 +4379,6 @@ export class DbStorage implements IStorage {
           ? userMap.get(caseItem.managerId)
           : null;
 
-        // 디버깅 로그 - 모든 케ol�스에 대해 출력
-        console.log(
-          `[getAllCases] Case ${caseItem.caseNumber}: managerId=${caseItem.managerId || "NULL"}, found: ${manager?.name || "-"}`,
-        );
 
         return {
           ...caseItem,
@@ -4427,6 +4467,7 @@ export class DbStorage implements IStorage {
       }
     }
 
+    invalidateCasesCache();
     return result[0];
   }
 
@@ -4458,6 +4499,7 @@ export class DbStorage implements IStorage {
 
     // 7. 마지막으로 케이스 삭제
     await db.delete(cases).where(eq(cases.id, caseId));
+    invalidateCasesCache();
   }
 
   async updateCaseStatus(caseId: string, status: string): Promise<Case | null> {
@@ -4598,6 +4640,7 @@ export class DbStorage implements IStorage {
       }
     }
 
+    invalidateCasesCache();
     return result[0];
   }
 
@@ -4935,6 +4978,7 @@ export class DbStorage implements IStorage {
       .insert(progressUpdates)
       .values(newUpdate)
       .returning();
+    invalidateCasesCache();
     return result[0];
   }
 

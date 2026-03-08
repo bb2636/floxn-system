@@ -3,9 +3,13 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { storage, warmUpUsersCache } from "./storage";
+import { storage, warmUpUsersCache, warmUpCasesCache } from "./storage";
 import { initializeEmailTransporter } from "./hiworks-email";
 import { pool } from "./db";
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import ws from "ws";
+
+neonConfig.webSocketConstructor = ws;
 
 const PgStore = connectPgSimple(session);
 
@@ -26,7 +30,6 @@ declare module 'express-session' {
   }
 }
 
-// Determine production mode - check both NODE_ENV and REPLIT_DEPLOYMENT
 const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
 
 console.log("[SESSION CONFIG]", {
@@ -36,11 +39,96 @@ console.log("[SESSION CONFIG]", {
   cookieSecure: isProduction,
 });
 
-// Trust proxy for production (Replit uses reverse proxy)
 if (isProduction) {
   app.set('trust proxy', 1);
   console.log("[SESSION] Trust proxy enabled for production");
 }
+
+const sessionDbUrl = isProduction
+  ? process.env.PROD_DATABASE_URL
+  : process.env.DEV_DATABASE_URL;
+
+const sessionPool = new Pool({
+  connectionString: sessionDbUrl,
+  max: 5,
+});
+
+const SESSION_CACHE = new Map<string, { data: any; ts: number }>();
+const SESSION_PENDING = new Map<string, Promise<session.SessionData | null | undefined>>();
+const SESSION_CACHE_TTL = 60_000;
+
+const pgStore = new PgStore({
+  pool: sessionPool as any,
+  tableName: 'session',
+  createTableIfMissing: true,
+  pruneSessionInterval: 60 * 15,
+});
+
+const originalGet = pgStore.get.bind(pgStore);
+const originalSet = pgStore.set.bind(pgStore);
+const originalDestroy = pgStore.destroy.bind(pgStore);
+
+pgStore.get = function (sid: string, callback: (err: any, session?: session.SessionData | null) => void) {
+  const cached = SESSION_CACHE.get(sid);
+  if (cached && (Date.now() - cached.ts) < SESSION_CACHE_TTL) {
+    return callback(null, cached.data);
+  }
+
+  const pending = SESSION_PENDING.get(sid);
+  if (pending) {
+    pending.then(data => callback(null, data)).catch(err => callback(err));
+    return;
+  }
+
+  const promise = new Promise<session.SessionData | null | undefined>((resolve, reject) => {
+    originalGet(sid, (err: any, sessionData: session.SessionData | null | undefined) => {
+      SESSION_PENDING.delete(sid);
+      if (err) {
+        reject(err);
+        return;
+      }
+      if (sessionData) {
+        SESSION_CACHE.set(sid, { data: sessionData, ts: Date.now() });
+      }
+      resolve(sessionData);
+    });
+  });
+
+  SESSION_PENDING.set(sid, promise);
+  promise.then(data => callback(null, data)).catch(err => callback(err));
+};
+
+pgStore.set = function (sid: string, sessionData: session.SessionData, callback?: (err?: any) => void) {
+  SESSION_CACHE.set(sid, { data: sessionData, ts: Date.now() });
+  originalSet(sid, sessionData, (err: any) => {
+    if (err) console.error("[SESSION] PG set error:", err);
+  });
+  if (callback) callback();
+};
+
+const originalTouch = pgStore.touch?.bind(pgStore);
+const SESSION_TOUCH_TIMES = new Map<string, number>();
+const SESSION_TOUCH_INTERVAL = 5 * 60 * 1000;
+
+if (originalTouch) {
+  pgStore.touch = function (sid: string, sess: session.SessionData, callback?: (err?: any) => void) {
+    const now = Date.now();
+    const lastTouched = SESSION_TOUCH_TIMES.get(sid) || 0;
+    if ((now - lastTouched) < SESSION_TOUCH_INTERVAL) {
+      if (callback) callback();
+      return;
+    }
+    SESSION_TOUCH_TIMES.set(sid, now);
+    originalTouch(sid, sess, callback);
+  };
+}
+
+pgStore.destroy = function (sid: string, callback?: (err?: any) => void) {
+  SESSION_CACHE.delete(sid);
+  SESSION_PENDING.delete(sid);
+  SESSION_TOUCH_TIMES.delete(sid);
+  originalDestroy(sid, callback);
+};
 
 app.use(session({
   secret: (() => {
@@ -53,12 +141,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   proxy: isProduction,
-  store: new PgStore({
-    pool: pool as any,
-    tableName: 'session',
-    createTableIfMissing: true,
-    pruneSessionInterval: 60 * 15,
-  }),
+  store: pgStore,
   cookie: {
     secure: isProduction,
     httpOnly: true,
@@ -72,7 +155,7 @@ app.get("/_health", (_req, res) => {
 });
 
 app.use(express.json({
-  limit: '500mb', // 대용량 파일 처리를 위해 크기 제한 대폭 증가
+  limit: '500mb',
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
@@ -120,9 +203,6 @@ app.use((req, res, next) => {
     console.error("[ERROR]", err);
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (isProduction) {
     serveStatic(app);
   } else {
@@ -143,6 +223,7 @@ app.use((req, res, next) => {
     log(`serving on port ${port} (timeout: ${server.timeout}ms)`);
 
     warmUpUsersCache();
+    warmUpCasesCache();
 
     (async () => {
       try {
