@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2, Star, ZoomIn, Trash2, Shield } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
-import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { User, VALID_ROLES, type ExcelData, type Inquiry, type MasterData, type InsertMasterData, type Notice, type CaseChangeLog, type UnitPriceOverride } from "@shared/schema";
 import {
@@ -699,11 +699,10 @@ export default function AdminSettings() {
   };
 
   // Fetch all users from server
-  const { data: rawUsers, isLoading: usersLoading } = useQuery<
-    Omit<User, "password">[] | null
+  const { data: rawUsers, isLoading: usersLoading, isError: usersError } = useQuery<
+    Omit<User, "password">[]
   >({
     queryKey: ["/api/users"],
-    queryFn: getQueryFn<Omit<User, "password">[] | null>({ on401: "returnNull" }),
     enabled: !!user,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
@@ -1195,6 +1194,27 @@ export default function AdminSettings() {
 
   if (!user) {
     return null;
+  }
+
+  if (usersError && allUsers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <div className="text-lg font-medium" style={{ color: "#DC2626" }}>
+          사용자 목록을 불러오지 못했습니다
+        </div>
+        <div className="text-sm" style={{ color: "#6B7280" }}>
+          세션이 만료되었거나 서버 연결에 문제가 있습니다.
+        </div>
+        <button
+          className="px-6 py-2 text-white rounded-md hover-elevate active-elevate-2"
+          style={{ background: "#008FED" }}
+          onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/users"] })}
+          data-testid="button-retry-users"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
   }
 
   return (
