@@ -50,7 +50,7 @@ const sessionDbUrl = isProduction
 
 const sessionPool = new Pool({
   connectionString: sessionDbUrl,
-  max: 5,
+  max: 10,
 });
 
 const SESSION_CACHE = new Map<string, { data: any; ts: number }>();
@@ -102,8 +102,8 @@ pgStore.set = function (sid: string, sessionData: session.SessionData, callback?
   SESSION_CACHE.set(sid, { data: sessionData, ts: Date.now() });
   originalSet(sid, sessionData, (err: any) => {
     if (err) console.error("[SESSION] PG set error:", err);
+    if (callback) callback(err);
   });
-  if (callback) callback();
 };
 
 const originalTouch = pgStore.touch?.bind(pgStore);
