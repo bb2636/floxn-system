@@ -658,12 +658,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getAllUsers();
 
-      // 관리자: 전체 정보 (비밀번호 제외)
+      // 관리자: 전체 정보 (비밀번호, attachments 제외 - attachments에 Base64 파일이 저장되어 응답이 수십MB가 됨)
       if (req.session.userRole === "관리자") {
-        const usersWithoutPasswords = users.map(
-          ({ password, ...user }) => user,
+        const usersWithoutHeavyFields = users.map(
+          ({ password, attachments, ...user }) => user,
         );
-        return res.json(usersWithoutPasswords);
+        return res.json(usersWithoutHeavyFields);
       }
 
       // 협력사/기타: 기본 정보만 제공 (담당자 조회용)
@@ -694,6 +694,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res
         .status(500)
         .json({ error: "사용자 목록을 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get user attachments (admin only)
+  app.get("/api/users/:userId/attachments", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 접근 가능합니다" });
+    }
+    try {
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+      res.json({ attachments: user.attachments || [] });
+    } catch (error) {
+      console.error("Get user attachments error:", error);
+      res.status(500).json({ error: "첨부파일을 불러오는 중 오류가 발생했습니다" });
     }
   });
 

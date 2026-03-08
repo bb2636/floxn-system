@@ -741,6 +741,17 @@ export default function AdminSettings() {
     }
   }, [usersError, allUsers.length, usersQueryError, refetchUsers]);
 
+  useEffect(() => {
+    if (selectedUser?.id) {
+      fetch(`/api/users/${selectedUser.id}/attachments`, { credentials: "include" })
+        .then(res => res.ok ? res.json() : { attachments: [] })
+        .then(data => {
+          setSelectedUser(prev => prev ? { ...prev, attachments: data.attachments || [] } : null);
+        })
+        .catch(() => {});
+    }
+  }, [selectedUser?.id]);
+
   // Fetch labor cost Excel versions
   const { data: laborVersions = [], isLoading: laborVersionsLoading } = useQuery<ExcelData[]>({
     queryKey: ["/api/excel-data/노무비/versions"],
