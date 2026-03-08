@@ -1,12 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage, warmUpUsersCache } from "./storage";
 import { initializeEmailTransporter } from "./hiworks-email";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PgStore = connectPgSimple(session);
 
 const app = express();
 
@@ -42,12 +43,21 @@ if (isProduction) {
 }
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'insurance-system-secret-key-change-in-production',
+  secret: (() => {
+    const secret = process.env.SESSION_SECRET;
+    if (!secret && isProduction) {
+      throw new Error("SESSION_SECRET must be set in production environment.");
+    }
+    return secret || 'dev-only-session-secret-not-for-production';
+  })(),
   resave: false,
   saveUninitialized: false,
   proxy: isProduction,
-  store: new MemoryStore({
-    checkPeriod: 86400000,
+  store: new PgStore({
+    pool: pool as any,
+    tableName: 'session',
+    createTableIfMissing: true,
+    pruneSessionInterval: 60 * 15,
   }),
   cookie: {
     secure: isProduction,

@@ -33,7 +33,7 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Design Guidelines**: Adherence to a strict design guide emphasizing consistent spacing, blur effects, and Noto Sans KR font, prioritizing accessibility.
 
 ### Technical Implementations
-- **Authentication**: Username-based login, bcrypt for password hashing, express-session with memorystore for session management, and robust role-based access control (Assessor, Investigator, Insurer, Partner, Client, Administrator) with protected routes.
+- **Authentication**: Username-based login, bcrypt for password hashing, express-session with PostgreSQL session store (connect-pg-simple) for persistent session management, and robust role-based access control (Assessor, Investigator, Insurer, Partner, Client, Administrator) with protected routes. Sessions survive server restarts/redeployments.
 - **User Management (Admin)**: Features a user account table with search and role-based filtering, a detailed right-sliding modal for viewing/editing, and a two-step account creation flow with validation, password generation, and soft deletion.
 - **Case Intake System**: Multi-section collapsible form for new insurance claim cases, including automatic case number generation (CLM-{timestamp}), and extensive fields for various information categories.
 - **Date Handling**: All date creations are in Korean Standard Time (KST).
