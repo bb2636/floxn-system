@@ -45,13 +45,14 @@ export function ProtectedRoute({ category, item, children }: ProtectedRouteProps
         const data = await res.json();
         if (!data.authenticated) {
           isRedirectingRef.current = true;
-          queryClient.clear();
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
           toast({
             title: "자동 로그아웃",
             description: "다른 기기에서 로그인되어 자동으로 로그아웃됩니다.",
             variant: "destructive",
           });
           setTimeout(() => {
+            queryClient.clear();
             setLocation("/");
           }, 1500);
         }

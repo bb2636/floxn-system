@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2, Star, ZoomIn, Trash2, Shield } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { User, VALID_ROLES, type ExcelData, type Inquiry, type MasterData, type InsertMasterData, type Notice, type CaseChangeLog, type UnitPriceOverride } from "@shared/schema";
 import {
@@ -699,12 +699,17 @@ export default function AdminSettings() {
   };
 
   // Fetch all users from server
-  const { data: allUsers = [], isLoading: usersLoading } = useQuery<
-    Omit<User, "password">[]
+  const { data: rawUsers, isLoading: usersLoading } = useQuery<
+    Omit<User, "password">[] | null
   >({
     queryKey: ["/api/users"],
+    queryFn: getQueryFn<Omit<User, "password">[] | null>({ on401: "returnNull" }),
     enabled: !!user,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    staleTime: 60 * 1000,
   });
+  const allUsers = rawUsers ?? [];
 
   // Fetch labor cost Excel versions
   const { data: laborVersions = [], isLoading: laborVersionsLoading } = useQuery<ExcelData[]>({
