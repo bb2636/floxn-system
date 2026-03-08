@@ -83,9 +83,10 @@ import { eq, asc, desc, and, or, like, sql } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
-const USERS_CACHE_TTL = 30000;
+const USERS_CACHE_TTL = 5 * 60 * 1000;
 let usersCache: User[] | null = null;
 let usersCacheTime = 0;
+let usersCacheFetching: Promise<User[]> | null = null;
 
 function invalidateUsersCache() {
   usersCache = null;
@@ -97,13 +98,31 @@ async function getCachedUsers(): Promise<User[]> {
   if (usersCache && (now - usersCacheTime) < USERS_CACHE_TTL) {
     return usersCache;
   }
-  const result = await db
-    .select()
-    .from(users)
-    .where(eq(users.status, "active"));
-  usersCache = result;
-  usersCacheTime = now;
-  return result;
+  if (usersCacheFetching) {
+    return usersCacheFetching;
+  }
+  usersCacheFetching = (async () => {
+    try {
+      const result = await db
+        .select()
+        .from(users)
+        .where(eq(users.status, "active"));
+      usersCache = result;
+      usersCacheTime = Date.now();
+      return result;
+    } finally {
+      usersCacheFetching = null;
+    }
+  })();
+  return usersCacheFetching;
+}
+
+export function warmUpUsersCache() {
+  getCachedUsers().then(() => {
+    console.log("[CACHE] Users cache warmed up successfully");
+  }).catch((err) => {
+    console.error("[CACHE] Users cache warm-up failed:", err);
+  });
 }
 
 // Get current date in KST (Korea Standard Time, UTC+9)

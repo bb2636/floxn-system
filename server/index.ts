@@ -1,10 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import createMemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { storage } from "./storage";
+import { storage, warmUpUsersCache } from "./storage";
 import { initializeEmailTransporter } from "./hiworks-email";
-import { sessionStore } from "./session-store";
+
+const MemoryStore = createMemoryStore(session);
 
 const app = express();
 
@@ -43,12 +45,15 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'insurance-system-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
-  store: sessionStore,
+  proxy: isProduction,
+  store: new MemoryStore({
+    checkPeriod: 86400000,
+  }),
   cookie: {
     secure: isProduction,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
   },
 }));
 
@@ -126,6 +131,8 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port} (timeout: ${server.timeout}ms)`);
+
+    warmUpUsersCache();
 
     (async () => {
       try {
