@@ -699,16 +699,43 @@ export default function AdminSettings() {
   };
 
   // Fetch all users from server
-  const { data: rawUsers, isLoading: usersLoading, isError: usersError } = useQuery<
+  const { data: rawUsers, isLoading: usersLoading, isError: usersError, error: usersQueryError, refetch: refetchUsers } = useQuery<
     Omit<User, "password">[]
   >({
     queryKey: ["/api/users"],
     enabled: !!user,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/users", { credentials: "include" });
+        if (res.status === 401) {
+          console.warn("[AdminSettings] /api/users returned 401, session may have expired");
+          return [];
+        }
+        if (!res.ok) {
+          throw new Error(`${res.status}: ${res.statusText}`);
+        }
+        return await res.json();
+      } catch (err) {
+        console.error("[AdminSettings] /api/users fetch error:", err);
+        throw err;
+      }
+    },
+    retry: 5,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   });
   const allUsers = rawUsers ?? [];
+
+  useEffect(() => {
+    if (usersError && allUsers.length === 0) {
+      console.error("[AdminSettings] Users query failed, auto-retrying in 3s:", usersQueryError?.message);
+      const timer = setTimeout(() => {
+        refetchUsers();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [usersError, allUsers.length, usersQueryError, refetchUsers]);
 
   // Fetch labor cost Excel versions
   const { data: laborVersions = [], isLoading: laborVersionsLoading } = useQuery<ExcelData[]>({
@@ -1203,15 +1230,19 @@ export default function AdminSettings() {
           사용자 목록을 불러오지 못했습니다
         </div>
         <div className="text-sm" style={{ color: "#6B7280" }}>
-          세션이 만료되었거나 서버 연결에 문제가 있습니다.
+          자동으로 다시 시도 중입니다... 잠시만 기다려 주세요.
         </div>
         <button
           className="px-6 py-2 text-white rounded-md hover-elevate active-elevate-2"
           style={{ background: "#008FED" }}
-          onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/users"] })}
+          onClick={() => {
+            queryClient.removeQueries({ queryKey: ["/api/users"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+            window.location.reload();
+          }}
           data-testid="button-retry-users"
         >
-          다시 시도
+          페이지 새로고침
         </button>
       </div>
     );
