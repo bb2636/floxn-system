@@ -83,6 +83,29 @@ import { eq, asc, desc, and, or, like, sql } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
+const USERS_CACHE_TTL = 30000;
+let usersCache: User[] | null = null;
+let usersCacheTime = 0;
+
+function invalidateUsersCache() {
+  usersCache = null;
+  usersCacheTime = 0;
+}
+
+async function getCachedUsers(): Promise<User[]> {
+  const now = Date.now();
+  if (usersCache && (now - usersCacheTime) < USERS_CACHE_TTL) {
+    return usersCache;
+  }
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.status, "active"));
+  usersCache = result;
+  usersCacheTime = now;
+  return result;
+}
+
 // Get current date in KST (Korea Standard Time, UTC+9)
 function getKSTDate(): string {
   const kstDate = new Date(
@@ -3795,12 +3818,7 @@ export class DbStorage implements IStorage {
   }
 
   async getAllUsers(): Promise<User[]> {
-    // Return all active users (not soft-deleted)
-    const result = await db
-      .select()
-      .from(users)
-      .where(eq(users.status, "active"));
-    return result;
+    return getCachedUsers();
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -3832,6 +3850,7 @@ export class DbStorage implements IStorage {
     };
 
     const result = await db.insert(users).values(newUser).returning();
+    invalidateUsersCache();
     return result[0];
   }
 
@@ -3879,6 +3898,7 @@ export class DbStorage implements IStorage {
       .where(eq(users.username, username))
       .returning();
 
+    invalidateUsersCache();
     return result[0] || null;
   }
 
@@ -3891,6 +3911,7 @@ export class DbStorage implements IStorage {
       .returning();
 
     console.log(`[REACTIVATE ACCOUNT] ${username}:`, result[0] ? 'SUCCESS' : 'NOT FOUND');
+    invalidateUsersCache();
     return result[0] || null;
   }
 
@@ -3906,6 +3927,7 @@ export class DbStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
 
+    invalidateUsersCache();
     return result[0] || null;
   }
 
@@ -3921,6 +3943,7 @@ export class DbStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
 
+    invalidateUsersCache();
     return result[0] || null;
   }
 
@@ -3937,6 +3960,7 @@ export class DbStorage implements IStorage {
       .where(eq(users.username, username))
       .returning();
 
+    invalidateUsersCache();
     return result[0] || null;
   }
 
