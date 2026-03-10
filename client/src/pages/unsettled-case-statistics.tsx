@@ -37,6 +37,35 @@ const formatDate = (dateStr: string | null | undefined): string => {
   }
 };
 
+// 주소에서 지역(시/도) 추출
+const extractRegion = (address: string | null | undefined): string => {
+  if (!address) return "-";
+  // 특별시/광역시
+  const specialCityMatch = address.match(/(서울|부산|대구|인천|광주|대전|울산|세종)/);
+  if (specialCityMatch) return specialCityMatch[1];
+  // 도
+  const provinceMatch = address.match(/([가-힣]+도)/);
+  if (provinceMatch) return provinceMatch[1];
+  return "-";
+};
+
+// 주소에서 시군구 추출
+const extractCityDistrict = (address: string | null | undefined): string => {
+  if (!address) return "-";
+  // 특별시/광역시의 경우 구 추출
+  if (address.match(/(서울|부산|대구|인천|광주|대전|울산)/)) {
+    const guMatch = address.match(/([가-힣]+구)/);
+    if (guMatch) return guMatch[1];
+  }
+  // 시 추출
+  const cityMatch = address.match(/([가-힣]+시)/);
+  if (cityMatch) return cityMatch[1];
+  // 군 추출
+  const gunMatch = address.match(/([가-힣]+군)/);
+  if (gunMatch) return gunMatch[1];
+  return "-";
+};
+
 const getRepresentativeCase = (groupCases: Case[]): Case => {
   const sorted = [...groupCases].sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
   const zeroCase = sorted.find(c => (c.caseNumber || "").endsWith("-0"));
@@ -324,12 +353,12 @@ export default function UnsettledCaseStatistics() {
 
   const handleExcelDownload = () => {
     const headers = [
-      "보험사", "사고번호",
+      "보험사", "증권번호", "사고번호",
       ...(searchType === "접수번호" ? ["접수번호"] : []),
       "플록슨 담당자", "접수 일자",
       "의뢰사", "의뢰자", "심사사", "심사자",
       "조사사", "조사자", "협력사", "담당자", "배당일자",
-      "사고유형", "사고원인", "복구방식", "진행상태",
+      "사고유형", "사고원인", "손방 유무", "대물 유무", "복구방식", "지역", "시군구", "진행상태",
       "견적금액", "견적일자", "승인금액", "승인일자",
       ...(searchType !== "접수번호" ? ["청구액", "청구일자", "입금액", "부분입금일자", "정산액(협력업체 지급일)", "수수료", "정산일자"] : []),
     ];
@@ -340,8 +369,12 @@ export default function UnsettledCaseStatistics() {
       rows = filteredCases.map((c) => {
         const deposit = getDepositInfo(c);
         const settlement = settlementMap[c.id];
+        const damagePrevention = c.damagePreventionCost === "true" || (c.damagePreventionCost as any) === true;
+        const victimIncident = c.victimIncidentAssistance === "true" || (c.victimIncidentAssistance as any) === true;
+        const address = c.insuredAddress || c.victimAddress || "";
         return [
           c.insuranceCompany || "",
+          c.insurancePolicyNo || "",
           c.insuranceAccidentNo || "",
           c.caseNumber || "",
           getManagerName(c),
@@ -357,7 +390,11 @@ export default function UnsettledCaseStatistics() {
           formatDate(c.assignmentDate),
           c.accidentType || "",
           c.accidentCause || "",
+          damagePrevention ? "손방" : "-",
+          victimIncident ? "대물" : "-",
           c.restorationMethod || c.recoveryType || "",
+          extractRegion(address),
+          extractCityDistrict(address),
           c.status,
           getCaseEstimateForStats(c) ? getCaseEstimateForStats(c).toLocaleString() : "",
           formatDate(c.siteInvestigationSubmitDate),
@@ -370,8 +407,14 @@ export default function UnsettledCaseStatistics() {
         const rep = g.rep;
         const deposit = getGroupDepositInfo(g.cases);
         const sett = getGroupSettlementTotals(g.cases);
+        const damagePrevention = rep.damagePreventionCost === "true" || (rep.damagePreventionCost as any) === true;
+        const victimIncident = rep.victimIncidentAssistance === "true" || (rep.victimIncidentAssistance as any) === true;
+        const address = rep.insuredAddress || rep.victimAddress || "";
+        // 청구액: 그룹 내 대표 케이스의 청구액만 사용 (더블 계산 방지)
+        const claimAmount = getClaimAmount(rep);
         return [
           rep.insuranceCompany || "",
+          rep.insurancePolicyNo || "",
           g.accidentNo.startsWith("no-acc-") ? "-" : g.accidentNo,
           getManagerName(rep),
           formatDate(rep.createdAt),
@@ -386,13 +429,17 @@ export default function UnsettledCaseStatistics() {
           formatDate(rep.assignmentDate),
           rep.accidentType || "",
           rep.accidentCause || "",
+          damagePrevention ? "손방" : "-",
+          victimIncident ? "대물" : "-",
           rep.restorationMethod || rep.recoveryType || "",
+          extractRegion(address),
+          extractCityDistrict(address),
           rep.status,
           g.totalEstimate ? g.totalEstimate.toLocaleString() : "",
           formatDate(rep.siteInvestigationSubmitDate),
           g.totalApproved ? g.totalApproved.toLocaleString() : "",
           formatDate(rep.secondApprovalDate),
-          g.totalClaim ? g.totalClaim.toLocaleString() : "",
+          claimAmount ? claimAmount.toLocaleString() : "",
           formatDate(rep.claimDate),
           deposit.amount ? deposit.amount.toLocaleString() : "",
           formatDate(deposit.date),
