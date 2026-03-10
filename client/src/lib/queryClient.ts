@@ -1,7 +1,32 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// queryClient는 아래에서 정의되므로 여기서는 참조만
+let queryClientInstance: QueryClient | null = null;
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    // 401 에러 발생 시 세션 체크 (중복 로그인 감지)
+    if (res.status === 401) {
+      try {
+        const checkRes = await fetch("/api/check-session", { credentials: "include" });
+        const checkData = await checkRes.json();
+        if (!checkData.authenticated) {
+          // 세션이 무효화되었으면 로그아웃 처리
+          if (queryClientInstance) {
+            queryClientInstance.clear();
+          }
+          window.location.href = "/";
+          return;
+        }
+      } catch {
+        // check-session 실패 시에도 로그아웃
+        if (queryClientInstance) {
+          queryClientInstance.clear();
+        }
+        window.location.href = "/";
+        return;
+      }
+    }
     const text = (await res.text()) || res.statusText;
     throw new Error(`${res.status}: ${text}`);
   }
@@ -56,3 +81,6 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// queryClient 인스턴스를 throwIfResNotOk에서 사용할 수 있도록 설정
+queryClientInstance = queryClient;

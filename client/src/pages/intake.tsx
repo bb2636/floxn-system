@@ -734,13 +734,76 @@ export default function Intake({
       });
   }, [initialCaseId, administrators]);
 
-  // 새로운 접수 화면에 들어갈 때 localStorage 클리어 (크롬 브라우저 호환성)
+  // 새로운 접수 화면에 들어갈 때 localStorage 클리어 및 폼 초기화 (크롬 브라우저 호환성)
+  // 이 useEffect는 다른 localStorage 읽기 useEffect보다 먼저 실행되어야 함
   useEffect(() => {
     // 모달이 아니고 initialCaseId가 null인 경우 = 새로운 접수 화면
     if (!isModal && !initialCaseId) {
+      // localStorage 먼저 클리어
       localStorage.removeItem("intakeFormDraft");
       localStorage.removeItem("editCaseId");
       setEditCaseId(null);
+      
+      // 폼 데이터도 초기화 (이전 접수 정보가 남아있지 않도록)
+      setFormData({
+        managerId: "",
+        managerDepartment: "",
+        managerPosition: "",
+        managerContact: "",
+        accidentDate: getTodayDate(),
+        insuranceCompany: "",
+        insurancePolicyNo: "",
+        insuranceAccidentNo: "",
+        clientResidence: "",
+        clientDepartment: "",
+        clientName: "",
+        clientContact: "",
+        assessorId: "",
+        assessorDepartment: "",
+        assessorTeam: "",
+        assessorContact: "",
+        assessorEmail: "",
+        investigatorTeam: "",
+        investigatorDepartment: "",
+        investigatorTeamName: "",
+        investigatorContact: "",
+        investigatorEmail: "",
+        policyHolderName: "",
+        policyHolderIdNumber: "",
+        policyHolderAddress: "",
+        insuredName: "",
+        insuredIdNumber: "",
+        insuredContact: "",
+        insuredAddress: "",
+        insuredAddressDetail: "",
+        victimName: "",
+        victimContact: "",
+        victimAddress: "",
+        victimAddressDetail: "",
+        accompaniedPerson: "",
+        accidentType: "",
+        accidentCause: "",
+        restorationMethod: "",
+        otherVendorEstimate: "",
+        accidentDescription: "",
+        damageItem: "",
+        damageType: "",
+        damageQuantity: "1",
+        damageDetails: "",
+        damageItems: [],
+        damagePreventionCost: false,
+        victimIncidentAssistance: false,
+        assignedPartner: "",
+        assignedPartnerManager: "",
+        assignedPartnerContact: "",
+        urgency: "",
+        specialRequests: "",
+      });
+      setAccidentDate(new Date());
+      setSelectedPartner(null);
+      setSameAsPolicyHolder(false);
+      setAdditionalVictims([]);
+      setLoadedCaseNumber(null);
     }
   }, [isModal, initialCaseId]);
 
