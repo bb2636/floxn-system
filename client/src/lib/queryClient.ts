@@ -7,6 +7,13 @@ async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     // 401 에러 발생 시 세션 체크 (중복 로그인 감지)
     if (res.status === 401) {
+      // 로그인 페이지에서는 401 에러를 무시 (무한 리다이렉트 방지)
+      const currentPath = window.location.pathname;
+      if (currentPath === "/" || currentPath === "/login" || currentPath === "/mobile-login") {
+        const text = (await res.text()) || res.statusText;
+        throw new Error(`${res.status}: ${text}`);
+      }
+      
       try {
         const checkRes = await fetch("/api/check-session", { credentials: "include" });
         const checkData = await checkRes.json();
@@ -19,7 +26,7 @@ async function throwIfResNotOk(res: Response) {
           return;
         }
       } catch {
-        // check-session 실패 시에도 로그아웃
+        // check-session 실패 시에도 로그아웃 (단, 로그인 페이지가 아닐 때만)
         if (queryClientInstance) {
           queryClientInstance.clear();
         }
