@@ -470,6 +470,7 @@ export default function UnsettledCaseStatistics() {
     return (
       <tr key={g.accidentNo} data-testid={`row-unsettled-group-${g.accidentNo}`}>
         <td style={cellStyle}>{rep.insuranceCompany || "-"}</td>
+        <td style={{ ...cellStyle, fontSize: "12px" }}>{rep.insurancePolicyNo || "-"}</td>
         <td style={{ ...cellStyle, fontSize: "12px" }}>{g.accidentNo.startsWith("no-acc-") ? "-" : (g.accidentNo || "-")}</td>
         <td style={cellStyle}>{getManagerName(rep)}</td>
         <td style={cellStyle}>{formatDate(rep.createdAt)}</td>
@@ -490,7 +491,7 @@ export default function UnsettledCaseStatistics() {
         <td style={cellStyle}>{formatDate(rep.siteInvestigationSubmitDate)}</td>
         <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(g.totalApproved)}</td>
         <td style={cellStyle}>{formatDate(rep.secondApprovalDate)}</td>
-        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(g.totalClaim)}</td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(getClaimAmount(rep))}</td>
         <td style={cellStyle}>{formatDate(rep.claimDate)}</td>
         <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(deposit.amount)}</td>
         <td style={cellStyle}>{formatDate(deposit.date)}</td>
@@ -513,6 +514,7 @@ export default function UnsettledCaseStatistics() {
     return (
       <tr key={c.id} data-testid={`row-unsettled-case-${c.id}`}>
         <td style={cellStyle}>{c.insuranceCompany || "-"}</td>
+        <td style={{ ...cellStyle, fontSize: "12px" }}>{c.insurancePolicyNo || "-"}</td>
         <td style={{ ...cellStyle, fontSize: "12px" }}>{c.insuranceAccidentNo || "-"}</td>
         <td style={{ ...cellStyle, fontSize: "12px" }}>{c.caseNumber || "-"}</td>
         <td style={cellStyle}>{getManagerName(c)}</td>
@@ -764,7 +766,7 @@ export default function UnsettledCaseStatistics() {
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "3500px" }}>
           <thead>
             <tr>
-              <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>보험사</th>
+              <th colSpan={3} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>보험사</th>
               <th colSpan={searchType === "접수번호" ? 3 : 2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>플록슨</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>의뢰사</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>심사사</th>
@@ -786,6 +788,7 @@ export default function UnsettledCaseStatistics() {
             </tr>
             <tr>
               <th style={{ ...headerStyle, width: "120px" }}>보험사</th>
+              <th style={{ ...headerStyle, width: "140px" }}>증권번호</th>
               <th style={{ ...headerStyle, width: "140px" }}>사고번호</th>
               {searchType === "접수번호" && (
                 <th style={{ ...headerStyle, width: "140px" }}>접수번호</th>
