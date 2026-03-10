@@ -734,8 +734,20 @@ export default function Intake({
       });
   }, [initialCaseId, administrators]);
 
+  // 새로운 접수 화면에 들어갈 때 localStorage 클리어 (크롬 브라우저 호환성)
+  useEffect(() => {
+    // 모달이 아니고 initialCaseId가 null인 경우 = 새로운 접수 화면
+    if (!isModal && !initialCaseId) {
+      localStorage.removeItem("intakeFormDraft");
+      localStorage.removeItem("editCaseId");
+      setEditCaseId(null);
+    }
+  }, [isModal, initialCaseId]);
+
   useEffect(() => {
     if (initialCaseId) return;
+    // 모달이 아닌 경우 (새로운 접수 화면) localStorage를 읽지 않음
+    if (!isModal) return;
     const storedEditCaseId = localStorage.getItem("editCaseId");
     if (storedEditCaseId) {
       setEditCaseId(storedEditCaseId);

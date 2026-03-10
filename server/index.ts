@@ -8,6 +8,7 @@ import { initializeEmailTransporter } from "./hiworks-email";
 import { pool } from "./db";
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from "ws";
+import { activeUserSessions } from "./session-store";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -127,6 +128,17 @@ pgStore.destroy = function (sid: string, callback?: (err?: any) => void) {
   SESSION_CACHE.delete(sid);
   SESSION_PENDING.delete(sid);
   SESSION_TOUCH_TIMES.delete(sid);
+  
+  // 세션 파괴 시 activeUserSessions에서도 제거
+  // sessionId로 userId를 찾아서 제거
+  for (const [userId, sessionId] of activeUserSessions.entries()) {
+    if (sessionId === sid) {
+      activeUserSessions.delete(userId);
+      console.log("[SESSION] Removed from activeUserSessions on destroy:", { userId, sessionId: sid });
+      break;
+    }
+  }
+  
   originalDestroy(sid, callback);
 };
 

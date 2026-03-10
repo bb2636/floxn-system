@@ -189,6 +189,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 중복 로그인 방지: 기존 세션이 있으면 파괴
         const existingSessionId = activeUserSessions.get(user.id);
         if (existingSessionId && existingSessionId !== req.sessionID) {
+          // activeUserSessions에서 먼저 제거
+          activeUserSessions.delete(user.id);
           sessionStore.destroy(existingSessionId, (err) => {
             if (err) {
               console.error("[LOGIN] Failed to destroy existing session:", err);
@@ -363,6 +365,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check session endpoint
   app.get("/api/check-session", async (req, res) => {
     if (req.session?.userId) {
+      // 중복 로그인 방지: activeUserSessions에서 현재 세션이 활성화된 세션인지 확인
+      const activeSessionId = activeUserSessions.get(req.session.userId);
+      if (activeSessionId && activeSessionId !== req.sessionID) {
+        // 다른 세션이 활성화되어 있으면 현재 세션 무효화
+        console.log("[CHECK-SESSION] Session invalidated - another session is active", {
+          userId: req.session.userId,
+          currentSessionId: req.sessionID,
+          activeSessionId: activeSessionId,
+        });
+        req.session.destroy(() => {});
+        return res.json({ authenticated: false });
+      }
+      
       const user = await storage.getUser(req.session.userId);
       if (user) {
         const { password, ...userWithoutPassword } = user;
