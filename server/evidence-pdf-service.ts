@@ -59,28 +59,51 @@ function getCategoryToTab(category: string): string {
 let cachedFont: Buffer | null = null;
 
 /**
- * 헤더 텍스트 정규화 (Pretendard 폰트용)
+ * 헤더 텍스트 정규화 및 클렌징 (Pretendard 폰트용)
  * - 유니코드 공백 제거
  * - 대시류(–—−) → ASCII '-'
  * - 코드 패턴에서만 하이픈 주변 공백 제거
  * - ASCII '-' (U+002D) 그대로 유지 (U+2010/2011/2212 치환 금지)
+ * - 이모지 및 폰트가 지원하지 않는 특수 유니코드 문자 제거/대체
  */
 function normalizeHeaderText(text: string): string {
   if (!text) return "";
   let s = String(text);
   
-  // 1) 유니코드 공백을 일반 공백으로 통일
+  // 1) 이모지 및 특수 유니코드 문자 제거/대체
+  //    - 이모지 범위: U+1F300 ~ U+1F9FF (Miscellaneous Symbols and Pictographs)
+  //    - 이모지 범위: U+1FA00 ~ U+1FAFF (Symbols and Pictographs Extended-A)
+  //    - 이모지 범위: U+2600 ~ U+26FF (Miscellaneous Symbols)
+  //    - 이모지 범위: U+2700 ~ U+27BF (Dingbats)
+  //    - 제어 문자 제거 (U+0000 ~ U+001F, U+007F ~ U+009F)
+  //    - 대체 문자 제거 (U+FFFD)
+  s = s.split('').filter(char => {
+    const code = char.codePointAt(0) || 0;
+    // 이모지 범위 제거
+    if ((code >= 0x1F300 && code <= 0x1F9FF) || // Miscellaneous Symbols and Pictographs
+        (code >= 0x1FA00 && code <= 0x1FAFF) || // Symbols and Pictographs Extended-A
+        (code >= 0x2600 && code <= 0x26FF) ||   // Miscellaneous Symbols
+        (code >= 0x2700 && code <= 0x27BF) ||   // Dingbats
+        (code >= 0x0000 && code <= 0x001F) ||   // 제어 문자
+        (code >= 0x007F && code <= 0x009F) ||  // 제어 문자
+        code === 0xFFFD) {                      // 대체 문자
+      return false;
+    }
+    return true;
+  }).join('');
+  
+  // 2) 유니코드 공백을 일반 공백으로 통일
   s = s.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u2060\u3000]/g, " ");
   
-  // 2) 대시류를 ASCII 하이픈으로 통일 (en dash, em dash, minus sign, etc → ASCII -)
+  // 3) 대시류를 ASCII 하이픈으로 통일 (en dash, em dash, minus sign, etc → ASCII -)
   s = s.replace(/[–—−\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, "-");
   
-  // 3) 하이픈/콜론/슬래시 주변 공백 제거 (코드 패턴)
+  // 4) 하이픈/콜론/슬래시 주변 공백 제거 (코드 패턴)
   s = s.replace(/\s*-\s*/g, "-");
   s = s.replace(/\s*:\s*/g, ":");
   s = s.replace(/\s*\/\s*/g, "/");
   
-  // 4) 연속 공백 축소
+  // 5) 연속 공백 축소
   s = s.replace(/ {2,}/g, " ");
   
   // ASCII '-' (U+002D) 유지 - 치환하지 않음
@@ -110,6 +133,32 @@ function loadFontBytes(): Buffer {
 }
 
 /**
+ * 폰트가 지원하는 문자만 남기고 나머지는 제거
+ */
+function sanitizeTextForFont(text: string, font: PDFFont, fontSize: number): string {
+  if (!text) return "";
+  
+  // 문자 단위로 분리하여 폰트가 지원하는지 확인
+  const safeChars: string[] = [];
+  
+  for (const char of text) {
+    try {
+      // 폰트가 해당 문자를 지원하는지 확인 (widthOfTextAtSize로 테스트)
+      font.widthOfTextAtSize(char, fontSize);
+      safeChars.push(char);
+    } catch {
+      // 폰트가 지원하지 않는 문자는 제거하거나 공백으로 대체
+      // 한글, 영문, 숫자, 기본 특수문자는 유지
+      if (/[\x20-\x7E\uAC00-\uD7A3\u3131-\u318E]/.test(char)) {
+        safeChars.push(char);
+      }
+    }
+  }
+  
+  return safeChars.join("");
+}
+
+/**
  * 사고번호(식별자) 전용 렌더링 - 하이픈 분리 + cursorX 당기기
  * pdf-lib kerning 미지원으로 인한 하이픈 뒤 간격 보정
  */
@@ -122,31 +171,63 @@ function drawIdentifierTight(
   fontSize: number,
   color: { red: number; green: number; blue: number }
 ): number {
-  if (!text || !text.includes('-')) {
-    page.drawText(text || '', { x, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
-    return x + (text ? font.widthOfTextAtSize(text, fontSize) : 0);
-  }
-  
-  const offset = fontSize * 0.06;
-  const parts = text.split('-');
-  let cursorX = x;
-  
-  const hyphenWidth = font.widthOfTextAtSize('-', fontSize);
-  console.log(`[drawIdentifierTight] text="${text}", fontSize=${fontSize}, hyphenWidth=${hyphenWidth.toFixed(2)}, offset=${offset.toFixed(2)}`);
-  
-  for (let i = 0; i < parts.length; i++) {
-    if (parts[i]) {
-      page.drawText(parts[i], { x: cursorX, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
-      cursorX += font.widthOfTextAtSize(parts[i], fontSize);
+  try {
+    // 텍스트 정규화 및 클렌징
+    const normalized = normalizeHeaderText(text || "");
+    
+    if (!normalized || normalized.length === 0) {
+      return x;
+    }
+
+    // 폰트가 지원하는 문자만 사용
+    const safeText = sanitizeTextForFont(normalized, font, fontSize);
+    
+    if (!safeText || safeText.length === 0) {
+      return x;
+    }
+
+    if (!safeText.includes('-')) {
+      page.drawText(safeText, { x, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
+      return x + font.widthOfTextAtSize(safeText, fontSize);
     }
     
-    if (i < parts.length - 1) {
-      page.drawText('-', { x: cursorX, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
-      cursorX += hyphenWidth - offset;
+    const offset = fontSize * 0.06;
+    const parts = safeText.split('-');
+    let cursorX = x;
+    
+    const hyphenWidth = font.widthOfTextAtSize('-', fontSize);
+    console.log(`[drawIdentifierTight] text="${safeText}", fontSize=${fontSize}, hyphenWidth=${hyphenWidth.toFixed(2)}, offset=${offset.toFixed(2)}`);
+    
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i]) {
+        const safePart = sanitizeTextForFont(parts[i], font, fontSize);
+        if (safePart) {
+          page.drawText(safePart, { x: cursorX, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
+          cursorX += font.widthOfTextAtSize(safePart, fontSize);
+        }
+      }
+      
+      if (i < parts.length - 1) {
+        page.drawText('-', { x: cursorX, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
+        cursorX += hyphenWidth - offset;
+      }
     }
+    
+    return cursorX;
+  } catch (e) {
+    console.warn(`[Evidence PDF] Failed to draw identifier: "${text?.substring(0, 20)}..." - ${e}`);
+    // 실패 시 빈 문자열로 대체하여 PDF 생성은 계속 진행
+    try {
+      const fallbackText = normalizeHeaderText(text || "").replace(/[^\x20-\x7E\uAC00-\uD7A3]/g, "");
+      if (fallbackText.length > 0) {
+        page.drawText(fallbackText, { x, y, size: fontSize, font, color: rgb(color.red, color.green, color.blue) });
+        return x + font.widthOfTextAtSize(fallbackText, fontSize);
+      }
+    } catch (fallbackError) {
+      console.warn(`[Evidence PDF] Fallback text rendering also failed: ${fallbackError}`);
+    }
+    return x;
   }
-  
-  return cursorX;
 }
 
 const COMPRESSION_LEVELS = [
@@ -246,13 +327,13 @@ async function createEvidencePdfForTab(
     if (currentImageCount === 0) return;
     
     const pdfBytes = await currentPdf.save();
-    let buffer = Buffer.from(pdfBytes);
+    let buffer: Buffer = Buffer.from(pdfBytes);
     
     // 이메일 첨부용 압축 적용 (7MB 타겟)
     const originalSize = buffer.length;
     if (originalSize > 7 * 1024 * 1024) {
       console.log(`[Evidence PDF] Compressing PDF: ${Math.round(originalSize / 1024 / 1024 * 100) / 100}MB...`);
-      buffer = await compressPdfForEmail(buffer);
+      buffer = Buffer.from(await compressPdfForEmail(buffer));
       console.log(`[Evidence PDF] Compressed: ${Math.round(originalSize / 1024 / 1024 * 100) / 100}MB → ${Math.round(buffer.length / 1024 / 1024 * 100) / 100}MB`);
     }
     
@@ -668,15 +749,34 @@ async function addHeaderToPdf(
       // Draw header text
       try {
         const fontSize = 9;
-        const textWidth = font.widthOfTextAtSize(headerText, fontSize);
+        
+        // 폰트가 지원하는 문자만 사용
+        const safeHeaderText = sanitizeTextForFont(headerText, font, fontSize);
+        
+        if (!safeHeaderText || safeHeaderText.length === 0) {
+          // 안전한 텍스트가 없으면 파일명만 표시
+          const safeFileName = sanitizeTextForFont(fileName, font, fontSize);
+          if (safeFileName) {
+            newPage.drawText(safeFileName, {
+              x: 10,
+              y: height + (HEADER_HEIGHT - fontSize) / 2,
+              size: fontSize,
+              font: font,
+              color: rgb(0.2, 0.2, 0.2),
+            });
+          }
+          continue;
+        }
+        
+        const textWidth = font.widthOfTextAtSize(safeHeaderText, fontSize);
         const maxTextWidth = width - 20;
         
         // Truncate if too long
-        let displayText = headerText;
+        let displayText = safeHeaderText;
         if (textWidth > maxTextWidth) {
           const ratio = maxTextWidth / textWidth;
-          const charCount = Math.floor(headerText.length * ratio) - 3;
-          displayText = headerText.substring(0, charCount) + '...';
+          const charCount = Math.floor(safeHeaderText.length * ratio) - 3;
+          displayText = safeHeaderText.substring(0, charCount) + '...';
         }
         
         newPage.drawText(displayText, {
@@ -687,7 +787,22 @@ async function addHeaderToPdf(
           color: rgb(0.2, 0.2, 0.2),
         });
       } catch (textErr) {
-        console.warn(`[Evidence PDF] Failed to draw header text on page ${i + 1}`);
+        console.warn(`[Evidence PDF] Failed to draw header text on page ${i + 1}:`, textErr);
+        // 실패 시 파일명만 표시 시도
+        try {
+          const safeFileName = sanitizeTextForFont(fileName, font, 9);
+          if (safeFileName) {
+            newPage.drawText(safeFileName, {
+              x: 10,
+              y: height + (HEADER_HEIGHT - 9) / 2,
+              size: 9,
+              font: font,
+              color: rgb(0.2, 0.2, 0.2),
+            });
+          }
+        } catch (fallbackErr) {
+          console.warn(`[Evidence PDF] Fallback header text rendering also failed: ${fallbackErr}`);
+        }
       }
     }
     
@@ -753,7 +868,7 @@ export async function generateEvidencePdfs(
         let finalBuffer = processedBuffer;
         if (processedBuffer.length > 7 * 1024 * 1024) {
           console.log(`[Evidence PDF] Compressing PDF: ${doc.fileName} (${Math.round(processedBuffer.length / 1024 / 1024 * 100) / 100}MB)`);
-          finalBuffer = await compressPdfForEmail(processedBuffer);
+          finalBuffer = await compressPdfForEmail(processedBuffer) as Buffer;
         }
         
         allResults.push({

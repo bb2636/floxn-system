@@ -40,25 +40,48 @@ const fontCache: FontCache = {
 };
 
 /**
- * PDF 출력 전에 텍스트 정규화
+ * PDF 출력 전에 텍스트 정규화 및 클렌징
  * - NBSP/유니코드 공백 포함 제거
  * - 하이픈/대시(-, –, —, −)를 '-'로 통일
  * - 특수기호 주변 공백 제거 (주로 사고번호/코드/날짜 같은 값에서 문제 해결)
  * - 일반 단어 사이 공백은 유지 (문장/주소 깨짐 방지)
+ * - 이모지 및 폰트가 지원하지 않는 특수 유니코드 문자 제거/대체
  */
 function normalizePdfText(text: string): string {
   if (text == null) return "";
 
   let s = String(text);
 
-  // 1) 유니코드 공백을 일반 공백으로 통일 (NBSP 포함)
+  // 1) 이모지 및 특수 유니코드 문자 제거/대체
+  //    - 이모지 범위: U+1F300 ~ U+1F9FF (Miscellaneous Symbols and Pictographs)
+  //    - 이모지 범위: U+1FA00 ~ U+1FAFF (Symbols and Pictographs Extended-A)
+  //    - 이모지 범위: U+2600 ~ U+26FF (Miscellaneous Symbols)
+  //    - 이모지 범위: U+2700 ~ U+27BF (Dingbats)
+  //    - 제어 문자 제거 (U+0000 ~ U+001F, U+007F ~ U+009F)
+  //    - 대체 문자 제거 (U+FFFD)
+  s = s.split('').filter(char => {
+    const code = char.codePointAt(0) || 0;
+    // 이모지 범위 제거
+    if ((code >= 0x1F300 && code <= 0x1F9FF) || // Miscellaneous Symbols and Pictographs
+        (code >= 0x1FA00 && code <= 0x1FAFF) || // Symbols and Pictographs Extended-A
+        (code >= 0x2600 && code <= 0x26FF) ||   // Miscellaneous Symbols
+        (code >= 0x2700 && code <= 0x27BF) ||   // Dingbats
+        (code >= 0x0000 && code <= 0x001F) ||   // 제어 문자
+        (code >= 0x007F && code <= 0x009F) ||  // 제어 문자
+        code === 0xFFFD) {                      // 대체 문자
+      return false;
+    }
+    return true;
+  }).join('');
+
+  // 2) 유니코드 공백을 일반 공백으로 통일 (NBSP 포함)
   s = s.replace(/[\u00A0\u2000-\u200B\u202F\u205F\u3000]/g, " ");
 
-  // 2) 대시류 통일
+  // 3) 대시류 통일
   //    - (hyphen-minus) / – (en dash) / — (em dash) / − (minus)
   s = s.replace(/[–—−]/g, "-");
 
-  // 3) 특수기호 주변 공백 제거 (중요)
+  // 4) 특수기호 주변 공백 제거 (중요)
   //    - 사고번호: "HM- 900- 200" -> "HM-900-200"
   //    - 콜론: "사고번호 : 123" -> "사고번호:123"
   //    - 슬래시/점도 포함 (필요시)
@@ -68,7 +91,7 @@ function normalizePdfText(text: string): string {
     .replace(/\s*\/\s*/g, "/") // 슬래시 주변 공백 제거
     .replace(/\s*\.\s*/g, "."); // 점 주변 공백 제거
 
-  // 4) 연속 공백 축소 (단어 사이 공백은 1개 유지)
+  // 5) 연속 공백 축소 (단어 사이 공백은 1개 유지)
   s = s.replace(/ {2,}/g, " ");
 
   return s.trim();
@@ -263,6 +286,32 @@ async function embedPretendardFonts(pdfDoc: PDFDocument): Promise<FontSet> {
   return { regular: regularFont, bold: semiBoldFont };
 }
 
+/**
+ * 폰트가 지원하는 문자만 남기고 나머지는 제거
+ */
+function sanitizeTextForFont(text: string, font: PDFFont, size: number): string {
+  if (!text) return "";
+  
+  // 문자 단위로 분리하여 폰트가 지원하는지 확인
+  const safeChars: string[] = [];
+  
+  for (const char of text) {
+    try {
+      // 폰트가 해당 문자를 지원하는지 확인 (widthOfTextAtSize로 테스트)
+      font.widthOfTextAtSize(char, size);
+      safeChars.push(char);
+    } catch {
+      // 폰트가 지원하지 않는 문자는 제거하거나 공백으로 대체
+      // 한글, 영문, 숫자, 기본 특수문자는 유지
+      if (/[\x20-\x7E\uAC00-\uD7A3\u3131-\u318E]/.test(char)) {
+        safeChars.push(char);
+      }
+    }
+  }
+  
+  return safeChars.join("");
+}
+
 function measureTextWidth(text: string, font: PDFFont, size: number): number {
   try {
     return font.widthOfTextAtSize(text, size);
@@ -327,7 +376,15 @@ function drawTextLine(
     // characterSpacing, wordSpacing 사용 안함 (기본값 0)
     const normalized = normalizePdfText(text);
 
-    page.drawText(normalized, {
+    // 빈 문자열이면 렌더링하지 않음
+    if (!normalized || normalized.length === 0) {
+      return;
+    }
+
+    // 폰트가 지원하지 않는 문자를 안전하게 처리
+    const safeText = sanitizeTextForFont(normalized, font, size);
+
+    page.drawText(safeText, {
       x,
       y,
       size,
@@ -338,6 +395,22 @@ function drawTextLine(
     console.warn(
       `[Invoice PDF] Failed to draw text: "${text.substring(0, 20)}..." - ${e}`,
     );
+    // 실패 시 빈 문자열로 대체하여 PDF 생성은 계속 진행
+    try {
+      const fallbackText = normalizePdfText(text).replace(/[^\x20-\x7E\uAC00-\uD7A3]/g, "");
+      if (fallbackText.length > 0) {
+        page.drawText(fallbackText, {
+          x,
+          y,
+          size,
+          font,
+          color: rgb(color.r, color.g, color.b),
+        });
+      }
+    } catch (fallbackError) {
+      // 폴백도 실패하면 해당 텍스트는 건너뜀
+      console.warn(`[Invoice PDF] Fallback text rendering also failed: ${fallbackError}`);
+    }
   }
 }
 
@@ -355,9 +428,21 @@ function drawTextLineTight(
   try {
     const normalized = normalizePdfText(text);
     
+    // 빈 문자열이면 렌더링하지 않음
+    if (!normalized || normalized.length === 0) {
+      return;
+    }
+
+    // 폰트가 지원하는 문자만 사용
+    const safeText = sanitizeTextForFont(normalized, font, size);
+    
+    if (!safeText || safeText.length === 0) {
+      return;
+    }
+    
     // 하이픈이 없으면 일반 렌더링
-    if (!normalized.includes('-')) {
-      page.drawText(normalized, {
+    if (!safeText.includes('-')) {
+      page.drawText(safeText, {
         x,
         y,
         size,
@@ -369,15 +454,18 @@ function drawTextLineTight(
     
     // 하이픈 간격 보정 (6% offset)
     const offset = size * 0.06;
-    const parts = normalized.split('-');
+    const parts = safeText.split('-');
     let cursorX = x;
     const hyphenWidth = font.widthOfTextAtSize('-', size);
     const textColor = rgb(color.r, color.g, color.b);
     
     for (let i = 0; i < parts.length; i++) {
       if (parts[i]) {
-        page.drawText(parts[i], { x: cursorX, y, size, font, color: textColor });
-        cursorX += font.widthOfTextAtSize(parts[i], size);
+        const safePart = sanitizeTextForFont(parts[i], font, size);
+        if (safePart) {
+          page.drawText(safePart, { x: cursorX, y, size, font, color: textColor });
+          cursorX += font.widthOfTextAtSize(safePart, size);
+        }
       }
       if (i < parts.length - 1) {
         page.drawText('-', { x: cursorX, y, size, font, color: textColor });
@@ -388,6 +476,21 @@ function drawTextLineTight(
     console.warn(
       `[Invoice PDF] Failed to draw tight text: "${text.substring(0, 20)}..." - ${e}`,
     );
+    // 실패 시 빈 문자열로 대체하여 PDF 생성은 계속 진행
+    try {
+      const fallbackText = normalizePdfText(text).replace(/[^\x20-\x7E\uAC00-\uD7A3]/g, "");
+      if (fallbackText.length > 0) {
+        page.drawText(fallbackText, {
+          x,
+          y,
+          size,
+          font,
+          color: rgb(color.r, color.g, color.b),
+        });
+      }
+    } catch (fallbackError) {
+      console.warn(`[Invoice PDF] Fallback text rendering also failed: ${fallbackError}`);
+    }
   }
 }
 
