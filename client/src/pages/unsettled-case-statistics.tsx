@@ -489,7 +489,12 @@ export default function UnsettledCaseStatistics() {
         <td style={cellStyle}>{(rep.victimIncidentAssistance === "true" || (rep.victimIncidentAssistance as any) === true) ? "대물" : "-"}</td>
         <td style={cellStyle}>{rep.restorationMethod || rep.recoveryType || "-"}</td>
         <td style={cellStyle}>{extractRegion(rep.insuredAddress || rep.victimAddress)}</td>
-        <td style={cellStyle}>{extractCityDistrict(rep.insuredAddress || rep.victimAddress)}</td>
+        <td style={cellStyle}>{(() => {
+          const region = extractRegion(rep.insuredAddress || rep.victimAddress);
+          const cityDistrict = extractCityDistrict(rep.insuredAddress || rep.victimAddress);
+          if (region === "-" || cityDistrict === "-") return cityDistrict;
+          return `${region} ${cityDistrict}`;
+        })()}</td>
         <td style={{ ...cellStyle, fontWeight: 500 }}>{rep.status}</td>
         <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(g.totalEstimate)}</td>
         <td style={cellStyle}>{formatDate(rep.siteInvestigationSubmitDate)}</td>
@@ -538,7 +543,12 @@ export default function UnsettledCaseStatistics() {
         <td style={cellStyle}>{(c.victimIncidentAssistance === "true" || (c.victimIncidentAssistance as any) === true) ? "대물" : "-"}</td>
         <td style={cellStyle}>{c.restorationMethod || c.recoveryType || "-"}</td>
         <td style={cellStyle}>{extractRegion(c.insuredAddress || c.victimAddress)}</td>
-        <td style={cellStyle}>{extractCityDistrict(c.insuredAddress || c.victimAddress)}</td>
+        <td style={cellStyle}>{(() => {
+          const region = extractRegion(c.insuredAddress || c.victimAddress);
+          const cityDistrict = extractCityDistrict(c.insuredAddress || c.victimAddress);
+          if (region === "-" || cityDistrict === "-") return cityDistrict;
+          return `${region} ${cityDistrict}`;
+        })()}</td>
         <td style={{ ...cellStyle, fontWeight: 500 }}>{c.status}</td>
         <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(estimateAmt)}</td>
         <td style={cellStyle}>{formatDate(c.siteInvestigationSubmitDate)}</td>
