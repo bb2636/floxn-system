@@ -4552,8 +4552,28 @@ export class DbStorage implements IStorage {
           dateUpdates.secondApprovalDate = currentDate;
         }
         // 2차 승인 시점의 견적금액을 승인금액으로 자동 저장 (항상 덮어씀)
-        if (existingCase.estimateAmount) {
-          dateUpdates.approvedAmount = existingCase.estimateAmount;
+        // estimateAmount가 없으면 getLatestEstimate로 최신 견적 총액 조회
+        let approvedAmountValue = existingCase.estimateAmount;
+        if (!approvedAmountValue) {
+          const latestEstimate = await this.getLatestEstimate(caseId);
+          if (latestEstimate && latestEstimate.estimate) {
+            // 견적 총액 계산 (노무비 + 자재비 + 관리비 + 이익 + 부가세)
+            const laborTotal = latestEstimate.rows.reduce((sum, row) => sum + (parseFloat(row.laborCost || "0") || 0), 0);
+            const materialTotal = latestEstimate.rows.reduce((sum, row) => sum + (parseFloat(row.materialCost || "0") || 0), 0);
+            const subtotal = laborTotal + materialTotal;
+            const managementFee = Math.round(subtotal * 0.06);
+            const profit = Math.round(subtotal * 0.15);
+            const subtotalBeforeVAT = subtotal + managementFee + profit;
+            const vat = latestEstimate.estimate.vatIncluded ? 0 : Math.round(subtotalBeforeVAT * 0.1);
+            const total = subtotalBeforeVAT + vat;
+            approvedAmountValue = total.toString();
+          }
+        }
+        // approvedAmount 저장 (값이 있으면 저장, 없으면 0으로 저장)
+        if (approvedAmountValue) {
+          dateUpdates.approvedAmount = approvedAmountValue;
+        } else {
+          dateUpdates.approvedAmount = "0";
         }
         break;
       case "청구자료제출(복구)":
@@ -4840,12 +4860,12 @@ export class DbStorage implements IStorage {
       }
       // 2차승인 시 승인금액 확정 (최신 견적 총액을 승인금액으로 저장 - 매번 갱신)
       // 협력사가 견적을 수정한 후 재승인 받으면 최신 금액이 저장됨
-      // estimateAmount가 없으면 getLatestEstimate로 최신 견적 총액 조회
+      // estimateAmount가 있으면 우선 사용, 없으면 getLatestEstimate로 최신 견적 총액 조회
       let approvedAmountValue = existingCase.estimateAmount;
       if (!approvedAmountValue) {
         const latestEstimate = await this.getLatestEstimate(caseId);
         if (latestEstimate && latestEstimate.estimate) {
-          // 견적 총액 계산 (노무비 + 관리비 + 이익 + 부가세)
+          // 견적 총액 계산 (노무비 + 자재비 + 관리비 + 이익 + 부가세)
           const laborTotal = latestEstimate.rows.reduce((sum, row) => sum + (parseFloat(row.laborCost || "0") || 0), 0);
           const materialTotal = latestEstimate.rows.reduce((sum, row) => sum + (parseFloat(row.materialCost || "0") || 0), 0);
           const subtotal = laborTotal + materialTotal;
@@ -4857,7 +4877,8 @@ export class DbStorage implements IStorage {
           approvedAmountValue = total.toString();
         }
       }
-      // approvedAmount 저장 (값이 있으면 저장, 없으면 null로 저장하여 추후 확인 가능)
+      // approvedAmount 항상 저장 (값이 있으면 저장, 없으면 0으로 저장하여 추후 확인 가능)
+      // 재승인 시에도 항상 최신 금액으로 갱신
       if (approvedAmountValue) {
         additionalUpdates.approvedAmount = approvedAmountValue;
       } else {
