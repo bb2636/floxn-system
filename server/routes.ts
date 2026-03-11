@@ -593,16 +593,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const users = await storage.getAllUsers();
-      // Return only basic info: id, name, username, phone, role, bankName, accountNumber, company
+      
+      // 관리자: 마스킹 없이 기본 정보 제공
+      if (req.session.userRole === "관리자") {
+        const basicUsers = users.map(
+          ({ id, name, username, phone, role, bankName, accountNumber, company }) => ({
+            id,
+            name,
+            username,
+            contact: phone,
+            role,
+            bankName,
+            accountNumber,
+            company,
+          }),
+        );
+        return res.json(basicUsers);
+      }
+
+      // 비관리자: 민감 정보 마스킹
       const basicUsers = users.map(
         ({ id, name, username, phone, role, bankName, accountNumber, company }) => ({
           id,
           name,
           username,
-          contact: phone,
+          contact: maskPhone(phone), // 전화번호 마스킹
           role,
           bankName,
-          accountNumber,
+          accountNumber: maskAccountNumber(accountNumber), // 계좌번호 마스킹
           company,
         }),
       );
@@ -663,6 +681,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to mask sensitive information
+  const maskPhone = (phone: string | null | undefined): string | null => {
+    if (!phone) return null;
+    if (phone.length <= 4) return phone;
+    return phone.slice(0, -4) + "****";
+  };
+
+  const maskEmail = (email: string | null | undefined): string | null => {
+    if (!email) return null;
+    const [local, domain] = email.split("@");
+    if (!domain) return email;
+    if (local.length <= 2) return email;
+    return local.slice(0, 2) + "***@" + domain;
+  };
+
+  const maskAccountNumber = (accountNumber: string | null | undefined): string | null => {
+    if (!accountNumber) return null;
+    if (accountNumber.length <= 4) return accountNumber;
+    return "****" + accountNumber.slice(-4);
+  };
+
+  const maskAddress = (address: string | null | undefined): string | null => {
+    if (!address) return null;
+    
+    // 시/도 추출 (특별시, 광역시, 도)
+    const specialCityMatch = address.match(/(서울|부산|대구|인천|광주|대전|울산|세종)(특별시|광역시|시)?/);
+    const provinceMatch = address.match(/([가-힣]+도)/);
+    
+    let region = "";
+    if (specialCityMatch) {
+      region = specialCityMatch[1] + (specialCityMatch[2] || "");
+    } else if (provinceMatch) {
+      region = provinceMatch[1];
+    }
+    
+    // 시/군/구 추출 (시군구까지 추출)
+    // 예: "서울특별시 강동구", "경기도 성남시 분당구", "서울 강동구"
+    const parts = address.split(/\s+/);
+    let cityDistrict = "";
+    
+    // 시/군/구 패턴 찾기
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      // 구 패턴
+      if (part.match(/^[가-힣]+구$/)) {
+        cityDistrict = part;
+        break;
+      }
+      // 시 패턴 (구가 없는 경우)
+      if (part.match(/^[가-힣]+시$/) && !cityDistrict) {
+        cityDistrict = part;
+      }
+      // 군 패턴
+      if (part.match(/^[가-힣]+군$/)) {
+        cityDistrict = part;
+        break;
+      }
+    }
+    
+    // 시군구까지만 보이고 나머지는 마스킹
+    if (region && cityDistrict) {
+      return `${region} ${cityDistrict} ***`;
+    } else if (region) {
+      return `${region} ***`;
+    } else if (cityDistrict) {
+      return `${cityDistrict} ***`;
+    }
+    
+    // 추출 실패 시 전체 마스킹
+    return "***";
+  };
+
   // Get all users endpoint (all authenticated users - limited info for non-admins)
   app.get("/api/users", async (req, res) => {
     // Check authentication
@@ -681,26 +771,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(usersWithoutHeavyFields);
       }
 
-      // 협력사/기타: 기본 정보만 제공 (담당자 조회용)
+      // 협력사/기타: 기본 정보만 제공 (담당자 조회용) - 민감 정보 마스킹
       const basicUsers = users.map(
         ({
           id,
           name,
           username,
           phone,
+          email,
           role,
           company,
           department,
           position,
+          address,
+          addressDetail,
         }) => ({
           id,
           name,
           username,
-          phone,
+          phone: maskPhone(phone), // 전화번호 마스킹
+          email: maskEmail(email), // 이메일 마스킹
           role,
           company,
           department,
           position,
+          address: maskAddress(address), // 주소 마스킹 (시군구까지만 표시)
+          addressDetail: null, // 상세주소는 비관리자에게 제공하지 않음
         }),
       );
       res.json(basicUsers);

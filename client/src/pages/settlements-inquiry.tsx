@@ -97,6 +97,8 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
   const [managementDialogOpen, setManagementDialogOpen] = useState(false);
   const [selectedCaseForManagement, setSelectedCaseForManagement] =
     useState<SettlementRow | null>(null);
@@ -137,21 +139,27 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
     queryKey: ["/api/user"],
   });
 
-  const { data: cases = [], isLoading: casesLoading } = useQuery<
+  const { data: cases = [], isLoading: casesLoading, isFetching: casesFetching } = useQuery<
     CaseWithLatestProgress[]
   >({
     queryKey: ["/api/cases"],
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+    gcTime: 10 * 60 * 1000, // 10분간 가비지 컬렉션 방지
   });
 
-  const { data: allUsers = [], isLoading: usersLoading } = useQuery<User[]>({
+  const { data: allUsers = [], isLoading: usersLoading, isFetching: usersFetching } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    staleTime: 10 * 60 * 1000, // 10분간 캐시 유지 (사용자 정보는 자주 변경되지 않음)
+    gcTime: 30 * 60 * 1000, // 30분간 가비지 컬렉션 방지
   });
 
   // Fetch all settlements
-  const { data: allSettlements = [], isLoading: settlementsLoading } = useQuery<
+  const { data: allSettlements = [], isLoading: settlementsLoading, isFetching: settlementsFetching } = useQuery<
     Settlement[]
   >({
     queryKey: ["/api/settlements"],
+    staleTime: 2 * 60 * 1000, // 2분간 캐시 유지
+    gcTime: 5 * 60 * 1000, // 5분간 가비지 컬렉션 방지
   });
 
   // Fetch all invoices (for totalApprovedAmount override)
@@ -161,10 +169,12 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
     totalApprovedAmount: string | null;
     deductible: string | null;
   }
-  const { data: allInvoices = [], isLoading: invoicesLoading } = useQuery<
+  const { data: allInvoices = [], isLoading: invoicesLoading, isFetching: invoicesFetching } = useQuery<
     Invoice[]
   >({
     queryKey: ["/api/invoices"],
+    staleTime: 2 * 60 * 1000, // 2분간 캐시 유지
+    gcTime: 5 * 60 * 1000, // 5분간 가비지 컬렉션 방지
   });
 
   // Create a map for quick invoice lookup by caseGroupPrefix
@@ -315,7 +325,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
   const caseIds = claimCases.map((c) => c.id);
 
   // Fetch all estimates in a single batch request using react-query
-  const { data: estimatesData, isLoading: estimatesLoading } = useQuery({
+  const { data: estimatesData, isLoading: estimatesLoading, isFetching: estimatesFetching } = useQuery({
     queryKey: ["/api/estimates/batch/latest", caseIds],
     queryFn: async () => {
       if (caseIds.length === 0) return [];
@@ -333,7 +343,8 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
       return response.json();
     },
     enabled: caseIds.length > 0,
-    staleTime: 60000, // 1 minute cache
+    staleTime: 2 * 60 * 1000, // 2분간 캐시 유지
+    gcTime: 5 * 60 * 1000, // 5분간 가비지 컬렉션 방지
   });
 
   // Create a map for quick lookup
@@ -749,6 +760,8 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
     settlementsLoading ||
     invoicesLoading;
 
+  const isFetching = casesFetching || usersFetching || settlementsFetching || invoicesFetching || estimatesFetching;
+
   // 필터링 (검색어 + 정산여부 + 보험사 + 심사사 + 담당자)
   const filteredRows = useMemo(() => {
     let filtered = tableRows;
@@ -825,6 +838,20 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
     endDate,
   ]);
 
+  // 페이지네이션된 데이터
+  const paginatedFilteredRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredRows.slice(startIndex, endIndex);
+  }, [filteredRows, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+
+  // 필터 변경 시 첫 페이지로 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, settlementStatus, insuranceCompany, assessor, manager, startDate, endDate]);
+
   const handleReset = () => {
     setSearchQuery("");
     setSettlementStatus("전체");
@@ -833,6 +860,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
     setManager("전체");
     setStartDate(undefined);
     setEndDate(undefined);
+    setCurrentPage(1);
   };
 
   const handleDateRangeApply = () => {
@@ -1223,7 +1251,47 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         </span>
       </div>
       {/* Wide Table with Horizontal Scroll and Sticky Header/Columns */}
-      {(() => {
+      <div style={{ position: "relative" }}>
+        {isFetching && !isLoading && (
+          <div
+            style={{
+              position: "absolute",
+              top: "12px",
+              right: "12px",
+              zIndex: 10,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "rgba(255, 255, 255, 0.95)",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              border: "1px solid rgba(12, 12, 12, 0.1)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div
+              style={{
+                width: "16px",
+                height: "16px",
+                border: "2px solid rgba(0, 143, 237, 0.2)",
+                borderTopColor: "#008FED",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "12px",
+                color: "rgba(12, 12, 12, 0.6)",
+              }}
+            >
+              업데이트 중...
+            </span>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
+        {(() => {
         const stickyHeaders = ["보험사", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체"];
         const scrollHeaders = ["청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", ...(isPartner ? [] : ["관리"]), ...(filterMode === "closed" && !isPartner ? ["보고서열람"] : [])];
         const allHeaders = [...stickyHeaders, ...scrollHeaders];
@@ -1321,7 +1389,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((row, index) => {
+                paginatedFilteredRows.map((row, index) => {
                   const rowBg = index % 2 === 0 ? "rgba(255, 255, 255, 1)" : "rgba(248, 248, 248, 1)";
                   const cellStyle: React.CSSProperties = {
                     padding: "14px 16px",
@@ -1353,7 +1421,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                       key={row.id}
                       style={{
                         borderBottom:
-                          index < filteredRows.length - 1
+                          index < paginatedFilteredRows.length - 1
                             ? "1px solid rgba(12, 12, 12, 0.05)"
                             : "none",
                         background: rowBg,
@@ -1487,22 +1555,91 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         </div>
 
         {/* Pagination */}
-        <div
-          className="flex items-center justify-center p-6"
-          style={{
-            borderTop: "1px solid rgba(12, 12, 12, 0.05)",
-          }}
-        >
-          <span
+        {filteredRows.length > itemsPerPage && (
+          <div
             style={{
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              color: "rgba(12, 12, 12, 0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "8px",
+              padding: "24px",
+              borderTop: "1px solid rgba(12, 12, 12, 0.08)",
             }}
           >
-            합계
-          </span>
-        </div>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              style={{
+                padding: "8px 16px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              이전
+            </Button>
+            <div
+              style={{
+                display: "flex",
+                gap: "4px",
+                alignItems: "center",
+              }}
+            >
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = Math.max(1, totalPages - 4) + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    onClick={() => setCurrentPage(pageNum)}
+                    style={{
+                      minWidth: "40px",
+                      padding: "8px 12px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      background: currentPage === pageNum ? "#008FED" : "transparent",
+                      color: currentPage === pageNum ? "#FFFFFF" : "rgba(12, 12, 12, 0.8)",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                    }}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: "8px 16px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              다음
+            </Button>
+            <span
+              style={{
+                marginLeft: "16px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "rgba(12, 12, 12, 0.6)",
+              }}
+            >
+              {((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(currentPage * itemsPerPage, filteredRows.length).toLocaleString()} / {filteredRows.length.toLocaleString()}건
+            </span>
+          </div>
+        )}
       </div>
         );
       })()}
@@ -1860,6 +1997,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
           </div>
         </DialogContent>
       </Dialog>
+      </div>
       {/* INVOICE Sheet - 직접복구 케이스용 (손해방지비용 + 대물복구비용) */}
       <InvoiceSheet
         open={showInvoiceDialog}

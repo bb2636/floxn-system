@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case, Settlement } from "@shared/schema";
 import { Search, Calendar as CalendarIcon, ChevronRight, Star, Download } from "lucide-react";
@@ -160,18 +160,29 @@ export default function ClosedCaseStatistics() {
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
   const [startCalendarOpen, setStartCalendarOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
-  const { data: cases = [] } = useQuery<Case[]>({
+  const { data: cases = [], isLoading: casesLoading, isFetching: casesFetching } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+    gcTime: 10 * 60 * 1000, // 10분간 가비지 컬렉션 방지
   });
 
-  const { data: users = [] } = useQuery<User[]>({
+  const { data: users = [], isLoading: usersLoading, isFetching: usersFetching } = useQuery<User[]>({
     queryKey: ["/api/users/basic"],
+    staleTime: 10 * 60 * 1000, // 10분간 캐시 유지 (사용자 정보는 자주 변경되지 않음)
+    gcTime: 30 * 60 * 1000, // 30분간 가비지 컬렉션 방지
   });
 
-  const { data: settlements = [] } = useQuery<Settlement[]>({
+  const { data: settlements = [], isLoading: settlementsLoading, isFetching: settlementsFetching } = useQuery<Settlement[]>({
     queryKey: ["/api/settlements"],
+    staleTime: 2 * 60 * 1000, // 2분간 캐시 유지
+    gcTime: 5 * 60 * 1000, // 5분간 가비지 컬렉션 방지
   });
+
+  const isLoading = casesLoading || usersLoading || settlementsLoading;
+  const isFetching = casesFetching || usersFetching || settlementsFetching;
 
   const settlementMap = useMemo(() => {
     const map: Record<string, Settlement> = {};
@@ -268,6 +279,26 @@ export default function ClosedCaseStatistics() {
   }, [cases, settlementMap, startDate, endDate, searchQuery, searchType]);
 
   const displayCount = searchType === "사고번호" ? groupedRows.length : filteredCases.length;
+
+  // 페이지네이션된 데이터
+  const paginatedGroupedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return groupedRows.slice(startIndex, endIndex);
+  }, [groupedRows, currentPage, itemsPerPage]);
+
+  const paginatedFilteredCases = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredCases.slice(startIndex, endIndex);
+  }, [filteredCases, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(displayCount / itemsPerPage);
+
+  // 필터 변경 시 첫 페이지로 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, searchType, startDate, endDate]);
 
   const getManagerName = (c: Case): string => {
     if (c.managerId && userMap[c.managerId]) {
@@ -729,8 +760,87 @@ export default function ClosedCaseStatistics() {
           borderRadius: "12px",
           border: "1px solid rgba(12, 12, 12, 0.06)",
           overflow: "auto",
+          position: "relative",
         }}
       >
+        {isLoading && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(255, 255, 255, 0.9)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10,
+              gap: "12px",
+            }}
+          >
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                border: "3px solid rgba(0, 143, 237, 0.2)",
+                borderTopColor: "#008FED",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "rgba(12, 12, 12, 0.6)",
+                fontWeight: 500,
+              }}
+            >
+              데이터를 불러오는 중...
+            </span>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
+        {isFetching && !isLoading && (
+          <div
+            style={{
+              position: "absolute",
+              top: "12px",
+              right: "12px",
+              zIndex: 10,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "rgba(255, 255, 255, 0.95)",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              border: "1px solid rgba(12, 12, 12, 0.1)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div
+              style={{
+                width: "16px",
+                height: "16px",
+                border: "2px solid rgba(0, 143, 237, 0.2)",
+                borderTopColor: "#008FED",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "12px",
+                color: "rgba(12, 12, 12, 0.6)",
+              }}
+            >
+              업데이트 중...
+            </span>
+          </div>
+        )}
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "3500px" }}>
           <thead>
             <tr>
@@ -810,13 +920,99 @@ export default function ClosedCaseStatistics() {
                 </td>
               </tr>
             ) : searchType === "사고번호" ? (
-              groupedRows.map((g) => renderGroupedRow(g))
+              paginatedGroupedRows.map((g) => renderGroupedRow(g))
             ) : (
-              filteredCases.map((c) => renderIndividualRow(c))
+              paginatedFilteredCases.map((c) => renderIndividualRow(c))
             )}
           </tbody>
         </table>
       </div>
+      {/* Pagination */}
+      {displayCount > itemsPerPage && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "8px",
+            padding: "24px",
+            borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+          }}
+        >
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            style={{
+              padding: "8px 16px",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+            }}
+          >
+            이전
+          </Button>
+          <div
+            style={{
+              display: "flex",
+              gap: "4px",
+              alignItems: "center",
+            }}
+          >
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum: number;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = Math.max(1, totalPages - 4) + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              return (
+                <Button
+                  key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    minWidth: "40px",
+                    padding: "8px 12px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    background: currentPage === pageNum ? "#008FED" : "transparent",
+                    color: currentPage === pageNum ? "#FFFFFF" : "rgba(12, 12, 12, 0.8)",
+                    border: "1px solid rgba(12, 12, 12, 0.1)",
+                  }}
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            style={{
+              padding: "8px 16px",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+            }}
+          >
+            다음
+          </Button>
+          <span
+            style={{
+              marginLeft: "16px",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              color: "rgba(12, 12, 12, 0.6)",
+            }}
+          >
+            {((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(currentPage * itemsPerPage, displayCount).toLocaleString()} / {displayCount.toLocaleString()}건
+          </span>
+        </div>
+      )}
     </div>
   );
 }
