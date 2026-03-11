@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import {
@@ -191,6 +191,8 @@ export default function ComprehensiveProgress() {
     const params = new URLSearchParams(window.location.search);
     return params.get("caseId") || null;
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [detailTab, setDetailTab] = useState("기본정보");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -1030,6 +1032,20 @@ export default function ComprehensiveProgress() {
 
   const totalCount = filteredData.length;
 
+  // 페이지네이션된 데이터
+  const paginatedFilteredData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // 필터 변경 시 첫 페이지로 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedStatus, selectedManager]);
+
   // 협력사가 변경 가능한 상태 목록
   const PARTNER_ALLOWED_STATUSES = ["직접복구", "선견적요청"];
   // 협력사가 상태 변경 가능한 현재 상태들
@@ -1553,14 +1569,20 @@ export default function ComprehensiveProgress() {
                 >
                   <Checkbox
                     checked={
-                      filteredData.length > 0 &&
-                      selectedCaseIds.length === filteredData.length
+                      paginatedFilteredData.length > 0 &&
+                      paginatedFilteredData.every((c) => selectedCaseIds.includes(c.id))
                     }
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedCaseIds(filteredData.map((c) => c.id));
+                        setSelectedCaseIds((prev) => {
+                          const newIds = paginatedFilteredData.map((c) => c.id);
+                          return [...new Set([...prev, ...newIds])];
+                        });
                       } else {
-                        setSelectedCaseIds([]);
+                        setSelectedCaseIds((prev) => {
+                          const paginatedIds = new Set(paginatedFilteredData.map((c) => c.id));
+                          return prev.filter((id) => !paginatedIds.has(id));
+                        });
                       }
                     }}
                     data-testid="checkbox-select-all"
@@ -1801,7 +1823,7 @@ export default function ComprehensiveProgress() {
                 </div>
               </div>
             ) : (
-              filteredData.map((caseItem, index) => {
+              paginatedFilteredData.map((caseItem, index) => {
                 return (
                   <div
                     key={caseItem.id}
@@ -2256,6 +2278,92 @@ export default function ComprehensiveProgress() {
             )}
           </div>
         </div>
+        {/* Pagination */}
+        {totalCount > itemsPerPage && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "8px",
+              padding: "24px",
+              borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+            }}
+          >
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              style={{
+                padding: "8px 16px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              이전
+            </Button>
+            <div
+              style={{
+                display: "flex",
+                gap: "4px",
+                alignItems: "center",
+              }}
+            >
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = Math.max(1, totalPages - 4) + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    onClick={() => setCurrentPage(pageNum)}
+                    style={{
+                      minWidth: "40px",
+                      padding: "8px 12px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      background: currentPage === pageNum ? "#008FED" : "transparent",
+                      color: currentPage === pageNum ? "#FFFFFF" : "rgba(12, 12, 12, 0.8)",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                    }}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              style={{
+                padding: "8px 16px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              다음
+            </Button>
+            <span
+              style={{
+                marginLeft: "16px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "rgba(12, 12, 12, 0.6)",
+              }}
+            >
+              {((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(currentPage * itemsPerPage, totalCount).toLocaleString()} / {totalCount.toLocaleString()}건
+            </span>
+          </div>
+        )}
       </div>
       {/* 상세보기 Sheet */}
       <Sheet
