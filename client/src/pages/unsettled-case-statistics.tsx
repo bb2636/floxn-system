@@ -25,22 +25,9 @@ const getCaseSuffix = (caseNumber: string | null): number => {
 };
 
 const getClaimAmount = (c: Case): number => {
-  // 직접복구일 경우: 승인금액 우선 사용, 없으면 인보이스 금액 사용
+  // 직접복구일 경우: 승인금액만 사용 (승인금액 = 청구액)
   if (c.recoveryType === "직접복구" || c.restorationMethod === "직접복구" || c.status === "직접복구" || c.status === "청구자료제출(복구)") {
-    const approvedAmt = parseFloat(c.approvedAmount || "0") || 0;
-    // 승인금액이 있으면 승인금액 사용
-    if (approvedAmt > 0) {
-      return approvedAmt;
-    }
-    // 승인금액이 없으면 인보이스 금액 사용
-    const caseSuffix = getCaseSuffix(c.caseNumber);
-    if (caseSuffix === 0) {
-      // 손방 케이스(-0)는 invoiceDamagePreventionAmount
-      return parseFloat(c.invoiceDamagePreventionAmount || "0") || 0;
-    } else {
-      // 대물 케이스(-1 이상)는 invoicePropertyRepairAmount
-      return parseFloat(c.invoicePropertyRepairAmount || "0") || 0;
-    }
+    return parseFloat(c.approvedAmount || "0") || 0;
   }
   // 선견적요청일 경우: 출동비만 청구 (10만원)
   if (c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)") {

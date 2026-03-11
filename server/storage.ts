@@ -4838,10 +4838,31 @@ export class DbStorage implements IStorage {
       if (!existingCase.secondApprovalDate) {
         additionalUpdates.secondApprovalDate = currentDate;
       }
-      // 2차승인 시 승인금액 확정 (현재 견적 총액을 승인금액으로 저장 - 매번 갱신)
+      // 2차승인 시 승인금액 확정 (최신 견적 총액을 승인금액으로 저장 - 매번 갱신)
       // 협력사가 견적을 수정한 후 재승인 받으면 최신 금액이 저장됨
-      if (existingCase.estimateAmount) {
-        additionalUpdates.approvedAmount = existingCase.estimateAmount;
+      // estimateAmount가 없으면 getLatestEstimate로 최신 견적 총액 조회
+      let approvedAmountValue = existingCase.estimateAmount;
+      if (!approvedAmountValue) {
+        const latestEstimate = await this.getLatestEstimate(caseId);
+        if (latestEstimate && latestEstimate.estimate) {
+          // 견적 총액 계산 (노무비 + 관리비 + 이익 + 부가세)
+          const laborTotal = latestEstimate.rows.reduce((sum, row) => sum + (parseFloat(row.laborCost || "0") || 0), 0);
+          const materialTotal = latestEstimate.rows.reduce((sum, row) => sum + (parseFloat(row.materialCost || "0") || 0), 0);
+          const subtotal = laborTotal + materialTotal;
+          const managementFee = Math.round(subtotal * 0.06);
+          const profit = Math.round(subtotal * 0.15);
+          const subtotalBeforeVAT = subtotal + managementFee + profit;
+          const vat = latestEstimate.estimate.vatIncluded ? 0 : Math.round(subtotalBeforeVAT * 0.1);
+          const total = subtotalBeforeVAT + vat;
+          approvedAmountValue = total.toString();
+        }
+      }
+      // approvedAmount 저장 (값이 있으면 저장, 없으면 null로 저장하여 추후 확인 가능)
+      if (approvedAmountValue) {
+        additionalUpdates.approvedAmount = approvedAmountValue;
+      } else {
+        // estimateAmount도 없고 견적도 없으면 0으로 저장
+        additionalUpdates.approvedAmount = "0";
       }
     }
 
