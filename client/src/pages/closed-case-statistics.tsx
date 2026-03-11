@@ -463,8 +463,12 @@ export default function ClosedCaseStatistics() {
         <td style={cellStyle}>{rep.assignedPartnerManager || "-"}</td>
         <td style={cellStyle}>{formatDate(rep.assignmentDate)}</td>
         <td style={cellStyle}>{rep.accidentType || "-"}</td>
-        <td style={cellStyle}>{rep.accidentCause || "-"}</td>
+        <td style={{ ...cellStyle, maxWidth: "150px", wordBreak: "break-word", whiteSpace: "normal" }}>{rep.accidentCause || "-"}</td>
+        <td style={cellStyle}>{(rep.damagePreventionCost === "true" || (rep.damagePreventionCost as any) === true) ? "손방" : "-"}</td>
+        <td style={cellStyle}>{(rep.victimIncidentAssistance === "true" || (rep.victimIncidentAssistance as any) === true) ? "대물" : "-"}</td>
         <td style={cellStyle}>{rep.restorationMethod || rep.recoveryType || "-"}</td>
+        <td style={cellStyle}>{extractRegion(rep.insuredAddress || rep.victimAddress)}</td>
+        <td style={cellStyle}>{extractCityDistrict(rep.insuredAddress || rep.victimAddress)}</td>
         <td style={{ ...cellStyle, fontWeight: 500 }}>{rep.status}</td>
         <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(g.totalEstimate)}</td>
         <td style={cellStyle}>{formatDate(rep.siteInvestigationSubmitDate)}</td>
@@ -508,8 +512,12 @@ export default function ClosedCaseStatistics() {
         <td style={cellStyle}>{c.assignedPartnerManager || "-"}</td>
         <td style={cellStyle}>{formatDate(c.assignmentDate)}</td>
         <td style={cellStyle}>{c.accidentType || "-"}</td>
-        <td style={cellStyle}>{c.accidentCause || "-"}</td>
+        <td style={{ ...cellStyle, maxWidth: "150px", wordBreak: "break-word", whiteSpace: "normal" }}>{c.accidentCause || "-"}</td>
+        <td style={cellStyle}>{(c.damagePreventionCost === "true" || (c.damagePreventionCost as any) === true) ? "손방" : "-"}</td>
+        <td style={cellStyle}>{(c.victimIncidentAssistance === "true" || (c.victimIncidentAssistance as any) === true) ? "대물" : "-"}</td>
         <td style={cellStyle}>{c.restorationMethod || c.recoveryType || "-"}</td>
+        <td style={cellStyle}>{extractRegion(c.insuredAddress || c.victimAddress)}</td>
+        <td style={cellStyle}>{extractCityDistrict(c.insuredAddress || c.victimAddress)}</td>
         <td style={{ ...cellStyle, fontWeight: 500 }}>{c.status}</td>
         <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(estimateAmt)}</td>
         <td style={cellStyle}>{formatDate(c.siteInvestigationSubmitDate)}</td>
@@ -713,8 +721,12 @@ export default function ClosedCaseStatistics() {
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>조사사</th>
               <th colSpan={3} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>협력사</th>
               <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>사고 유형</th>
-              <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>사고 원인</th>
+              <th rowSpan={2} style={{ ...headerStyle, width: "150px" }}>사고 원인</th>
+              <th rowSpan={2} style={{ ...headerStyle, width: "80px" }}>손방 유무</th>
+              <th rowSpan={2} style={{ ...headerStyle, width: "80px" }}>대물 유무</th>
               <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>복구 방식</th>
+              <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>지역</th>
+              <th rowSpan={2} style={{ ...headerStyle, width: "100px" }}>시군구</th>
               <th rowSpan={2} style={{ ...headerStyle, width: "120px" }}>진행 상태</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>견적금액</th>
               <th colSpan={2} style={{ ...headerStyle, borderBottom: "1px solid rgba(12, 12, 12, 0.06)", ...(searchType === "접수번호" ? { borderRight: "none" } : {}) }}>승인금액</th>
@@ -765,7 +777,7 @@ export default function ClosedCaseStatistics() {
             {displayCount === 0 ? (
               <tr>
                 <td
-                  colSpan={searchType === "접수번호" ? 22 : 28}
+                  colSpan={searchType === "접수번호" ? 26 : 32}
                   style={{
                     padding: "60px 20px",
                     textAlign: "center",
