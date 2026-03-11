@@ -323,12 +323,15 @@ export default function StatisticsOverview({ mode = "closed" }: StatisticsOvervi
 
   // 미결 - 수리비 금액계층별 통계 계산
   const repairCostStatistics = useMemo(() => {
-    const tiers = ["1백만미만", "2백만미만", "3백만미만", "5백만미만", "1천만미만", "1천만초과"];
+    const tiers = ["1백만미만", "2백만미만", "3백만미만", "5백만미만", "1천만미만", "1천만초과"] as const;
+    type TierKey = typeof tiers[number];
+    type RepairCostStats = Record<TierKey, { 건수: number; 퍼센트: number }> & { 계: number };
+    
     const defaultTier = { 건수: 0, 퍼센트: 0 };
-    const defaultStats = Object.fromEntries(tiers.map(t => [t, { ...defaultTier }])) as Record<string, { 건수: number; 퍼센트: number }>;
+    const defaultStats = Object.fromEntries(tiers.map(t => [t, { ...defaultTier }])) as Record<TierKey, { 건수: number; 퍼센트: number }>;
 
     if (!cases.length) {
-      return { ...defaultStats, 계: 0 };
+      return { ...defaultStats, 계: 0 } as RepairCostStats;
     }
 
     const unsettledCases = cases.filter(c => {
@@ -342,11 +345,11 @@ export default function StatisticsOverview({ mode = "closed" }: StatisticsOvervi
     });
 
     const total = unsettledCases.length;
-    const tierCounts = Object.fromEntries(tiers.map(t => [t, 0])) as Record<string, number>;
+    const tierCounts = Object.fromEntries(tiers.map(t => [t, 0])) as Record<TierKey, number>;
 
     unsettledCases.forEach(c => {
       const amount = c.estimateAmount ? parseInt(c.estimateAmount, 10) : 0;
-      const tier = getRepairCostTier(amount);
+      const tier = getRepairCostTier(amount) as TierKey;
       if (tierCounts[tier] !== undefined) {
         tierCounts[tier]++;
       }
@@ -357,9 +360,9 @@ export default function StatisticsOverview({ mode = "closed" }: StatisticsOvervi
         건수: tierCounts[t],
         퍼센트: total > 0 ? Math.round((tierCounts[t] / total) * 100) : 0,
       }])
-    ) as Record<string, { 건수: number; 퍼센트: number }>;
+    ) as Record<TierKey, { 건수: number; 퍼센트: number }>;
 
-    return { ...result, 계: total };
+    return { ...result, 계: total } as RepairCostStats;
   }, [cases, startDate, endDate]);
 
   // 미결 - 기간별 통계 계산
@@ -497,18 +500,18 @@ export default function StatisticsOverview({ mode = "closed" }: StatisticsOvervi
     // 직접복구 의뢰건 (직접복구 타입으로 종결된 건)
     const directRecoveryClosed = closedCases.filter(isDirectRecovery);
     const 직접복구_현장방문 = directRecoveryClosed.filter(c => c.status === "현장방문" || c.visitDate).length;
-    const 직접복구_현장정보입력 = directRecoveryClosed.filter(c => c.status === "현장정보입력" || c.fieldInfoInputDate).length;
+    const 직접복구_현장정보입력 = directRecoveryClosed.filter(c => c.status === "현장정보입력").length;
     const 직접복구_직접복구 = directRecoveryClosed.filter(c => c.status === "직접복구" || c.recoveryType === "직접복구").length;
-    const 직접복구_청구자료제출 = directRecoveryClosed.filter(c => c.status === "청구자료제출(복구)" || c.claimSubmitDate).length;
+    const 직접복구_청구자료제출 = directRecoveryClosed.filter(c => c.status === "청구자료제출(복구)").length;
     const 직접복구_청구 = directRecoveryClosed.filter(c => c.status === "청구").length;
     const 직접복구_입금완료 = directRecoveryClosed.filter(c => c.status === "입금완료" || c.status === "정산완료").length;
 
     // 선견적 의뢰건 (선견적요청 타입으로 종결된 건)
     const preEstimateClosed = closedCases.filter(isPreEstimate);
     const 선견적_현장방문 = preEstimateClosed.filter(c => c.status === "현장방문" || c.visitDate).length;
-    const 선견적_현장정보입력 = preEstimateClosed.filter(c => c.status === "현장정보입력" || c.fieldInfoInputDate).length;
+    const 선견적_현장정보입력 = preEstimateClosed.filter(c => c.status === "현장정보입력").length;
     const 선견적_직접복구 = preEstimateClosed.filter(c => c.status === "직접복구" || c.recoveryType === "직접복구").length;
-    const 선견적_청구자료제출 = preEstimateClosed.filter(c => c.status === "청구자료제출(복구)" || c.claimSubmitDate).length;
+    const 선견적_청구자료제출 = preEstimateClosed.filter(c => c.status === "청구자료제출(복구)").length;
     const 선견적_청구 = preEstimateClosed.filter(c => c.status === "청구").length;
     const 선견적_입금완료 = preEstimateClosed.filter(c => c.status === "입금완료" || c.status === "정산완료").length;
 
@@ -605,14 +608,14 @@ export default function StatisticsOverview({ mode = "closed" }: StatisticsOvervi
     // 직접복구 케이스
     const directRecoveryCases = filteredCases.filter(isDirectRecovery);
     const 직접_현장방문 = directRecoveryCases.filter(c => c.visitDate || c.status === "현장방문").length;
-    const 직접_현장정보입력 = directRecoveryCases.filter(c => c.fieldInfoInputDate || c.status === "현장정보입력").length;
+    const 직접_현장정보입력 = directRecoveryCases.filter(c => c.status === "현장정보입력").length;
     const 직접_청구 = directRecoveryCases.filter(c => c.status === "청구" || c.status === "청구자료제출(복구)").length;
     const 직접_입금완료 = directRecoveryCases.filter(c => c.status === "입금완료" || c.status === "정산완료" || c.status === "부분입금").length;
 
     // 선견적 의뢰건 케이스
     const preEstimateCases = filteredCases.filter(isPreEstimate);
     const 선견적_현장방문 = preEstimateCases.filter(c => c.visitDate || c.status === "현장방문").length;
-    const 선견적_현장정보입력 = preEstimateCases.filter(c => c.fieldInfoInputDate || c.status === "현장정보입력").length;
+    const 선견적_현장정보입력 = preEstimateCases.filter(c => c.status === "현장정보입력").length;
     const 선견적_청구 = preEstimateCases.filter(c => c.status === "청구" || c.status === "출동비청구(선견적)").length;
     const 선견적_입금완료 = preEstimateCases.filter(c => c.status === "입금완료" || c.status === "정산완료" || c.status === "부분입금").length;
 
@@ -825,18 +828,18 @@ export default function StatisticsOverview({ mode = "closed" }: StatisticsOvervi
         <tbody>
           <tr>
             <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
-            <td style={cellStyle}>{repairCostStatistics["1백만미만"]?.건수 || 0}</td>
-            <td style={cellStyle}>{repairCostStatistics["1백만미만"]?.퍼센트 || 0}%</td>
-            <td style={cellStyle}>{repairCostStatistics["2백만미만"]?.건수 || 0}</td>
-            <td style={cellStyle}>{repairCostStatistics["2백만미만"]?.퍼센트 || 0}%</td>
-            <td style={cellStyle}>{repairCostStatistics["3백만미만"]?.건수 || 0}</td>
-            <td style={cellStyle}>{repairCostStatistics["3백만미만"]?.퍼센트 || 0}%</td>
-            <td style={cellStyle}>{repairCostStatistics["5백만미만"]?.건수 || 0}</td>
-            <td style={cellStyle}>{repairCostStatistics["5백만미만"]?.퍼센트 || 0}%</td>
-            <td style={cellStyle}>{repairCostStatistics["1천만미만"]?.건수 || 0}</td>
-            <td style={cellStyle}>{repairCostStatistics["1천만미만"]?.퍼센트 || 0}%</td>
-            <td style={cellStyle}>{repairCostStatistics["1천만초과"]?.건수 || 0}</td>
-            <td style={cellStyle}>{repairCostStatistics["1천만초과"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["1백만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["1백만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["2백만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["2백만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["3백만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["3백만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["5백만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["5백만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["1천만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["1천만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["1천만초과"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(repairCostStatistics as any)["1천만초과"]?.퍼센트 || 0}%</td>
             <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{repairCostStatistics.계}</td>
           </tr>
         </tbody>
@@ -874,16 +877,16 @@ export default function StatisticsOverview({ mode = "closed" }: StatisticsOvervi
         <tbody>
           <tr>
             <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
-            <td style={cellStyle}>{periodStatistics["~1개월"]?.건수 || 0}</td>
-            <td style={cellStyle}>{periodStatistics["~1개월"]?.퍼센트 || 0}%</td>
-            <td style={cellStyle}>{periodStatistics["~3개월"]?.건수 || 0}</td>
-            <td style={cellStyle}>{periodStatistics["~3개월"]?.퍼센트 || 0}%</td>
-            <td style={cellStyle}>{periodStatistics["~6개월"]?.건수 || 0}</td>
-            <td style={cellStyle}>{periodStatistics["~6개월"]?.퍼센트 || 0}%</td>
-            <td style={cellStyle}>{periodStatistics["~1년"]?.건수 || 0}</td>
-            <td style={cellStyle}>{periodStatistics["~1년"]?.퍼센트 || 0}%</td>
-            <td style={cellStyle}>{periodStatistics["1년~"]?.건수 || 0}</td>
-            <td style={cellStyle}>{periodStatistics["1년~"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(periodStatistics as any)["~1개월"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(periodStatistics as any)["~1개월"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(periodStatistics as any)["~3개월"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(periodStatistics as any)["~3개월"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(periodStatistics as any)["~6개월"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(periodStatistics as any)["~6개월"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(periodStatistics as any)["~1년"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(periodStatistics as any)["~1년"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{(periodStatistics as any)["1년~"]?.건수 || 0}</td>
+            <td style={cellStyle}>{(periodStatistics as any)["1년~"]?.퍼센트 || 0}%</td>
             <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{periodStatistics.계}</td>
           </tr>
         </tbody>
@@ -927,18 +930,18 @@ export default function StatisticsOverview({ mode = "closed" }: StatisticsOvervi
           <tbody>
             <tr>
               <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
-              <td style={cellStyle}>{completedCostStatistics["~1,000,000"]?.건수 || 0}</td>
-              <td style={cellStyle}>{completedCostStatistics["~1,000,000"]?.퍼센트 || 0}%</td>
-              <td style={cellStyle}>{completedCostStatistics["~2,000,000"]?.건수 || 0}</td>
-              <td style={cellStyle}>{completedCostStatistics["~2,000,000"]?.퍼센트 || 0}%</td>
-              <td style={cellStyle}>{completedCostStatistics["~3,000,000"]?.건수 || 0}</td>
-              <td style={cellStyle}>{completedCostStatistics["~3,000,000"]?.퍼센트 || 0}%</td>
-              <td style={cellStyle}>{completedCostStatistics["~5,000,000"]?.건수 || 0}</td>
-              <td style={cellStyle}>{completedCostStatistics["~5,000,000"]?.퍼센트 || 0}%</td>
-              <td style={cellStyle}>{completedCostStatistics["~10,000,000"]?.건수 || 0}</td>
-              <td style={cellStyle}>{completedCostStatistics["~10,000,000"]?.퍼센트 || 0}%</td>
-              <td style={cellStyle}>{completedCostStatistics["10,000,000~"]?.건수 || 0}</td>
-              <td style={cellStyle}>{completedCostStatistics["10,000,000~"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~1,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~1,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~2,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~2,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~3,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~3,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~5,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~5,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~10,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["~10,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["10,000,000~"]?.건수 || 0}</td>
+              <td style={cellStyle}>{(completedCostStatistics as any)["10,000,000~"]?.퍼센트 || 0}%</td>
               <td style={{ ...cellStyle, fontWeight: 600 }}>{completedCostStatistics.총건수}</td>
               <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{formatNumber(completedCostStatistics.평균수리비)}</td>
             </tr>
