@@ -394,7 +394,12 @@ export default function UnsettledCaseStatistics() {
           victimIncident ? "대물" : "-",
           c.restorationMethod || c.recoveryType || "",
           extractRegion(address),
-          extractCityDistrict(address),
+          (() => {
+            const region = extractRegion(address);
+            const cityDistrict = extractCityDistrict(address);
+            if (region === "-" || cityDistrict === "-") return cityDistrict;
+            return `${region} ${cityDistrict}`;
+          })(),
           c.status,
           getCaseEstimateForStats(c) ? getCaseEstimateForStats(c).toLocaleString() : "",
           formatDate(c.siteInvestigationSubmitDate),
@@ -433,7 +438,12 @@ export default function UnsettledCaseStatistics() {
           victimIncident ? "대물" : "-",
           rep.restorationMethod || rep.recoveryType || "",
           extractRegion(address),
-          extractCityDistrict(address),
+          (() => {
+            const region = extractRegion(address);
+            const cityDistrict = extractCityDistrict(address);
+            if (region === "-" || cityDistrict === "-") return cityDistrict;
+            return `${region} ${cityDistrict}`;
+          })(),
           rep.status,
           g.totalEstimate ? g.totalEstimate.toLocaleString() : "",
           formatDate(rep.siteInvestigationSubmitDate),
