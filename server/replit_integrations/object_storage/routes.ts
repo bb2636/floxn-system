@@ -57,8 +57,19 @@ export function registerObjectStorageRoutes(app: Express): void {
         metadata: { name, size, contentType },
       });
     } catch (error) {
-      console.error("Error generating upload URL:", error);
-      res.status(500).json({ error: "Failed to generate upload URL" });
+      console.error("[Object Storage] Error generating upload URL:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isRetryable = errorMessage.includes("timeout") || 
+                         errorMessage.includes("network") ||
+                         errorMessage.includes("ECONNRESET") ||
+                         errorMessage.includes("ENOTFOUND");
+      
+      res.status(500).json({ 
+        error: "Failed to generate upload URL",
+        message: errorMessage,
+        retryable: isRetryable,
+        suggestion: isRetryable ? "네트워크 연결이 불안정합니다. 잠시 후 다시 시도해주세요." : "서버 오류가 발생했습니다. 관리자에게 문의해주세요."
+      });
     }
   });
 
@@ -99,11 +110,23 @@ export function registerObjectStorageRoutes(app: Express): void {
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
       await objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
-      console.error("Error serving object:", error);
+      console.error("[Object Storage] Error serving object:", error);
       if (error instanceof ObjectNotFoundError) {
         return res.status(404).json({ error: "Object not found" });
       }
-      return res.status(500).json({ error: "Failed to serve object" });
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isRetryable = errorMessage.includes("timeout") || 
+                         errorMessage.includes("network") ||
+                         errorMessage.includes("ECONNRESET") ||
+                         errorMessage.includes("ENOTFOUND");
+      
+      return res.status(500).json({ 
+        error: "Failed to serve object",
+        message: errorMessage,
+        retryable: isRetryable,
+        suggestion: isRetryable ? "네트워크 연결이 불안정합니다. 잠시 후 다시 시도해주세요." : "서버 오류가 발생했습니다. 관리자에게 문의해주세요."
+      });
     }
   });
 }

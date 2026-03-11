@@ -11,6 +11,98 @@ import {
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
+// 재시도 설정
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000; // 1초
+const MAX_RETRY_DELAY_MS = 10000; // 최대 10초
+
+/**
+ * 재시도 가능한 에러인지 확인
+ */
+function isRetryableError(error: any): boolean {
+  if (!error) return false;
+  
+  const errorMessage = error.message?.toLowerCase() || "";
+  const errorCode = error.code?.toLowerCase() || "";
+  
+  // 네트워크 관련 오류
+  if (
+    errorMessage.includes("timeout") ||
+    errorMessage.includes("econnreset") ||
+    errorMessage.includes("enotfound") ||
+    errorMessage.includes("econnrefused") ||
+    errorMessage.includes("network") ||
+    errorCode === "timeout" ||
+    errorCode === "econnreset" ||
+    errorCode === "enotfound" ||
+    errorCode === "econnrefused"
+  ) {
+    return true;
+  }
+  
+  // HTTP 5xx 오류 (서버 오류)
+  if (error.status && error.status >= 500 && error.status < 600) {
+    return true;
+  }
+  
+  // 특정 Google Cloud Storage 오류 코드
+  if (
+    errorCode === "unavailable" ||
+    errorCode === "deadline_exceeded" ||
+    errorCode === "internal" ||
+    errorCode === "aborted"
+  ) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * 지수 백오프를 사용한 재시도 유틸리티
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  operationName: string,
+  maxRetries: number = MAX_RETRIES,
+  initialDelayMs: number = INITIAL_RETRY_DELAY_MS
+): Promise<T> {
+  let lastError: any;
+  let delay = initialDelayMs;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      
+      // 재시도 불가능한 에러면 즉시 throw
+      if (!isRetryableError(error)) {
+        console.error(`[Object Storage] ${operationName} failed (non-retryable):`, error);
+        throw error;
+      }
+      
+      // 마지막 시도면 throw
+      if (attempt === maxRetries) {
+        console.error(`[Object Storage] ${operationName} failed after ${maxRetries + 1} attempts:`, error);
+        throw error;
+      }
+      
+      // 재시도 로그
+      console.warn(
+        `[Object Storage] ${operationName} failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`,
+        error.message || error
+      );
+      
+      // 지수 백오프 대기
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay = Math.min(delay * 2, MAX_RETRY_DELAY_MS);
+    }
+  }
+  
+  throw lastError;
+}
+
 // The object storage client is used to interact with the object storage service.
 export const objectStorageClient = new Storage({
   credentials: {
@@ -84,10 +176,19 @@ export class ObjectStorageService {
       const bucket = objectStorageClient.bucket(bucketName);
       const file = bucket.file(objectName);
 
-      // Check if file exists
-      const [exists] = await file.exists();
-      if (exists) {
-        return file;
+      // Check if file exists with retry
+      try {
+        const [exists] = await retryWithBackoff(
+          () => file.exists(),
+          `searchPublicObject.exists(${objectName})`
+        );
+        if (exists) {
+          return file;
+        }
+      } catch (error) {
+        // 파일이 존재하지 않거나 오류 발생 시 다음 경로 시도
+        console.warn(`[Object Storage] Failed to check existence for ${objectName}:`, error);
+        continue;
       }
     }
 
@@ -97,11 +198,20 @@ export class ObjectStorageService {
   // Downloads an object to the response.
   async downloadObject(file: File, res: Response, cacheTtlSec: number = 3600) {
     try {
-      // Get file metadata
-      const [metadata] = await file.getMetadata();
-      // Get the ACL policy for the object.
-      const aclPolicy = await getObjectAclPolicy(file);
+      // Get file metadata with retry
+      const [metadata] = await retryWithBackoff(
+        () => file.getMetadata(),
+        `downloadObject.getMetadata()`
+      );
+      
+      // Get the ACL policy for the object with retry
+      const aclPolicy = await retryWithBackoff(
+        () => getObjectAclPolicy(file),
+        `downloadObject.getObjectAclPolicy()`
+      );
+      
       const isPublic = aclPolicy?.visibility === "public";
+      
       // Set appropriate headers
       res.set({
         "Content-Type": metadata.contentType || "application/octet-stream",
@@ -111,21 +221,51 @@ export class ObjectStorageService {
         }, max-age=${cacheTtlSec}`,
       });
 
-      // Stream the file to the response
-      const stream = file.createReadStream();
-
-      stream.on("error", (err) => {
-        console.error("Stream error:", err);
-        if (!res.headersSent) {
-          res.status(500).json({ error: "Error streaming file" });
-        }
-      });
-
+      // Stream the file to the response with retry wrapper
+      let streamAttempts = 0;
+      const createStream = (): NodeJS.ReadableStream => {
+        const stream = file.createReadStream();
+        
+        stream.on("error", async (err) => {
+          console.error(`[Object Storage] Stream error (attempt ${streamAttempts + 1}):`, err);
+          
+          // 재시도 가능한 에러이고 아직 헤더가 전송되지 않았다면 재시도
+          if (isRetryableError(err) && !res.headersSent && streamAttempts < MAX_RETRIES) {
+            streamAttempts++;
+            const delay = Math.min(INITIAL_RETRY_DELAY_MS * Math.pow(2, streamAttempts - 1), MAX_RETRY_DELAY_MS);
+            console.warn(`[Object Storage] Retrying stream in ${delay}ms...`);
+            
+            setTimeout(() => {
+              try {
+                const retryStream = createStream();
+                retryStream.pipe(res);
+              } catch (retryError) {
+                console.error("[Object Storage] Stream retry failed:", retryError);
+                if (!res.headersSent) {
+                  res.status(500).json({ error: "Error streaming file after retries" });
+                }
+              }
+            }, delay);
+          } else {
+            if (!res.headersSent) {
+              res.status(500).json({ error: "Error streaming file" });
+            }
+          }
+        });
+        
+        return stream;
+      };
+      
+      const stream = createStream();
       stream.pipe(res);
     } catch (error) {
-      console.error("Error downloading file:", error);
+      console.error("[Object Storage] Error downloading file:", error);
       if (!res.headersSent) {
-        res.status(500).json({ error: "Error downloading file" });
+        res.status(500).json({ 
+          error: "Error downloading file",
+          retryable: isRetryableError(error),
+          message: error instanceof Error ? error.message : String(error)
+        });
       }
     }
   }
@@ -145,13 +285,16 @@ export class ObjectStorageService {
 
     const { bucketName, objectName } = parseObjectPath(fullPath);
 
-    // Sign URL for PUT method with TTL
-    return signObjectURL({
-      bucketName,
-      objectName,
-      method: "PUT",
-      ttlSec: 900,
-    });
+    // Sign URL for PUT method with TTL (with retry)
+    return retryWithBackoff(
+      () => signObjectURL({
+        bucketName,
+        objectName,
+        method: "PUT",
+        ttlSec: 900,
+      }),
+      `getObjectEntityUploadURL(${objectName})`
+    );
   }
 
   // Gets the object entity file from the object path.
@@ -174,7 +317,13 @@ export class ObjectStorageService {
     const { bucketName, objectName } = parseObjectPath(objectEntityPath);
     const bucket = objectStorageClient.bucket(bucketName);
     const objectFile = bucket.file(objectName);
-    const [exists] = await objectFile.exists();
+    
+    // Check if file exists with retry
+    const [exists] = await retryWithBackoff(
+      () => objectFile.exists(),
+      `getObjectEntityFile.exists(${objectName})`
+    );
+    
     if (!exists) {
       throw new ObjectNotFoundError();
     }
@@ -244,24 +393,37 @@ export class ObjectStorageService {
     const bucket = objectStorageClient.bucket(bucketName);
     const file = bucket.file(objectName);
 
-    const [exists] = await file.exists();
+    // Check if file exists with retry
+    const [exists] = await retryWithBackoff(
+      () => file.exists(),
+      `downloadToBuffer.exists(${objectName})`
+    );
+    
     if (!exists) {
       throw new ObjectNotFoundError();
     }
 
-    const [contents] = await file.download();
+    // Download file with retry
+    const [contents] = await retryWithBackoff(
+      () => file.download(),
+      `downloadToBuffer.download(${objectName})`
+    );
+    
     return contents;
   }
 
   // Object Storage에서 파일 다운로드용 signed URL 생성
   async getDownloadURL(storageKey: string, ttlSec: number = 3600): Promise<string> {
     const { bucketName, objectName } = parseObjectPath(storageKey);
-    return signObjectURL({
-      bucketName,
-      objectName,
-      method: "GET",
-      ttlSec,
-    });
+    return retryWithBackoff(
+      () => signObjectURL({
+        bucketName,
+        objectName,
+        method: "GET",
+        ttlSec,
+      }),
+      `getDownloadURL(${objectName})`
+    );
   }
 }
 
@@ -297,30 +459,56 @@ export async function signObjectURL({
   method: "GET" | "PUT" | "DELETE" | "HEAD";
   ttlSec: number;
 }): Promise<string> {
-  const request = {
-    bucket_name: bucketName,
-    object_name: objectName,
-    method,
-    expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
-  };
-  const response = await fetch(
-    `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
-    }
-  );
-  if (!response.ok) {
-    throw new Error(
-      `Failed to sign object URL, errorcode: ${response.status}, ` +
-        `make sure you're running on Replit`
-    );
-  }
+  return retryWithBackoff(
+    async () => {
+      const request = {
+        bucket_name: bucketName,
+        object_name: objectName,
+        method,
+        expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
+      };
+      
+      // 타임아웃 설정 (30초) - AbortController 사용
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
+      try {
+        const response = await fetch(
+          `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(request),
+            signal: controller.signal,
+          }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const error: any = new Error(
+            `Failed to sign object URL, errorcode: ${response.status}, ` +
+              `make sure you're running on Replit`
+          );
+          error.status = response.status;
+          throw error;
+        }
 
-  const { signed_url: signedURL } = await response.json();
-  return signedURL;
+        const { signed_url: signedURL } = await response.json();
+        return signedURL;
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          const timeoutError: any = new Error('Request timeout after 30 seconds');
+          timeoutError.code = 'timeout';
+          throw timeoutError;
+        }
+        throw error;
+      }
+    },
+    `signObjectURL(${bucketName}/${objectName})`
+  );
 }
 

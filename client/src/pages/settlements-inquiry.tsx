@@ -860,6 +860,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
     setManager("전체");
     setStartDate(undefined);
     setEndDate(undefined);
+    setDateRangeOpen(false); // 날짜 범위 선택기 닫기
     setCurrentPage(1);
   };
 
@@ -1117,6 +1118,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                   <div>
                     <p className="text-sm font-medium mb-2">시작일</p>
                     <Calendar
+                      key={`start-${startDate?.getTime() || 'none'}`}
                       mode="single"
                       selected={startDate}
                       onSelect={setStartDate}
@@ -1126,6 +1128,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                   <div>
                     <p className="text-sm font-medium mb-2">종료일</p>
                     <Calendar
+                      key={`end-${endDate?.getTime() || 'none'}`}
                       mode="single"
                       selected={endDate}
                       onSelect={setEndDate}
@@ -1139,6 +1142,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                     onClick={() => {
                       setStartDate(undefined);
                       setEndDate(undefined);
+                      setDateRangeOpen(false); // 초기화 후 Popover 닫기
                     }}
                   >
                     초기화
