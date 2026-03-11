@@ -1224,10 +1224,10 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
       </div>
       {/* Wide Table with Horizontal Scroll and Sticky Header/Columns */}
       {(() => {
-        const stickyHeaders = ["보험사", "증권번호", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체"];
+        const stickyHeaders = ["보험사", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체"];
         const scrollHeaders = ["청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", ...(isPartner ? [] : ["관리"]), ...(filterMode === "closed" && !isPartner ? ["보고서열람"] : [])];
         const allHeaders = [...stickyHeaders, ...scrollHeaders];
-        const stickyColWidths = [100, 110, 130, 90, 110, 150, 110];
+        const stickyColWidths = [100, 130, 90, 110, 150, 110];
         const stickyColLefts = stickyColWidths.map((_, i) => stickyColWidths.slice(0, i).reduce((a, b) => a + b, 0));
         const totalStickyWidth = stickyColWidths.reduce((a, b) => a + b, 0);
         const thBaseStyle: React.CSSProperties = {
@@ -1291,7 +1291,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={isPartner ? 15 : 16}
+                    colSpan={isPartner ? 14 : 15}
                     style={{
                       padding: "48px",
                       textAlign: "center",
@@ -1306,7 +1306,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
               ) : filteredRows.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isPartner ? 15 : 16}
+                    colSpan={isPartner ? 14 : 15}
                     style={{
                       padding: "48px",
                       textAlign: "center",
@@ -1360,13 +1360,12 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                       }}
                     >
                       <td style={stickyCellStyle(0)}>{row.insuranceCompany}</td>
-                      <td style={stickyCellStyle(1)}>{row.withdrawalNumber}</td>
-                      <td style={stickyCellStyle(2)}>{row.accidentNumber}</td>
-                      <td style={stickyCellStyle(3)}>{row.insuredName}</td>
-                      <td style={stickyCellStyle(4)}>
+                      <td style={stickyCellStyle(1)}>{row.accidentNumber}</td>
+                      <td style={stickyCellStyle(2)}>{row.insuredName}</td>
+                      <td style={stickyCellStyle(3)}>
                         {row.managerId ? usersByIdMap.get(row.managerId)?.name || "-" : "-"}
                       </td>
-                      <td style={{ ...stickyCellStyle(5), padding: "8px 12px" }}>
+                      <td style={{ ...stickyCellStyle(4), padding: "8px 12px" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                           {row.caseNumber
                             ?.split(", ")
@@ -1375,7 +1374,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                             )) || "-"}
                         </div>
                       </td>
-                      <td style={stickyCellStyle(6)}>{row.assignedPartner}</td>
+                      <td style={stickyCellStyle(5)}>{row.assignedPartner}</td>
                       <td style={cellStyle}>{row.claimDate}</td>
                       <td style={amountStyle}>{renderAmount(row.claimAmount)}</td>
                       <td style={amountStyle}>{renderAmount(row.settlementDeductible)}</td>
