@@ -44,15 +44,17 @@ const getCaseSuffix = (caseNumber: string | null): number => {
 };
 
 const getClaimAmount = (c: Case): number => {
+  // 직접복구일 경우: 승인금액 반환 (승인금액 = 청구액)
   if (c.recoveryType === "직접복구" || c.restorationMethod === "직접복구" || c.status === "직접복구" || c.status === "청구자료제출(복구)") {
-    const caseSuffix = getCaseSuffix(c.caseNumber);
-    // 손방 케이스(-0)는 invoiceDamagePreventionAmount만, 대물 케이스(-1 이상)는 invoicePropertyRepairAmount만 반환
-    if (caseSuffix === 0) {
-      return parseFloat(c.invoiceDamagePreventionAmount || "0") || 0;
-    } else {
-      return parseFloat(c.invoicePropertyRepairAmount || "0") || 0;
-    }
+    return parseFloat(c.approvedAmount || "0") || 0;
   }
+  // 선견적요청일 경우: 출동비만 청구 (10만원)
+  if (c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)") {
+    const fieldDispatchAmount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
+    // fieldDispatchInvoiceAmount가 있으면 그것을, 없으면 10만원 반환
+    return fieldDispatchAmount > 0 ? fieldDispatchAmount : 100000;
+  }
+  // 그 외의 경우: fieldDispatchInvoiceAmount 반환
   return parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
 };
 
@@ -109,6 +111,11 @@ const getRepresentativeCase = (groupCases: Case[]): Case => {
 };
 
 const getCaseEstimateForStats = (c: Case): number => {
+  // 선견적요청일 경우: 출동비 10만원
+  if (c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)") {
+    const fieldDispatchAmount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
+    return fieldDispatchAmount > 0 ? fieldDispatchAmount : 100000;
+  }
   if (c.status === "청구") {
     const claimAmt = getClaimAmount(c);
     if (claimAmt > 0) return claimAmt;
@@ -117,6 +124,15 @@ const getCaseEstimateForStats = (c: Case): number => {
 };
 
 const getCaseApprovedForStats = (c: Case): number => {
+  // 선견적요청일 경우: 출동비 10만원
+  if (c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)") {
+    const fieldDispatchAmount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
+    return fieldDispatchAmount > 0 ? fieldDispatchAmount : 100000;
+  }
+  // 직접복구일 경우: 승인금액 반환
+  if (c.recoveryType === "직접복구" || c.restorationMethod === "직접복구" || c.status === "직접복구" || c.status === "청구자료제출(복구)") {
+    return parseFloat(c.approvedAmount || "0") || 0;
+  }
   if (c.status === "청구") {
     const claimAmt = getClaimAmount(c);
     if (claimAmt > 0) return claimAmt;
@@ -134,13 +150,16 @@ const getGroupEstimateAmount = (groupCases: Case[]): number => {
     // 직접복구 건이 있으면 직접복구 건만의 견적금액 합산 (손방 + 대물)
     return directRepairCases.reduce((sum, c) => sum + getCaseEstimateForStats(c), 0);
   } else {
-    // 직접복구 건이 없으면 각 접수번호별 출동비 합산 (각 케이스마다 10만원)
-    const fieldDispatchTotal = groupCases.reduce((sum, c) => {
-      const amount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
-      return sum + amount;
-    }, 0);
-    // 출동비가 있으면 합산, 없으면 각 케이스의 견적금액 합산
-    return fieldDispatchTotal > 0 ? fieldDispatchTotal : groupCases.reduce((sum, c) => sum + getCaseEstimateForStats(c), 0);
+    // 직접복구 건이 없으면 선견적요청 건의 출동비 합산 (각 케이스마다 실제 금액 합산)
+    const preEstimateCases = groupCases.filter(
+      (c) => c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)"
+    );
+    if (preEstimateCases.length > 0) {
+      // 선견적요청 건이 있으면 각 케이스의 실제 견적금액 합산 (getCaseEstimateForStats 사용)
+      return preEstimateCases.reduce((sum, c) => sum + getCaseEstimateForStats(c), 0);
+    }
+    // 그 외의 경우: 각 케이스의 견적금액 합산
+    return groupCases.reduce((sum, c) => sum + getCaseEstimateForStats(c), 0);
   }
 };
 
@@ -154,13 +173,16 @@ const getGroupApprovedAmount = (groupCases: Case[]): number => {
     // 직접복구 건이 있으면 직접복구 건만의 승인금액 합산 (손방 + 대물)
     return directRepairCases.reduce((sum, c) => sum + getCaseApprovedForStats(c), 0);
   } else {
-    // 직접복구 건이 없으면 각 접수번호별 출동비 합산 (각 케이스마다 10만원)
-    const fieldDispatchTotal = groupCases.reduce((sum, c) => {
-      const amount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
-      return sum + amount;
-    }, 0);
-    // 출동비가 있으면 합산, 없으면 각 케이스의 승인금액 합산
-    return fieldDispatchTotal > 0 ? fieldDispatchTotal : groupCases.reduce((sum, c) => sum + getCaseApprovedForStats(c), 0);
+    // 직접복구 건이 없으면 선견적요청 건의 출동비 합산 (각 케이스마다 실제 금액 합산)
+    const preEstimateCases = groupCases.filter(
+      (c) => c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)"
+    );
+    if (preEstimateCases.length > 0) {
+      // 선견적요청 건이 있으면 각 케이스의 실제 승인금액 합산 (getCaseApprovedForStats 사용)
+      return preEstimateCases.reduce((sum, c) => sum + getCaseApprovedForStats(c), 0);
+    }
+    // 그 외의 경우: 각 케이스의 승인금액 합산
+    return groupCases.reduce((sum, c) => sum + getCaseApprovedForStats(c), 0);
   }
 };
 

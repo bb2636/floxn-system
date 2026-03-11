@@ -524,6 +524,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         assignedPartner: caseItem.assignedPartner || "-",
         insuredName: caseItem.insuredName || "-",
         claimDate: caseItem.claimDate || "-",
+        fieldDispatchInvoiceAmount: caseItem.fieldDispatchInvoiceAmount || null,
       };
     });
 
@@ -668,11 +669,24 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
         : 0;
 
       // 계산된 총 승인금액 (기본값)
-      const calculatedTotalApproved = hasDirectRepair
-        ? preventionApprovedAmount + propertyApprovedAmount
-        : allNoRepair
-          ? 100000
-          : 0;
+      // 직접복구 건이 있으면 직접복구 금액 합산
+      // 직접복구 건이 없고 선견적요청 건이 있으면 각 케이스마다 10만원 합산
+      let calculatedTotalApproved = 0;
+      if (hasDirectRepair) {
+        calculatedTotalApproved = preventionApprovedAmount + propertyApprovedAmount;
+      } else {
+        // 선견적요청 건이 하나라도 있으면 각 케이스마다 10만원 합산
+        const preEstimateCases = casesInGroup.filter(
+          (c) => c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)"
+        );
+        if (preEstimateCases.length > 0) {
+          // 각 케이스마다 fieldDispatchInvoiceAmount가 있으면 그것을, 없으면 10만원 합산
+          calculatedTotalApproved = preEstimateCases.reduce((sum, c) => {
+            const fieldDispatchAmount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
+            return sum + (fieldDispatchAmount > 0 ? fieldDispatchAmount : 100000);
+          }, 0);
+        }
+      }
 
       // 인보이스에 저장된 값이 있으면 그것을 사용, 없으면 계산값 사용
       const totalApprovedAmount =
@@ -1295,7 +1309,7 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         )}
-        {(() => {
+      {(() => {
         const stickyHeaders = ["보험사", "사고번호", "피보험자", "담당자(플록슨)", "접수번호", "협력업체"];
         const scrollHeaders = ["청구일", "청구액", "자기부담금", "입금일", "입금액", "협력업체 지급액", "수수료", "계산서 발행일", ...(isPartner ? [] : ["관리"]), ...(filterMode === "closed" && !isPartner ? ["보고서열람"] : [])];
         const allHeaders = [...stickyHeaders, ...scrollHeaders];
@@ -1560,8 +1574,8 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
 
         {/* Pagination */}
         {filteredRows.length > itemsPerPage && (
-          <div
-            style={{
+        <div
+          style={{
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -1613,8 +1627,8 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
                       background: currentPage === pageNum ? "#008FED" : "transparent",
                       color: currentPage === pageNum ? "#FFFFFF" : "rgba(12, 12, 12, 0.8)",
                       border: "1px solid rgba(12, 12, 12, 0.1)",
-                    }}
-                  >
+          }}
+        >
                     {pageNum}
                   </Button>
                 );
@@ -1632,17 +1646,17 @@ export default function SettlementsInquiry({ filterMode = "claim" }: Settlements
             >
               다음
             </Button>
-            <span
-              style={{
+          <span
+            style={{
                 marginLeft: "16px",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
                 color: "rgba(12, 12, 12, 0.6)",
-              }}
-            >
+            }}
+          >
               {((currentPage - 1) * itemsPerPage + 1).toLocaleString()} - {Math.min(currentPage * itemsPerPage, filteredRows.length).toLocaleString()} / {filteredRows.length.toLocaleString()}건
-            </span>
-          </div>
+          </span>
+        </div>
         )}
       </div>
         );

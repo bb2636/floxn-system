@@ -596,15 +596,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 관리자: 마스킹 없이 기본 정보 제공
       if (req.session.userRole === "관리자") {
-        const basicUsers = users.map(
-          ({ id, name, username, phone, role, bankName, accountNumber, company }) => ({
-            id,
-            name,
-            username,
-            contact: phone,
-            role,
-            bankName,
-            accountNumber,
+      const basicUsers = users.map(
+        ({ id, name, username, phone, role, bankName, accountNumber, company }) => ({
+          id,
+          name,
+          username,
+          contact: phone,
+          role,
+          bankName,
+          accountNumber,
             company,
           }),
         );
