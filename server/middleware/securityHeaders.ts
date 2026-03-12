@@ -10,18 +10,25 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
 
   // Content Security Policy (CSP)
   // XSS 공격 방지를 위한 정책 설정
+  // Daum Postcode API 도메인:
+  // - https://t1.daumcdn.net: 스크립트 로드
+  // - https://postcode.map.daum.net: 주소 검색 iframe
+  // - https://ssl.daumcdn.net: 추가 리소스
+  const daumDomains = "https://t1.daumcdn.net https://postcode.map.daum.net https://ssl.daumcdn.net";
+  
   if (isProduction) {
     // 프로덕션 환경: 엄격한 CSP
     res.setHeader(
       'Content-Security-Policy',
       [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://t1.daumcdn.net", // Daum Postcode API 허용
+        `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${daumDomains}`, // Daum Postcode API 허용
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https: blob:",
         "font-src 'self' data:",
-        "connect-src 'self' https://t1.daumcdn.net", // Daum Postcode API 허용
-        "frame-src 'self' https://t1.daumcdn.net", // Daum Postcode iframe 허용
+        `connect-src 'self' ${daumDomains}`, // Daum Postcode API 허용
+        `frame-src 'self' ${daumDomains}`, // Daum Postcode iframe 허용
+        `child-src 'self' ${daumDomains}`, // Daum Postcode iframe 허용 (frame-src 대체)
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'",
@@ -35,12 +42,13 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
       'Content-Security-Policy',
       [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://t1.daumcdn.net",
+        `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${daumDomains}`,
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https: blob:",
         "font-src 'self' data:",
-        "connect-src 'self' ws: wss: https://t1.daumcdn.net",
-        "frame-src 'self' https://t1.daumcdn.net",
+        `connect-src 'self' ws: wss: ${daumDomains}`,
+        `frame-src 'self' ${daumDomains}`,
+        `child-src 'self' ${daumDomains}`,
       ].join('; ')
     );
   }
