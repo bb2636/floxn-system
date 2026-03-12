@@ -44,15 +44,28 @@ const getCaseSuffix = (caseNumber: string | null): number => {
 };
 
 const getClaimAmount = (c: Case): number => {
-  // 직접복구일 경우: 승인금액만 사용 (승인금액 = 청구액)
-  if (c.recoveryType === "직접복구" || c.restorationMethod === "직접복구" || c.status === "직접복구" || c.status === "청구자료제출(복구)") {
-    return parseFloat(c.approvedAmount || "0") || 0;
+  // 출동비청구(선견적) 상태일 경우: 출동비만 청구 (10만원)
+  if (c.status === "출동비청구(선견적)") {
+    const fieldDispatchAmount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
+    return fieldDispatchAmount > 0 ? fieldDispatchAmount : 100000;
   }
   // 선견적요청일 경우: 출동비만 청구 (10만원)
-  if (c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)") {
+  if (c.recoveryType === "선견적요청" || c.status === "선견적요청") {
     const fieldDispatchAmount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
-    // fieldDispatchInvoiceAmount가 있으면 그것을, 없으면 10만원 반환
     return fieldDispatchAmount > 0 ? fieldDispatchAmount : 100000;
+  }
+  // 직접복구일 경우: 승인금액만 사용 (승인금액 = 청구액)
+  // 승인날짜가 있는데 승인금액이 없는 경우 estimateAmount 사용
+  if (c.recoveryType === "직접복구" || c.restorationMethod === "직접복구" || c.status === "직접복구" || c.status === "청구자료제출(복구)") {
+    const approvedAmt = parseFloat(c.approvedAmount || "0") || 0;
+    if (approvedAmt > 0) {
+      return approvedAmt;
+    }
+    // 승인금액이 없지만 승인날짜가 있으면 estimateAmount 사용
+    if ((c.firstApprovalDate || c.secondApprovalDate) && c.estimateAmount) {
+      return parseFloat(c.estimateAmount || "0") || 0;
+    }
+    return 0;
   }
   // 그 외의 경우: fieldDispatchInvoiceAmount 반환
   return parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
@@ -124,20 +137,42 @@ const getCaseEstimateForStats = (c: Case): number => {
 };
 
 const getCaseApprovedForStats = (c: Case): number => {
+  // 출동비청구(선견적) 상태일 경우: 출동비 10만원
+  if (c.status === "출동비청구(선견적)") {
+    const fieldDispatchAmount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
+    return fieldDispatchAmount > 0 ? fieldDispatchAmount : 100000;
+  }
   // 선견적요청일 경우: 출동비 10만원
-  if (c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)") {
+  if (c.recoveryType === "선견적요청" || c.status === "선견적요청") {
     const fieldDispatchAmount = parseFloat(c.fieldDispatchInvoiceAmount || "0") || 0;
     return fieldDispatchAmount > 0 ? fieldDispatchAmount : 100000;
   }
   // 직접복구일 경우: 승인금액 반환
+  // 승인날짜가 있는데 승인금액이 없는 경우 estimateAmount 사용
   if (c.recoveryType === "직접복구" || c.restorationMethod === "직접복구" || c.status === "직접복구" || c.status === "청구자료제출(복구)") {
-    return parseFloat(c.approvedAmount || "0") || 0;
+    const approvedAmt = parseFloat(c.approvedAmount || "0") || 0;
+    if (approvedAmt > 0) {
+      return approvedAmt;
+    }
+    // 승인금액이 없지만 승인날짜가 있으면 estimateAmount 사용
+    if ((c.firstApprovalDate || c.secondApprovalDate) && c.estimateAmount) {
+      return parseFloat(c.estimateAmount || "0") || 0;
+    }
+    return 0;
   }
   if (c.status === "청구") {
     const claimAmt = getClaimAmount(c);
     if (claimAmt > 0) return claimAmt;
   }
-  return parseFloat(c.approvedAmount || "0") || 0;
+  // 승인날짜가 있는데 승인금액이 없는 경우 estimateAmount 사용
+  const approvedAmt = parseFloat(c.approvedAmount || "0") || 0;
+  if (approvedAmt > 0) {
+    return approvedAmt;
+  }
+  if ((c.firstApprovalDate || c.secondApprovalDate) && c.estimateAmount) {
+    return parseFloat(c.estimateAmount || "0") || 0;
+  }
+  return 0;
 };
 
 const getGroupEstimateAmount = (groupCases: Case[]): number => {
