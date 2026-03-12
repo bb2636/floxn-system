@@ -202,6 +202,30 @@ const getGroupApprovedAmount = (groupCases: Case[]): number => {
   }
 };
 
+const getGroupClaimAmount = (groupCases: Case[]): number => {
+  // 직접복구 건만 필터링
+  const directRepairCases = groupCases.filter(
+    (c) => c.recoveryType === "직접복구" || c.restorationMethod === "직접복구" || c.status === "직접복구" || c.status === "청구자료제출(복구)"
+  );
+  
+  if (directRepairCases.length > 0) {
+    // 직접복구 건이 있으면 직접복구 건만의 청구액 합산 (승인금액 = 청구액)
+    // 직접복구 건의 청구액은 승인금액과 동일해야 함
+    return directRepairCases.reduce((sum, c) => sum + getClaimAmount(c), 0);
+  } else {
+    // 직접복구 건이 없으면 선견적요청 건의 출동비 합산 (각 케이스마다 10만원)
+    const preEstimateCases = groupCases.filter(
+      (c) => c.recoveryType === "선견적요청" || c.status === "선견적요청" || c.status === "출동비청구(선견적)"
+    );
+    if (preEstimateCases.length > 0) {
+      // 선견적요청 건이 있으면 각 케이스의 청구액 합산 (getClaimAmount 사용)
+      return preEstimateCases.reduce((sum, c) => sum + getClaimAmount(c), 0);
+    }
+    // 그 외의 경우: 각 케이스의 청구액 합산
+    return groupCases.reduce((sum, c) => sum + getClaimAmount(c), 0);
+  }
+};
+
 interface GroupedRow {
   accidentNo: string;
   rep: Case;
@@ -389,7 +413,7 @@ export default function UnsettledCaseStatistics() {
         cases: groupCases,
         totalEstimate: getGroupEstimateAmount(groupCases),
         totalApproved: getGroupApprovedAmount(groupCases),
-        totalClaim: groupCases.reduce((sum, c) => sum + getClaimAmount(c), 0),
+        totalClaim: getGroupClaimAmount(groupCases),
       };
     });
 
@@ -552,8 +576,8 @@ export default function UnsettledCaseStatistics() {
         const damagePrevention = rep.damagePreventionCost === "true" || (rep.damagePreventionCost as any) === true;
         const victimIncident = rep.victimIncidentAssistance === "true" || (rep.victimIncidentAssistance as any) === true;
         const address = rep.insuredAddress || rep.victimAddress || "";
-        // 청구액: 그룹 내 대표 케이스의 청구액만 사용 (더블 계산 방지)
-        const claimAmount = getClaimAmount(rep);
+        // 청구액: 그룹 전체의 청구액 합산 (승인금액과 동일한 로직 사용)
+        const claimAmount = getGroupClaimAmount(g.cases);
         return [
           rep.insuranceCompany || "",
           rep.insurancePolicyNo || "",
@@ -647,7 +671,7 @@ export default function UnsettledCaseStatistics() {
         <td style={cellStyle}>{formatDate(rep.siteInvestigationSubmitDate)}</td>
         <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(g.totalApproved)}</td>
         <td style={cellStyle}>{formatDate(rep.secondApprovalDate)}</td>
-        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(getClaimAmount(rep))}</td>
+        <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(g.totalClaim)}</td>
         <td style={cellStyle}>{formatDate(rep.claimDate)}</td>
         <td style={{ ...cellStyle, textAlign: "right" }}>{formatAmount(deposit.amount)}</td>
         <td style={cellStyle}>{formatDate(deposit.date)}</td>
