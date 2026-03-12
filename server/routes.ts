@@ -28,6 +28,14 @@ import {
   insertSettlementSchema,
 } from "@shared/schema";
 import { z } from "zod";
+import { maskIdNumber, maskAddress, maskPhone } from "./utils/encryption";
+import { requireCaseAccess } from "./middleware/caseAccess";
+import { logDocumentAccess, getClientIp, getUserAgent } from "./utils/auditLog";
+import { rateLimit } from "./middleware/rateLimit";
+import { generalApiRateLimit, strictApiRateLimit, uploadRateLimit } from "./middleware/generalRateLimit";
+import { validateFile } from "./middleware/fileValidation";
+import { csrfProtection, getCsrfToken } from "./middleware/csrf";
+import { sanitizeFileName, sanitizeText } from "./utils/inputSanitization";
 import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
 import { sql, inArray, eq, and } from "drizzle-orm";
@@ -155,8 +163,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Object Storage routes
   registerObjectStorageRoutes(app);
 
-  // Login endpoint
-  app.post("/api/login", async (req, res) => {
+  // 일반 API 엔드포인트에 Rate Limiting 적용 (전역)
+  // Health check와 정적 파일은 제외
+  app.use((req, res, next) => {
+    // Health check, 정적 파일, WebSocket 업그레이드 제외
+    if (
+      req.path === '/_health' ||
+      req.path.startsWith('/assets/') ||
+      req.path.startsWith('/objects/') ||
+      req.headers.upgrade === 'websocket'
+    ) {
+      return next();
+    }
+
+    // API 엔드포인트에만 Rate Limiting 적용
+    if (req.path.startsWith('/api/')) {
+      return generalApiRateLimit(req, res, next);
+    }
+
+    next();
+  });
+
+  // Login endpoint with rate limiting
+  app.post("/api/login", rateLimit({
+    maxAttempts: 5, // 5번 시도
+    windowMs: 15 * 60 * 1000, // 15분 윈도우
+    keyGenerator: (req) => {
+      // IP 주소와 username 조합으로 키 생성
+      const ip = req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || 
+                 req.headers['x-real-ip']?.toString() || 
+                 req.socket?.remoteAddress || 
+                 'unknown';
+      const username = req.body?.username || 'unknown';
+      return `${ip}:${username}`;
+    },
+    message: "로그인 시도가 너무 많습니다. 15분 후 다시 시도해주세요.",
+  }), async (req, res) => {
     try {
       const validatedData = loginSchema.parse(req.body);
 
@@ -186,60 +228,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (req.session) {
-        // 중복 로그인 방지: 기존 세션이 있으면 파괴
-        const existingSessionId = activeUserSessions.get(user.id);
-        if (existingSessionId && existingSessionId !== req.sessionID) {
-          // activeUserSessions에서 먼저 제거
-          activeUserSessions.delete(user.id);
-          sessionStore.destroy(existingSessionId, (err) => {
-            if (err) {
-              console.error("[LOGIN] Failed to destroy existing session:", err);
-            } else {
-              console.log("[LOGIN] Destroyed existing session for userId:", user.id, "sessionId:", existingSessionId);
-            }
-          });
-        }
-
-        req.session.userId = user.id;
-        req.session.userRole = user.role;
-        req.session.isSuperAdmin = user.isSuperAdmin || false;
-        req.session.rememberMe = validatedData.rememberMe;
-
-        console.log("[LOGIN SUCCESS]", {
-          userId: user.id,
-          userRole: user.role,
-          username: user.username,
-          sessionId: req.sessionID,
-          cookieSecure: req.session.cookie.secure,
-          cookieSameSite: req.session.cookie.sameSite,
-        });
-
-        if (validatedData.rememberMe) {
-          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30일
-        } else {
-          req.session.cookie.maxAge = 30 * 60 * 1000; // 30분
-        }
-
-        // Force session save and then respond
-        req.session.save((err) => {
+        // 세션 고정 공격 방지: 로그인 시 세션 ID 재생성
+        req.session.regenerate((err) => {
           if (err) {
-            console.error("[LOGIN] Session save error:", err);
-            return res
-              .status(500)
-              .json({ error: "세션 저장 중 오류가 발생했습니다" });
+            console.error("[LOGIN] Session regenerate error:", err);
+            return res.status(500).json({ error: "세션 생성 중 오류가 발생했습니다" });
           }
-          // 새 세션ID 등록
-          activeUserSessions.set(user.id, req.sessionID);
-          console.log(
-            "[LOGIN] Session saved successfully, sessionId:",
-            req.sessionID,
-          );
-          const { password, ...userWithoutPassword } = user;
-          console.log("[LOGIN] Response data:", {
-            userId: userWithoutPassword.id,
-            mustChangePassword: userWithoutPassword.mustChangePassword,
+
+          // 중복 로그인 방지: 기존 세션이 있으면 파괴
+          const existingSessionId = activeUserSessions.get(user.id);
+          if (existingSessionId && existingSessionId !== req.sessionID) {
+            // activeUserSessions에서 먼저 제거
+            activeUserSessions.delete(user.id);
+            sessionStore.destroy(existingSessionId, (err) => {
+              if (err) {
+                console.error("[LOGIN] Failed to destroy existing session:", err);
+              } else {
+                console.log("[LOGIN] Destroyed existing session for userId:", user.id, "sessionId:", existingSessionId);
+              }
+            });
+          }
+
+          req.session.userId = user.id;
+          req.session.userRole = user.role;
+          req.session.isSuperAdmin = user.isSuperAdmin || false;
+          req.session.rememberMe = validatedData.rememberMe;
+
+          console.log("[LOGIN SUCCESS]", {
+            userId: user.id,
+            userRole: user.role,
+            username: user.username,
+            sessionId: req.sessionID,
+            cookieSecure: req.session.cookie.secure,
+            cookieSameSite: req.session.cookie.sameSite,
           });
-          res.json(userWithoutPassword);
+
+          if (validatedData.rememberMe) {
+            req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30일
+          } else {
+            req.session.cookie.maxAge = 30 * 60 * 1000; // 30분
+          }
+
+          // Force session save and then respond
+          req.session.save((err) => {
+            if (err) {
+              console.error("[LOGIN] Session save error:", err);
+              return res
+                .status(500)
+                .json({ error: "세션 저장 중 오류가 발생했습니다" });
+            }
+            // 새 세션ID 등록
+            activeUserSessions.set(user.id, req.sessionID);
+            console.log(
+              "[LOGIN] Session saved successfully, sessionId:",
+              req.sessionID,
+            );
+            const { password, ...userWithoutPassword } = user;
+            console.log("[LOGIN] Response data:", {
+              userId: userWithoutPassword.id,
+              mustChangePassword: userWithoutPassword.mustChangePassword,
+            });
+            res.json(userWithoutPassword);
+          });
         });
         return;
       }
@@ -504,7 +554,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // DEBUG ENDPOINT - Production DB diagnostics (admin only)
+  // 보안: 프로덕션 환경에서는 비활성화 권장 (필요시만 활성화)
   app.get("/api/debug/db-status", async (req, res) => {
+    // 프로덕션 환경에서 디버그 엔드포인트 비활성화 (보안)
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
+    if (isProduction && process.env.ENABLE_DEBUG_ENDPOINTS !== 'true') {
+      return res.status(404).json({ error: "Not found" });
+    }
+
     try {
       // Check if user is admin
       if (!req.session?.userId) {
@@ -2260,7 +2317,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get cases filtered by user role and permissions
       const cases = await storage.getAllCases(currentUser);
-      res.json(cases);
+      
+      // 관리자가 아닌 경우 민감 정보 마스킹 처리
+      const isAdmin = currentUser.role === "관리자";
+      if (!isAdmin) {
+        const maskedCases = cases.map((caseItem) => {
+          const masked = { ...caseItem };
+          masked.policyHolderIdNumber = maskIdNumber(caseItem.policyHolderIdNumber);
+          masked.insuredIdNumber = maskIdNumber(caseItem.insuredIdNumber);
+          masked.policyHolderAddress = maskAddress(caseItem.policyHolderAddress);
+          masked.insuredAddress = maskAddress(caseItem.insuredAddress);
+          masked.insuredAddressDetail = maskAddress(caseItem.insuredAddressDetail);
+          masked.victimAddress = maskAddress(caseItem.victimAddress);
+          masked.victimAddressDetail = maskAddress(caseItem.victimAddressDetail);
+          masked.clientAddress = maskAddress(caseItem.clientAddress);
+          masked.insuredContact = maskPhone(caseItem.insuredContact);
+          masked.victimContact = maskPhone(caseItem.victimContact);
+          masked.clientPhone = maskPhone(caseItem.clientPhone);
+          return masked;
+        });
+        res.json(maskedCases);
+      } else {
+        // 관리자는 전체 정보 조회 가능
+        res.json(cases);
+      }
     } catch (error) {
       console.error("Get cases error:", error);
       res
@@ -2270,15 +2350,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single case by ID endpoint
-  app.get("/api/cases/:id", async (req, res) => {
-    // Check authentication
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
-    }
-
+  app.get("/api/cases/:id", requireCaseAccess({ paramName: "id" }), async (req, res) => {
     try {
       const { id } = req.params;
-      const caseData = await storage.getCaseById(id);
+      // 미들웨어에서 이미 권한 체크 및 케이스 조회 완료
+      const caseData = (req as any).caseData || await storage.getCaseById(id);
 
       if (!caseData) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
@@ -2322,7 +2398,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json(caseData);
+      // 사용자 권한 확인
+      const currentUser = await storage.getUser(req.session.userId);
+      const isAdmin = currentUser?.role === "관리자";
+
+      // 관리자가 아닌 경우 민감 정보 마스킹 처리
+      if (!isAdmin) {
+        const maskedCase = { ...caseData };
+        maskedCase.policyHolderIdNumber = maskIdNumber(caseData.policyHolderIdNumber);
+        maskedCase.insuredIdNumber = maskIdNumber(caseData.insuredIdNumber);
+        maskedCase.policyHolderAddress = maskAddress(caseData.policyHolderAddress);
+        maskedCase.insuredAddress = maskAddress(caseData.insuredAddress);
+        maskedCase.insuredAddressDetail = maskAddress(caseData.insuredAddressDetail);
+        maskedCase.victimAddress = maskAddress(caseData.victimAddress);
+        maskedCase.victimAddressDetail = maskAddress(caseData.victimAddressDetail);
+        maskedCase.clientAddress = maskAddress(caseData.clientAddress);
+        maskedCase.insuredContact = maskPhone(caseData.insuredContact);
+        maskedCase.victimContact = maskPhone(caseData.victimContact);
+        maskedCase.clientPhone = maskPhone(caseData.clientPhone);
+        res.json(maskedCase);
+      } else {
+        // 관리자는 전체 정보 조회 가능
+        res.json(caseData);
+      }
     } catch (error) {
       console.error("Get case by ID error:", error);
       res
@@ -2392,18 +2490,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Update case endpoint
-  app.patch("/api/cases/:id", async (req, res) => {
-    // Check authentication
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
-    }
-
+  app.patch("/api/cases/:id", csrfProtection, requireCaseAccess({ paramName: "id" }), async (req, res) => {
     try {
       const { id } = req.params;
       const updateData = req.body;
 
-      // 케이스 존재 여부 확인
-      const existingCase = await storage.getCaseById(id);
+      // 미들웨어에서 이미 권한 체크 및 케이스 조회 완료
+      const existingCase = (req as any).caseData || await storage.getCaseById(id);
       if (!existingCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -3068,17 +3161,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete case endpoint
-  app.delete("/api/cases/:id", async (req, res) => {
-    // Check authentication
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
-    }
-
+  app.delete("/api/cases/:id", csrfProtection, requireCaseAccess({ paramName: "id" }), async (req, res) => {
     try {
       const { id } = req.params;
 
-      // 케이스 존재 여부 확인
-      const existingCase = await storage.getCaseById(id);
+      // 미들웨어에서 이미 권한 체크 및 케이스 조회 완료
+      const existingCase = (req as any).caseData || await storage.getCaseById(id);
       if (!existingCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -3104,12 +3192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update case status endpoint (admin and partner)
-  app.patch("/api/cases/:caseId/status", async (req, res) => {
-    // Check authentication
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
-    }
-
+  app.patch("/api/cases/:caseId/status", requireCaseAccess({ paramName: "caseId" }), async (req, res) => {
     const userRole = req.session.userRole;
 
     // Check authorization (관리자 또는 협력사)
@@ -4663,14 +4746,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: req.session.userId,
       });
 
-      // Verify the user has access to this case
-      const requestedCase = await storage.getCaseById(validatedData.caseId);
-      if (!requestedCase) {
-        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      // 케이스 접근 권한 체크
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       }
 
-      // Note: Additional permission checks could be added here based on user role
-      // Currently relying on frontend filtering (field-management page shows only accessible cases)
+      if (user.role !== "관리자") {
+        const requestedCase = await storage.getCaseById(validatedData.caseId);
+        if (!requestedCase) {
+          return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+        }
+
+        // checkCaseAccess 함수 사용 (routes.ts에 정의된 함수 재사용)
+        const checkCaseAccess = (user: any, caseData: any): boolean => {
+          const isPersonal = user.accountType === "개인";
+          switch (user.role) {
+            case "협력사":
+              if (isPersonal) {
+                return (
+                  caseData.assignedPartner === user.company &&
+                  (caseData.assignedPartnerManager === user.name ||
+                    caseData.createdBy === user.id ||
+                    caseData.assignedTo === user.id)
+                );
+              } else {
+                return caseData.assignedPartner === user.company;
+              }
+            case "보험사":
+              if (isPersonal) {
+                return (
+                  caseData.insuranceCompany === user.company &&
+                  (caseData.managerId === user.id || caseData.createdBy === user.id)
+                );
+              } else {
+                return caseData.insuranceCompany === user.company;
+              }
+            case "심사사":
+              if (isPersonal) {
+                return (
+                  caseData.assessorId === user.company &&
+                  caseData.assessorTeam === user.name
+                );
+              } else {
+                return caseData.assessorId === user.company;
+              }
+            case "조사사":
+              if (isPersonal) {
+                return (
+                  caseData.investigatorTeam === user.company &&
+                  caseData.investigatorTeamName === user.name
+                );
+              } else {
+                return caseData.investigatorTeam === user.company;
+              }
+            case "의뢰사":
+              if (isPersonal) {
+                return caseData.clientName === user.name;
+              } else {
+                return caseData.clientResidence === user.company;
+              }
+            default:
+              return false;
+          }
+        };
+
+        if (!checkCaseAccess(user, requestedCase)) {
+          return res.status(403).json({ error: "해당 케이스에 접근할 권한이 없습니다" });
+        }
+      }
 
       let drawing;
 
@@ -5003,11 +5147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clone documents from related case
-  app.post("/api/cases/:caseId/clone-documents", async (req, res) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
-    }
-
+  app.post("/api/cases/:caseId/clone-documents", requireCaseAccess({ paramName: "caseId", bodyName: "sourceCaseId" }), async (req, res) => {
     try {
       const { caseId } = req.params;
       const { sourceCaseId } = req.body;
@@ -5038,11 +5178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===== 증빙자료 Documents API =====
 
   // Upload document(s) to a case
-  app.post("/api/documents", async (req, res) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
-    }
-
+  app.post("/api/documents", csrfProtection, requireCaseAccess({ bodyName: "caseId" }), async (req, res) => {
     try {
       const validatedData = insertCaseDocumentSchema.parse(req.body);
       const document = await storage.saveDocument(validatedData);
@@ -5111,6 +5247,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to check if user has access to a case
+  const checkCaseAccess = (user: User, caseData: Case): boolean => {
+    const isPersonal = user.accountType === "개인";
+    
+    switch (user.role) {
+      case "관리자":
+        return true;
+      case "협력사":
+        if (isPersonal) {
+          return (
+            caseData.assignedPartner === user.company &&
+            (caseData.assignedPartnerManager === user.name ||
+              caseData.createdBy === user.id ||
+              caseData.assignedTo === user.id)
+          );
+        } else {
+          return caseData.assignedPartner === user.company;
+        }
+      case "보험사":
+        if (isPersonal) {
+          return (
+            caseData.insuranceCompany === user.company &&
+            (caseData.managerId === user.id || caseData.createdBy === user.id)
+          );
+        } else {
+          return caseData.insuranceCompany === user.company;
+        }
+      case "심사사":
+        if (isPersonal) {
+          return (
+            caseData.assessorId === user.company &&
+            caseData.assessorTeam === user.name
+          );
+        } else {
+          return caseData.assessorId === user.company;
+        }
+      case "조사사":
+        if (isPersonal) {
+          return (
+            caseData.investigatorTeam === user.company &&
+            caseData.investigatorTeamName === user.name
+          );
+        } else {
+          return caseData.investigatorTeam === user.company;
+        }
+      case "의뢰사":
+        if (isPersonal) {
+          return caseData.clientName === user.name;
+        } else {
+          return caseData.clientResidence === user.company;
+        }
+      default:
+        return false;
+    }
+  };
+
   // Get all documents for a case
   app.get("/api/documents/case/:caseId", async (req, res) => {
     if (!req.session?.userId) {
@@ -5126,7 +5318,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "유효하지 않은 케이스 ID입니다" });
       }
 
+      // Get current user for permission check
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+
+      // Get case data and check access permission
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // Check if user has access to this case
+      if (!checkCaseAccess(user, caseData)) {
+        return res.status(403).json({ error: "해당 케이스에 접근할 권한이 없습니다" });
+      }
+
       const documents = await storage.getDocumentsByCaseId(caseId);
+      
+      // 문서 목록 조회 감사 로그 (각 문서별로 기록)
+      for (const doc of documents) {
+        await logDocumentAccess({
+          documentId: doc.id,
+          caseId: doc.caseId,
+          userId: req.session.userId!,
+          userRole: user.role,
+          action: "view",
+          documentCategory: doc.category,
+          documentFileName: doc.fileName,
+          ipAddress: getClientIp(req),
+          userAgent: getUserAgent(req),
+        });
+      }
+      
       res.json(documents);
     } catch (error) {
       console.error("Get documents error:", error);
@@ -5253,7 +5478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===== Object Storage 기반 문서 업로드 API =====
 
   // Step 1: Presigned URL 발급만 (DB 저장 없음)
-  app.post("/api/documents/presign", async (req, res) => {
+  app.post("/api/documents/presign", uploadRateLimit, async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
@@ -5280,15 +5505,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // 파일명 sanitization 강화
+      const sanitizedFileName = sanitizeFileName(fileName);
+      if (sanitizedFileName !== fileName) {
+        console.warn("[presign] File name sanitized:", { original: fileName, sanitized: sanitizedFileName });
+      }
+
+      // 파일 검증 (보안 강화)
+      const fileValidation = validateFile(sanitizedFileName, fileType, fileSize);
+      if (!fileValidation.valid) {
+        console.error("[presign] File validation failed:", fileValidation.error);
+        return res.status(400).json({ error: fileValidation.error });
+      }
+
       console.log(
-        `[presign] Generating presigned URL for case ${caseId}, file: ${fileName}, size: ${fileSize}`,
+        `[presign] Generating presigned URL for case ${caseId}, file: ${sanitizedFileName}, size: ${fileSize}`,
       );
 
-      // storageKey 생성: documents/{caseId}/{timestamp}_{uuid}_{fileName}
+      // storageKey 생성: documents/{caseId}/{timestamp}_{uuid}_{sanitizedFileName}
       const timestamp = Date.now();
       const uuid = crypto.randomUUID();
-      const safeFileName = fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, "_");
-      const storageKey = `documents/${caseId}/${timestamp}_${uuid}_${safeFileName}`;
+      const storageKey = `documents/${caseId}/${timestamp}_${uuid}_${sanitizedFileName}`;
 
       // PRIVATE_OBJECT_DIR에서 bucket 정보 추출
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
@@ -5760,7 +5997,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[download-url] Generating download URL for document ${id}`);
 
-      // Download URL 생성 (1시간 TTL)
+      // 문서 접근 감사 로그
+      await logDocumentAccess({
+        documentId: document.id,
+        caseId: document.caseId,
+        userId: req.session.userId!,
+        userRole: userRole || "Unknown",
+        action: "download_url",
+        documentCategory: document.category,
+        documentFileName: document.fileName,
+        ipAddress: getClientIp(req),
+        userAgent: getUserAgent(req),
+      });
+
+      // Download URL 생성 (10분 TTL - 보안 강화)
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
       if (!privateObjectDir) {
         return res
@@ -5773,11 +6023,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bucketName = pathParts[0];
       const objectName = pathParts.slice(1).join("/");
 
+      // 보안: TTL을 10분으로 단축하여 URL 노출 위험 최소화
       const downloadURL = await signObjectURL({
         bucketName,
         objectName,
         method: "GET",
-        ttlSec: 3600,
+        ttlSec: 600, // 10분
       });
 
       res.json({
@@ -5812,6 +6063,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
       }
 
+      // 권한 체크 (관리자/심사사 또는 본인만 접근 가능)
+      const userRole = req.session.userRole;
+      const isPrivilegedRole = userRole === "관리자" || userRole === "심사사";
+      if (!isPrivilegedRole && document.createdBy !== req.session.userId) {
+        return res.status(403).json({ error: "권한이 없습니다" });
+      }
+
       // Object Storage 문서인 경우 signed URL로 리다이렉트
       if (document.storageKey && document.status === "ready") {
         const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
@@ -5826,11 +6084,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const bucketName = pathParts[0];
         const objectName = pathParts.slice(1).join("/");
 
+        // 문서 접근 감사 로그
+        await logDocumentAccess({
+          documentId: document.id,
+          caseId: document.caseId,
+          userId: req.session.userId!,
+          userRole: userRole || "Unknown",
+          action: "image",
+          documentCategory: document.category,
+          documentFileName: document.fileName,
+          ipAddress: getClientIp(req),
+          userAgent: getUserAgent(req),
+        });
+
+        // 보안: TTL을 10분으로 단축하여 URL 노출 위험 최소화
         const signedUrl = await signObjectURL({
           bucketName,
           objectName,
           method: "GET",
-          ttlSec: 3600,
+          ttlSec: 600, // 10분
         });
 
         return res.redirect(signedUrl);
@@ -5924,11 +6196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Estimate endpoints
   // Create new estimate version
-  app.post("/api/estimates/:caseId", async (req, res) => {
-    if (!req.session?.userId) {
-      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
-    }
-
+  app.post("/api/estimates/:caseId", requireCaseAccess({ paramName: "caseId" }), async (req, res) => {
     try {
       const { caseId } = req.params;
       const {
@@ -5943,8 +6211,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "견적 행 데이터가 필요합니다" });
       }
 
-      // Verify case exists
-      const existingCase = await storage.getCaseById(caseId);
+      // 미들웨어에서 이미 케이스 접근 권한 체크 완료
+      const existingCase = (req as any).caseData || await storage.getCaseById(caseId);
       if (!existingCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -11685,10 +11953,8 @@ FLOXN
       for (const doc of documents) {
         try {
           const fileBuffer = Buffer.from(doc.fileData, "base64");
-          const sanitizedFileName = doc.fileName.replace(
-            /[^a-zA-Z0-9가-힣._-]/g,
-            "_",
-          );
+          // 파일명 sanitization 강화 (입력 검증 유틸리티 사용)
+          const sanitizedFileName = sanitizeFileName(doc.fileName);
           const docObjectName = `${privatePrefix}/case-documents/${caseId}/${timestamp}_${sanitizedFileName}`;
           const docFile = privateBucket.file(docObjectName);
 

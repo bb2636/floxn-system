@@ -1591,6 +1591,9 @@ export default function Intake({
         if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
           const container = insuredAddressContainerRef.current;
           if (container) {
+            // 보안: Daum Postcode API 사용을 위한 컨테이너 초기화
+            // innerHTML 사용은 외부 라이브러리 요구사항이며, 빈 문자열로만 초기화하므로 XSS 위험 낮음
+            // CSP 헤더로 추가 보호됨
             container.innerHTML = "";
             new (window as any).daum.Postcode({
               oncomplete: function (data: any) {

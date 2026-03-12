@@ -413,7 +413,8 @@ export class ObjectStorageService {
   }
 
   // Object Storage에서 파일 다운로드용 signed URL 생성
-  async getDownloadURL(storageKey: string, ttlSec: number = 3600): Promise<string> {
+  // 보안: 기본 TTL을 10분으로 단축하여 URL 노출 위험 최소화
+  async getDownloadURL(storageKey: string, ttlSec: number = 600): Promise<string> {
     const { bucketName, objectName } = parseObjectPath(storageKey);
     return retryWithBackoff(
       () => signObjectURL({

@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
+import { canAccessObject, ObjectPermission } from "./objectAcl";
 
 /**
  * Register object storage routes for file uploads.
@@ -78,18 +79,23 @@ export function registerObjectStorageRoutes(app: Express): void {
    *
    * GET /objects/:objectPath(*)
    *
-   * This serves files from object storage. For public files, no auth needed.
-   * For protected files, add authentication middleware and ACL checks.
+   * IMPORTANT: All object access requires authentication and ACL checks,
+   * including public paths, to prevent unauthorized access to sensitive documents.
    */
   app.get("/objects/:objectPath(*)", async (req, res) => {
     try {
       const requestPath = req.path;
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
       
+      if (!bucketId) {
+        return res.status(500).json({ error: "Object Storage not configured" });
+      }
+
       // Check if this is a public path (starts with /objects/public/)
       if (requestPath.startsWith("/objects/public/")) {
-        const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
-        if (!bucketId) {
-          return res.status(500).json({ error: "Object Storage not configured" });
+        // Public 경로도 인증 및 ACL 체크 필요 (민감 문서 보호)
+        if (!req.session?.userId) {
+          return res.status(401).json({ error: "인증이 필요합니다" });
         }
 
         // Extract the path after /objects/
@@ -102,12 +108,39 @@ export function registerObjectStorageRoutes(app: Express): void {
           return res.status(404).json({ error: "Object not found" });
         }
 
+        // ACL 정책 확인
+        const canAccess = await canAccessObject({
+          userId: req.session.userId,
+          objectFile: file,
+          requestedPermission: ObjectPermission.READ,
+        });
+
+        if (!canAccess) {
+          return res.status(403).json({ error: "접근 권한이 없습니다" });
+        }
+
         await objectStorageService.downloadObject(file, res);
         return;
       }
 
-      // For private objects, use the original flow
+      // For private objects, authentication and ACL checks are required
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "인증이 필요합니다" });
+      }
+
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      
+      // ACL 정책 확인
+      const canAccess = await canAccessObject({
+        userId: req.session.userId,
+        objectFile: objectFile,
+        requestedPermission: ObjectPermission.READ,
+      });
+
+      if (!canAccess) {
+        return res.status(403).json({ error: "접근 권한이 없습니다" });
+      }
+
       await objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
       console.error("[Object Storage] Error serving object:", error);

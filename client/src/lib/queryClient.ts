@@ -18,6 +18,8 @@ async function throwIfResNotOk(res: Response) {
         const checkRes = await fetch("/api/check-session", { credentials: "include" });
         const checkData = await checkRes.json();
         if (!checkData.authenticated) {
+          // 세션이 무효화되었으면 CSRF 토큰 캐시도 초기화
+          csrfTokenCache = null;
           // 세션이 무효화되었으면 로그아웃 처리
           if (queryClientInstance) {
             queryClientInstance.clear();
@@ -26,6 +28,8 @@ async function throwIfResNotOk(res: Response) {
           return;
         }
       } catch {
+        // check-session 실패 시에도 CSRF 토큰 캐시 초기화
+        csrfTokenCache = null;
         // check-session 실패 시에도 로그아웃 (단, 로그인 페이지가 아닐 때만)
         if (queryClientInstance) {
           queryClientInstance.clear();
@@ -39,14 +43,54 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// CSRF 토큰 캐시 (세션별로 관리)
+// 주의: 세션이 변경되면 토큰도 무효화되므로, 401 에러 시 캐시 초기화 필요
+let csrfTokenCache: string | null = null;
+
+/**
+ * CSRF 토큰 가져오기
+ */
+async function getCsrfToken(): Promise<string | null> {
+  // 캐시가 있으면 사용 (세션 변경 시 401로 인해 재요청됨)
+  if (csrfTokenCache) {
+    return csrfTokenCache;
+  }
+
+  try {
+    const res = await fetch("/api/csrf-token", { credentials: "include" });
+    if (res.ok) {
+      const data = await res.json();
+      csrfTokenCache = data.csrfToken || null;
+      return csrfTokenCache;
+    } else if (res.status === 401) {
+      // 인증 실패 시 캐시 초기화
+      csrfTokenCache = null;
+    }
+  } catch (error) {
+    console.warn("[CSRF] Failed to get CSRF token:", error);
+    csrfTokenCache = null;
+  }
+  return null;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // POST/PUT/PATCH/DELETE 요청에 CSRF 토큰 추가
+  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrfToken = await getCsrfToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

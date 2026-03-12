@@ -80,6 +80,7 @@ import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db, pool } from "./db";
 import { eq, asc, desc, and, or, like, sql } from "drizzle-orm";
+import { encryptSensitiveData, decryptSensitiveData } from "./utils/encryption";
 
 const SALT_ROUNDS = 10;
 
@@ -1427,7 +1428,24 @@ export class MemStorage implements IStorage {
   }
 
   async getCaseById(caseId: string): Promise<Case | null> {
-    return this.cases.get(caseId) || null;
+    const caseData = this.cases.get(caseId);
+    if (!caseData) return null;
+    
+    // 민감 정보 복호화
+    const decryptedCase = { ...caseData };
+    decryptedCase.policyHolderIdNumber = decryptSensitiveData(caseData.policyHolderIdNumber);
+    decryptedCase.policyHolderAddress = decryptSensitiveData(caseData.policyHolderAddress);
+    decryptedCase.insuredIdNumber = decryptSensitiveData(caseData.insuredIdNumber);
+    decryptedCase.insuredContact = decryptSensitiveData(caseData.insuredContact);
+    decryptedCase.insuredAddress = decryptSensitiveData(caseData.insuredAddress);
+    decryptedCase.insuredAddressDetail = decryptSensitiveData(caseData.insuredAddressDetail);
+    decryptedCase.victimContact = decryptSensitiveData(caseData.victimContact);
+    decryptedCase.victimAddress = decryptSensitiveData(caseData.victimAddress);
+    decryptedCase.victimAddressDetail = decryptSensitiveData(caseData.victimAddressDetail);
+    decryptedCase.clientPhone = decryptSensitiveData(caseData.clientPhone);
+    decryptedCase.clientAddress = decryptSensitiveData(caseData.clientAddress);
+    
+    return decryptedCase as Case;
   }
 
   async getAssignedCasesForUser(user: User, search?: string): Promise<Case[]> {
@@ -4039,6 +4057,23 @@ export class DbStorage implements IStorage {
     
     const caseData = result[0];
     
+    // 민감 정보 복호화 (저장된 암호화 데이터 복호화)
+    // 주의: 복호화된 데이터는 메모리에만 존재하며, DB에는 암호화된 상태로 유지됨
+    const decryptedCase = { ...caseData };
+    decryptedCase.policyHolderIdNumber = decryptSensitiveData(caseData.policyHolderIdNumber);
+    decryptedCase.policyHolderAddress = decryptSensitiveData(caseData.policyHolderAddress);
+    decryptedCase.insuredIdNumber = decryptSensitiveData(caseData.insuredIdNumber);
+    decryptedCase.insuredContact = decryptSensitiveData(caseData.insuredContact);
+    decryptedCase.insuredAddress = decryptSensitiveData(caseData.insuredAddress);
+    decryptedCase.insuredAddressDetail = decryptSensitiveData(caseData.insuredAddressDetail);
+    decryptedCase.victimContact = decryptSensitiveData(caseData.victimContact);
+    decryptedCase.victimAddress = decryptSensitiveData(caseData.victimAddress);
+    decryptedCase.victimAddressDetail = decryptSensitiveData(caseData.victimAddressDetail);
+    decryptedCase.clientPhone = decryptSensitiveData(caseData.clientPhone);
+    decryptedCase.clientAddress = decryptSensitiveData(caseData.clientAddress);
+    
+    return decryptedCase as Case;
+    
     // 협력사가 배당되어 있지만 담당자 정보가 없는 경우 자동 채우기
     if (caseData.assignedPartner && (!caseData.assignedPartnerManager || !caseData.assignedPartnerContact)) {
       const partnerUsers = await db
@@ -4256,17 +4291,18 @@ export class DbStorage implements IStorage {
       investigatorTeamName: caseData.investigatorTeamName || null,
       investigatorContact: caseData.investigatorContact || null,
       policyHolderName: caseData.policyHolderName || null,
-      policyHolderIdNumber: caseData.policyHolderIdNumber || null,
-      policyHolderAddress: caseData.policyHolderAddress || null,
+      // 민감 정보 암호화 저장
+      policyHolderIdNumber: encryptSensitiveData(caseData.policyHolderIdNumber),
+      policyHolderAddress: encryptSensitiveData(caseData.policyHolderAddress),
       insuredName: caseData.insuredName || null,
-      insuredIdNumber: caseData.insuredIdNumber || null,
-      insuredContact: caseData.insuredContact || null,
-      insuredAddress: caseData.insuredAddress || null,
-      insuredAddressDetail: caseData.insuredAddressDetail || null,
+      insuredIdNumber: encryptSensitiveData(caseData.insuredIdNumber),
+      insuredContact: encryptSensitiveData(caseData.insuredContact),
+      insuredAddress: encryptSensitiveData(caseData.insuredAddress),
+      insuredAddressDetail: encryptSensitiveData(caseData.insuredAddressDetail),
       victimName: caseData.victimName || null,
-      victimContact: caseData.victimContact || null,
-      victimAddress: caseData.victimAddress || null,
-      victimAddressDetail: caseData.victimAddressDetail || null,
+      victimContact: encryptSensitiveData(caseData.victimContact),
+      victimAddress: encryptSensitiveData(caseData.victimAddress),
+      victimAddressDetail: encryptSensitiveData(caseData.victimAddressDetail),
       sameAsPolicyHolder:
         caseData.sameAsPolicyHolder != null
           ? String(caseData.sameAsPolicyHolder)
@@ -4379,9 +4415,22 @@ export class DbStorage implements IStorage {
           ? userMap.get(caseItem.managerId)
           : null;
 
+        // 민감 정보 복호화
+        const decryptedCase = { ...caseItem };
+        decryptedCase.policyHolderIdNumber = decryptSensitiveData(caseItem.policyHolderIdNumber);
+        decryptedCase.policyHolderAddress = decryptSensitiveData(caseItem.policyHolderAddress);
+        decryptedCase.insuredIdNumber = decryptSensitiveData(caseItem.insuredIdNumber);
+        decryptedCase.insuredContact = decryptSensitiveData(caseItem.insuredContact);
+        decryptedCase.insuredAddress = decryptSensitiveData(caseItem.insuredAddress);
+        decryptedCase.insuredAddressDetail = decryptSensitiveData(caseItem.insuredAddressDetail);
+        decryptedCase.victimContact = decryptSensitiveData(caseItem.victimContact);
+        decryptedCase.victimAddress = decryptSensitiveData(caseItem.victimAddress);
+        decryptedCase.victimAddressDetail = decryptSensitiveData(caseItem.victimAddressDetail);
+        decryptedCase.clientPhone = decryptSensitiveData(caseItem.clientPhone);
+        decryptedCase.clientAddress = decryptSensitiveData(caseItem.clientAddress);
 
         return {
-          ...caseItem,
+          ...decryptedCase,
           latestProgress: latestUpdate
             ? {
                 content: latestUpdate.content,
@@ -4447,6 +4496,28 @@ export class DbStorage implements IStorage {
     }
     if (updateData.otherVendorEstimate) {
       updateData.otherVendorEstimate = updateData.otherVendorEstimate.trim();
+    }
+
+    // 민감 정보 필드 암호화 처리
+    const sensitiveFields = [
+      'policyHolderIdNumber',
+      'policyHolderAddress',
+      'insuredIdNumber',
+      'insuredContact',
+      'insuredAddress',
+      'insuredAddressDetail',
+      'victimContact',
+      'victimAddress',
+      'victimAddressDetail',
+      'clientPhone',
+      'clientAddress',
+    ];
+
+    for (const field of sensitiveFields) {
+      if (updateData[field] !== undefined) {
+        // 값이 있으면 암호화, null이면 null 유지
+        updateData[field] = updateData[field] ? encryptSensitiveData(updateData[field]) : null;
+      }
     }
 
     const result = await db
@@ -5362,6 +5433,101 @@ export class DbStorage implements IStorage {
     return created[0];
   }
 
+  /**
+   * 레거시 fileData를 Object Storage로 마이그레이션
+   * 보안: 민감 문서가 DB에 평문 저장되는 것을 방지하기 위해 Object Storage로 이동
+   */
+  async migrateLegacyFileDataToObjectStorage(documentId: string): Promise<boolean> {
+    try {
+      // 문서 조회 (fileData 포함)
+      const document = await db
+        .select()
+        .from(caseDocuments)
+        .where(eq(caseDocuments.id, documentId))
+        .limit(1);
+
+      if (!document[0]) {
+        return false;
+      }
+
+      const doc = document[0];
+
+      // 이미 storageKey가 있으면 마이그레이션 불필요
+      if (doc.storageKey) {
+        return true;
+      }
+
+      // fileData가 없으면 마이그레이션 불가
+      if (!doc.fileData) {
+        return false;
+      }
+
+      // Base64 디코딩
+      const base64Data = doc.fileData.includes(',') 
+        ? doc.fileData.split(',')[1] 
+        : doc.fileData;
+      const fileBuffer = Buffer.from(base64Data, 'base64');
+
+      // Object Storage에 업로드
+      const { ObjectStorageService, objectStorageClient } = await import("../replit_integrations/object_storage/objectStorage");
+      const objectStorageService = new ObjectStorageService();
+      const privateObjectDir = objectStorageService.getPrivateObjectDir();
+      
+      // 고유한 storageKey 생성 (문서 ID 기반)
+      const storageKey = `${privateObjectDir}/documents/${documentId}`;
+      
+      // parseObjectPath 함수 (objectStorage.ts에서 사용하는 로직)
+      const parseObjectPath = (path: string): { bucketName: string; objectName: string } => {
+        if (!path.startsWith("/")) {
+          path = `/${path}`;
+        }
+        const pathParts = path.split("/");
+        if (pathParts.length < 3) {
+          throw new Error("Invalid path: must contain at least a bucket name");
+        }
+        const bucketName = pathParts[1];
+        const objectName = pathParts.slice(2).join("/");
+        return { bucketName, objectName };
+      };
+      
+      const { bucketName, objectName } = parseObjectPath(storageKey);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+
+      // 파일 업로드
+      await file.save(fileBuffer, {
+        metadata: {
+          contentType: doc.fileType || 'application/octet-stream',
+          cacheControl: 'private, max-age=3600',
+        },
+      });
+
+      // ACL 정책 설정 (private, 소유자만 접근)
+      const { setObjectAclPolicy } = await import("../replit_integrations/object_storage/objectAcl");
+      await setObjectAclPolicy(file, {
+        owner: doc.createdBy,
+        visibility: "private",
+        aclRules: [],
+      });
+
+      // DB 업데이트: storageKey 저장, fileData NULL로 설정
+      await db
+        .update(caseDocuments)
+        .set({
+          storageKey: storageKey,
+          fileData: null, // 보안: 민감 데이터 제거
+          status: "ready",
+        })
+        .where(eq(caseDocuments.id, documentId));
+
+      console.log(`[Migration] Migrated document ${documentId} to Object Storage`);
+      return true;
+    } catch (error) {
+      console.error(`[Migration] Failed to migrate document ${documentId}:`, error);
+      return false;
+    }
+  }
+
   async getDocument(id: string): Promise<CaseDocument | null> {
     const result = await db
       .select()
@@ -5373,11 +5539,45 @@ export class DbStorage implements IStorage {
 
   async getDocumentFileData(id: string): Promise<string | null> {
     const result = await db
-      .select({ fileData: caseDocuments.fileData })
+      .select({ 
+        fileData: caseDocuments.fileData,
+        storageKey: caseDocuments.storageKey,
+      })
       .from(caseDocuments)
       .where(eq(caseDocuments.id, id))
       .limit(1);
-    return result[0]?.fileData || null;
+    
+    const doc = result[0];
+    if (!doc) {
+      return null;
+    }
+
+    // 레거시 fileData가 있고 storageKey가 없으면 자동 마이그레이션 시도
+    if (doc.fileData && !doc.storageKey) {
+      // 비동기로 마이그레이션 (응답은 기다리지 않음)
+      this.migrateLegacyFileDataToObjectStorage(id).catch((error) => {
+        console.error(`[Migration] Background migration failed for document ${id}:`, error);
+      });
+      
+      // 마이그레이션 중이어도 기존 fileData 반환 (호환성 유지)
+      return doc.fileData;
+    }
+
+    // storageKey가 있으면 Object Storage에서 가져오기
+    if (doc.storageKey) {
+      try {
+        const { ObjectStorageService } = await import("../replit_integrations/object_storage/objectStorage");
+        const objectStorageService = new ObjectStorageService();
+        const buffer = await objectStorageService.downloadToBuffer(doc.storageKey);
+        // Base64로 인코딩하여 반환 (레거시 호환성)
+        return buffer.toString('base64');
+      } catch (error) {
+        console.error(`[Storage] Failed to load from Object Storage for document ${id}:`, error);
+        return null;
+      }
+    }
+
+    return null;
   }
 
   async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {

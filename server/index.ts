@@ -9,6 +9,9 @@ import { pool } from "./db";
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import ws from "ws";
 import { activeUserSessions } from "./session-store";
+import { requireHTTPS } from "./middleware/httpsRedirect";
+import { securityHeaders } from "./middleware/securityHeaders";
+import { sessionSecurity } from "./middleware/sessionSecurity";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -43,7 +46,15 @@ console.log("[SESSION CONFIG]", {
 if (isProduction) {
   app.set('trust proxy', 1);
   console.log("[SESSION] Trust proxy enabled for production");
+  
+  // HTTPS 강제 리다이렉트 (프로덕션 환경)
+  app.use(requireHTTPS);
+  console.log("[HTTPS] HTTPS redirect middleware enabled for production");
 }
+
+// 보안 헤더 적용 (모든 환경)
+app.use(securityHeaders);
+console.log("[Security] Security headers middleware enabled");
 
 const sessionDbUrl = isProduction
   ? process.env.PROD_DATABASE_URL
@@ -157,17 +168,23 @@ app.use(session({
   cookie: {
     secure: isProduction,
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000, // 24시간 (활동 시 자동 연장)
     sameSite: isProduction ? 'none' : 'lax',
   },
 }));
+
+// 세션 보안 강화 미들웨어 (세션 설정 후 적용)
+app.use(sessionSecurity);
+console.log("[Security] Session security middleware enabled");
 
 app.get("/_health", (_req, res) => {
   res.status(200).send("OK");
 });
 
+// 보안: Request body 크기 제한 (DoS 공격 방지)
+// 500MB는 너무 큼, 50MB로 제한 (파일 업로드는 presigned URL 사용)
 app.use(express.json({
-  limit: '500mb',
+  limit: '50mb', // 500mb → 50mb로 축소
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
@@ -209,10 +226,21 @@ app.use((req, res, next) => {
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
+    
+    // 프로덕션 환경에서는 상세 에러 정보 노출하지 않음
+    const message = isProduction && status === 500
+      ? "Internal Server Error"
+      : (err.message || "Internal Server Error");
 
     res.status(status).json({ message });
-    console.error("[ERROR]", err);
+    
+    // 서버 로그에는 전체 에러 정보 기록
+    console.error("[ERROR]", {
+      status,
+      message: err.message,
+      stack: isProduction ? undefined : err.stack, // 프로덕션에서는 스택 트레이스 제외
+    });
   });
 
   if (isProduction) {
