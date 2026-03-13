@@ -9,8 +9,12 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
 
   // 주소 검색이 필요한 페이지 경로 (CSP 완화 적용)
-  const addressSearchPaths = ['/intake', '/admin-settings'];
-  const isAddressSearchPage = addressSearchPaths.some(path => req.path.startsWith(path));
+  // SPA 라우팅을 고려하여 루트 경로도 포함
+  const addressSearchPaths = ['/intake', '/admin-settings', '/'];
+  const isAddressSearchPage = addressSearchPaths.some(path => {
+    // 정확히 일치하거나 하위 경로인지 확인
+    return req.path === path || req.path.startsWith(path + '/');
+  });
 
   // Content Security Policy (CSP)
   // XSS 공격 방지를 위한 정책 설정
@@ -22,6 +26,10 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   // - https://suggest-bar.daum.net: 주소 제안 서비스
   // - https://stlog1-local.kakao.com: 카카오 로깅 서비스
   const daumDomains = "https://t1.daumcdn.net https://postcode.map.daum.net https://postcode.map.kakao.com https://ssl.daumcdn.net https://suggest-bar.daum.net https://stlog1-local.kakao.com";
+  
+  // 외부 리소스 도메인
+  // - https://cdn.jsdelivr.net: Pretendard 폰트 스타일시트
+  const externalDomains = "https://cdn.jsdelivr.net";
   
   // 주소 검색 페이지는 CSP를 완화 (Daum API 호환성)
   if (isAddressSearchPage) {
@@ -50,7 +58,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
       [
         "default-src 'self'",
         `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${daumDomains}`, // Daum Postcode API 허용
-        "style-src 'self' 'unsafe-inline'",
+        `style-src 'self' 'unsafe-inline' ${externalDomains}`, // Pretendard 폰트 스타일시트 허용
         "img-src 'self' data: https: blob:",
         "font-src 'self' data:",
         `connect-src 'self' ${daumDomains}`, // Daum Postcode API 허용
@@ -70,7 +78,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
       [
         "default-src 'self'",
         `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${daumDomains}`,
-        "style-src 'self' 'unsafe-inline'",
+        `style-src 'self' 'unsafe-inline' ${externalDomains}`, // Pretendard 폰트 스타일시트 허용
         "img-src 'self' data: https: blob:",
         "font-src 'self' data:",
         `connect-src 'self' ws: wss: ${daumDomains}`,
