@@ -29,7 +29,8 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   
   // 외부 리소스 도메인
   // - https://cdn.jsdelivr.net: Pretendard 폰트 스타일시트
-  const externalDomains = "https://cdn.jsdelivr.net";
+  // - https://fonts.googleapis.com: Google Fonts (Noto Sans KR)
+  const externalDomains = "https://cdn.jsdelivr.net https://fonts.googleapis.com";
   
   // 주소 검색 페이지는 CSP를 완화 (Daum API 호환성)
   if (isAddressSearchPage) {
@@ -52,17 +53,17 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
       ].join('; ')
     );
   } else if (isProduction) {
-    // 프로덕션 환경: 엄격한 CSP
+    // 프로덕션 환경: 엄격한 CSP (SPA 라우팅 고려하여 모든 페이지에서 필요한 도메인 허용)
     res.setHeader(
       'Content-Security-Policy',
       [
         "default-src 'self'",
         `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${daumDomains}`, // Daum Postcode API 허용
-        `style-src 'self' 'unsafe-inline' ${externalDomains}`, // Pretendard 폰트 스타일시트 허용
+        `style-src 'self' 'unsafe-inline' ${externalDomains}`, // 외부 폰트 스타일시트 허용
         "img-src 'self' data: https: blob:",
-        "font-src 'self' data:",
+        `font-src 'self' data: ${externalDomains}`, // 외부 폰트 파일 허용
         `connect-src 'self' ${daumDomains}`, // Daum Postcode API 허용
-        `frame-src 'self' ${daumDomains}`, // Daum Postcode iframe 허용
+        `frame-src 'self' ${daumDomains}`, // Daum Postcode iframe 허용 (카카오 도메인 포함)
         `child-src 'self' ${daumDomains}`, // Daum Postcode iframe 허용 (frame-src 대체)
         "object-src 'none'",
         "base-uri 'self'",
@@ -78,12 +79,12 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
       [
         "default-src 'self'",
         `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${daumDomains}`,
-        `style-src 'self' 'unsafe-inline' ${externalDomains}`, // Pretendard 폰트 스타일시트 허용
+        `style-src 'self' 'unsafe-inline' ${externalDomains}`, // 외부 폰트 스타일시트 허용
         "img-src 'self' data: https: blob:",
-        "font-src 'self' data:",
+        `font-src 'self' data: ${externalDomains}`, // 외부 폰트 파일 허용
         `connect-src 'self' ws: wss: ${daumDomains}`,
-        `frame-src 'self' ${daumDomains}`,
-        `child-src 'self' ${daumDomains}`,
+        `frame-src 'self' ${daumDomains}`, // Daum Postcode iframe 허용 (카카오 도메인 포함)
+        `child-src 'self' ${daumDomains}`, // Daum Postcode iframe 허용
       ].join('; ')
     );
   }
