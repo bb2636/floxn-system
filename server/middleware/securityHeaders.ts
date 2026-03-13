@@ -14,13 +14,14 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
 
   // Content Security Policy (CSP)
   // XSS 공격 방지를 위한 정책 설정
-  // Daum Postcode API 도메인:
+  // Daum Postcode API 도메인 (카카오로 통합됨):
   // - https://t1.daumcdn.net: 스크립트 로드
-  // - https://postcode.map.daum.net: 주소 검색 iframe
+  // - https://postcode.map.daum.net: 주소 검색 iframe (레거시)
+  // - https://postcode.map.kakao.com: 주소 검색 iframe (신규, 카카오 도메인)
   // - https://ssl.daumcdn.net: 추가 리소스
   // - https://suggest-bar.daum.net: 주소 제안 서비스
   // - https://stlog1-local.kakao.com: 카카오 로깅 서비스
-  const daumDomains = "https://t1.daumcdn.net https://postcode.map.daum.net https://ssl.daumcdn.net https://suggest-bar.daum.net https://stlog1-local.kakao.com";
+  const daumDomains = "https://t1.daumcdn.net https://postcode.map.daum.net https://postcode.map.kakao.com https://ssl.daumcdn.net https://suggest-bar.daum.net https://stlog1-local.kakao.com";
   
   // 주소 검색 페이지는 CSP를 완화 (Daum API 호환성)
   if (isAddressSearchPage) {
