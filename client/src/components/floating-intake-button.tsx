@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Plus, MessageSquare, X, Mail, Loader2, Search } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -684,6 +684,9 @@ export function FloatingIntakeButton() {
             height: '100vh',
           }}
         >
+          <SheetHeader className="sr-only">
+            <SheetTitle>접수하기</SheetTitle>
+          </SheetHeader>
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
             <Intake 
               isModal={true} 

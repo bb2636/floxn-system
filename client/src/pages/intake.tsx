@@ -1677,6 +1677,7 @@ export default function Intake({
                     className={disabledInputClasses}
                     value={displayCaseNumber}
                     readOnly
+                    onChange={() => {}} // React 경고 방지 (readOnly 필드)
                     placeholder="접수번호"
                     type="text"
                     data-testid="input-case-number"
@@ -2191,6 +2192,7 @@ export default function Intake({
                       value={formData.insuredAddress}
                       onClick={() => !readOnly && openInsuredAddressDropdown()}
                       readOnly
+                      onChange={() => {}} // React 경고 방지 (readOnly 필드)
                       disabled={readOnly}
                       placeholder="클릭하여 주소 검색"
                       type="text"
@@ -2535,6 +2537,7 @@ export default function Intake({
                     value={formData.assignedPartner}
                     onClick={() => !readOnly && setIsPartnerSearchOpen(true)}
                     readOnly
+                    onChange={() => {}} // React 경고 방지 (readOnly 필드)
                     disabled={readOnly}
                     placeholder="클릭하여 협력사 선택"
                     type="text"
