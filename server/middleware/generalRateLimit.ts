@@ -20,9 +20,9 @@ export const strictApiRateLimit = rateLimit({
   message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
 });
 
-// 파일 업로드 제한 (1분당 10회)
+// 파일 업로드 제한 (1분당 100회) - 여러 파일 동시 업로드 지원
 export const uploadRateLimit = rateLimit({
-  maxAttempts: 10,
+  maxAttempts: 100,
   windowMs: 60 * 1000, // 1분
   message: "파일 업로드 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
 });
