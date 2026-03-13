@@ -4852,112 +4852,171 @@ export default function FieldReport() {
                               </tr>
                             </thead>
                             <tbody>
-                              {estimate.rows.map((row, index) => (
-                                <tr
-                                  key={row.id}
-                                  style={{
-                                    borderBottom:
-                                      index === estimate.rows.length - 1
-                                        ? "none"
-                                        : "1px solid rgba(12, 12, 12, 0.06)",
-                                  }}
-                                >
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {row.category || "-"}
-                                  </td>
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {row.location || "-"}
-                                  </td>
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {row.workName || "-"}
-                                  </td>
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                      borderLeft:
-                                        "1px solid rgba(12, 12, 12, 0.06)",
-                                    }}
-                                  >
-                                    {row.damageWidth || "0"}
-                                  </td>
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {row.damageHeight || "0"}
-                                  </td>
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {row.damageArea
-                                      ? parseFloat(
-                                          String(row.damageArea),
-                                        ).toFixed(2)
-                                      : "0"}
-                                  </td>
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                      borderLeft:
-                                        "1px solid rgba(12, 12, 12, 0.06)",
-                                    }}
-                                  >
-                                    {row.repairWidth || "0"}
-                                  </td>
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {row.repairHeight || "0"}
-                                  </td>
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                    }}
-                                  >
-                                    {row.repairArea
-                                      ? parseFloat(
-                                          String(row.repairArea),
-                                        ).toFixed(2)
-                                      : "0"}
-                                  </td>
-                                  <td
-                                    style={{
-                                      padding: "10px 8px",
-                                      textAlign: "center",
-                                      borderLeft:
-                                        "1px solid rgba(12, 12, 12, 0.06)",
-                                    }}
-                                  >
-                                    {row.note || "-"}
-                                  </td>
-                                </tr>
-                              ))}
+                              {(() => {
+                                // 공종+공사명으로 그룹화
+                                const groupedRows = new Map<string, typeof estimate.rows>();
+                                estimate.rows.forEach((row) => {
+                                  const key = `${row.workType || ''}|${row.workName || ''}`;
+                                  if (!groupedRows.has(key)) {
+                                    groupedRows.set(key, []);
+                                  }
+                                  groupedRows.get(key)!.push(row);
+                                });
+
+                                // 그룹화된 행들을 순회하며 렌더링
+                                let globalRowIndex = 0;
+                                const totalRows = estimate.rows.length;
+                                
+                                return Array.from(groupedRows.entries()).map(([groupKey, groupRows]) => {
+                                  const [workType, workName] = groupKey.split('|');
+                                  const groupRowCount = groupRows.length;
+                                  
+                                  return groupRows.map((row, groupIndex) => {
+                                    const isFirstInGroup = groupIndex === 0;
+                                    const isLastRow = globalRowIndex === totalRows - 1;
+                                    const rowIndex = globalRowIndex++;
+                                    
+                                    return (
+                                      <tr
+                                        key={row.id}
+                                        style={{
+                                          borderBottom:
+                                            isLastRow
+                                              ? "none"
+                                              : "1px solid rgba(12, 12, 12, 0.06)",
+                                        }}
+                                      >
+                                        {isFirstInGroup ? (
+                                          <td
+                                            rowSpan={groupRowCount}
+                                            style={{
+                                              padding: "10px 8px",
+                                              textAlign: "center",
+                                              verticalAlign: "middle",
+                                            }}
+                                          >
+                                            {row.category || "-"}
+                                          </td>
+                                        ) : null}
+                                        <td
+                                          style={{
+                                            padding: "10px 8px",
+                                            textAlign: "center",
+                                          }}
+                                        >
+                                          {row.location || "-"}
+                                        </td>
+                                        {isFirstInGroup ? (
+                                          <td
+                                            rowSpan={groupRowCount}
+                                            style={{
+                                              padding: "10px 8px",
+                                              textAlign: "center",
+                                              verticalAlign: "middle",
+                                            }}
+                                          >
+                                            {row.workName || "-"}
+                                          </td>
+                                        ) : null}
+                                        <td
+                                          style={{
+                                            padding: "10px 8px",
+                                            textAlign: "center",
+                                            borderLeft:
+                                              "1px solid rgba(12, 12, 12, 0.06)",
+                                          }}
+                                        >
+                                          {row.damageWidth || "0"}
+                                        </td>
+                                        <td
+                                          style={{
+                                            padding: "10px 8px",
+                                            textAlign: "center",
+                                          }}
+                                        >
+                                          {row.damageHeight || "0"}
+                                        </td>
+                                        <td
+                                          style={{
+                                            padding: "10px 8px",
+                                            textAlign: "center",
+                                          }}
+                                        >
+                                          {row.damageArea
+                                            ? parseFloat(
+                                                String(row.damageArea),
+                                              ).toFixed(2)
+                                            : "0"}
+                                        </td>
+                                        <td
+                                          style={{
+                                            padding: "10px 8px",
+                                            textAlign: "center",
+                                            borderLeft:
+                                              "1px solid rgba(12, 12, 12, 0.06)",
+                                          }}
+                                        >
+                                          {row.repairWidth || "0"}
+                                        </td>
+                                        <td
+                                          style={{
+                                            padding: "10px 8px",
+                                            textAlign: "center",
+                                          }}
+                                        >
+                                          {row.repairHeight || "0"}
+                                        </td>
+                                        {isFirstInGroup ? (
+                                          <td
+                                            rowSpan={groupRowCount}
+                                            style={{
+                                              padding: "10px 8px",
+                                              textAlign: "center",
+                                              verticalAlign: "middle",
+                                            }}
+                                          >
+                                            {(() => {
+                                              // 노무비에서 해당 공사명의 damageArea 값 찾기 (×1.3 적용된 값)
+                                              // 같은 공사명의 노무비 행 중 첫 번째 행의 damageArea 사용
+                                              const matchingLaborRow = parsedLaborCosts.find(
+                                                (laborRow) =>
+                                                  laborRow.workName === workName &&
+                                                  laborRow.category === workType &&
+                                                  laborRow.damageArea &&
+                                                  laborRow.damageArea > 0
+                                              );
+                                              
+                                              // 노무비에 damageArea가 있으면 사용, 없으면 그룹 내 모든 행의 repairArea 합산
+                                              if (matchingLaborRow?.damageArea) {
+                                                return parseFloat(String(matchingLaborRow.damageArea)).toFixed(2);
+                                              }
+                                              
+                                              // 그룹 내 모든 행의 repairArea 합산
+                                              const totalRepairArea = groupRows.reduce((sum, r) => {
+                                                return sum + (parseFloat(String(r.repairArea || 0)) || 0);
+                                              }, 0);
+                                              
+                                              return totalRepairArea > 0
+                                                ? parseFloat(String(totalRepairArea)).toFixed(2)
+                                                : "0";
+                                            })()}
+                                          </td>
+                                        ) : null}
+                                        <td
+                                          style={{
+                                            padding: "10px 8px",
+                                            textAlign: "center",
+                                            borderLeft:
+                                              "1px solid rgba(12, 12, 12, 0.06)",
+                                          }}
+                                        >
+                                          {row.note || "-"}
+                                        </td>
+                                      </tr>
+                                    );
+                                  });
+                                }).flat();
+                              })()}
                             </tbody>
                           </table>
                         </div>

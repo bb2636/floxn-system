@@ -990,7 +990,15 @@ export default function FieldEstimate() {
       }
       
       const workNameData = workNameMap.get(workName)!;
-      workNameData.totalArea += parseFloat(row.repairArea) || 0;
+      
+      // 천장인 경우 ×1.3 적용 (걸레받이/몰딩은 제외)
+      const lengthBasedWorkNames = ["걸레받이", "몰딩"];
+      const isLengthBased = lengthBasedWorkNames.includes(workName);
+      const isCeiling = !isLengthBased && (row.location?.includes("천장") || row.location === "천장");
+      const baseArea = parseFloat(row.repairArea) || 0;
+      const adjustedArea = isCeiling ? baseArea * 1.3 : baseArea;
+      
+      workNameData.totalArea += adjustedArea;
       workNameData.areaRows.push(row);
     });
     
@@ -1005,7 +1013,13 @@ export default function FieldEstimate() {
       sortedWorkNames.forEach(workName => {
         const workNameData = workNameMap.get(workName)!;
         const sourceAreaRowId = workNameData.areaRows[0]?.id || '';
-        const totalArea = Math.round(workNameData.totalArea * 10) / 10;
+        // 천장 ×1.3이 이미 적용된 합산 면적 사용
+        // 소수점 첫째 자리로 반올림 (길이 기반 공사는 제외)
+        const lengthBasedWorkNames = ["걸레받이", "몰딩"];
+        const isLengthBased = lengthBasedWorkNames.includes(workName);
+        const totalArea = isLengthBased
+          ? Math.round(workNameData.totalArea * 100) / 100  // 소수점 둘째 자리
+          : Math.round(workNameData.totalArea * 10) / 10;   // 소수점 첫째 자리
         
         // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회 (오버라이드 적용된 값 사용)
         const matchingCatalogItems = mergedIlwidaegaCatalog.filter(
