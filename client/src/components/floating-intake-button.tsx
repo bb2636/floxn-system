@@ -4,7 +4,7 @@ import { Plus, MessageSquare, X, Mail, Loader2, Search } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -283,6 +283,9 @@ export function FloatingIntakeButton() {
               }}>
                 문자 보내기
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                문자 발송을 위한 제목, 내용, 수신자, 발신자 정보를 입력하세요.
+              </DialogDescription>
             </DialogHeader>
 
             <div style={{ display: 'flex', gap: '20px' }}>

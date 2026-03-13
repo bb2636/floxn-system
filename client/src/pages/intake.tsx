@@ -1765,6 +1765,8 @@ export default function Intake({
                   <input
                     className={disabledInputClasses}
                     value={formData.managerContact}
+                    readOnly
+                    onChange={() => {}} // React 경고 방지 (readOnly 필드)
                     placeholder="연락처"
                     type="text"
                     data-testid="input-manager-contact"
@@ -2588,6 +2590,7 @@ export default function Intake({
                     className={disabledInputClasses}
                     value={formData.assignedPartnerContact}
                     readOnly
+                    onChange={() => {}} // React 경고 방지 (readOnly 필드)
                     placeholder="담당자 연락처"
                     type="text"
                     data-testid="input-partner-contact"
