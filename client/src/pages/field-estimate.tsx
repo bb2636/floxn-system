@@ -961,7 +961,52 @@ export default function FieldEstimate() {
   // 복구면적 산출표에서 노무비로 동기화 (일위대가DB 기반 자동 생성)
   // 일위대가DB에서 공종+공사명으로 조회하여 ALL matching 노임항목 행을 자동 생성
   const syncLaborFromRecoveryArea = () => {
-    if (isReadOnly || rows.length === 0) return;
+    if (isReadOnly) {
+      toast({
+        title: "읽기 전용 모드",
+        description: "읽기 전용 모드에서는 수정할 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // rows 상태가 비어있으면 latestEstimate.rows에서 직접 로드 시도
+    let sourceRows = rows;
+    if (sourceRows.length === 0 && latestEstimate?.rows && latestEstimate.rows.length > 0) {
+      // latestEstimate.rows를 AreaCalculationRow 형식으로 변환
+      const toDecimalFormat = (val: any): string => {
+        const num = parseFloat(val);
+        if (isNaN(num)) return "0.0";
+        return num.toFixed(1);
+      };
+      
+      sourceRows = latestEstimate.rows.map((row: any) => ({
+        id: `row-${row.id}`,
+        category: row.category || "",
+        location: row.location || "",
+        workType: row.workType || "",
+        workName: row.workName || "",
+        damageWidth: toDecimalFormat(row.damageWidth),
+        damageHeight: toDecimalFormat(row.damageHeight),
+        damageArea: row.damageArea ? parseFloat(row.damageArea).toFixed(2) : "0",
+        repairWidth: toDecimalFormat(row.repairWidth),
+        repairHeight: toDecimalFormat(row.repairHeight),
+        repairArea: row.repairArea ? parseFloat(row.repairArea).toFixed(2) : "0",
+        note: row.note || "",
+      }));
+      
+      // rows 상태도 업데이트 (다음번에는 바로 사용 가능하도록)
+      setRows(sourceRows);
+    }
+    
+    if (sourceRows.length === 0) {
+      toast({
+        title: "복구면적 산출표가 비어있습니다",
+        description: "복구면적 산출표에 데이터를 입력한 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // 기존 독립 추가 행 (isLinkedFromRecovery = false) 보존
     const independentRows = laborCostRows.filter(row => !row.isLinkedFromRecovery);
@@ -969,7 +1014,7 @@ export default function FieldEstimate() {
     // 복구면적 산출표에서 고유한 공종+공사명 조합 추출 및 면적 합산
     const workTypeMap = new Map<string, Map<string, { totalArea: number; areaRows: AreaCalculationRow[] }>>();
     
-    rows.forEach(row => {
+    sourceRows.forEach(row => {
       const workType = row.workType || '';
       const workName = row.workName || '';
       if (!workType) return; // 공종이 없으면 건너뜀

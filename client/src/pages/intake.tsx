@@ -132,6 +132,9 @@ export default function Intake({
     useState(false);
   const insuredAddressContainerRef = useRef<HTMLDivElement>(null);
   const insuredAddressWrapperRef = useRef<HTMLDivElement>(null);
+  const [victimAddressDropdownOpen, setVictimAddressDropdownOpen] = useState(false);
+  const victimAddressContainerRef = useRef<HTMLDivElement>(null);
+  const victimAddressWrapperRef = useRef<HTMLDivElement>(null);
 
   // ESC 키로 모달 및 드롭다운 닫기
   useEffect(() => {
@@ -142,6 +145,9 @@ export default function Intake({
         }
         if (insuredAddressDropdownOpen) {
           setInsuredAddressDropdownOpen(false);
+        }
+        if (victimAddressDropdownOpen) {
+          setVictimAddressDropdownOpen(false);
         }
         if (isPartnerSearchOpen) {
           setIsPartnerSearchOpen(false);
@@ -166,6 +172,7 @@ export default function Intake({
   }, [
     addressDropdownOpen,
     insuredAddressDropdownOpen,
+    victimAddressDropdownOpen,
     isPartnerSearchOpen,
     isClientSearchOpen,
     isAssessorSearchOpen,
@@ -183,11 +190,18 @@ export default function Intake({
       ) {
         setInsuredAddressDropdownOpen(false);
       }
+      if (
+        victimAddressDropdownOpen &&
+        victimAddressWrapperRef.current &&
+        !victimAddressWrapperRef.current.contains(e.target as Node)
+      ) {
+        setVictimAddressDropdownOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [insuredAddressDropdownOpen]);
+  }, [insuredAddressDropdownOpen, victimAddressDropdownOpen]);
 
   const { data: partnerStats } = useQuery<
     Array<{
@@ -340,6 +354,7 @@ export default function Intake({
     clientDepartment: "",
     clientName: "",
     clientContact: "",
+    clientAddress: "",
     assessorId: "",
     assessorDepartment: "",
     assessorTeam: "",
@@ -641,6 +656,7 @@ export default function Intake({
           clientDepartment: caseData.clientDepartment || "",
           clientName: caseData.clientName || "",
           clientContact: caseData.clientContact || "",
+          clientAddress: caseData.clientAddress || "",
           assessorId: caseData.assessorId || "",
           assessorDepartment: caseData.assessorDepartment || "",
           assessorTeam: caseData.assessorTeam || "",
@@ -1142,6 +1158,8 @@ export default function Intake({
                 firstCase.insuredAddressDetail ||
                 submittedData.insuredAddressDetail ||
                 "",
+              victimAddress:
+                firstCase.victimAddress || submittedData.victimAddress || "",
               victimAddressDetail:
                 submittedData.victimAddressDetail || "",
               requestScope: requestScope,
@@ -1621,6 +1639,74 @@ export default function Intake({
     }
   };
 
+  // 피해자 주소 드롭다운이 열리면 Daum Postcode 초기화
+  useEffect(() => {
+    if (victimAddressDropdownOpen) {
+      setTimeout(() => {
+        if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+          const container = victimAddressContainerRef.current;
+          if (container) {
+            container.innerHTML = "";
+            new (window as any).daum.Postcode({
+              oncomplete: function (data: any) {
+                handleInputChange("victimAddress", data.address);
+                setVictimAddressDropdownOpen(false);
+              },
+              width: "100%",
+              height: "100%",
+            }).embed(container);
+          }
+        }
+      }, 100);
+    }
+  }, [victimAddressDropdownOpen]);
+
+  const openVictimAddressDropdown = () => {
+    if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+      setVictimAddressDropdownOpen(true);
+    } else {
+      toast({
+        description:
+          "주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 피해자 주소 드롭다운이 열리면 Daum Postcode 초기화
+  useEffect(() => {
+    if (victimAddressDropdownOpen) {
+      setTimeout(() => {
+        if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+          const container = victimAddressContainerRef.current;
+          if (container) {
+            container.innerHTML = "";
+            new (window as any).daum.Postcode({
+              oncomplete: function (data: any) {
+                handleInputChange("victimAddress", data.address);
+                setVictimAddressDropdownOpen(false);
+              },
+              width: "100%",
+              height: "100%",
+            }).embed(container);
+          }
+        }
+      }, 100);
+    }
+  }, [victimAddressDropdownOpen]);
+
+  const openVictimAddressDropdown = () => {
+    if (typeof window !== "undefined" && (window as any).daum?.Postcode) {
+      setVictimAddressDropdownOpen(true);
+    } else {
+      toast({
+        description:
+          "주소 검색 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (userLoading || !user) return null;
 
   return (
@@ -1891,6 +1977,23 @@ export default function Intake({
                     placeholder="보험사 사고번호"
                     type="text"
                     data-testid="input-accident-no"
+                  />
+                </div>
+              </div>
+
+              <div className="col-span-12 md:col-span-6">
+                <div className={fieldRowClasses}>
+                  <label className={labelClasses}>원인세대 주소</label>
+                  <input
+                    className={`${inputClasses} bg-white`}
+                    value={formData.clientAddress}
+                    onChange={(e) =>
+                      handleInputChange("clientAddress", e.target.value)
+                    }
+                    disabled={readOnly}
+                    placeholder="원인세대 주소"
+                    type="text"
+                    data-testid="input-client-address"
                   />
                 </div>
               </div>
@@ -2272,7 +2375,41 @@ export default function Intake({
                 </div>
               </div>
 
-              <div className="col-span-12 md:col-span-4">
+              <div className="col-span-12 md:col-span-6">
+                <div className={fieldRowClasses}>
+                  <label className={labelClasses}>피해세대 주소</label>
+                  <div
+                    className="relative flex-1"
+                    ref={victimAddressWrapperRef}
+                  >
+                    <input
+                      className={`${inputClasses} ${!readOnly ? "cursor-pointer" : ""} 
+                      bg-white
+                      !border
+                      !border-slate-300
+                      `}
+                      value={formData.victimAddress}
+                      onClick={() => !readOnly && openVictimAddressDropdown()}
+                      readOnly
+                      onChange={() => {}} // React 경고 방지 (readOnly 필드)
+                      disabled={readOnly}
+                      placeholder="클릭하여 주소 검색"
+                      type="text"
+                      data-testid="input-victim-address"
+                    />
+                    {victimAddressDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+                        <div
+                          ref={victimAddressContainerRef}
+                          style={{ height: "400px", width: "100%" }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-span-12 md:col-span-6">
                 <div className={fieldRowClasses}>
                   <label className={labelClasses}>상세주소</label>
                   <input

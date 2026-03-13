@@ -1444,6 +1444,9 @@ export class MemStorage implements IStorage {
     decryptedCase.victimAddressDetail = decryptSensitiveData(caseData.victimAddressDetail);
     decryptedCase.clientPhone = decryptSensitiveData(caseData.clientPhone);
     decryptedCase.clientAddress = decryptSensitiveData(caseData.clientAddress);
+    // 심사자/조사자 연락처도 복호화 (SMS 발송 시 평문으로 표시하기 위해)
+    decryptedCase.assessorContact = decryptSensitiveData(caseData.assessorContact) || caseData.assessorContact;
+    decryptedCase.investigatorContact = decryptSensitiveData(caseData.investigatorContact) || caseData.investigatorContact;
     
     return decryptedCase as Case;
   }
@@ -4071,6 +4074,9 @@ export class DbStorage implements IStorage {
     decryptedCase.victimAddressDetail = decryptSensitiveData(caseData.victimAddressDetail);
     decryptedCase.clientPhone = decryptSensitiveData(caseData.clientPhone);
     decryptedCase.clientAddress = decryptSensitiveData(caseData.clientAddress);
+    // 심사자/조사자 연락처도 복호화 (SMS 발송 시 평문으로 표시하기 위해)
+    decryptedCase.assessorContact = decryptSensitiveData(caseData.assessorContact) || caseData.assessorContact;
+    decryptedCase.investigatorContact = decryptSensitiveData(caseData.investigatorContact) || caseData.investigatorContact;
     
     return decryptedCase as Case;
     

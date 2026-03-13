@@ -2318,9 +2318,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get cases filtered by user role and permissions
       const cases = await storage.getAllCases(currentUser);
       
-      // 관리자가 아닌 경우 민감 정보 마스킹 처리
+      // 관리자, 협력사, 심사사, 조사사가 아닌 경우 민감 정보 마스킹 처리
       const isAdmin = currentUser.role === "관리자";
-      if (!isAdmin) {
+      const isPartner = currentUser.role === "협력사";
+      const isAssessor = currentUser.role === "심사사";
+      const isInvestigator = currentUser.role === "조사사";
+      if (!isAdmin && !isPartner && !isAssessor && !isInvestigator) {
         const maskedCases = cases.map((caseItem) => {
           const masked = { ...caseItem };
           masked.policyHolderIdNumber = maskIdNumber(caseItem.policyHolderIdNumber);
@@ -2338,7 +2341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         res.json(maskedCases);
       } else {
-        // 관리자는 전체 정보 조회 가능
+        // 관리자, 협력사, 심사사, 조사사는 전체 정보 조회 가능
         res.json(cases);
       }
     } catch (error) {
@@ -2401,9 +2404,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 사용자 권한 확인
       const currentUser = await storage.getUser(req.session.userId);
       const isAdmin = currentUser?.role === "관리자";
+      const isPartner = currentUser?.role === "협력사";
+      const isAssessor = currentUser?.role === "심사사";
+      const isInvestigator = currentUser?.role === "조사사";
 
-      // 관리자가 아닌 경우 민감 정보 마스킹 처리
-      if (!isAdmin) {
+      // 관리자, 협력사, 심사사, 조사사가 아닌 경우 민감 정보 마스킹 처리
+      if (!isAdmin && !isPartner && !isAssessor && !isInvestigator) {
         const maskedCase = { ...caseData };
         maskedCase.policyHolderIdNumber = maskIdNumber(caseData.policyHolderIdNumber);
         maskedCase.insuredIdNumber = maskIdNumber(caseData.insuredIdNumber);
@@ -2418,7 +2424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maskedCase.clientPhone = maskPhone(caseData.clientPhone);
         res.json(maskedCase);
       } else {
-        // 관리자는 전체 정보 조회 가능
+        // 관리자, 협력사, 심사사, 조사사는 전체 정보 조회 가능
         res.json(caseData);
       }
     } catch (error) {
@@ -12813,6 +12819,7 @@ Front·Line·Ops·Xpert·Net
     investigatorContact: z.string().optional(),
     accidentLocation: z.string().optional(),
     accidentLocationDetail: z.string().optional(),
+    victimAddress: z.string().optional(),
     victimAddressDetail: z.string().optional(),
     requestScope: z.string().optional(),
   });
@@ -12848,18 +12855,30 @@ Front·Line·Ops·Xpert·Net
         insurancePolicyNo,
         insuranceAccidentNo,
         insuredName,
-        insuredContact,
+        insuredContact: rawInsuredContact,
         victimName,
-        victimContact,
+        victimContact: rawVictimContact,
         assessorTeam,
         assessorContact,
         investigatorTeamName,
         investigatorContact,
-        accidentLocation,
-        accidentLocationDetail,
-        victimAddressDetail,
+        accidentLocation: rawAccidentLocation,
+        accidentLocationDetail: rawAccidentLocationDetail,
+        victimAddress: rawVictimAddress,
+        victimAddressDetail: rawVictimAddressDetail,
         requestScope,
       } = validatedData;
+
+      // 암호화된 데이터 복호화 (SMS 발송 시 모든 정보를 평문으로 표시)
+      const { decryptSensitiveData } = await import("./utils/encryption");
+      const insuredContact = decryptSensitiveData(rawInsuredContact) || rawInsuredContact;
+      const victimContact = decryptSensitiveData(rawVictimContact) || rawVictimContact;
+      const assessorContactDecrypted = decryptSensitiveData(assessorContact) || assessorContact;
+      const investigatorContactDecrypted = decryptSensitiveData(investigatorContact) || investigatorContact;
+      const accidentLocation = decryptSensitiveData(rawAccidentLocation) || rawAccidentLocation;
+      const accidentLocationDetail = decryptSensitiveData(rawAccidentLocationDetail) || rawAccidentLocationDetail;
+      const victimAddress = decryptSensitiveData(rawVictimAddress) || rawVictimAddress;
+      const victimAddressDetail = decryptSensitiveData(rawVictimAddressDetail) || rawVictimAddressDetail;
 
       // 솔라피 API 키 확인
       const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
@@ -12911,51 +12930,68 @@ Front·Line·Ops·Xpert·Net
         messageLines.push(`피해자 : ${victimParts.join("  ")}`);
       }
 
-      // 심사자: 이름과 연락처 모두 있을 때만 표시
+      // 심사자: 이름과 연락처 모두 있을 때만 표시 (복호화된 연락처 사용)
       if (
         assessorTeam &&
         assessorTeam !== "-" &&
-        typeof assessorContact === "string" &&
-        assessorContact !== "-" &&
-        /[0-9]/.test(assessorContact)
+        typeof assessorContactDecrypted === "string" &&
+        assessorContactDecrypted !== "-" &&
+        /[0-9]/.test(assessorContactDecrypted)
       ) {
         messageLines.push(
-          `심사자 : ${assessorTeam}  연락처 ${assessorContact}`,
+          `심사자 : ${assessorTeam}  연락처 ${assessorContactDecrypted}`,
         );
       }
 
-      // 조사자: 이름과 연락처 모두 있을 때만 표시
+      // 조사자: 이름과 연락처 모두 있을 때만 표시 (복호화된 연락처 사용)
       if (
         investigatorTeamName &&
         investigatorTeamName !== "-" &&
-        typeof investigatorContact === "string" &&
-        investigatorContact !== "-" &&
-        /[0-9]/.test(investigatorContact)
+        typeof investigatorContactDecrypted === "string" &&
+        investigatorContactDecrypted !== "-" &&
+        /[0-9]/.test(investigatorContactDecrypted)
       ) {
         messageLines.push(
-          `조사자 : ${investigatorTeamName}  연락처 ${investigatorContact}`,
+          `조사자 : ${investigatorTeamName}  연락처 ${investigatorContactDecrypted}`,
         );
       }
 
-      // 사고장소: 피보험자 주소 + 피보험자 상세주소, 피해자 상세주소(있으면)
-      const insuredFullAddress = [accidentLocation, accidentLocationDetail]
-        .filter(Boolean)
-        .join(" ");
+      // 사고장소: 케이스 접미사에 따라 주소 결정 (-0은 피보험자 주소, -1 이상은 피해자 주소)
+      const getFullAddress = () => {
+        const suffixMatch = caseNumber?.match(/-(\d+)$/);
+        const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
 
-      let fullAddress = insuredFullAddress;
-      // 피해자 상세주소가 있고, "-"가 아니면 콤마로 구분하여 추가
-      if (
-        victimAddressDetail &&
-        victimAddressDetail !== "-" &&
-        victimAddressDetail.trim()
-      ) {
-        if (fullAddress) {
-          fullAddress = `${fullAddress}, ${victimAddressDetail}`;
+        if (suffix === 0) {
+          // 손해방지(-0): 피보험자 주소 + 상세주소
+          return (
+            [accidentLocation, accidentLocationDetail]
+              .filter(Boolean)
+              .join(" ") || "-"
+          );
         } else {
-          fullAddress = victimAddressDetail;
+          // 피해세대(-1, -2, ...): 피해자 주소 + 상세주소 (없으면 피보험자 주소로 대체)
+          const victimAddr = [
+            victimAddress || accidentLocation, // 피해자 주소 (없으면 피보험자 주소 사용)
+            victimAddressDetail,
+          ]
+            .filter(Boolean)
+            .join(" ");
+          
+          if (victimAddr && victimAddr !== "-") {
+            return victimAddr;
+          }
+          return (
+            [accidentLocation, accidentLocationDetail]
+              .filter(Boolean)
+              .join(" ") || "-"
+          );
         }
+      };
+      
+      const fullAddress = getFullAddress();
+      if (fullAddress && fullAddress !== "-") {
+        messageLines.push(`사고장소 : ${fullAddress}`);
       }
-      if (fullAddress) messageLines.push(`사고장소 : ${fullAddress}`);
       if (requestScope) messageLines.push(`의뢰범위 : ${requestScope}`);
 
       const messageText = messageLines.join("\n");
@@ -14025,16 +14061,17 @@ https://www.floxn.co.kr/
           msgLines.push(`피해자 : ${victimParts.join("  ")}`);
         }
 
-        // 조사자: 이름과 연락처 모두 있을 때만 표시
+        // 심사자: 이름과 연락처 모두 있을 때만 표시 (심사자가 먼저)
+        const assessorName = caseData.assessorTeam || caseData.assessorId;
+        if (assessorName && caseData.assessorContact) {
+          msgLines.push(
+            `심사자 : ${assessorName}  연락처 ${caseData.assessorContact}`,
+          );
+        }
+        // 조사자: 이름과 연락처 모두 있을 때만 표시 (조사자가 나중)
         if (caseData.investigatorTeamName && caseData.investigatorContact) {
           msgLines.push(
             `조사자 : ${caseData.investigatorTeamName}  연락처 ${caseData.investigatorContact}`,
-          );
-        }
-        // 심사자: 이름과 연락처 모두 있을 때만 표시
-        if (caseData.assessorId && caseData.assessorContact) {
-          msgLines.push(
-            `심사자 : ${caseData.assessorTeam}  연락처 ${caseData.assessorContact}`,
           );
         }
 
